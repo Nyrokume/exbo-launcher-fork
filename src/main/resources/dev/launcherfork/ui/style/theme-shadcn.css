@@ -1,0 +1,56 @@
+/*
+ * theme-shadcn.css - optional override loaded AFTER theme.css when -Dlauncher.theme=shadcn.
+ * Values: shadcn/ui default dark theme, "neutral" base color (ui.shadcn.com), OKLCH converted to sRGB hex.
+ * Only tokens are overridden; layout and other stylesheets stay untouched.
+ *
+ * Note: much of the original look is baked into PNGs (window frame, Play button, captions on auth buttons),
+ * so this theme recolors only the CSS-drawn parts until those images are replaced.
+ */
+
+.root {
+    -background: #0a0a0a;            /* oklch(0.145 0 0) */
+    -foreground: #fafafa;            /* oklch(0.985 0 0) */
+    -card: #171717;                  /* oklch(0.205 0 0) */
+    -card-foreground: #fafafa;
+    -popover: rgba(23, 23, 23, 0.94);
+    -popover-foreground: #fafafa;
+    -primary: #e5e5e5;               /* oklch(0.922 0 0) */
+    -primary-foreground: #171717;
+    -secondary: #262626;             /* oklch(0.269 0 0) */
+    -secondary-foreground: #fafafa;
+    -muted: #262626;
+    -muted-foreground: #a1a1a1;      /* oklch(0.708 0 0) */
+    -accent: #262626;
+    -accent-foreground: #fafafa;
+    -border: rgba(255, 255, 255, 0.10);
+    -ring: #737373;                  /* oklch(0.556 0 0) */
+    -destructive: #ff6467;           /* oklch(0.704 0.191 22.216) */
+    -destructive-border: rgba(255, 100, 103, 0.40);
+    -input-foreground: #fafafa;
+    -placeholder: #737373;
+    -overlay: rgba(0, 0, 0, 0.80);
+    -overlay-light: rgba(0, 0, 0, 0.40);
+    -overlay-solid: #000000;
+    -shadow: rgba(0, 0, 0, 0.50);
+    -shadow-inner: rgba(0, 0, 0, 0.30);
+
+    -text-strong: #fafafa;
+    -text-description: #d4d4d4;
+    -text-label: #d4d4d4;
+    -text-status: #a1a1a1;
+    -text-nav: #a1a1a1;
+    -text-dim: #737373;
+    -text-dim-active: #a1a1a1;
+    -text-link: #a1a1a1;
+}
+
+/* shadcn radius-md (0.625rem - 2px = 8px). JavaFX has no size variables, so it is a selector group. */
+.button, .text-field, .progress-bar, .progress-bar > .bar, .progress-bar > .track,
+.scroll-bar .thumb, .context-button {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.check-box > .box {
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}

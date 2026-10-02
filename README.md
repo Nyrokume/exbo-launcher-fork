@@ -23,6 +23,7 @@
 |---|---|
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
+| `-Dlauncher.theme=exbo\|shadcn` | тема: исходные цвета EXBO (по умолчанию) или тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 
 На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.screenshots=$PWD/docs/screenshots`.
