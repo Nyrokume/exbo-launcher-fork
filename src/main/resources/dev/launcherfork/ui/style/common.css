@@ -1,0 +1,80 @@
+/* Shared controls: window buttons, check boxes, inputs, error/info labels. Colors: theme.css tokens only. */
+
+.check-box {
+    -fx-font-size: 12;
+    -fx-text-fill: -muted-foreground;
+}
+.check-box > .box {
+    -fx-background-insets: 0;
+    -fx-background-color: transparent;
+    -fx-background-image: url("image/auth_checkbox_background.png");
+    -fx-background-repeat: stretch;
+    -fx-background-position: center;
+    -fx-shape: none;
+    -fx-border-color: transparent;
+}
+.check-box:selected > .box > .mark, .check-box:indeterminate > .box > .mark {
+    -fx-background-color: transparent;
+    -fx-background-image: url("image/auth_checkbox_foreground.png");
+    -fx-background-position: 1 2;
+    -fx-background-repeat: no-repeat;
+    -fx-shape: none;
+}
+.check-box:focused > .box { -fx-background-color: transparent; }
+
+.text { -fx-font-smoothing-type: gray; }
+
+#close {
+    -fx-background-image: url("image/close_button.png");
+    -fx-background-position: 2 2;
+    -fx-background-color: transparent;
+    -fx-background-repeat: no-repeat;
+    -fx-shape: none;
+}
+#close:hover {
+    -fx-background-image: url("image/close_button_active.png");
+    -fx-background-position: 0 0;
+}
+#hide {
+    -fx-background-image: url("image/hide_button.png");
+    -fx-background-position: 2 12px;
+    -fx-background-color: transparent;
+    -fx-background-repeat: no-repeat;
+    -fx-shape: none;
+}
+#hide:hover {
+    -fx-background-image: url("image/hide_button_active.png");
+    -fx-background-position: 0 10px;
+}
+
+#error {
+    -fx-font-size: 13;
+    -fx-text-fill: -destructive;
+    -fx-text-alignment: center;
+}
+#info, .info-label {
+    -fx-font-size: 13;
+    -fx-text-fill: -muted-foreground;
+    -fx-text-alignment: center;
+}
+
+#bottom-right {
+    -fx-background-image: url("image/bottom_angle_right.png");
+    -fx-background-color: transparent;
+    -fx-background-repeat: no-repeat;
+}
+
+.text-field {
+    -fx-font-size: 14;
+    -fx-background-color: transparent;
+    -fx-border-image-source: url("image/auth_input_background.png");
+    -fx-border-image-slice: 1px fill;
+    -fx-border-image-width: 1;
+    -fx-prompt-text-fill: -placeholder;
+    -fx-text-fill: -input-foreground;
+    -fx-highlight-fill: -primary;
+    -fx-highlight-text-fill: -foreground;
+}
+
+/* window-level progress spinner */
+.progress-indicator { -fx-progress-color: -primary; }

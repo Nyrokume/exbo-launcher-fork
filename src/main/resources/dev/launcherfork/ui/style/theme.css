@@ -1,0 +1,69 @@
+/*
+ * theme.css - the ONLY file with literal colors and font families.
+ * Token names follow shadcn/ui; values are the ORIGINAL EXBO launcher colors.
+ * Every other stylesheet must reference these looked-up colors (e.g. -fx-text-fill: -muted-foreground).
+ *
+ * JavaFX limitation: looked-up values work for colors/paints only. Sizes (radius, spacing) and
+ * font families cannot be variables, so they are defined once here as selector groups instead.
+ */
+
+.root {
+    /* ---- shadcn-style tokens ---- */
+    -background: #242428;            /* main window fill */
+    -foreground: #ffffff;            /* titles, primary text */
+    -card: #191919;                  /* side panels, frame strips */
+    -card-foreground: #c7c7c7;       /* server name, news text */
+    -popover: rgba(25, 25, 25, 0.86);/* client settings popup */
+    -popover-foreground: #b4b4b4;
+    -primary: #1c4a61;               /* blue accent (window border) */
+    -primary-foreground: #ffffff;
+    -secondary: #2b2b2b;             /* inner border */
+    -secondary-foreground: #b1b1b1;
+    -muted: #414141;
+    -muted-foreground: #b1b1b1;      /* body text */
+    -accent: rgba(255, 255, 255, 0.15); /* hover background of menu entries */
+    -accent-foreground: #b4b4b4;
+    -border: #2b2b2b;
+    -ring: #1c4a61;
+    -destructive: #ae171c;           /* error text */
+    -destructive-border: #672629;    /* red accent border */
+    -input-foreground: #8d8d8d;
+    -placeholder: #6d6d6d;
+    -overlay: rgba(0, 0, 0, 0.9);    /* modal dim */
+    -overlay-light: rgba(0, 0, 0, 0.4);
+    -overlay-solid: #000000;
+    -shadow: rgba(0, 0, 0, 0.8);
+    -shadow-inner: rgba(0, 0, 0, 0.5);
+
+    /* ---- extra text shades used by the original ---- */
+    -text-strong: #d7d7d7;           /* selected server name, news title */
+    -text-description: #cdcdcd;      /* server description */
+    -text-label: #bcbcbc;            /* settings labels */
+    -text-status: #b4b4b4;           /* download status */
+    -text-nav: #949494;              /* settings / login buttons */
+    -text-dim: #7d7d7d;              /* server online status */
+    -text-dim-active: #8d8d8d;
+    -text-link: #5f5f62;             /* header links */
+    -transparent: transparent;
+
+    /* body font: defined once */
+    -fx-font-family: "Circe Light";
+    -fx-font-size: 12;
+}
+
+/* Display font (Europe): the only place where this family is named. Add class "font-display". */
+.font-display {
+    -fx-font-family: "Europe";
+}
+
+/* Bold body text */
+.font-bold {
+    -fx-font-family: "Circe Bold";
+}
+
+/* Corner radius: the original is square everywhere (JavaFX has no size variables). */
+.button, .text-field, .progress-bar, .progress-bar > .bar, .progress-bar > .track,
+.scroll-bar .thumb, .check-box > .box, .context-button {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}

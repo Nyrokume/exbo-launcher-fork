@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane prefHeight="83.0" prefWidth="487.0" stylesheets="@../style/common.css,@../style/settings.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.settings.entries.PathEntryController">
+    <children>
+        <TextField fx:id="label" editable="false" prefHeight="25.0" prefWidth="487.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="26.0" />
+        <Button id="folder" fx:id="button" mnemonicParsing="false" prefHeight="26.0" prefWidth="143.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" />
+        <Label fx:id="caption" prefHeight="27.0" prefWidth="487.0" styleClass="settings-caption" text="Label" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" />
+    </children>
+</AnchorPane>

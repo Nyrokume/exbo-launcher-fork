@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<!-- Install path dialog shown before the first (fake) download (original installPane). -->
+<AnchorPane fx:id="installPane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.modals.InstallModalController">
+    <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <center>
+            <Pane maxHeight="236" maxWidth="487">
+                <Label fx:id="installTitle" styleClass="modal-title" text="%main.modal.install.title"/>
+                <ImageView layoutX="0" layoutY="35"><Image url="@../../style/image/line_settings_main.png"/></ImageView>
+                <TextField fx:id="installDir" editable="false" focusTraversable="false" layoutY="100.0" prefHeight="25.0" prefWidth="450.0"/>
+                <Label fx:id="installDirLabel" layoutY="55" prefWidth="480" styleClass="modal-text" text="%main.modal.install.text"/>
+                <ImageView layoutX="0" layoutY="169"><Image url="@../../style/image/line_settings_group.png"/></ImageView>
+                <CheckBox fx:id="installLinkCheckBox" layoutX="0" layoutY="175" selected="true" text="%main.modal.install.link"/>
+                <Button id="folder" fx:id="installChangeFolder" layoutY="134" minWidth="143" prefHeight="26" prefWidth="143"/>
+                <Button id="logoutButtonLeft" fx:id="installYes" layoutX="60" layoutY="215" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.install.confirm"/>
+                <Button id="logoutButtonRight" fx:id="installNo" layoutX="230" layoutY="215" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.install.cancel"/>
+            </Pane>
+        </center>
+    </BorderPane>
+</AnchorPane>

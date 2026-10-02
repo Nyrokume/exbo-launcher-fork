@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- Ported from mail_auth.fxml. The custom NumberTextField class was replaced by a plain TextField
+     with a digits-only TextFormatter (set up in MailAuthController). -->
+<Pane id="window" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="490.0" prefWidth="379.0" stylesheets="@style/common.css,@style/auth.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.MailAuthController">
+    <Pane id="window" fx:id="root" prefHeight="490.0" prefWidth="379.0">
+        <TextField id="input" fx:id="codeField" alignment="TOP_CENTER" layoutX="53.0" layoutY="257.0" maxHeight="32.0" minHeight="32.0" minWidth="274.0" onAction="#enter" prefHeight="32.0" prefWidth="274.0" promptText="123456" styleClass="font-display" />
+        <Button id="enterButton" fx:id="enterButton" layoutX="52.5" layoutY="380.0" mnemonicParsing="false" onAction="#enter" prefHeight="46.0" prefWidth="274.0" />
+        <Label id="error" fx:id="errorFirst" alignment="TOP_CENTER" contentDisplay="CENTER" layoutX="16.0" layoutY="171.0" prefHeight="17.0" prefWidth="350.0" textAlignment="CENTER" />
+        <Label id="error" fx:id="errorSecond" alignment="TOP_CENTER" layoutX="15.0" layoutY="188.0" prefHeight="17.0" prefWidth="350.0" textAlignment="CENTER" />
+        <Label id="info" alignment="CENTER" layoutX="15.0" layoutY="232.0" prefWidth="350.0" text="%auth.mail_code" />
+    </Pane>
+    <ImageView fx:id="header" fitHeight="150.0" fitWidth="363.0" layoutX="8.0" layoutY="8.0" pickOnBounds="true" preserveRatio="true">
+        <Image url="@style/image/auth_top.png" />
+    </ImageView>
+    <ProgressIndicator fx:id="rollingBar" layoutX="154.0" layoutY="196.0" prefHeight="81.0" prefWidth="72.0" visible="false" />
+    <Button id="close" fx:id="closeButton" layoutX="350.0" layoutY="15.0" mnemonicParsing="false" />
+    <Button id="hide" fx:id="hideButton" layoutX="327.0" layoutY="15.0" mnemonicParsing="false" />
+</Pane>

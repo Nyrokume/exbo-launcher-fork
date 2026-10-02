@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Main window, ported from the original main.fxml (132 nodes, one 2000-line controller).
+  Split into fx:include areas, each with its own controller. Original fx:id names are kept;
+  an included file's root keeps the fx:id it had in the original main.fxml.
+  Z-order is the same as in the original file.
+-->
+<AnchorPane fx:id="root" minHeight="550.0" minWidth="856.0" prefHeight="550.0" prefWidth="886.0"
+            styleClass="main-window" stylesheets="@style/common.css,@style/main.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.MainController">
+    <AnchorPane fx:id="main" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <!-- blurred server background (set from data in MainController) -->
+        <Region fx:id="background" layoutY="9.0" prefHeight="200.0" prefWidth="728.0" AnchorPane.bottomAnchor="2.0"
+                AnchorPane.leftAnchor="2.0" AnchorPane.rightAnchor="2.0" AnchorPane.topAnchor="9.0"/>
+        <!-- frame strips -->
+        <Region styleClass="frame-strip" prefWidth="5.0" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="31.0"/>
+        <Region styleClass="frame-strip" prefHeight="5.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="105.0"/>
+        <Region styleClass="frame-strip" prefWidth="5.0" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="30.0"/>
+
+        <fx:include fx:id="defaultStatusPane" source="main/status_pane.fxml"
+                    AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="30"/>
+        <fx:include fx:id="serversList" source="main/servers_list.fxml"
+                    AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.topAnchor="0"/>
+        <fx:include fx:id="articleBg" source="main/article.fxml"
+                    AnchorPane.bottomAnchor="10" AnchorPane.leftAnchor="240" AnchorPane.rightAnchor="5" AnchorPane.topAnchor="60"/>
+        <fx:include fx:id="advancedNewsPane" source="main/news.fxml"
+                    AnchorPane.leftAnchor="253.0" AnchorPane.topAnchor="60.0"/>
+        <fx:include fx:id="clientSettingsPane" source="main/client_settings.fxml"
+                    AnchorPane.bottomAnchor="68" AnchorPane.rightAnchor="35"/>
+    </AnchorPane>
+
+    <fx:include fx:id="header" source="main/header.fxml"
+                AnchorPane.leftAnchor="227.0" AnchorPane.rightAnchor="210.0" AnchorPane.topAnchor="20.0"/>
+
+    <AnchorPane fx:id="settingsPane" layoutX="227.0" layoutY="30.0" prefHeight="376.0" prefWidth="679.0" visible="false"
+                AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="228.0" AnchorPane.rightAnchor="5.0" AnchorPane.topAnchor="8.0">
+        <fx:include fx:id="settings" source="settings.fxml"
+                    AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    </AnchorPane>
+
+    <ImageView id="bottom-right" fitHeight="17.0" fitWidth="107.0" pickOnBounds="true" preserveRatio="true"
+               AnchorPane.bottomAnchor="-2.0" AnchorPane.rightAnchor="-2.0">
+        <Image url="@style/image/bottom_angle_right.png"/>
+    </ImageView>
+    <Region fx:id="topCenter" prefHeight="20.0" prefWidth="200.0" styleClass="frame-strip"
+            AnchorPane.leftAnchor="235.0" AnchorPane.rightAnchor="235.0" AnchorPane.topAnchor="0.0"/>
+
+    <Button id="login" fx:id="loginButton" maxHeight="34.0" maxWidth="219.0" minHeight="34.0" minWidth="219.0"
+            mnemonicParsing="false" prefHeight="34.0" prefWidth="219.0" text="Button" styleClass="font-display"
+            AnchorPane.rightAnchor="6.0" AnchorPane.topAnchor="31.0"/>
+
+    <ImageView fx:id="rightCorner" fitHeight="31.0" fitWidth="237.0" pickOnBounds="true" preserveRatio="true"
+               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <Image url="@style/image/head_angle_right.png"/>
+    </ImageView>
+    <ImageView fx:id="leftCorner" fitHeight="31.0" fitWidth="249.0" pickOnBounds="true" preserveRatio="true"
+               AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <Image url="@style/image/head_angle_left.png"/>
+    </ImageView>
+
+    <!-- modal layers (hidden by default), one FXML + controller each -->
+    <fx:include fx:id="logoutPane" source="main/modals/logout_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="updatePane" source="main/modals/update_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="licensePane" source="main/modals/license_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="offlinePane" source="main/modals/offline_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="downloadWarnPane" source="main/modals/download_warn_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="defenderPane" source="main/modals/defender_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="exceptionPane" source="main/modals/exception_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="loadingPane" source="main/modals/loading_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="deletionPane" source="main/modals/deletion_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <fx:include fx:id="installPane" source="main/modals/install_pane.fxml" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+
+    <Button id="close" fx:id="closeButton" mnemonicParsing="false" prefHeight="19.0" prefWidth="16.0"
+            AnchorPane.rightAnchor="7.0" AnchorPane.topAnchor="5.0"/>
+    <Button id="hide" fx:id="hideButton" maxHeight="15.0" maxWidth="17.0" minHeight="15.0" minWidth="17.0"
+            mnemonicParsing="false" prefHeight="15.0" prefWidth="17.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="5.0"/>
+</AnchorPane>

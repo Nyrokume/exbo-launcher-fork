@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<!-- License agreement update (original licensePane). -->
+<AnchorPane fx:id="licensePane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.modals.LicenseModalController">
+    <Region styleClass="modal-dim-light" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <center>
+            <Pane maxHeight="200" maxWidth="750">
+                <ImageView fitHeight="210" fitWidth="349" layoutX="290"><Image url="@../../style/image/license_bg.png"/></ImageView>
+                <Label alignment="BASELINE_CENTER" layoutX="290" layoutY="8" maxHeight="Infinity" maxWidth="349" prefHeight="70" prefWidth="349" styleClass="license-title,font-bold" text="%main.modal.license.title.1" textAlignment="CENTER" wrapText="true"/>
+                <Label alignment="BASELINE_CENTER" layoutX="290" layoutY="27" maxHeight="Infinity" maxWidth="349" prefHeight="70" prefWidth="349" styleClass="license-title,font-bold" text="%main.modal.license.title.2" textAlignment="CENTER" wrapText="true"/>
+                <CheckBox fx:id="licenseFirst" layoutX="320" layoutY="89"/>
+                <TextFlow layoutX="340" layoutY="92">
+                    <Text styleClass="license-text,font-bold" text="%main.modal.license.license.first"/>
+                    <Text fx:id="licenseRef" styleClass="license-text,license-link,font-bold" text="%main.modal.license.license.second"/>
+                </TextFlow>
+                <ImageView layoutX="566" layoutY="96"><Image url="@../../style/image/external_link.png"/></ImageView>
+                <CheckBox fx:id="licenseSecond" layoutX="320" layoutY="114"/>
+                <TextFlow layoutX="340" layoutY="117">
+                    <Text styleClass="license-text,font-bold" text="%main.modal.license.confidentiality.first"/>
+                    <Text fx:id="confidentialityRef" styleClass="license-text,license-link,font-bold" text="%main.modal.license.confidentiality.second"/>
+                </TextFlow>
+                <ImageView layoutX="588" layoutY="120"><Image url="@../../style/image/external_link.png"/></ImageView>
+                <Button id="licenseLeft" fx:id="licenseYes" layoutX="376" layoutY="170" minHeight="28" prefHeight="22" prefWidth="83" styleClass="license-button" text="%main.modal.license.confirm"/>
+                <Button id="licenseRight" fx:id="licenseNo" layoutX="469" layoutY="170" minHeight="26" prefHeight="22" prefWidth="83" styleClass="license-button" text="%main.modal.license.cancel"/>
+            </Pane>
+        </center>
+    </BorderPane>
+    <AnchorPane fx:id="licenseLoading" visible="false" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <Region styleClass="modal-dim-light" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+        <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+            <center><ProgressIndicator maxHeight="60" maxWidth="60"/></center>
+        </BorderPane>
+    </AnchorPane>
+</AnchorPane>

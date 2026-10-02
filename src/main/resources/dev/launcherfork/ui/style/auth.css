@@ -1,0 +1,36 @@
+/* Auth / update windows (379x490). The window frame, shadow and logo are baked into auth_background.png. */
+#window {
+    -fx-background-image: url("image/auth_background.png");
+    -fx-background-color: transparent;
+}
+
+#input {
+    -fx-font-size: 16;
+    -fx-border-image-source: url("image/auth_input_background.png");
+    -fx-border-image-slice: 1px fill;
+    -fx-border-image-width: 1;
+    -fx-prompt-text-fill: -placeholder;
+    -fx-text-fill: -input-foreground;
+}
+
+.auth-label {
+    -fx-font-size: 14;
+    -fx-text-fill: -muted-foreground;
+}
+
+#status {
+    -fx-font-size: 14;
+    -fx-text-fill: -muted-foreground;
+}
+
+.fork-hint {
+    -fx-font-size: 11;
+    -fx-text-fill: -placeholder;
+}
+
+#enterButton, #enterSteam, #register, #restore {
+    -fx-background-color: transparent;
+    -fx-background-repeat: no-repeat;
+    -fx-font-size: 18;
+    -fx-cursor: hand;
+}

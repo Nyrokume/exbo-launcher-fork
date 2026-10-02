@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<!-- Settings screen (original settings.fxml). Categories and entries are built by SettingsController. -->
+<AnchorPane fx:id="settingsRoot" prefHeight="400.0" prefWidth="544.0" styleClass="settings-root" stylesheets="@style/common.css,@style/settings.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.settings.SettingsController">
+    <children>
+        <ScrollPane fx:id="scroll" pannable="true" prefHeight="329.0" maxWidth="539.0" prefWidth="544.0" styleClass="settings-scroll"
+                    hbarPolicy="NEVER" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="56.0" />
+    </children>
+</AnchorPane>

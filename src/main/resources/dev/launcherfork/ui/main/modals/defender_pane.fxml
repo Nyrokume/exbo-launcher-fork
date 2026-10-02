@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<!-- Windows Defender hint (original defenderPane). Visual only, does nothing in the fork. -->
+<AnchorPane fx:id="defenderPane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.modals.DefenderModalController">
+    <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <center>
+            <Pane maxHeight="200" maxWidth="750">
+                <Label fx:id="defenderTitle" layoutX="150" layoutY="35" styleClass="modal-title" text="%main.modal.defender.title"/>
+                <ImageView layoutX="10" layoutY="7"><Image url="@../../style/image/exception_icon.png"/></ImageView>
+                <Label fx:id="defenderDesc" layoutX="150" layoutY="71" maxHeight="90" maxWidth="500" styleClass="modal-text" text="%main.modal.defender.desc" wrapText="true"/>
+                <ImageView layoutX="150" layoutY="68"><Image url="@../../style/image/line_settings_main.png"/></ImageView>
+                <Button id="logoutButtonRight" fx:id="defenderYes" layoutX="200" layoutY="160" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.defender.confirm"/>
+                <Button id="logoutButtonLeft" fx:id="defenderNo" layoutX="370" layoutY="160" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.defender.cancel"/>
+                <CheckBox fx:id="defenderRemember" layoutX="150" layoutY="130" text="%main.modal.defender.remember"/>
+            </Pane>
+        </center>
+    </BorderPane>
+</AnchorPane>

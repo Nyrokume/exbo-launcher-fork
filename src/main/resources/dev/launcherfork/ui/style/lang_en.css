@@ -1,0 +1,10 @@
+/* Buttons whose caption is baked into the PNG (original en.css). */
+#enterButton { -fx-background-image: url("image/images_en/auth_enter_button.png"); }
+#enterSteam  { -fx-background-image: url("image/images_en/auth_steam_small.png"); }
+#register    { -fx-background-image: url("image/images_en/auth_register_button.png"); }
+#restore     { -fx-background-image: url("image/images_en/auth_restore_button.png"); }
+#folder, .folder-button {
+    -fx-background-image: url("image/images_en/folder_button.png");
+    -fx-background-color: transparent;
+    -fx-background-repeat: no-repeat;
+}

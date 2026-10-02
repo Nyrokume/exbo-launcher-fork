@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<!-- "Another download is running" warning (original downloadWarnPane). -->
+<AnchorPane fx:id="downloadWarnPane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.modals.DownloadWarnModalController">
+    <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <center>
+            <Pane maxHeight="200" maxWidth="750">
+                <Label layoutX="150" layoutY="35" styleClass="modal-title" text="%main.modal.download_warn.title"/>
+                <Label layoutX="150" layoutY="71" maxHeight="90" maxWidth="500" styleClass="modal-text" text="%main.modal.download_warn.desc" wrapText="true"/>
+                <ImageView layoutX="150" layoutY="68"><Image url="@../../style/image/line_settings_main.png"/></ImageView>
+                <Button id="logoutButtonRight" fx:id="downloadWarnYes" layoutX="200" layoutY="160" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.download_warn.confirm"/>
+                <Button id="logoutButtonLeft" fx:id="downloadWarnNo" layoutX="370" layoutY="160" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.download_warn.cancel"/>
+            </Pane>
+        </center>
+    </BorderPane>
+</AnchorPane>

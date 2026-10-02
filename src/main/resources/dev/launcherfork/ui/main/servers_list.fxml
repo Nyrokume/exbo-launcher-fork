@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- Left column: logo, Settings button, server cards (cards come from server_entry.fxml). -->
+<AnchorPane fx:id="sidebar" pickOnBounds="false" prefWidth="232.0" stylesheets="@../style/common.css,@../style/main.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.ServersListController">
+    <ImageView fx:id="logo" fitHeight="110.0" fitWidth="227.0" pickOnBounds="true" preserveRatio="true"
+               AnchorPane.leftAnchor="1.0" AnchorPane.topAnchor="30.0">
+        <Image url="@../style/image/exbo_logo_big.png"/>
+    </ImageView>
+    <Region styleClass="side-panel" prefHeight="253.0" prefWidth="223.0"
+            AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="4.0" AnchorPane.topAnchor="140.0"/>
+    <ScrollPane fx:id="serversPane" prefHeight="225.0" prefWidth="223.0" styleClass="servers-scroll"
+                hbarPolicy="NEVER" vbarPolicy="NEVER"
+                AnchorPane.bottomAnchor="6.0" AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="169.0"/>
+    <Button fx:id="settingsButton" minHeight="37.0" minWidth="220.0" mnemonicParsing="false" text="%main.settings"
+            styleClass="font-display" AnchorPane.leftAnchor="6.0" AnchorPane.topAnchor="127.0"/>
+</AnchorPane>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Text?>
+
+<!-- Radio group: options are added by RadioEntryController (check boxes with a round mark, like the original). -->
+<Pane fx:id="panel" prefWidth="300.0" stylesheets="@../style/common.css,@../style/settings.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.settings.entries.RadioEntryController">
+    <Text fx:id="label" layoutY="20" styleClass="settings-radio-title" />
+</Pane>

@@ -1,0 +1,44 @@
+/* Settings screen. Colors: theme.css tokens only. */
+.settings-root { -fx-background-color: -background; }
+.settings-scroll, .settings-scroll > .viewport { -fx-background: transparent; -fx-background-color: transparent; }
+.settings-category { -fx-font-size: 24; -fx-text-fill: -foreground; }
+.settings-label { -fx-font-size: 14; -fx-text-fill: -text-label; }
+.settings-caption { -fx-font-size: 18; -fx-text-fill: -text-label; }
+.settings-option { -fx-font-size: 12; -fx-fill: -text-label; -fx-font-smoothing-type: lcd; }
+.settings-radio-title { -fx-font-size: 14; -fx-fill: -text-label; -fx-font-smoothing-type: lcd; }
+
+/* radio entry uses the check box skin with a round mark (original radio.css) */
+.radio-check:selected > .box > .mark {
+    -fx-background-image: url("image/radiobutton_foreground.png");
+}
+
+/* "open logs" button */
+.logs-button {
+    -fx-background-image: url("image/offline_button.png");
+    -fx-background-color: transparent;
+    -fx-background-repeat: no-repeat;
+    -fx-text-fill: -muted-foreground;
+    -fx-font-size: 18;
+    -fx-cursor: hand;
+}
+
+/* RAM slider track (was BorderImage built in code) */
+.progression-track {
+    -fx-background-image: url("image/settings_progress_track.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-size: 100% 100%;
+    -fx-cursor: hand;
+}
+.progression-bar {
+    -fx-background-image: url("image/settings_progress_bar.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-position: left center;
+}
+
+.scroll-bar { -fx-background-color: transparent; }
+.scroll-bar .thumb { -fx-background-color: derive(-overlay-solid, 50%); }
+.scroll-bar .thumb:hover { -fx-background-color: derive(-overlay-solid, 70%); }
+.scroll-bar .increment-button, .scroll-bar .decrement-button { -fx-background-color: transparent; -fx-padding: 0; }
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-shape: none; -fx-padding: 0; }
+.scroll-bar .track { -fx-background-color: transparent; -fx-border-color: transparent; }
+.scroll-pane .corner { -fx-background-color: transparent; }

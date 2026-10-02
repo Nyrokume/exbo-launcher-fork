@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<!-- Full-window spinner (original loadingPane). -->
+<BorderPane fx:id="loadingPane" styleClass="loading-pane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.modals.LoadingModalController">
+    <center>
+        <ProgressIndicator fx:id="loadingIndicator" maxHeight="50" maxWidth="50" progress="-1"/>
+    </center>
+</BorderPane>
