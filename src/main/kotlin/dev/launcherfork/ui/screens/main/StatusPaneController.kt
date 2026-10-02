@@ -2,12 +2,14 @@ package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
+import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.DownloadBar
 import dev.launcherfork.ui.components.brightenOnHover
 import dev.launcherfork.ui.components.formatBytes
 import dev.launcherfork.ui.components.loadImage
 import dev.launcherfork.ui.components.toggleClass
+import dev.launcherfork.ui.state.ClientState
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
 import javafx.fxml.FXML
@@ -22,9 +24,9 @@ import javafx.scene.text.Text
 
 /**
  * main/status_pane.fxml: Play/Download button, download bar + status text, server description and the
- * main/news page switcher. State comes from [ClientStateStore].
+ * main/news page switcher. State comes from [dev.launcherfork.ui.state.ClientStateStore].
  */
-class StatusPaneController(private val ctx: UiContext) {
+class StatusPaneController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var defaultStatusPane: AnchorPane
     @FXML lateinit var clientSettingsButton: Button
     @FXML lateinit var progressBar: ProgressBar
@@ -69,6 +71,11 @@ class StatusPaneController(private val ctx: UiContext) {
         currentState = state
         state.addListener(stateListener)
         render(state.value)
+    }
+
+    override fun dispose() {
+        currentState?.removeListener(stateListener)
+        currentState = null
     }
 
     fun setPage(news: Boolean) {

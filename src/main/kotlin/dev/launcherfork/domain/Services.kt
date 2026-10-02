@@ -1,6 +1,6 @@
 package dev.launcherfork.domain
 
-/** Cancels a running fake operation. */
+/** Cancels a running operation. After cancel() no further callbacks are delivered. */
 fun interface Cancellable {
     fun cancel()
 }
@@ -9,9 +9,17 @@ fun interface Cancellable {
  * Callbacks are invoked on a background thread; UI code must hop to the FX thread itself.
  */
 interface ProgressListener {
-    fun onStatus(statusKey: String) {}
+    fun onPhase(phase: UpdatePhase) {}
     fun onProgress(progress: Progress)
     fun onFinished()
+}
+
+/** Callbacks of [GameLauncher]; invoked on a background thread. */
+interface GameListener {
+    /** The game process is up. */
+    fun onStarted()
+    /** The game process ended by itself. Not called after the handle was cancelled. */
+    fun onExited()
 }
 
 interface AuthService {
@@ -19,7 +27,7 @@ interface AuthService {
     val savedLogin: String?
     val currentSession: UserSession?
 
-    /** Blocking call; run it off the FX thread. */
+    /** Blocking call; run it off the FX thread. May throw on transport errors. */
     fun login(login: String, password: String, remember: Boolean): AuthResult
     fun confirmCode(code: String): AuthResult
     fun logout()
@@ -34,16 +42,21 @@ interface NewsRepository {
 }
 
 interface UpdateService {
-    /** Fake launcher self-update check shown on update.fxml. */
+    /** Launcher self-update check shown on update.fxml. */
     fun checkLauncherUpdate(listener: ProgressListener): Cancellable
 
-    /** Fake client download for [server]. */
+    /** Client download for [server]. */
     fun downloadClient(server: Server, listener: ProgressListener): Cancellable
 
     fun isInstalled(server: Server): Boolean
 
     /** Progress kept after a pause, so "Continue" resumes from it (0 if none). */
     fun pausedProgress(server: Server): Double
+}
+
+/** Starts the game client. Cancelling the returned handle stops ("kills") the game. */
+interface GameLauncher {
+    fun launch(server: Server, listener: GameListener): Cancellable
 }
 
 interface SettingsStore {
@@ -57,5 +70,6 @@ data class Services(
     val servers: ServerRepository,
     val news: NewsRepository,
     val updates: UpdateService,
+    val launcher: GameLauncher,
     val settings: SettingsStore,
 )

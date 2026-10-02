@@ -1,14 +1,21 @@
 package dev.launcherfork.domain
 
-/** A game server card shown in the sidebar. Images are classpath resources (mock data only). */
+import java.net.URI
+import java.nio.file.Path
+
+/**
+ * A game server card shown in the sidebar.
+ * Images are plain URIs (http(s), file, or classpath-derived jar:/file: URIs for mock data), so the domain
+ * does not know about resource folders.
+ */
 data class Server(
     val id: String,
     val caption: String,
     val online: Boolean,
     val players: Int,
     val description: List<String>,
-    val iconResource: String,
-    val backgroundResource: String,
+    val iconUri: URI,
+    val backgroundUri: URI,
     /** Fake "client is installed" flag; decides Download vs Play button. */
     val installed: Boolean,
     /** Fake client size for the progress text, bytes. */
@@ -18,17 +25,34 @@ data class Server(
 data class NewsItem(
     val title: String,
     val summary: String,
-    val imageResource: String,
+    val imageUri: URI,
 )
 
 data class UserSession(val login: String)
+
+/** Why authentication failed. The UI maps these to localized strings. */
+enum class AuthError {
+    EMPTY_LOGIN,
+    EMPTY_PASSWORD,
+    EMPTY_CODE,
+    WRONG_CREDENTIALS,
+    WRONG_CODE,
+    NO_CONNECTION,
+    SERVER_ERROR,
+}
 
 sealed interface AuthResult {
     data class Success(val session: UserSession) : AuthResult
     /** Second factor (e-mail code) is required -> mail_auth screen. */
     data object CodeRequired : AuthResult
-    /** [messageKey] is a key from the i18n bundle. */
-    data class Failure(val messageKey: String) : AuthResult
+    data class Failure(val error: AuthError) : AuthResult
+}
+
+/** Phase of a long-running update/download operation. The UI maps these to localized strings. */
+enum class UpdatePhase {
+    CHECKING,
+    DOWNLOADING,
+    APPLYING,
 }
 
 /** Progress snapshot emitted by [UpdateService]. */
@@ -39,19 +63,23 @@ data class Progress(
     val bytesPerSecond: Long,
 )
 
+/** Peer-to-peer download policy (settings). */
+enum class P2pMode { ALWAYS, EXCEPT_MOBILE, NEVER }
+
+/** When the launcher closes itself (settings). */
+enum class ExitMode { ON_GAME_START, ON_GAME_EXIT, NEVER }
+
 data class LauncherSettings(
     val runOnStartUp: Boolean = false,
     val startOnDownloaded: Boolean = true,
     val hideToTray: Boolean = true,
     val defenderHint: Boolean = true,
-    /** 0 always, 1 except mobile, 2 never */
-    val p2pMode: Int = 1,
-    /** 0 on game start, 1 on game exit, 2 never */
-    val exitMode: Int = 2,
+    val p2pMode: P2pMode = P2pMode.EXCEPT_MOBILE,
+    val exitMode: ExitMode = ExitMode.NEVER,
     /** 0..1, mapped to MB by the UI */
     val ramFraction: Double = 0.5,
     val downloadLimitKb: Int = 0,
     val uploadLimitKb: Int = 0,
-    val gameRoot: String = "C:\\Games\\EXBO",
+    val gameRoot: Path = Path.of(System.getProperty("user.home"), "Games", "EXBO"),
     val language: String = "ru",
 )

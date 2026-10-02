@@ -3,7 +3,8 @@ package dev.launcherfork.ui.components
 import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.screens.main.ClientState
+import dev.launcherfork.ui.state.ClientState
+import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
 import javafx.fxml.FXML
 import javafx.scene.control.ProgressBar
@@ -26,6 +27,8 @@ class ServerEntryController(private val ctx: UiContext) {
 
     lateinit var server: Server
         private set
+    private var state: ObservableValue<ClientState>? = null
+    private val stateListener = ChangeListener<ClientState> { _, _, s -> render(s) }
 
     @FXML
     fun initialize() {
@@ -37,9 +40,17 @@ class ServerEntryController(private val ctx: UiContext) {
         this.server = server
         name.text = server.caption
         status.text = if (server.online) ctx.t("main.server_online", server.players) else ctx.t("main.server_offline")
-        image.setImageBackground(loadImage(server.iconResource))
+        image.setImageBackground(loadImage(server.iconUri))
+        unbind()
+        this.state = state
         render(state.value)
-        state.addListener { _, _, s -> render(s) }
+        state.addListener(stateListener)
+    }
+
+    /** The state lives in the session-scoped store, so the card must detach when its scene goes away. */
+    fun unbind() {
+        state?.removeListener(stateListener)
+        state = null
     }
 
     fun setSelected(selected: Boolean) {

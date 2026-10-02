@@ -3,6 +3,7 @@ package dev.launcherfork.app
 import dev.launcherfork.i18n.Strings
 import dev.launcherfork.i18n.text
 import dev.launcherfork.theme.Theme
+import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.Navigator
 import dev.launcherfork.ui.UiContext
@@ -27,7 +28,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     override val window: Window get() = stage
 
-    private fun newContext() = UiContext(app.services, this, Strings.bundle(lang), lang)
+    private fun newContext() = UiContext(app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode)
 
     override fun showLauncherUpdate(afterUpdate: () -> Unit) {
         val loaded = Fxml.load<LauncherUpdateController>(ctx, "update.fxml")
@@ -78,7 +79,8 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         titleKey: String,
         polygon: (Double) -> List<Pair<Double, Double>>,
     ) {
-        (currentController as? MainController)?.store?.shutdown()
+        // leaving the screen: stop its timers / detach from session state (downloads keep running)
+        (currentController as? Disposable)?.dispose()
         val oldCenterX = if (stage.isShowing) stage.x + stage.width / 2 else Double.NaN
         val oldY = stage.y
         val scene = Scene(root, width, height, Color.TRANSPARENT)

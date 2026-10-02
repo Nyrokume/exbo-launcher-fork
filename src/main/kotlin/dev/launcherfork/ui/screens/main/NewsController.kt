@@ -47,7 +47,7 @@ class NewsController(private val ctx: UiContext) {
             val item = news.getOrNull(i)
             pane.isVisible = item != null
             if (item != null) {
-                bg.image = loadImage(item.imageResource, background = true)
+                bg.image = loadImage(item.imageUri, background = true)
                 pane.setOnMouseClicked { onOpenArticle(item) }
             }
         }

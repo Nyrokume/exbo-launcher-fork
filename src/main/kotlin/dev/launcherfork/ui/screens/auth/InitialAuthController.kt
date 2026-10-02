@@ -1,5 +1,6 @@
 package dev.launcherfork.ui.screens.auth
 
+import dev.launcherfork.domain.AuthError
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
 import dev.launcherfork.ui.components.brightenOnHover
@@ -34,13 +35,13 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         val login = loginField.text.trim()
         val password = passwordField.text
         when {
-            login.isEmpty() -> return showError(ctx.t("auth.error.empty_login"))
-            password.isEmpty() -> return showError(ctx.t("auth.error.empty_password"))
+            login.isEmpty() -> return showError(AuthError.EMPTY_LOGIN)
+            password.isEmpty() -> return showError(AuthError.EMPTY_PASSWORD)
         }
         showError(null)
         setBusy(true)
         val remember = autoAuthCheckBox.isSelected
-        background({ ctx.services.auth.login(login, password, remember) }, ::handle)
+        background({ ctx.services.auth.login(login, password, remember) }, onResult = ::handle)
     }
 
     @FXML fun onAutoAuth() = Unit

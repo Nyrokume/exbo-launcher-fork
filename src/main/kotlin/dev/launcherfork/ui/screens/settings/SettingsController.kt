@@ -1,6 +1,8 @@
 package dev.launcherfork.ui.screens.settings
 
+import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.LauncherSettings
+import dev.launcherfork.domain.P2pMode
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.UiContext
@@ -20,6 +22,7 @@ import javafx.scene.control.ScrollPane
 import javafx.scene.image.ImageView
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.Pane
+import java.nio.file.Path
 
 /**
  * settings.fxml: categories with entries, laid out with the same offsets as the original
@@ -44,12 +47,12 @@ class SettingsController(private val ctx: UiContext) {
         val categories = listOf(
             ctx.t("settings.category.game") to listOf(
                 progression(ctx.t("settings.ram"), s.ramFraction, { "${heapMb(it)} MB" }) { v -> update { it.copy(ramFraction = v) } },
-                radio(ctx.t("settings.exit"), listOf("settings.exit.game_start", "settings.exit.game_exit", "settings.exit.never").map(ctx::t), s.exitMode) { v -> update { it.copy(exitMode = v) } },
+                choice(ctx.t("settings.exit"), ExitMode.entries, ::exitModeKey, s.exitMode) { v -> update { it.copy(exitMode = v) } },
                 checkBox(ctx.t("settings.start_on_downloaded"), s.startOnDownloaded) { v -> update { it.copy(startOnDownloaded = v) } },
                 path(ctx.t("settings.choose_root"), s.gameRoot),
             ),
             ctx.t("settings.category.updates") to listOf(
-                radio(ctx.t("settings.p2p"), listOf("settings.p2p.always", "settings.p2p.not_mobile", "settings.p2p.never").map(ctx::t), s.p2pMode) { v -> update { it.copy(p2pMode = v) } },
+                choice(ctx.t("settings.p2p"), P2pMode.entries, ::p2pModeKey, s.p2pMode) { v -> update { it.copy(p2pMode = v) } },
                 numeric(ctx.t("settings.download_limit"), s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } },
                 numeric(ctx.t("settings.upload_limit"), s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } },
                 checkBox(ctx.t("settings.defender"), s.defenderHint) { v -> update { it.copy(defenderHint = v) } },
@@ -116,6 +119,22 @@ class SettingsController(private val ctx: UiContext) {
     private fun radio(caption: String, options: List<String>, selected: Int, onChange: (Int) -> Unit) =
         entry<RadioEntryController>("settings/radio_entry.fxml") { it.bind(caption, options, selected, onChange) }
 
-    private fun path(caption: String, value: String) =
-        entry<PathEntryController>("settings/path_entry.fxml") { it.bind(caption, value); it.onChooseFolder = { onNotAvailable() } }
+    /** Radio group over an enum; [labelKey] maps each value to its i18n key. */
+    private fun <E : Enum<E>> choice(caption: String, values: List<E>, labelKey: (E) -> String, selected: E, onChange: (E) -> Unit) =
+        radio(caption, values.map { ctx.t(labelKey(it)) }, values.indexOf(selected)) { i -> onChange(values[i]) }
+
+    private fun path(caption: String, value: Path) =
+        entry<PathEntryController>("settings/path_entry.fxml") { it.bind(caption, value.toString()); it.onChooseFolder = { onNotAvailable() } }
+
+    private fun exitModeKey(mode: ExitMode) = when (mode) {
+        ExitMode.ON_GAME_START -> "settings.exit.game_start"
+        ExitMode.ON_GAME_EXIT -> "settings.exit.game_exit"
+        ExitMode.NEVER -> "settings.exit.never"
+    }
+
+    private fun p2pModeKey(mode: P2pMode) = when (mode) {
+        P2pMode.ALWAYS -> "settings.p2p.always"
+        P2pMode.EXCEPT_MOBILE -> "settings.p2p.not_mobile"
+        P2pMode.NEVER -> "settings.p2p.never"
+    }
 }

@@ -33,9 +33,10 @@
 Сценарий: фейковое самообновление (`update.fxml`) → авторизация → главное окно → (Настройки / Скачать → прогресс →
 Играть → «Игра запущена»). Кнопка с ником справа сверху открывает «Смену пользователя» и возвращает на авторизацию.
 
-Dev-хоткеи главного окна для модальных слоёв, которые форк сам не показывает: **F1** обновление лаунчера,
+Dev-хоткеи главного окна для модальных слоёв, которые форк сам не показывает. Они работают **только с
+`-Dlauncher.dev=true`** (`./gradlew run -Dlauncher.dev=true`): **F1** обновление лаунчера,
 **F2** лицензия, **F3** офлайн, **F4** Защитник Windows, **F5** «уже идёт загрузка», **F6** ошибка,
-**F7** спиннер загрузки, **Esc** закрыть всё.
+**F7** спиннер загрузки. **Esc** (закрыть все модальные слои) работает всегда.
 
 ## Структура
 
@@ -48,16 +49,23 @@ src/main/kotlin/dev/launcherfork/
 │  ├─ StageNavigator.kt   переключение экранов (смена Scene + размер окна 379×490 / 886×550)
 │  └─ ScreenshotTour.kt   автотур для скриншотов (dev)
 ├─ domain/              модели и интерфейсы, от которых зависит UI
-│  ├─ Models.kt           Server, NewsItem, UserSession, AuthResult, Progress, LauncherSettings
-│  └─ Services.kt         AuthService, ServerRepository, NewsRepository, UpdateService, SettingsStore, Services
+│  ├─ Models.kt           Server, NewsItem, UserSession, AuthResult/AuthError, UpdatePhase, Progress,
+│  │                      LauncherSettings (+ enum P2pMode, ExitMode; gameRoot: java.nio.file.Path)
+│  └─ Services.kt         AuthService, ServerRepository, NewsRepository, UpdateService, GameLauncher,
+│                         SettingsStore, Services
 ├─ data/mock/           фейковые реализации (без сети, файлов и реестра)
 │  ├─ MockData.kt         4 сервера и 4 новости-заглушки
 │  ├─ MockAuthService.kt, MockRepositories.kt (серверы, новости, InMemorySettingsStore)
-│  └─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
+│  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
+│  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
+│  └─ MockScheduler.kt      общий таймер фейков (безопасная отмена/завершение)
 ├─ i18n/Strings.kt      ResourceBundle из локальных .properties (ru + en) вместо серверного LangManager
 ├─ theme/Theme.kt       то, что нельзя выразить в CSS: пути, геометрия окон, полигон перетаскивания, эффекты
 └─ ui/
    ├─ UiContext.kt, Navigator.kt, Fxml.kt   контекст контроллеров, интерфейс навигации, загрузка FXML
+   ├─ Messages.kt       AuthError / UpdatePhase -> ключи строк (домен ключей не знает)
+   ├─ Disposable.kt     контроллер экрана освобождает таймеры/слушатели при уходе с экрана
+   ├─ state/            ClientStateStore: состояния клиента Download/Pause/Continue/Play/Exit (на сессию)
    ├─ components/       WindowChrome (drag/close/hide), Effects (hover-яркость), DownloadBar,
    │                    ServerEntryController (карточка сервера)
    └─ screens/
@@ -65,7 +73,7 @@ src/main/kotlin/dev/launcherfork/
       ├─ auth/          InitialAuthController, MailAuthController (initial_auth.fxml, mail_auth.fxml)
       ├─ main/          MainController (main.fxml) + по контроллеру на каждую fx:include-область:
       │                 ServersList, StatusPane, News, Article, ClientSettings, Header,
-      │                 modals/ (10 модальных слоёв), ClientStateStore (фейковый Download/Pause/Play)
+      │                 modals/ (10 модальных слоёв)
       └─ settings/      SettingsController (settings.fxml) + entries/ (check box, numeric, progression, radio, path)
 
 src/main/resources/dev/launcherfork/
@@ -80,9 +88,16 @@ src/main/resources/dev/launcherfork/
 ## Архитектура и правила для дальнейшей работы
 
 1. **Данные только через интерфейсы.** `AuthService`, `ServerRepository`, `NewsRepository`, `UpdateService`,
-   `SettingsStore` лежат в `domain/`. Фейки лежат в `data/mock/`. Связываются они один раз, в `app/AppContext.kt`.
+   `GameLauncher`, `SettingsStore` лежат в `domain/`. Фейки лежат в `data/mock/`. Связываются они один раз, в `app/AppContext.kt`.
    UI получает `UiContext` (интерфейсы + навигатор + строки) через controller factory в `ui/Fxml.kt` и про моки
    ничего не знает. Чтобы подключить другой источник данных, достаточно собрать `Services` с другими реализациями.
+   Домен не знает про UI: ошибки и фазы передаются enum-ами (`AuthError`, `UpdatePhase`), а `ui/Messages.kt`
+   превращает их в строки. Картинки описаны как `java.net.URI` (у моков это URI ресурсов из classpath).
+   **Состояние на сессию** (`ClientStateStore`: идущие загрузки, запущенная игра) принадлежит `AppContext`,
+   а не контроллеру. Поэтому пересборка сцены (например, смена языка в настройках) загрузку не останавливает.
+   Каждая операция в сторе получает номер поколения, и поздние колбэки старой операции (например, `onFinished`
+   после паузы и повторного старта) игнорируются. Исключения из блокирующих вызовов (`background()` в
+   `ui/components/Fx.kt`) приходят в UI как `Result.failure`: форма разблокируется и показывает ошибку сервера.
 2. **Один контроллер на один FXML.** Гигантский `main.fxml` оригинала (132 узла, `MainController` на 2000 строк
    и ~100 полей) разбит на `fx:include`: `main/status_pane.fxml`, `servers_list.fxml`, `news.fxml`,
    `article.fxml`, `client_settings.fxml`, `header.fxml` и `main/modals/*.fxml`. У каждого файла свой
@@ -112,6 +127,11 @@ src/main/resources/dev/launcherfork/
      (переименованный или удалённый `fx:id`), включая контроллеры из `fx:include`. Затем применяет CSS и layout.
    - Проверка, что ~55 `fx:id` из оригинального `main.fxml` достижимы через `main.fxml` и его include.
    - Совпадение ключей ru/en, фейковые сервисы, полигон перетаскивания.
+   - `ClientStateStore` (скачивание, пауза, продолжение, готово, запуск, «выйти», поздние колбэки после паузы
+     и рестарта, shutdown) на ручных фейках, без таймеров.
+   - `background()`: исключение доходит до UI как ошибка; окна авторизации разблокируются и показывают
+     `auth.error.server_error`, если `login()`/`confirmCode()` бросили исключение. Поле кода принимает не больше 6 цифр.
+   - Главное окно: загрузка переживает пересборку сцены; F1–F7 выключены без `-Dlauncher.dev=true`.
 
 ## Что перенесено
 
@@ -140,8 +160,9 @@ src/main/resources/dev/launcherfork/
 
 - `MockData`: 4 сервера (Alpha/Bravo/Charlie/Delta) и 4 новости. Картинки сгенерированы скриптом
   `java tools/GeneratePlaceholders.java src/main/resources/dev/launcherfork/mock` и к EXBO не относятся.
-- Авторизация, коды, «скачивание», «запуск игры», самообновление: таймеры в `MockUpdateService` и
-  `ClientStateStore`.
+- Авторизация, коды, «скачивание», «запуск игры», самообновление: таймеры в `MockAuthService`,
+  `MockUpdateService` и `MockGameLauncher`.
+- Папка игр по умолчанию `~/Games/EXBO` (в оригинале был путь Windows). Путь установки строится через `Path.resolve`.
 - Настройки хранятся только в памяти (`InMemorySettingsStore`). Выбор папки и «Открыть логи» — заглушки.
 - Трей не реализован. Вместо диалогов ошибок используется встроенный слой `exceptionPane`.
 
@@ -177,3 +198,30 @@ PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/imag
 Это допустимо только для внутренней работы над редизайном. **Перед любым публичным распространением
 (релиз, публичный репозиторий, сборки) все эти ассеты и шрифты нужно заменить** на собственные или свободно
 лицензированные. Картинки в `mock/` сгенерированы скриптом и свободны.
+
+### Ассеты EXBO уже есть в истории git
+
+Ассеты и шрифты EXBO закоммичены в первом коммите (`14149a8`) и остаются во всех последующих. `.gitignore` и
+удаление файлов **не убирают их из истории**: любой, кто склонирует репозиторий, сможет их достать. Поэтому
+перед публикацией (GitHub и т.п.) нужно одно из двух:
+
+1. **Чистый первый коммит:** заменить ассеты на свои, затем создать новый репозиторий без истории
+   (например, `git checkout --orphan public && git add -A && git commit`) и публиковать только его.
+2. **Переписать историю:** `git filter-repo --invert-paths --path src/main/resources/dev/launcherfork/ui/style/image/ ...`
+   (по списку ниже) и force-push. Все существующие клоны и ветки (включая `theme`) придётся пересоздать.
+
+Сейчас история **не переписана**. Готовый блок для `.gitignore` на случай, если ассеты будут лежать рядом
+локально, но не должны попасть в публичный репозиторий (уже отслеживаемые файлы сначала снять с учёта:
+`git rm -r --cached <путь>`):
+
+```gitignore
+# --- EXBO-owned assets: never publish ---
+src/main/resources/dev/launcherfork/ui/style/image/
+src/main/resources/dev/launcherfork/ui/style/font/circe*
+src/main/resources/dev/launcherfork/ui/style/font/europe.ttf
+# screenshots show EXBO logos/buttons
+docs/screenshots/
+```
+
+Строки из `messages_*.properties` тоже взяты из оригинала. Их стоит переписать до публикации, но в `.gitignore`
+они не попадают, потому что без них приложение не соберётся.

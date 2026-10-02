@@ -1,6 +1,8 @@
 package dev.launcherfork.ui.screens.auth
 
+import dev.launcherfork.domain.AuthError
 import dev.launcherfork.domain.AuthResult
+import dev.launcherfork.ui.Messages
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.WindowChrome
 import javafx.fxml.FXML
@@ -35,12 +37,15 @@ abstract class AuthScreenBase(protected val ctx: UiContext) {
         root.isDisable = busy
     }
 
-    protected fun handle(result: AuthResult) {
+    protected fun showError(error: AuthError) = showError(ctx.t(Messages.key(error)))
+
+    /** Outcome of a background auth call. Always unlocks the form; a thrown exception becomes SERVER_ERROR. */
+    protected fun handle(outcome: Result<AuthResult>) {
         setBusy(false)
-        when (result) {
+        when (val result = outcome.getOrElse { AuthResult.Failure(AuthError.SERVER_ERROR) }) {
             is AuthResult.Success -> ctx.navigator.showMain()
             AuthResult.CodeRequired -> ctx.navigator.showMailAuth()
-            is AuthResult.Failure -> showError(ctx.t(result.messageKey))
+            is AuthResult.Failure -> showError(result.error)
         }
     }
 }

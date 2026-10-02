@@ -9,6 +9,7 @@ import javafx.scene.layout.BackgroundPosition
 import javafx.scene.layout.BackgroundRepeat
 import javafx.scene.layout.BackgroundSize
 import javafx.scene.layout.Region
+import java.net.URI
 
 /** Original `makeBrightnessable`: +brightness while hovered. */
 fun <T : Node> T.brightenOnHover(amount: Double = Theme.HOVER_BRIGHTNESS): T {
@@ -18,6 +19,9 @@ fun <T : Node> T.brightenOnHover(amount: Double = Theme.HOVER_BRIGHTNESS): T {
 
 fun loadImage(resource: String, background: Boolean = false): Image =
     Image(requireNotNull(Theme::class.java.getResource(resource)) { "Missing image $resource" }.toExternalForm(), background)
+
+/** Image described by the domain as a URI (file:, http(s):, jar:, ...). */
+fun loadImage(uri: URI, background: Boolean = false): Image = Image(uri.toString(), background)
 
 /** Dynamic image as a region background (server icons/backgrounds come from data, so they can't be in CSS). */
 fun Region.setImageBackground(image: Image, cover: Boolean = false) {

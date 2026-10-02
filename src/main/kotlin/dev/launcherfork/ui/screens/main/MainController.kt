@@ -2,6 +2,7 @@ package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
+import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.WindowChrome
 import dev.launcherfork.ui.components.brightenOnHover
@@ -19,6 +20,8 @@ import dev.launcherfork.ui.screens.main.modals.LogoutModalController
 import dev.launcherfork.ui.screens.main.modals.OfflineModalController
 import dev.launcherfork.ui.screens.main.modals.UpdateModalController
 import dev.launcherfork.ui.screens.settings.SettingsController
+import dev.launcherfork.ui.state.ClientState
+import dev.launcherfork.ui.state.ClientStateStore
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.image.ImageView
@@ -31,7 +34,7 @@ import javafx.scene.layout.Region
  * main.fxml: only window chrome + coordination between the included areas.
  * Every area (sidebar, status bar, news, header, settings, each modal) has its own FXML and controller.
  */
-class MainController(private val ctx: UiContext) {
+class MainController(private val ctx: UiContext) : Disposable {
     // own nodes (original fx:ids)
     @FXML lateinit var root: AnchorPane
     @FXML lateinit var main: AnchorPane
@@ -63,8 +66,8 @@ class MainController(private val ctx: UiContext) {
     @FXML lateinit var deletionPaneController: DeletionModalController
     @FXML lateinit var installPaneController: InstallModalController
 
-    lateinit var store: ClientStateStore
-        private set
+    /** Session-scoped (AppContext); this controller only observes it. */
+    val store: ClientStateStore get() = ctx.clientStates
     var selected: Server? = null
         private set
     var servers: List<Server> = emptyList()
@@ -72,7 +75,6 @@ class MainController(private val ctx: UiContext) {
 
     @FXML
     fun initialize() {
-        store = ClientStateStore(ctx.services.updates)
         WindowChrome.wireButtons(ctx.navigator, closeButton, hideButton)
         background.effect = Theme.serverBackgroundEffect()
 
@@ -113,13 +115,19 @@ class MainController(private val ctx: UiContext) {
             selectServer(it, showDescription = false)
         }
 
-        root.sceneProperty().addListener { _, _, scene -> scene?.addEventFilter(KeyEvent.KEY_PRESSED, ::devShortcuts) }
+        root.sceneProperty().addListener { _, _, scene -> scene?.addEventFilter(KeyEvent.KEY_PRESSED, ::onKey) }
+    }
+
+    /** Leaving the scene: detach from the session-scoped store, but keep downloads running. */
+    override fun dispose() {
+        serversListController.dispose()
+        defaultStatusPaneController.dispose()
     }
 
     fun selectServer(server: Server, showDescription: Boolean) {
         selected = server
         clientSettingsPaneController.hide()
-        background.setImageBackground(loadImage(server.backgroundResource, background = true), cover = true)
+        background.setImageBackground(loadImage(server.backgroundUri, background = true), cover = true)
         defaultStatusPaneController.showServer(server, store.state(server))
         defaultStatusPaneController.showDescription(server)
         if (showDescription) {
@@ -149,7 +157,7 @@ class MainController(private val ctx: UiContext) {
             state == ClientState.NotInstalled -> {
                 installPaneController.onConfirm = { startDownloadChecked(server) }
                 installPaneController.show(
-                    ctx.services.settings.load().gameRoot + "\\" + server.id,
+                    ctx.services.settings.load().gameRoot.resolve(server.id).toString(),
                     formatBytes(server.clientSizeBytes),
                     formatBytes(512L * 1024 * 1024 * 1024),
                 )
@@ -170,8 +178,12 @@ class MainController(private val ctx: UiContext) {
 
     private fun notAvailable() = exceptionPaneController.show(ctx.t("fork.not_available"), ctx.t("fork.hint"))
 
-    /** Dev helpers to look at modal layers that the fork never triggers by itself (see README). */
-    private fun devShortcuts(e: KeyEvent) {
+    /**
+     * ESC closes modals. F1-F7 are dev helpers to look at modal layers that the fork never triggers by itself;
+     * they only work with -Dlauncher.dev=true (see README).
+     */
+    private fun onKey(e: KeyEvent) {
+        if (!ctx.devMode && e.code != KeyCode.ESCAPE) return
         when (e.code) {
             KeyCode.F1 -> updatePaneController.show()
             KeyCode.F2 -> licensePaneController.show()

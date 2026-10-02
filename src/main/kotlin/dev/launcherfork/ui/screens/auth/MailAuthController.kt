@@ -1,5 +1,6 @@
 package dev.launcherfork.ui.screens.auth
 
+import dev.launcherfork.domain.AuthError
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
 import dev.launcherfork.ui.components.brightenOnHover
@@ -17,18 +18,23 @@ class MailAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     fun initialize() {
         initChrome()
         enterButton.brightenOnHover()
-        // replaces the original custom NumberTextField
+        // replaces the original custom NumberTextField; the code is exactly CODE_LENGTH digits
         codeField.textFormatter = TextFormatter<String> { c ->
-            if (c.controlNewText.length <= 9 && c.controlNewText.all(Char::isDigit)) c else null
+            if (c.controlNewText.length <= CODE_LENGTH && c.controlNewText.all(Char::isDigit)) c else null
         }
     }
 
     @FXML
     fun enter() {
         val code = codeField.text.trim()
-        if (code.isEmpty()) return showError(ctx.t("auth.error.empty_code"))
+        if (code.isEmpty()) return showError(AuthError.EMPTY_CODE)
         showError(null)
         setBusy(true)
-        background({ ctx.services.auth.confirmCode(code) }, ::handle)
+        background({ ctx.services.auth.confirmCode(code) }, onResult = ::handle)
+    }
+
+    companion object {
+        /** Length of the e-mail confirmation code. */
+        const val CODE_LENGTH = 6
     }
 }

@@ -30,7 +30,7 @@ class ArticleController(private val ctx: UiContext) {
     fun open(item: NewsItem) {
         articleCaption.text = item.title
         val body = VBox(12.0,
-            ImageView(loadImage(item.imageResource)).apply { fitWidth = 400.0; isPreserveRatio = true },
+            ImageView(loadImage(item.imageUri)).apply { fitWidth = 400.0; isPreserveRatio = true },
             Label(item.summary).apply { styleClass += listOf("news-text", "font-display"); isWrapText = true; maxWidth = 560.0 },
         )
         AnchorPane.setLeftAnchor(body, 0.0)

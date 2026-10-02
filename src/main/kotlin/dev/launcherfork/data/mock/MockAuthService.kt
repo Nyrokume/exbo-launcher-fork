@@ -1,5 +1,6 @@
 package dev.launcherfork.data.mock
 
+import dev.launcherfork.domain.AuthError
 import dev.launcherfork.domain.AuthResult
 import dev.launcherfork.domain.AuthService
 import dev.launcherfork.domain.UserSession
@@ -19,7 +20,7 @@ class MockAuthService(private val delayMs: Long = 500) : AuthService {
 
     override fun login(login: String, password: String, remember: Boolean): AuthResult {
         pause()
-        if (password == "wrong") return AuthResult.Failure("auth.error.wrong_credentials")
+        if (password == "wrong") return AuthResult.Failure(AuthError.WRONG_CREDENTIALS)
         if (remember) savedLogin = login
         if (login.equals("2fa", ignoreCase = true)) {
             pendingLogin = login
@@ -30,8 +31,8 @@ class MockAuthService(private val delayMs: Long = 500) : AuthService {
 
     override fun confirmCode(code: String): AuthResult {
         pause()
-        val login = pendingLogin ?: return AuthResult.Failure("auth.error.server_error")
-        if (code.length != 6 || !code.all(Char::isDigit)) return AuthResult.Failure("auth.error.wrong_code")
+        val login = pendingLogin ?: return AuthResult.Failure(AuthError.SERVER_ERROR)
+        if (code.length != CODE_LENGTH || !code.all(Char::isDigit)) return AuthResult.Failure(AuthError.WRONG_CODE)
         pendingLogin = null
         return success(login)
     }
@@ -48,5 +49,9 @@ class MockAuthService(private val delayMs: Long = 500) : AuthService {
 
     private fun pause() {
         if (delayMs > 0) Thread.sleep(delayMs)
+    }
+
+    companion object {
+        const val CODE_LENGTH = 6
     }
 }

@@ -41,8 +41,18 @@ object FxTestSupport {
         return result.get().getOrThrow()
     }
 
-    fun context(lang: String = "ru"): UiContext =
-        UiContext(AppContext.mock(language = lang, speed = 50.0, authDelayMs = 0).services, NoopNavigator, Strings.bundle(lang), lang)
+    fun context(lang: String = "ru", app: AppContext = AppContext.mock(language = lang, speed = 50.0, authDelayMs = 0)): UiContext =
+        UiContext(app.services, NoopNavigator, Strings.bundle(lang), lang, app.clientStates, app.devMode)
+
+    /** Polls [condition] on the FX thread until it holds or [timeoutMs] passes. */
+    fun waitFx(timeoutMs: Long = 5_000, condition: () -> Boolean): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (onFx(condition)) return true
+            Thread.sleep(20)
+        }
+        return onFx(condition)
+    }
 }
 
 object NoopNavigator : Navigator {
