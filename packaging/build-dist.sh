@@ -20,7 +20,7 @@ HOST_JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
 HOST_JMODS=${HOST_JMODS:-$HOST_JAVA_HOME/jmods}
 
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' build.gradle.kts)
-VERSION=${VERSION%-SNAPSHOT}
+case "$VERSION" in *-SNAPSHOT) echo "release version must not be a SNAPSHOT: $VERSION" >&2; exit 1;; esac
 VERSION_QUAD="$VERSION$(printf '.0%.0s' $(seq $((4 - $(tr -cd . <<<"$VERSION" | wc -c) - 1))))"
 APP=LauncherFork
 MAIN=dev.launcherfork.app.MainKt
@@ -31,7 +31,8 @@ rm -rf "$WORK" && mkdir -p "$WORK" "$DIST"
 echo "== app jars ($VERSION)"
 ./gradlew -q stageAppJars
 LIB=$ROOT/build/stage/lib
-APP_JAR=$(ls "$LIB"/exbo-launcher-fork*.jar)
+APP_JAR=$LIB/exbo-launcher-fork-$VERSION.jar
+test -f "$APP_JAR" || { echo "missing $APP_JAR" >&2; exit 1; }
 JDK_MODULES=$(jdeps --ignore-missing-deps --print-module-deps --multi-release 21 --class-path "$LIB/*" "$APP_JAR")
 MODULES="$JDK_MODULES,javafx.controls,javafx.fxml"
 echo "   modules: $MODULES"
@@ -60,12 +61,27 @@ makensis -V2 -DOUTFILE="$WIN/$APP.exe" -DICON="$WORK/$APP.ico" -DVERSION="$VERSI
 printf '@echo off\r\nrem Fallback launcher (same as LauncherFork.exe), no console window stays open.\r\nstart "" "%%~dp0runtime\\bin\\javaw.exe" -Dprism.lcdtext=false %%* -cp "%%~dp0app\\*" %s\r\n' "$MAIN" > "$WIN/$APP.cmd"
 readme "Run LauncherFork.exe (or LauncherFork.cmd). The bundled Java runtime is in runtime\\." | sed 's/$/\r/' > "$WIN/README.txt"
 
+echo "== uninstall list (exactly the files/dirs the installer ships)"
+# Paths relative to the image, Windows separators, '$' escaped for NSIS. Dirs deepest first; RMDir (non-recursive)
+# only removes a dir that is empty, so anything the user added there survives.
+UNLIST=$WORK/uninstall_files.nsh
+(
+    cd "$WIN"
+    find . -type f | sed 's|^\./||' | sort | while IFS= read -r f; do
+        printf '  Delete "$INSTDIR\\%s"\n' "$(sed 's|/|\\|g; s|\$|$$|g' <<<"$f")"
+    done
+    find . -mindepth 1 -type d | sed 's|^\./||' | awk -F/ '{print NF "\t" $0}' | sort -k1,1nr -k2 | cut -f2- | while IFS= read -r d; do
+        printf '  RMDir "$INSTDIR\\%s"\n' "$(sed 's|/|\\|g; s|\$|$$|g' <<<"$d")"
+    done
+) > "$UNLIST"
+echo "   $(grep -c Delete "$UNLIST") files, $(grep -c RMDir "$UNLIST") dirs"
+
 echo "== portable zip"
 rm -f "$DIST/${APP}_portable_win64.zip"
 (cd "$WORK/win" && zip -qr -9 "$DIST/${APP}_portable_win64.zip" "$APP")
 
 echo "== NSIS installer"
-makensis -V2 -DOUTFILE="$DIST/${APP}_Setup_${VERSION}.exe" -DSRCDIR="$WIN" -DICON="$WORK/$APP.ico" \
+makensis -V2 -DOUTFILE="$DIST/${APP}_Setup_${VERSION}.exe" -DSRCDIR="$WIN" -DUNINSTALL_LIST="$UNLIST" -DICON="$WORK/$APP.ico" \
     -DVERSION="$VERSION" -DVERSION_QUAD="$VERSION_QUAD" packaging/installer.nsi
 
 if [[ -n "$LINUX_JFX" ]]; then

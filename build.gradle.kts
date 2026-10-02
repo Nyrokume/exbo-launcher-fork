@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "dev.launcherfork"
-version = "0.1.0-SNAPSHOT"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
@@ -54,8 +54,9 @@ tasks.test {
 
 // App jar + non-JavaFX runtime deps (Kotlin stdlib) for jlink-based packaging, see packaging/build-dist.sh.
 // JavaFX itself comes from platform jmods linked into the runtime image, so its jars are excluded here.
-tasks.register<Copy>("stageAppJars") {
-    description = "Copies the app jar and its non-JavaFX runtime dependencies to build/stage/lib"
+// Sync (not Copy): stale jars from older versions must not end up in the release.
+tasks.register<Sync>("stageAppJars") {
+    description = "Syncs the app jar and its non-JavaFX runtime dependencies to build/stage/lib"
     from(tasks.jar)
     from(configurations.runtimeClasspath.map { cp -> cp.filter { !it.name.startsWith("javafx-") } })
     into(layout.buildDirectory.dir("stage/lib"))
