@@ -191,6 +191,35 @@ src/main/resources/dev/launcherfork/
 `07_install_dialog`, `08_fake_progress`, `09_fake_running`, `10_settings_en`.
 Те же экраны в теме shadcn/ui (`-Dlauncher.theme=shadcn`) лежат в `docs/screenshots/shadcn/`.
 
+## Дистрибутивы: Windows-инсталлятор, portable, Linux
+
+Всё собирается на Linux одним скриптом (`packaging/build-dist.sh`) в `dist/` (каталог в `.gitignore`):
+
+| Файл | Что это |
+|---|---|
+| `LauncherFork_Setup_<версия>.exe` | NSIS-инсталлятор (x64, без прав администратора): ставит в `%LOCALAPPDATA%\LauncherFork`, ярлыки в меню «Пуск» и на рабочем столе, деинсталлятор и запись в «Приложения и возможности» |
+| `LauncherFork_portable_win64.zip` | тот же образ: распаковать и запустить `LauncherFork.exe` |
+| `LauncherFork_linux_x64.tar.gz` | jlink-образ для Linux x64, запуск `bin/launcherfork` |
+| `exbo-launcher-fork-src.zip` | `git archive` текущего HEAD |
+| `SHA256SUMS.txt` | контрольные суммы |
+
+Внутри Windows-образа: `runtime/` (jlink из jmods Temurin JDK 21 windows-x64 и OpenJFX 21 windows-x64, модули
+`java.base, java.desktop, javafx.controls, javafx.fxml` и их зависимости), `app/` (jar приложения и Kotlin stdlib),
+`LauncherFork.exe` (маленький GUI-запускатель на NSIS, запускает `runtime\bin\javaw.exe`, консоли нет) и запасной
+`LauncherFork.cmd`. Аргументы запускателя передаются JVM: `LauncherFork.exe -Dlauncher.lang=en -Dlauncher.theme=shadcn`.
+
+```bash
+sudo apt install nsis zip
+# скачать и распаковать: Temurin JDK 21 windows-x64 (zip), openjfx-21.x windows-x64 и linux-x64 jmods (gluonhq)
+WIN_JDK=.../jdk-21.0.x WIN_JFX=.../javafx-jmods-win LINUX_JFX=.../javafx-jmods-linux packaging/build-dist.sh
+```
+
+Feature-версия JDK (21) у jmods для Windows должна совпадать с `jlink` хоста. Иконка `.ico` собирается из
+`icon.png` скриптом `packaging/MakeIco.java`.
+
+**Только для внутреннего использования.** Инсталлятор, portable-архив и Linux-образ содержат PNG EXBO и
+коммерческий шрифт `Europe` (см. ниже). Распространять их наружу нельзя, пока эти ассеты не заменены.
+
 ## Права на ассеты — важно
 
 PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/image/` (логотипы EXBO и STALCRAFT, кнопки,

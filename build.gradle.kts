@@ -51,3 +51,12 @@ tasks.test {
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
 }
+
+// App jar + non-JavaFX runtime deps (Kotlin stdlib) for jlink-based packaging, see packaging/build-dist.sh.
+// JavaFX itself comes from platform jmods linked into the runtime image, so its jars are excluded here.
+tasks.register<Copy>("stageAppJars") {
+    description = "Copies the app jar and its non-JavaFX runtime dependencies to build/stage/lib"
+    from(tasks.jar)
+    from(configurations.runtimeClasspath.map { cp -> cp.filter { !it.name.startsWith("javafx-") } })
+    into(layout.buildDirectory.dir("stage/lib"))
+}
