@@ -23,6 +23,7 @@
 |---|---|
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
+| `-Dlauncher.theme=exbo\|shadcn` | тема: исходные цвета EXBO (по умолчанию) или тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 
 На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.screenshots=$PWD/docs/screenshots`.
@@ -80,7 +81,7 @@ src/main/resources/dev/launcherfork/
 ├─ ui/*.fxml, ui/main/*.fxml, ui/main/modals/*.fxml, ui/settings/*.fxml   разметка (спецификация)
 ├─ ui/style/theme.css   токены цветов + шрифты (единственное место с литералами цветов)
 ├─ ui/style/{common,auth,main,settings,lang_ru,lang_en}.css               стили компонентов (только токены)
-├─ ui/style/image/, ui/style/font/   PNG и шрифты из оригинала (см. «Права на ассеты»)
+├─ ui/style/image/, ui/style/font/   PNG и Europe из оригинала, Manrope (OFL) (см. «Права на ассеты»)
 ├─ ui/i18n/messages*.properties      строки ru/en
 └─ mock/                             сгенерированные картинки-заглушки (tools/GeneratePlaceholders.java)
 ```
@@ -117,9 +118,10 @@ src/main/resources/dev/launcherfork/
    Токены объявлены на `.root`, поэтому `theme.css` подключается к Scene (`Theme.apply`).
    **Ограничение JavaFX:** looked-up значения работают только для цветов. Радиусы и размеры переменными
    сделать нельзя, поэтому радиус (в оригинале везде 0) задан один раз группой селекторов в `theme.css`.
-5. **Шрифты объявлены один раз в `theme.css`:** основной `Circe Light` на `.root` (наследуется всеми узлами),
-   акцидентный `Europe` через класс `.font-display`, жирный через `.font-bold`. Пока оставлен Circe.
-   Свободную замену выберет другой участник команды: достаточно положить файлы в `ui/style/font/`,
+5. **Шрифты объявлены один раз в `theme.css`:** основной `Manrope Light` на `.root` (наследуется всеми узлами),
+   акцидентный `Europe` через класс `.font-display`, жирный через `.font-bold` (`Manrope` bold). Manrope
+   (SIL OFL 1.1, есть кириллица, лицензия в `ui/style/font/OFL-Manrope.txt`) заменил коммерческий Circe из оригинала.
+   Чтобы сменить шрифт ещё раз, достаточно положить файлы в `ui/style/font/`,
    поправить список в `Theme.loadFonts()` и имена семейств в `theme.css`.
 6. **Тесты** (`./gradlew test`, JUnit 5 + headless Monocle):
    - `FxmlLoadingTest` загружает **каждый** FXML с настоящим контроллером на ru и en. Он падает на ошибках
@@ -181,20 +183,20 @@ src/main/resources/dev/launcherfork/
   восстановлена по координатам из декомпиляции, но вживую с оригиналом не сверялась.
 - Экраны `google_auth`, `mail_confirmation_*`, `password_changing_auth`, `distributor_pending`,
   `bootstrap_outdated`, `uninstaller` и инсталлятор не переносились.
-- Шрифт `Circe` регистрируется в JavaFX как семейство `Circe Light` (так он назван в самом файле), поэтому в
-  CSS используется это имя.
 
 ## Скриншоты
 
 `docs/screenshots/` (снимки Scene, сделанные автотуром под Xvfb):
 `01_update_progress`, `02_auth`, `03_auth_error`, `04_main_news`, `05_main_server`, `06_settings`,
 `07_install_dialog`, `08_fake_progress`, `09_fake_running`, `10_settings_en`.
+Те же экраны в теме shadcn/ui (`-Dlauncher.theme=shadcn`) лежат в `docs/screenshots/shadcn/`.
 
 ## Права на ассеты — важно
 
 PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/image/` (логотипы EXBO и STALCRAFT, кнопки,
-рамки, иконки) и шрифты в `ui/style/font/` скопированы из оригинального лаунчера и **принадлежат EXBO**.
-Шрифт **Circe коммерческий** (ParaType), `Europe` тоже не свободный. Строки интерфейса взяты из оригинала.
+рамки, иконки) и шрифт `ui/style/font/europe.ttf` скопированы из оригинального лаунчера и **принадлежат EXBO**.
+Акцидентный шрифт `Europe` **не свободный**. Circe из оригинала уже заменён на свободный Manrope (OFL), но
+файлы Circe остались в истории git (коммит `14149a8`). Строки интерфейса взяты из оригинала.
 Это допустимо только для внутренней работы над редизайном. **Перед любым публичным распространением
 (релиз, публичный репозиторий, сборки) все эти ассеты и шрифты нужно заменить** на собственные или свободно
 лицензированные. Картинки в `mock/` сгенерированы скриптом и свободны.
@@ -217,7 +219,6 @@ PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/imag
 ```gitignore
 # --- EXBO-owned assets: never publish ---
 src/main/resources/dev/launcherfork/ui/style/image/
-src/main/resources/dev/launcherfork/ui/style/font/circe*
 src/main/resources/dev/launcherfork/ui/style/font/europe.ttf
 # screenshots show EXBO logos/buttons
 docs/screenshots/

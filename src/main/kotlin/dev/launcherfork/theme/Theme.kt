@@ -55,7 +55,11 @@ object Theme {
         ColorAdjust(0.0, (progress - 1.0) * PROGRESS_SATURATION_FACTOR, 0.0, 0.0)
 
     // ---- fonts / stylesheets ----
-    private val FONT_FILES = listOf("circe.otf", "circe_bold.ttf", "europe.ttf")
+    /** Body font: Manrope (SIL OFL 1.1, Cyrillic) replaces the commercial Circe. Europe is still the display font. */
+    private val FONT_FILES = listOf("Manrope-Light.ttf", "Manrope-Bold.ttf", "europe.ttf")
+
+    /** Visual theme: "exbo" (original colors, default) or "shadcn" (shadcn/ui dark neutral). -Dlauncher.theme=shadcn */
+    val themeName: String = System.getProperty("launcher.theme", "exbo").lowercase()
 
     /** Registers bundled fonts so CSS can refer to them by family name. Returns loaded family names. */
     fun loadFonts(): List<String> = FONT_FILES.mapNotNull { file ->
@@ -69,6 +73,9 @@ object Theme {
 
     /** theme.css must be on the Scene so that .root defines the color tokens for every subtree. */
     fun apply(scene: Scene, lang: String) {
-        scene.stylesheets.setAll(stylesheet("theme.css"), stylesheet(if (lang == "en") "lang_en.css" else "lang_ru.css"))
+        val sheets = mutableListOf(stylesheet("theme.css"))
+        if (themeName == "shadcn") sheets += stylesheet("theme-shadcn.css")
+        sheets += stylesheet(if (lang == "en") "lang_en.css" else "lang_ru.css")
+        scene.stylesheets.setAll(sheets)
     }
 }

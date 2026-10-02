@@ -46,8 +46,8 @@
     -text-link: #5f5f62;             /* header links */
     -transparent: transparent;
 
-    /* body font: defined once */
-    -fx-font-family: "Circe Light";
+    /* body font: defined once. Manrope Light (OFL) replaces the original commercial "Circe Light". */
+    -fx-font-family: "Manrope Light";
     -fx-font-size: 12;
 }
 
@@ -58,7 +58,8 @@
 
 /* Bold body text */
 .font-bold {
-    -fx-font-family: "Circe Bold";
+    -fx-font-family: "Manrope";
+    -fx-font-weight: bold;
 }
 
 /* Corner radius: the original is square everywhere (JavaFX has no size variables). */
