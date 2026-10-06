@@ -294,7 +294,36 @@ class SettingsScreenTest {
         }
     }
 
-    /** A machine reporting 15.6 GB: «из 16 ГБ», but only whole GB that fit in the memory: 2..15, 15 segments, no dead one. */
+    /** «из N ГБ», the max and the number of segments come from one function; every segment can be chosen. */
+    @Test
+    fun displayedTotalMaxAndSegmentsAgree() {
+        mapOf(15_974L to 15, 16_250L to 16, 16_384L to 16, 8_100L to 8, 2_048L to 2).forEach { (mb, n) ->
+            val (c, _) = settingsWith(LauncherSettings(ramMb = 2 * 1024), totalMb = mb)
+            FxTestSupport.onFx {
+                val bar = c.ramBar
+                assertEquals(n, bar.maxGb, "$mb MB: max"); assertEquals(n, bar.totalGb, "$mb MB: scale")
+                assertEquals(n, bar.segments.size, "$mb MB: segments")
+                assertEquals("Выделено: 2 ГБ из $n ГБ", c.ramSummary.text, "$mb MB: summary")
+                key(bar, KeyCode.END)
+                assertEquals(n, bar.value, "$mb MB: the last segment is reachable")
+                assertEquals("Выделено: $n ГБ из $n ГБ", c.ramSummary.text)
+            }
+        }
+    }
+
+    /** A 16 GB PC reporting 16 250 MB (hardware-reserved memory): still 2..16 GB, 16 segments, «16 ГБ». */
+    @Test
+    fun sixteenGbPcReportingABitLessKeepsSixteen() {
+        val (c, _) = settingsWith(LauncherSettings(ramMb = 16 * 1024), totalMb = 16_250)
+        FxTestSupport.onFx {
+            assertEquals(16, c.ramBar.maxGb); assertEquals(16, c.ramBar.segments.size); assertEquals(16, c.ramBar.value)
+            assertEquals("16 ГБ", c.ramScale.maxLabel.text)
+            assertEquals("Выделено: 16 ГБ из 16 ГБ", c.ramSummary.text)
+            assertTrue(c.ramWarning.isVisible, "16 of 16: note")
+        }
+    }
+
+    /** A machine reporting 15.6 GB (0.4 GB below 16): «из 15 ГБ», 2..15, 15 segments, no dead one. */
     @Test
     fun maxNeverExceedsThePhysicalMemory() {
         val (c, store) = settingsWith(LauncherSettings(ramMb = 16 * 1024), totalMb = (15.6 * gb).toLong())
@@ -302,7 +331,7 @@ class SettingsScreenTest {
             val bar = c.ramBar
             assertEquals(15, bar.maxGb); assertEquals(15, bar.totalGb, "scale = selectable range"); assertEquals(15, bar.segments.size)
             assertEquals(15, bar.value, "stored 16 GB clamped to 15")
-            assertEquals("Выделено: 15 ГБ из 16 ГБ", c.ramSummary.text)
+            assertEquals("Выделено: 15 ГБ из 15 ГБ", c.ramSummary.text)
             assertEquals("15 ГБ", c.ramScale.maxLabel.text)
             assertEquals(segmentCentre(c, 15), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the last segment")
             key(bar, KeyCode.LEFT); key(bar, KeyCode.END); key(bar, KeyCode.RIGHT)

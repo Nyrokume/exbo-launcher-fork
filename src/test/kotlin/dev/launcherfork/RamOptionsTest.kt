@@ -22,14 +22,36 @@ class RamOptionsTest {
         assertEquals(2, RamOptions.maxGb(2 * gb))
         assertEquals(2, RamOptions.maxGb(1 * gb), "the minimum is always allowed")
         // a "16 GB" machine reports a bit less than 16384 MB
-        assertEquals(16, RamOptions.totalGb(16_250), "the summary names the rounded size")
-        assertEquals(15, RamOptions.maxGb(16_250), "never above the physical memory (floor)")
-        // 15.6 GB: «из 16 ГБ», but at most 15 GB can be chosen
+        assertEquals(16, RamOptions.totalGb(16_250), "a 16 GB PC reporting a bit less: «из 16 ГБ»")
+        // hardware-reserved memory: within 0.3 GB (307 MB) below N GB counts as N GB, otherwise rounded down
+        assertEquals(307, RamOptions.HARDWARE_RESERVE_TOLERANCE_MB)
+        assertEquals(16, RamOptions.maxGb(16_250), "a 16 GB PC reporting 16 250 MB: 2..16")
+        assertEquals(16, RamOptions.maxGb(16_384))
+        assertEquals(16, RamOptions.maxGb(16_384 - 307), "exactly 0.3 GB below")
+        assertEquals(15, RamOptions.maxGb(16_384 - 308), "just more than 0.3 GB below")
+        assertEquals(15, RamOptions.maxGb(15_974), "15.6 GB")
+        assertEquals(8, RamOptions.maxGb(8_100), "8 192 - 8 100 = 92 MB")
+        assertEquals(16, RamOptions.maxGb(16_500), "above 16 GB but far from 17: rounded down")
+        // 15.6 GB: «из 15 ГБ», at most 15 GB can be chosen
         val gb156 = (15.6 * gb).toLong()
-        assertEquals(16, RamOptions.totalGb(gb156)); assertEquals(15, RamOptions.usableGb(gb156)); assertEquals(15, RamOptions.maxGb(gb156))
+        assertEquals(15, RamOptions.totalGb(gb156)); assertEquals(15, RamOptions.usableGb(gb156)); assertEquals(15, RamOptions.maxGb(gb156))
         assertEquals(15, RamOptions.clamp(16, gb156))
-        for (mb in 2048L..131_072L step 97) assertTrue(RamOptions.maxGb(mb) * gb <= mb, "max above the memory for $mb MB")
+        for (mb in 2048L..131_072L step 97) {
+            val max = RamOptions.maxGb(mb)
+            assertTrue(max * gb <= mb + RamOptions.HARDWARE_RESERVE_TOLERANCE_MB, "max $max GB more than 0.3 GB above $mb MB")
+            assertTrue((max + 1) * gb > mb + RamOptions.HARDWARE_RESERVE_TOLERANCE_MB, "max $max GB too low for $mb MB")
+        }
         for (total in 2..128) assertEquals(total, RamOptions.maxGb(total * gb), "max is the whole memory for $total GB")
+    }
+
+    /** One function for the summary («из N ГБ»), the max and the bar's scale. */
+    @Test
+    fun displayedTotalEqualsTheMax() {
+        mapOf(15_974L to 15, 16_250L to 16, 16_384L to 16, 8_100L to 8, 2_048L to 2).forEach { (mb, n) ->
+            assertEquals(n, RamOptions.totalGb(mb), "$mb MB: displayed total")
+            assertEquals(n, RamOptions.maxGb(mb), "$mb MB: max")
+            assertEquals(RamOptions.usableGb(mb), RamOptions.totalGb(mb), "$mb MB: same function")
+        }
     }
 
     @Test
@@ -44,7 +66,8 @@ class RamOptionsTest {
         val gb156 = (15.6 * gb).toLong()
         assertFalse(RamOptions.leavesLittleForSystem(13, gb156)); assertTrue(RamOptions.leavesLittleForSystem(14, gb156))
         assertTrue(RamOptions.leavesLittleForSystem(15, gb156))
-        assertTrue(RamOptions.leavesLittleForSystem(14, 16_250), "16 250 MB: max 15, so 14 is in the last 2 GB")
+        assertFalse(RamOptions.leavesLittleForSystem(14, 16_250), "16 250 MB: max 16, 14 leaves room")
+        assertTrue(RamOptions.leavesLittleForSystem(16, 16_250), "16 of a 16 250 MB PC (above the reported memory): note")
         assertFalse(RamOptions.leavesLittleForSystem(6, 8 * gb)); assertTrue(RamOptions.leavesLittleForSystem(7, 8 * gb))
         assertTrue(RamOptions.leavesLittleForSystem(2, 2 * gb), "2 of 2 GB leaves nothing")
         for (total in 2..64) assertEquals((RamOptions.MIN_GB..total).count { RamOptions.leavesLittleForSystem(it, total * gb) },
