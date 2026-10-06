@@ -301,6 +301,9 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         if (kotlin.math.abs(h - old) < 0.5) return
         stage.height = h
         if (recenter) stage.y += (old - h) / 2
+        // never past the screen edge (small monitors, a growing error line near the bottom)
+        val screen = WindowFrame.screenBoundsOf(Rectangle2D(stage.x, stage.y, stage.width, h))
+        stage.y = stage.y.coerceIn(screen.minY, (screen.maxY - h).coerceAtLeast(screen.minY))
     }
 
     /** The legacy auth/update FXMLs were whole windows: their own close/minimize buttons and top strip go away. */

@@ -58,13 +58,17 @@ class AuthWindowController(private val ctx: UiContext) {
      * e.g. auth_panel.fxml / mail_auth_panel.fxml) gets title strip + its content height, clamped to
      * [Theme.AUTH_WINDOW_MIN_HEIGHT]..[Theme.AUTH_WINDOW_HEIGHT]; a fixed-size panel keeps the full height.
      */
-    fun fittedWindowHeight(): Double {
-        val p = panel as? Region ?: return Theme.AUTH_WINDOW_HEIGHT
-        if (p.prefHeight != Region.USE_COMPUTED_SIZE) return Theme.AUTH_WINDOW_HEIGHT
-        if (p.scene != null) p.applyCss()
-        val content = p.prefHeight(Theme.AUTH_PANEL_WIDTH)
-        return (Theme.AUTH_TITLEBAR_HEIGHT + content).coerceIn(Theme.AUTH_WINDOW_MIN_HEIGHT, Theme.AUTH_WINDOW_HEIGHT)
-    }
+    fun fittedWindowHeight(): Double = fittedWindowHeight(panel as? Region)
 
     fun clear() = panelHost.children.clear()
+
+    companion object {
+        /** See [fittedWindowHeight]; [panel] must already be in a scene for its CSS sizes to count. */
+        fun fittedWindowHeight(panel: Region?): Double {
+            if (panel == null || panel.prefHeight != Region.USE_COMPUTED_SIZE) return Theme.AUTH_WINDOW_HEIGHT
+            if (panel.scene != null) panel.applyCss()
+            val content = panel.prefHeight(Theme.AUTH_PANEL_WIDTH)
+            return (Theme.AUTH_TITLEBAR_HEIGHT + content).coerceIn(Theme.AUTH_WINDOW_MIN_HEIGHT, Theme.AUTH_WINDOW_HEIGHT)
+        }
+    }
 }
