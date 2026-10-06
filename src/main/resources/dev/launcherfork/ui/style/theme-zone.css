@@ -76,6 +76,19 @@
     -status-online: #3ecf8e;                 /* calm green, a quieter sibling of the site's notify green #1EDB86 */
     -status-offline: #525252;                /* site grey (#525252) */
 
+    /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
+    -settings-heading: #f7f3ee;               /* group headings on -background: 17.9:1 */
+    -settings-label: #efeae4;                 /* row labels, RAM summary on -card: 14.9:1 */
+    -settings-muted: #bdb2a6;                 /* inactive segments, KB/s, RAM scale on -input / -card: 9.0:1 / 8.5:1 */
+    -settings-divider: #383532;               /* row separators inside the cards */
+    -ram-filled: #ff3b52;                     /* RAM segment: selected, site red (4.6:1 on -card) */
+    -ram-filled-hover: #ff5a6d;
+    -ram-free: #6a645e;                       /* RAM segment: available, not selected (3.0:1 on -card) */
+    -ram-reserve: #3d3936;                    /* RAM segment: system reserve, outline only */
+    -switch-off-knob: #a8a097;                /* switch off: knob (7.3:1 on -input) */
+    -switch-off-border: #6a645e;              /* switch off: track ring (3.0:1 on -card) */
+    -segment-selected: #dc2239;               /* selected segment: deeper site red, white text 4.9:1 (#ff3b52 is 3.5:1) */
+
     /* body font: Roboto (SIL OFL 1.1) */
     -fx-font-family: "Roboto";
     -fx-font-size: 13;
@@ -139,7 +152,7 @@
  * heading font Oswald; Bebas has a lower cap height (0.70 em vs 0.81 em), so the zone theme scales them by ~1.15.
  * Two-class selectors: they must beat the one-class rules of layout.css, which sits on the FXML parents.
  */
-.settings-group-label.font-display { -fx-font-size: 18; }
+.settings-group-label.font-display { -fx-font-size: 21; }
 .modal-title.font-display { -fx-font-size: 30; -fx-translate-y: -4; } /* air above the fixed modal-rule (layoutY 35) */
 /* ИГРАТЬ: like the site's big buttons (.play_free / .login: var(--beb) 24px) */
 .button.play-button {

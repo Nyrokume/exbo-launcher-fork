@@ -76,6 +76,19 @@
     -status-online: #4cb782;          /* games list: green dot of the online count */
     -status-offline: #5f5f62;         /* games list: grey dot when the count is unknown / offline */
 
+    /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
+    -settings-heading: #ffffff;       /* group headings (ОПЕРАТИВНАЯ ПАМЯТЬ ...) on -background: 15.5:1 */
+    -settings-label: #e8e8e8;         /* row labels, RAM summary on -card: 14.4:1 */
+    -settings-muted: #b8b8b8;         /* inactive segments, KB/s, RAM scale on -input / -card: 8.9:1 */
+    -settings-divider: #343437;       /* row separators inside the cards */
+    -ram-filled: #2f7ea6;             /* RAM segment: selected (3.9:1 on -card; -primary #1c4a61 is 1.8:1) */
+    -ram-filled-hover: #3a8fba;
+    -ram-free: #67676c;               /* RAM segment: available, not selected (3.1:1 on -card) */
+    -ram-reserve: #3c3c40;            /* RAM segment: system reserve, outline only */
+    -switch-off-knob: #a8a8a8;        /* switch off: knob (7.4:1 on -input) */
+    -switch-off-border: #66666b;      /* switch off: track ring (3.1:1 on -card) */
+    -segment-selected: #1c4a61;       /* selected segment fill under -primary-foreground: 9.5:1 */
+
     /* body font: defined once. Manrope Light (OFL) replaces the original commercial "Circe Light". */
     -fx-font-family: "Manrope Light";
     -fx-font-size: 12;
