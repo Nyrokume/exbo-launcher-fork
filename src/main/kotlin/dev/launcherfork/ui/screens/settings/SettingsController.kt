@@ -144,24 +144,29 @@ class SettingsController(private val ctx: UiContext) {
         val fmt = { gb: Int -> RamOptions.format(gb, unit) }
         ramBar.formatter = fmt
         ramBar.configure(
-            totalGb = RamOptions.totalGb(total),
+            totalGb = RamOptions.maxGb(total), // the scale is the selectable range: no unreachable segments
             minGb = RamOptions.MIN_GB,
             maxGb = RamOptions.maxGb(total),
             recommendedGb = RamOptions.recommended(total),
             value = RamOptions.selectedGb(s, total),
         )
-        // the selectable range under the bar: «2 ГБ» under the first, «16 ГБ» under the last segment (the whole memory)
+        // the selectable range under the bar: «2 ГБ» under the first, «16 ГБ» under the last segment (whole GB of memory)
         ramScale.setCaptions(fmt(ramBar.minGb), fmt(ramBar.maxGb))
         ramScale.bar = ramBar
         val hint = ctx.t("settings.ram.hint", fmt(ramBar.recommendedGb))
-        ramBar.accessibleHelp = hint
-        Tooltip.install(ramBar, Tooltip(hint))
+        val tooltip = Tooltip(hint)
+        Tooltip.install(ramBar, tooltip)
         fun summary(gb: Int) = ctx.t("settings.ram.summary", fmt(gb), fmt(RamOptions.totalGb(total)))
         // soft note next to the summary when the OS keeps less than 2 GB; always managed (only hidden), so no layout shift
         ramWarning.text = ctx.t("settings.ram.low_system")
         fun show(gb: Int) {
             ramSummary.text = summary(gb)
-            ramWarning.isVisible = RamOptions.leavesLittleForSystem(gb, total)
+            val low = RamOptions.leavesLittleForSystem(gb, total)
+            ramWarning.isVisible = low
+            // screen readers and the tooltip get the note too, only while it is shown
+            val help = if (low) ctx.t("settings.ram.hint_low_system", hint, ramWarning.text) else hint
+            ramBar.accessibleHelp = help
+            tooltip.text = help
         }
         show(ramBar.value)
         // the labels always follow the bar (user moves and programmatic changes alike)

@@ -264,9 +264,14 @@ class SettingsScreenTest {
             fun frame() = listOf(c.ramSummary.sceneBounds().let { listOf(it.minX, it.minY, it.height) }) +
                 listOf(bar, c.ramScale, c.ramCard).map { it.sceneBounds().let { b -> listOf(b.minX, b.minY, b.width, b.height) } }
             val before = frame()
+            val hint = bar.accessibleHelp
+            assertFalse(hint.contains(note.text), "hidden note not in the help")
             for ((v, shown) in listOf(13 to false, 14 to false, 15 to true, 16 to true, 14 to false, 2 to false, 16 to true)) {
                 bar.setValue(v); lay()
                 assertEquals(shown, note.isVisible, "$v of 16 GB: note visible")
+                // screen readers (and the tooltip) hear the note exactly while it is shown
+                assertEquals(shown, bar.accessibleHelp.contains("Мало памяти останется системе"), "$v GB: help '${bar.accessibleHelp}'")
+                assertTrue(bar.accessibleHelp.startsWith(hint), "$v GB: the recommendation stays in the help")
                 assertEquals(before, frame(), "$v GB: the RAM card moved")
             }
             // shown: on the summary line, after it, inside the card, not cut
@@ -284,6 +289,29 @@ class SettingsScreenTest {
             assertTrue(en.ramWarning.isVisible, "8 of 8 GB: note")
             en.ramBar.setValue(6); assertFalse(en.ramWarning.isVisible, "6 of 8 GB: no note")
             en.ramBar.setValue(7); assertTrue(en.ramWarning.isVisible, "7 of 8 GB: note")
+            assertTrue(en.ramBar.accessibleHelp.endsWith("Little memory left for the system."), en.ramBar.accessibleHelp)
+            en.ramBar.setValue(6); assertFalse(en.ramBar.accessibleHelp.contains("Little memory"), en.ramBar.accessibleHelp)
+        }
+    }
+
+    /** A machine reporting 15.6 GB: «из 16 ГБ», but only whole GB that fit in the memory: 2..15, 15 segments, no dead one. */
+    @Test
+    fun maxNeverExceedsThePhysicalMemory() {
+        val (c, store) = settingsWith(LauncherSettings(ramMb = 16 * 1024), totalMb = (15.6 * gb).toLong())
+        FxTestSupport.onFx {
+            val bar = c.ramBar
+            assertEquals(15, bar.maxGb); assertEquals(15, bar.totalGb, "scale = selectable range"); assertEquals(15, bar.segments.size)
+            assertEquals(15, bar.value, "stored 16 GB clamped to 15")
+            assertEquals("Выделено: 15 ГБ из 16 ГБ", c.ramSummary.text)
+            assertEquals("15 ГБ", c.ramScale.maxLabel.text)
+            assertEquals(segmentCentre(c, 15), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the last segment")
+            key(bar, KeyCode.LEFT); key(bar, KeyCode.END); key(bar, KeyCode.RIGHT)
+            assertEquals(15, bar.value, "END / RIGHT stop at 15")
+            assertEquals(15 * 1024, store.load().ramMb)
+            // the note follows the new max: 14 and 15 of 15
+            assertTrue(c.ramWarning.isVisible)
+            bar.setValue(14); assertTrue(c.ramWarning.isVisible, "14 of max 15: note")
+            bar.setValue(13); assertFalse(c.ramWarning.isVisible, "13 of max 15: no note")
         }
     }
 
@@ -429,7 +457,7 @@ class SettingsScreenTest {
 
     @Test
     fun newStringsInEveryBundle() {
-        val keys = listOf("settings.heading.ram", "settings.ram.summary", "settings.ram.low_system", "settings.ram.hint", "settings.unit.gb",
+        val keys = listOf("settings.heading.ram", "settings.ram.summary", "settings.ram.low_system", "settings.ram.hint_low_system", "settings.ram.hint", "settings.unit.gb",
             "settings.heading.behaviour", "settings.heading.language", "settings.language.interface", "settings.exit.short", "settings.p2p.short")
         listOf("messages.properties", "messages_ru.properties", "messages_en.properties").forEach { file ->
             val props = Properties()

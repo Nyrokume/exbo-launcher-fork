@@ -22,8 +22,13 @@ class RamOptionsTest {
         assertEquals(2, RamOptions.maxGb(2 * gb))
         assertEquals(2, RamOptions.maxGb(1 * gb), "the minimum is always allowed")
         // a "16 GB" machine reports a bit less than 16384 MB
-        assertEquals(16, RamOptions.totalGb(16_250))
-        assertEquals(16, RamOptions.maxGb(16_250))
+        assertEquals(16, RamOptions.totalGb(16_250), "the summary names the rounded size")
+        assertEquals(15, RamOptions.maxGb(16_250), "never above the physical memory (floor)")
+        // 15.6 GB: «из 16 ГБ», but at most 15 GB can be chosen
+        val gb156 = (15.6 * gb).toLong()
+        assertEquals(16, RamOptions.totalGb(gb156)); assertEquals(15, RamOptions.usableGb(gb156)); assertEquals(15, RamOptions.maxGb(gb156))
+        assertEquals(15, RamOptions.clamp(16, gb156))
+        for (mb in 2048L..131_072L step 97) assertTrue(RamOptions.maxGb(mb) * gb <= mb, "max above the memory for $mb MB")
         for (total in 2..128) assertEquals(total, RamOptions.maxGb(total * gb), "max is the whole memory for $total GB")
     }
 
@@ -35,7 +40,11 @@ class RamOptionsTest {
         assertFalse(RamOptions.leavesLittleForSystem(14, t16), "14 of 16 GB leaves 2 GB: no note")
         assertTrue(RamOptions.leavesLittleForSystem(15, t16), "15 of 16 GB: note")
         assertTrue(RamOptions.leavesLittleForSystem(16, t16), "16 of 16 GB: note")
-        assertTrue(RamOptions.leavesLittleForSystem(16, 16_250), "a 16 GB machine reporting a bit less")
+        // last 2 GB of the floor max: 15.6 GB -> max 15 -> note at 14 and 15, not at 13
+        val gb156 = (15.6 * gb).toLong()
+        assertFalse(RamOptions.leavesLittleForSystem(13, gb156)); assertTrue(RamOptions.leavesLittleForSystem(14, gb156))
+        assertTrue(RamOptions.leavesLittleForSystem(15, gb156))
+        assertTrue(RamOptions.leavesLittleForSystem(14, 16_250), "16 250 MB: max 15, so 14 is in the last 2 GB")
         assertFalse(RamOptions.leavesLittleForSystem(6, 8 * gb)); assertTrue(RamOptions.leavesLittleForSystem(7, 8 * gb))
         assertTrue(RamOptions.leavesLittleForSystem(2, 2 * gb), "2 of 2 GB leaves nothing")
         for (total in 2..64) assertEquals((RamOptions.MIN_GB..total).count { RamOptions.leavesLittleForSystem(it, total * gb) },
