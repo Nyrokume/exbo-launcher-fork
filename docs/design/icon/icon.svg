@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c1c1c"/>
+      <stop offset="1" stop-color="#101010"/>
+    </linearGradient>
+  </defs>
+  <!-- dark launcher surface with a 1px card border -->
+  <rect x="1" y="1" width="254" height="254" rx="39" fill="url(#bg)" stroke="#2e2d2d" stroke-width="2"/>
+  <!-- left chevron (logo cream): back arm, then front arm -->
+  <path fill="#b4263d" d="M44 212L124 168V118L44 162Z"/>
+  <path fill="#ff3b52" d="M44 44L124 88V138L44 94Z"/>
+  <!-- right chevron (accent red): back arm, then front arm -->
+  <path fill="#a99d90" d="M212 44L132 88V138L212 94Z"/>
+  <path fill="#ece7e1" d="M212 212L132 168V118L212 162Z"/>
+</svg>
