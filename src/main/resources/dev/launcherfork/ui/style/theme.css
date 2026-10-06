@@ -93,3 +93,9 @@
     -fx-background-radius: 0;
     -fx-border-radius: 0;
 }
+
+/* Password mask: small U+2022 bullets instead of modena's oversized U+25CF discs, every password field, every theme
+   (the eye toggle's plain-text twin is a .text-field, not affected). */
+.password-field {
+    -fx-skin: "dev.launcherfork.ui.components.BulletPasswordFieldSkin";
+}

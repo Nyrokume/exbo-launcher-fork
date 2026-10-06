@@ -156,6 +156,10 @@ src/main/resources/dev/launcherfork/
    источник в docs/design/STYLE-ZONE.md, `OFL-BebasNeue.txt`), текст Roboto (SIL OFL 1.1, `OFL-Roboto.txt`). Их регистрирует `Theme.zoneFonts`, а семейства
    задаёт `theme-zone.css`. Разрядки (letter-spacing) в JavaFX CSS нет. CAPS-узлы с классом `.zone-caps` после
    слияния с `redesign/auth` перейдут на `SpacedLabel`.
+   Маска пароля: `.password-field { -fx-skin }` в `theme.css` ставит всем `PasswordField` (все темы)
+   `BulletPasswordFieldSkin`: вместо огромного U+25CF (его нет в наших шрифтах, рисовался запасной системный)
+   по одному U+2022 на символ шрифтом `ui/style/font/LauncherMask.ttf` (одна круглая точка 0.36 em с шагом 0.625 em,
+   метрики строки как у Roboto; собирается `python3 tools/generate_mask_font.py`, нужен fontTools).
 6. **Тесты** (`./gradlew test`, JUnit 5 + headless Monocle):
    - `FxmlLoadingTest` загружает **каждый** FXML с настоящим контроллером на ru и en. Он падает на ошибках
      FXMLLoader (класс, свойство, include, обработчик) и на **любом неинжектированном `@FXML`-поле**
