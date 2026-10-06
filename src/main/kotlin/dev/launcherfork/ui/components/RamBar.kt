@@ -16,7 +16,7 @@ import kotlin.math.ceil
  * `ProgressionController`: a 13 px bar of 14 equal segments with 2 px gaps, no thumb, filled with the accent up to the
  * value, click / drag anywhere sets it, the value as text under the bar). Here every segment is one GB of the
  * computer's memory (0..[totalGb]), so "6 ГБ из 16 ГБ" fills 6 of 16 segments; the segments above [maxGb] (the system
- * reserve) are dimmed and cannot be reached.
+ * reserve) are drawn as outlines and cannot be reached; [RamScale] captions the min / max under the bar.
  *
  * Values are whole GB, steps of exactly 1 GB, always clamped to [minGb]..[maxGb]. Mouse: press / drag on segment N
  * selects N GB; keyboard (focusable): Left / Down -1, Right / Up +1, Page Down / Page Up -2 / +2, Home / End = min /
@@ -142,18 +142,25 @@ class RamBar : Region() {
     override fun computePrefWidth(height: Double): Double = 360.0
     override fun computeMinWidth(height: Double): Double = 160.0
 
-    override fun layoutChildren() {
+    /** Left / right edge (local x) of segment [i] (0-based): [i·pitch, (i+1)·pitch - gap], the last one ends flush. */
+    private fun segmentSpan(i: Int): Pair<Double, Double> {
         val x0 = snappedLeftInset()
         val w = width - x0 - snappedRightInset()
+        val pitch = w / totalGb
+        val left = snapPositionX(x0 + i * pitch)
+        val right = if (i == totalGb - 1) x0 + w else snapPositionX(x0 + (i + 1) * pitch) - gap(w)
+        return left to maxOf(left + 1.0, right)
+    }
+
+    /** Centre (local x) of the segment that stands for [gb] (1-based); [RamScale] puts the min / max captions there. */
+    fun segmentCenterX(gb: Int): Double = segmentSpan((gb - 1).coerceIn(0, totalGb - 1)).let { (l, r) -> (l + r) / 2 }
+
+    override fun layoutChildren() {
         val y = snappedTopInset()
         val h = segmentHeight
-        val gap = gap(w)
-        val pitch = w / totalGb
         segments.forEachIndexed { i, s ->
-            // segment i spans [i·pitch, (i+1)·pitch - gap]; the last one ends flush with the bar
-            val left = snapPositionX(x0 + i * pitch)
-            val right = if (i == segments.lastIndex) x0 + w else snapPositionX(x0 + (i + 1) * pitch) - gap
-            s.resizeRelocate(left, y, maxOf(1.0, right - left), h)
+            val (left, right) = segmentSpan(i)
+            s.resizeRelocate(left, y, right - left, h)
         }
     }
 
