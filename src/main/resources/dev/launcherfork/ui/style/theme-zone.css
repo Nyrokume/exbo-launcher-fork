@@ -140,3 +140,10 @@
     -fx-font-family: "Bebas Neue Regular";
     -fx-font-size: 24;
 }
+
+/*
+ * Main window: no game artwork behind hero / news in the zone theme, the content area stays plain -background
+ * (.main-content in layout.css). News cards keep their own images. The art regions stay in main.fxml for the
+ * other themes; CSS visibility only hides them here.
+ */
+.main-content > .game-art, .main-content > .game-art-shade { visibility: hidden; }

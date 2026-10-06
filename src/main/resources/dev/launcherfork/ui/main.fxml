@@ -24,8 +24,6 @@
                 <AnchorPane fx:id="homePane" pickOnBounds="false">
                     <fx:include fx:id="hero" source="main/hero.fxml"
                                 AnchorPane.leftAnchor="15" AnchorPane.topAnchor="0" AnchorPane.rightAnchor="250"/>
-                    <fx:include fx:id="header" source="main/header.fxml"
-                                AnchorPane.rightAnchor="19" AnchorPane.topAnchor="62"/>
                     <fx:include fx:id="advancedNewsPane" source="main/news.fxml"
                                 AnchorPane.rightAnchor="8" AnchorPane.topAnchor="157" AnchorPane.bottomAnchor="82"/>
                     <fx:include fx:id="articleBg" source="main/article.fxml"
@@ -41,10 +39,15 @@
                                 AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
                 </AnchorPane>
 
-                <!-- profile (nickname ▾ + dropdown) in the top-right corner, above home and settings -->
+                <!-- top-right row, above home and settings: Forum ↗ / Support ↗ links (home only), then the profile
+                     (nickname ▾ + dropdown). TOP_RIGHT + the links row pinned to the button height (MainController)
+                     keeps the links centred on the button also while the dropdown (managed when open) grows the profile. -->
                 <AnchorPane fx:id="profileLayer" pickOnBounds="false">
-                    <fx:include fx:id="profileBar" source="main/profile.fxml"
-                                AnchorPane.rightAnchor="19" AnchorPane.topAnchor="14"/>
+                    <HBox fx:id="topBar" id="topBar" styleClass="top-bar" alignment="TOP_RIGHT" spacing="20" pickOnBounds="false"
+                          AnchorPane.rightAnchor="19" AnchorPane.topAnchor="14">
+                        <fx:include fx:id="header" source="main/header.fxml"/>
+                        <fx:include fx:id="profileBar" source="main/profile.fxml"/>
+                    </HBox>
                 </AnchorPane>
             </StackPane>
         </center>

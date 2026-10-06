@@ -25,8 +25,7 @@ public class GenerateZoneArt {
         write(scene(1600, 1000, 11, true, true), new File(servers, "stalcraft_x_bg.jpg"));
         write(scene(1600, 1000, 23, false, true), new File(servers, "bravo_bg.jpg"));
         write(scene(1600, 1000, 37, true, false), new File(servers, "charlie_bg.jpg"));
-        // sidebar icons 64x64 (shown at 26)
-        write(crossIcon(64), new File(servers, "stalcraft_x_icon.png"));
+        // sidebar icons 64x64 (shown at 24); the STALZONE entry uses the site favicon (mock/servers/game-stalzone.png)
         write(letterIcon(64, "B"), new File(servers, "bravo_icon.png"));
         write(letterIcon(64, "T"), new File(servers, "charlie_icon.png"));
         // news cards 590x330 (shown at 295x165)
@@ -178,23 +177,6 @@ public class GenerateZoneArt {
         g.setPaint(new RadialGradientPaint(new Point2D.Double(w * 0.5, h * 0.45), (float) (w * 0.75), new float[]{0.45f, 1f},
             new Color[]{new Color(0, 0, 0, 0), new Color(0, 0, 0, 200)}));
         g.fillRect(0, 0, w, h);
-    }
-
-    static BufferedImage crossIcon(int s) {
-        BufferedImage img = new BufferedImage(s, s, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = img.createGraphics();
-        hints(g);
-        g.setColor(Color.WHITE);
-        g.setStroke(new BasicStroke(s * 0.16f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
-        double m = s * 0.18;
-        g.draw(new Line2D.Double(m, m, s - m, s - m));
-        g.draw(new Line2D.Double(s - m, m, m, s - m));
-        // notched ends
-        g.setComposite(AlphaComposite.Clear);
-        g.fill(new Rectangle2D.Double(s * 0.44, 0, s * 0.12, s * 0.2));
-        g.fill(new Rectangle2D.Double(s * 0.44, s * 0.8, s * 0.12, s * 0.2));
-        g.dispose();
-        return img;
     }
 
     static BufferedImage letterIcon(int s, String letter) {

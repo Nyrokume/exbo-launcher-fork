@@ -66,7 +66,7 @@ src/main/kotlin/dev/launcherfork/
 │  └─ Services.kt         AuthService, ServerRepository, NewsRepository, UpdateService, GameLauncher,
 │                         SettingsStore, Services
 ├─ data/mock/           фейковые реализации (без сети, файлов и реестра)
-│  ├─ MockData.kt         3 игры (STALCRAFT: X, Placeholder Game, Test Realm) и 4 новости-заглушки
+│  ├─ MockData.kt         3 игры (STALZONE, Placeholder Game, Test Realm) и 4 новости-заглушки
 │  ├─ MockAuthService.kt, MockRepositories.kt (серверы, новости, InMemorySettingsStore)
 │  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
 │  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
@@ -192,7 +192,7 @@ src/main/resources/dev/launcherfork/
 
 ## Что заглушка
 
-- `MockData`: 3 игры (STALCRAFT: X — установлена; Placeholder Game — не установлена; Test Realm — офлайн) и
+- `MockData`: 3 игры (STALZONE — установлена, иконка — фавикон stalzone.com; Placeholder Game — не установлена; Test Realm — офлайн) и
   4 новости. Тёмный процедурный арт (силуэт, лес, вышка) и иконки сгенерированы скриптом
   `java tools/GenerateZoneArt.java src/main/resources/dev/launcherfork` и к EXBO не относятся: из эталонных
   скриншотов ничего не скопировано. Логотип EXBO — вектор из `ui/style/image/exbo-logo.svg` (логотип владельца

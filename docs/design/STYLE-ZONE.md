@@ -109,6 +109,13 @@ Oswald), поэтому кегли заголовков в `theme-zone.css` ув
 - Roboto (`Roboto-*.ttf`) — SIL OFL 1.1 (`OFL-Roboto.txt`); ширины глифов совпадают с вариативным Roboto сайта
   при wght 500 / wdth 100.
 
+**Ассеты проекта с stalzone.com.** Это ассеты проекта (STALZONE / EXBO), взятые с сайта:
+
+- Иконка игры STALZONE в колонке — `src/main/resources/dev/launcherfork/mock/servers/game-stalzone.png`: фавикон
+  https://stalzone.com/stalzone/favicon/favicon-master.svg (на https://stalzone.com/start это
+  `<link rel="icon" type="image/svg+xml">`), скачан 2026-10-06, отрисован ImageMagick в PNG 48×48 (2× от 24 px
+  иконки), рисунок не менялся.
+
 **Разрядка (letter-spacing .05–.1em).** В JavaFX CSS свойства letter-spacing нет. Пока что узлы, где нужна
 разрядка, — это обычные Label/Text с UPPERCASE-текстом и классом `.zone-caps`. После слияния с веткой
 `redesign/auth` их заменят на `SpacedLabel` (`ui/controls`, делает Front.end.master). Собственную реализацию

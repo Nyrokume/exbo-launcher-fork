@@ -3,12 +3,15 @@ package dev.launcherfork.ui.screens.main
 import dev.launcherfork.ui.UiContext
 import javafx.fxml.FXML
 import javafx.scene.control.Label
-import javafx.scene.layout.VBox
+import javafx.scene.layout.HBox
 
-/** main/header.fxml: Forum / Support links with the ↗ arrow (no browser in the fork); Profile is in the profile menu. */
+/**
+ * main/header.fxml: Forum / Support links with the ↗ arrow in one row left of the profile button (main.fxml top bar;
+ * no browser in the fork). Profile is in the profile menu.
+ */
 class HeaderController(private val ctx: UiContext) {
-    @FXML lateinit var headerPane: VBox
-    @FXML lateinit var linksContainer: VBox
+    @FXML lateinit var headerPane: HBox
+    @FXML lateinit var linksContainer: HBox
     @FXML lateinit var support: Label
     @FXML lateinit var forum: Label
 
