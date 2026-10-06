@@ -1,0 +1,173 @@
+/*
+ * shadcn-auth.css - auth, e-mail code and update windows (379x490) for -Dlauncher.theme=shadcn.
+ * Loaded on the FXML root after common.css/auth.css (see Theme.componentStylesheets), so equal selectors win.
+ * Replaces the PNG chrome with CSS in the shadcn/ui look: Card window, Input, Button
+ * (default / outline / link), Checkbox. Colors come from theme-shadcn.css tokens.
+ * Every selector is scoped under #window so the main window is not affected.
+ * Positions stay in the FXML (shared with the exbo theme); small shifts use -fx-translate-*.
+ */
+
+/* ---------- window = Card (rounded-xl, border, shadow) ---------- */
+#window {
+    -fx-background-image: null;
+    -fx-background-color: -background;
+    -fx-background-insets: 8;
+    -fx-background-radius: 14;
+    -fx-border-color: -border;
+    -fx-border-insets: 8;
+    -fx-border-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 10, 0.1, 0, 3);
+}
+#window #window {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+}
+#window #header { visibility: hidden; }
+
+#window .label, #window .button, #window .text-field, #window .check-box {
+    -fx-font-family: "Manrope";
+}
+
+#window .window-brand {
+    visibility: visible;
+    -fx-font-family: "Manrope SemiBold";
+    -fx-font-size: 13;
+    -fx-text-fill: -foreground;
+}
+
+/* window controls: lucide "minus" / "x" as filled shapes, muted -> foreground on hover */
+#window #close, #window #hide {
+    -fx-background-image: null;
+    -fx-background-color: -muted-foreground;
+    -fx-background-insets: 0;
+    -fx-scale-shape: false;
+    -fx-position-shape: true;
+    -fx-min-width: 22; -fx-pref-width: 22; -fx-max-width: 22;
+    -fx-min-height: 22; -fx-pref-height: 22; -fx-max-height: 22;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-translate-y: 4;
+}
+#window #close {
+    -fx-shape: "M2.3 1.2 7 5.9l4.7-4.7 1.1 1.1L8.1 7l4.7 4.7-1.1 1.1L7 8.1l-4.7 4.7-1.1-1.1L5.9 7 1.2 2.3z";
+    -fx-translate-x: -12;
+}
+#window #hide {
+    -fx-shape: "M1.5 6.25h11v1.5h-11z";
+    -fx-translate-x: -14;
+}
+#window #close:hover, #window #hide:hover { -fx-background-color: -foreground; }
+
+/* ---------- headings (CardTitle / CardDescription) ---------- */
+#window .auth-heading {
+    visibility: visible;
+    -fx-font-family: "Manrope SemiBold";
+    -fx-font-size: 22;
+    -fx-text-fill: -foreground;
+}
+#window .auth-subheading {
+    visibility: visible;
+    -fx-font-size: 14;
+    -fx-text-fill: -muted-foreground;
+}
+
+/* ---------- Input ---------- */
+#window #input, #window .text-field {
+    -fx-font-size: 14;
+    -fx-alignment: center-left;
+    -fx-padding: 0 12 0 12;
+    -fx-min-height: 36; -fx-pref-height: 36; -fx-max-height: 36;
+    -fx-border-image-source: null;
+    -fx-background-color: rgba(255, 255, 255, 0.045);
+    -fx-background-insets: 0;
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(255, 255, 255, 0.15);
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-prompt-text-fill: -muted-foreground;
+    -fx-text-fill: -foreground;
+    -fx-highlight-fill: -ring;
+    -fx-highlight-text-fill: -foreground;
+}
+#window #input:focused, #window .text-field:focused {
+    -fx-border-color: -ring;
+    -fx-effect: dropshadow(gaussian, rgba(115, 115, 115, 0.5), 4, 0.6, 0, 0);
+}
+
+/* ---------- Checkbox ---------- */
+#window .check-box { -fx-translate-x: -54; }
+#window .check-box > .box {
+    -fx-background-image: null;
+    -fx-background-color: rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.045);
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 4, 3;
+    -fx-padding: 3;
+    -fx-cursor: hand;
+}
+#window .check-box:selected > .box { -fx-background-color: -primary, -primary; }
+#window .check-box > .box > .mark {
+    -fx-background-image: null;
+    -fx-background-color: transparent;
+    -fx-padding: 4 5 4 5;
+    -fx-shape: "M1 5.2 2.2 4 4.4 6.2 9.8.8 11 2 4.4 8.6z";
+}
+#window .check-box:selected > .box > .mark {
+    -fx-background-image: null;
+    -fx-background-color: -primary-foreground;
+    -fx-background-position: 0 0;
+}
+#window .auth-label {
+    -fx-font-family: "Manrope Medium";
+    -fx-font-size: 14;
+    -fx-text-fill: -foreground;
+    -fx-translate-x: -46;
+    -fx-translate-y: -1;
+    -fx-cursor: hand;
+}
+
+/* ---------- Button ---------- */
+#window #enterButton, #window #enterSteam, #window #register, #window #restore {
+    -fx-content-display: text-only;
+    -fx-background-image: null;
+    -fx-font-family: "Manrope Medium";
+    -fx-font-size: 14;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-cursor: hand;
+}
+/* variant="default" size="lg" */
+#window #enterButton {
+    -fx-background-color: -primary;
+    -fx-text-fill: -primary-foreground;
+    -fx-min-height: 40; -fx-pref-height: 40; -fx-max-height: 40;
+}
+#window #enterButton:hover { -fx-background-color: derive(-primary, -10%); }
+#window #enterButton:pressed { -fx-background-color: derive(-primary, -18%); }
+#window #enterButton:focused { -fx-effect: dropshadow(gaussian, rgba(115, 115, 115, 0.6), 4, 0.6, 0, 0); }
+/* variant="outline" */
+#window #enterSteam {
+    -fx-background-color: rgba(255, 255, 255, 0.045);
+    -fx-border-color: rgba(255, 255, 255, 0.15);
+    -fx-text-fill: -foreground;
+    -fx-min-height: 36; -fx-pref-height: 36; -fx-max-height: 36;
+    -fx-translate-y: -2;
+}
+#window #enterSteam:hover { -fx-background-color: rgba(255, 255, 255, 0.08); }
+/* variant="link" */
+#window #register, #window #restore {
+    -fx-background-color: transparent;
+    -fx-text-fill: -muted-foreground;
+    -fx-font-size: 13;
+    -fx-padding: 0;
+    -fx-translate-y: 12;
+}
+#window #register { -fx-alignment: center-left; }
+#window #restore { -fx-alignment: center-right; }
+#window #register:hover, #window #restore:hover { -fx-text-fill: -foreground; -fx-underline: true; }
+
+/* ---------- status / errors / spinner ---------- */
+#window #error { -fx-font-family: "Manrope Medium"; -fx-text-fill: -destructive; }
+#window #info, #window #status { -fx-font-size: 14; -fx-text-fill: -muted-foreground; }
+#window .progress-indicator { -fx-progress-color: -foreground; }

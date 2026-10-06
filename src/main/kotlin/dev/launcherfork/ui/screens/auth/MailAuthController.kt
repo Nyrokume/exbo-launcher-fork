@@ -3,6 +3,7 @@ package dev.launcherfork.ui.screens.auth
 import dev.launcherfork.domain.AuthError
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
+import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.components.brightenOnHover
 import javafx.fxml.FXML
 import javafx.scene.control.Button
@@ -17,7 +18,8 @@ class MailAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     @FXML
     fun initialize() {
         initChrome()
-        enterButton.brightenOnHover()
+        // shadcn theme has CSS :hover states; the brightness effect would wash out the light primary button
+        if (!Theme.isShadcn) enterButton.brightenOnHover()
         // replaces the original custom NumberTextField; the code is exactly CODE_LENGTH digits
         codeField.textFormatter = TextFormatter<String> { c ->
             if (c.controlNewText.length <= CODE_LENGTH && c.controlNewText.all(Char::isDigit)) c else null

@@ -34,3 +34,8 @@
     -fx-font-size: 18;
     -fx-cursor: hand;
 }
+
+/* exbo theme: captions are baked into the button PNGs and the logo is in the background image,
+   so the text captions, headings and brand added for the shadcn theme stay hidden here. */
+#enterButton, #enterSteam, #register, #restore { -fx-content-display: graphic-only; }
+.auth-heading, .auth-subheading, .window-brand { visibility: hidden; }

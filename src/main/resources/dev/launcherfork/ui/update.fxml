@@ -14,6 +14,7 @@
     <ImageView fx:id="header" fitHeight="31.0" fitWidth="363.0" layoutX="8.0" layoutY="8.0" pickOnBounds="true" preserveRatio="true">
         <Image url="@style/image/auth_top.png" />
     </ImageView>
+    <Label styleClass="window-brand" layoutX="24.0" layoutY="17.0" mouseTransparent="true" text="%fork.brand" />
     <Button id="close" fx:id="closeButton" layoutX="350.0" layoutY="10.0" mnemonicParsing="false" prefWidth="13" />
     <Button id="hide" fx:id="hideButton" layoutX="325.0" layoutY="10.0" mnemonicParsing="false" prefWidth="13" />
     <ProgressIndicator fx:id="rollingBar" layoutX="154.0" layoutY="196.0" prefHeight="81.0" prefWidth="72.0" visible="false" />

@@ -55,11 +55,25 @@ object Theme {
         ColorAdjust(0.0, (progress - 1.0) * PROGRESS_SATURATION_FACTOR, 0.0, 0.0)
 
     // ---- fonts / stylesheets ----
-    /** Body font: Manrope (SIL OFL 1.1, Cyrillic) replaces the commercial Circe. Europe is still the display font. */
-    private val FONT_FILES = listOf("Manrope-Light.ttf", "Manrope-Bold.ttf", "europe.ttf")
+    /**
+     * Body font: Manrope (SIL OFL 1.1, Cyrillic) replaces the commercial Circe. Europe is still the display font.
+     * Regular/Medium/SemiBold are static instances of the same variable font, used by the shadcn component styles.
+     */
+    private val FONT_FILES = listOf(
+        "Manrope-Light.ttf", "Manrope-Regular.ttf", "Manrope-Medium.ttf", "Manrope-SemiBold.ttf", "Manrope-Bold.ttf",
+        "europe.ttf",
+    )
 
     /** Visual theme: "exbo" (original colors, default) or "shadcn" (shadcn/ui dark neutral). -Dlauncher.theme=shadcn */
     val themeName: String = System.getProperty("launcher.theme", "exbo").lowercase()
+    val isShadcn: Boolean get() = themeName == "shadcn"
+
+    /**
+     * Component restyles (PNG chrome redrawn in CSS) for the shadcn theme. They go onto every FXML root, not the Scene:
+     * Parent stylesheets (common.css, auth.css) beat Scene stylesheets, so an override must sit at the same level.
+     */
+    const val SHADCN_COMPONENTS = "shadcn-auth.css"
+    fun componentStylesheets(): List<String> = if (isShadcn) listOf(stylesheet(SHADCN_COMPONENTS)) else emptyList()
 
     /** Registers bundled fonts so CSS can refer to them by family name. Returns loaded family names. */
     fun loadFonts(): List<String> = FONT_FILES.mapNotNull { file ->

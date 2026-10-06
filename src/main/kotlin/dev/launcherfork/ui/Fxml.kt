@@ -15,6 +15,7 @@ object Fxml {
         val loader = FXMLLoader(Theme.resource(path), ctx.strings)
         loader.setControllerFactory { type -> instantiate(type, ctx) }
         val root: Parent = loader.load()
+        root.stylesheets.addAll(Theme.componentStylesheets())
         return Loaded(root, loader.getController())
     }
 

@@ -3,6 +3,7 @@ package dev.launcherfork.ui.screens.auth
 import dev.launcherfork.domain.AuthError
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
+import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.components.brightenOnHover
 import javafx.fxml.FXML
 import javafx.scene.control.Button
@@ -26,7 +27,8 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         initChrome()
         loginField.text = ctx.services.auth.savedLogin ?: ""
         autoAuthCheckBox.isSelected = ctx.services.auth.savedLogin != null
-        listOf(enterButton, registerButton, restoreButton, enterSteamButton).forEach { it.brightenOnHover() }
+        // shadcn theme has CSS :hover states instead of the brightness effect
+        if (!Theme.isShadcn) listOf(enterButton, registerButton, restoreButton, enterSteamButton).forEach { it.brightenOnHover() }
         enterButton.tooltip = Tooltip(ctx.t("fork.hint"))
     }
 

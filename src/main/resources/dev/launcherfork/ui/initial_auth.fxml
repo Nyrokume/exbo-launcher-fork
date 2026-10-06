@@ -7,20 +7,24 @@
 <!-- Ported from the original initial_auth.fxml: same fx:id names, inline styles moved to CSS classes. -->
 <Pane id="window" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="490.0" prefWidth="379.0" stylesheets="@style/common.css,@style/auth.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.InitialAuthController">
     <Pane id="window" fx:id="root" prefHeight="490.0" prefWidth="379.0">
+        <!-- heading/subheading/brand and button captions are shown only by the shadcn theme (auth.css hides them for exbo) -->
+        <Label styleClass="auth-heading" alignment="CENTER" layoutY="92.0" prefWidth="379.0" text="%fork.auth.heading" />
+        <Label styleClass="auth-subheading" alignment="CENTER" layoutY="124.0" prefWidth="379.0" text="%fork.auth.subheading" />
         <TextField id="input" fx:id="loginField" alignment="TOP_CENTER" layoutX="52.5" layoutY="208.0" maxHeight="32.0" minHeight="32.0" minWidth="274.0" onAction="#onEnter" prefHeight="32.0" prefWidth="274.0" promptText="%auth.login" styleClass="font-display" />
         <PasswordField id="input" fx:id="passwordField" alignment="TOP_CENTER" layoutX="52.5" layoutY="259.0" maxHeight="32.0" minHeight="32.0" minWidth="274.0" onAction="#onEnter" prefHeight="32.0" prefWidth="274.0" promptText="%auth.password" styleClass="font-display" />
-        <Button id="enterButton" fx:id="enterButton" layoutX="52.0" layoutY="340.0" mnemonicParsing="false" onAction="#onEnter" prefHeight="46.0" prefWidth="274.0" styleClass="enterButton" />
+        <Button id="enterButton" fx:id="enterButton" layoutX="52.0" layoutY="340.0" mnemonicParsing="false" onAction="#onEnter" prefHeight="46.0" prefWidth="274.0" styleClass="enterButton" text="%fork.auth.enter" />
         <CheckBox fx:id="autoAuthCheckBox" layoutX="106.0" layoutY="305.0" mnemonicParsing="false" onAction="#onAutoAuth" underline="true" />
         <Label layoutX="126.0" layoutY="304.0" onMouseClicked="#onLabelAutoAuth" styleClass="auth-label" text="%auth.auto_auth" />
         <Label id="error" fx:id="errorFirst" alignment="TOP_CENTER" contentDisplay="CENTER" layoutX="16.0" layoutY="171.0" prefHeight="17.0" prefWidth="350.0" textAlignment="CENTER" />
         <Label id="error" fx:id="errorSecond" alignment="TOP_CENTER" layoutX="15.0" layoutY="188.0" prefHeight="17.0" prefWidth="350.0" textAlignment="CENTER" />
-        <Button id="register" fx:id="registerButton" layoutX="52.0" layoutY="430.0" maxHeight="28.0" maxWidth="134.0" minHeight="28.0" minWidth="134.0" mnemonicParsing="false" onMouseClicked="#onRegister" prefHeight="28.0" prefWidth="134.0" />
-        <Button id="restore" fx:id="restoreButton" layoutX="193.0" layoutY="430.0" mnemonicParsing="false" onMouseClicked="#onRestore" prefHeight="28.0" prefWidth="134.0" />
-        <Button id="enterSteam" fx:id="enterSteamButton" layoutX="52.0" layoutY="394.0" maxHeight="29.0" minHeight="29.0" mnemonicParsing="false" onAction="#onEnterSteam" prefHeight="29.0" prefWidth="274.0" />
+        <Button id="register" fx:id="registerButton" layoutX="52.0" layoutY="430.0" maxHeight="28.0" maxWidth="134.0" minHeight="28.0" minWidth="134.0" mnemonicParsing="false" onMouseClicked="#onRegister" prefHeight="28.0" prefWidth="134.0" text="%fork.auth.register" />
+        <Button id="restore" fx:id="restoreButton" layoutX="193.0" layoutY="430.0" mnemonicParsing="false" onMouseClicked="#onRestore" prefHeight="28.0" prefWidth="134.0" text="%fork.auth.restore" />
+        <Button id="enterSteam" fx:id="enterSteamButton" layoutX="52.0" layoutY="394.0" maxHeight="29.0" minHeight="29.0" mnemonicParsing="false" onAction="#onEnterSteam" prefHeight="29.0" prefWidth="274.0" text="%fork.auth.steam" />
     </Pane>
     <ImageView fx:id="header" fitHeight="31.0" fitWidth="363.0" layoutX="8.0" layoutY="8.0" pickOnBounds="true" preserveRatio="true">
         <Image url="@style/image/auth_top.png" />
     </ImageView>
+    <Label styleClass="window-brand" layoutX="24.0" layoutY="17.0" mouseTransparent="true" text="%fork.brand" />
     <Button id="close" fx:id="closeButton" layoutX="350.0" layoutY="10.0" mnemonicParsing="false" prefWidth="13" />
     <Button id="hide" fx:id="hideButton" layoutX="325.0" layoutY="10.0" mnemonicParsing="false" prefWidth="13" />
     <ProgressIndicator fx:id="rollingBar" layoutX="154.0" layoutY="196.0" prefHeight="81.0" prefWidth="72.0" visible="false" />
