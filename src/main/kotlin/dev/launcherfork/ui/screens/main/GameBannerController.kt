@@ -7,6 +7,8 @@ import javafx.fxml.FXML
 import javafx.scene.control.Label
 import javafx.scene.control.ScrollPane
 import javafx.scene.layout.VBox
+import javafx.scene.text.Text
+import javafx.scene.text.TextBoundsType
 
 /**
  * main/game_banner.fxml: the selected game's description in the centre slot of the main screen, like the original
@@ -15,7 +17,8 @@ import javafx.scene.layout.VBox
  * ([Server.description], from ServerRepository): i18n keys for mock data or ready text from a server; nothing is
  * written here or in the FXML. The banner is a transparent ScrollPane inside the anchored centre slot, so long text
  * wraps and, in a small window, scrolls inside the slot: it never pushes the status row or ИГРАТЬ. It watches nothing, so there is nothing to
- * dispose.
+ * dispose. Where the slot starts is up to MainController: the title's letters on the line of the selected game's row
+ * in the sidebar ([titleInkOffset]).
  */
 class GameBannerController(private val ctx: UiContext) {
     @FXML lateinit var scroll: ScrollPane
@@ -42,6 +45,24 @@ class GameBannerController(private val ctx: UiContext) {
         body.text = texts.body
         closing.text = texts.closing
         scroll.vvalue = 0.0
+    }
+
+    /**
+     * Distance from the top of the banner (the ScrollPane) to the top of the title's letters (the cap line of
+     * «STALZONE», not the line box above it), with the text scrolled to the top: viewport top + the title's text line
+     * inside the scrolled column + the font's gap between the line top and the ink. Independent of the scroll position
+     * and of where the slot is placed; null until the title has a skin (first CSS pass).
+     */
+    fun titleInkOffset(): Double? {
+        val line = title.lookup(".text") as? Text ?: return null
+        val column = scroll.content ?: return null
+        val viewport = scroll.lookup(".viewport") ?: return null
+        if (title.text.isNullOrEmpty()) return null
+        val viewportTop = scroll.sceneToLocal(viewport.localToScene(0.0, 0.0)).y
+        val lineTop = column.sceneToLocal(line.localToScene(line.layoutBounds)).minY
+        val logical = Text(title.text).apply { font = line.font }
+        val ink = Text(title.text).apply { font = line.font; boundsType = TextBoundsType.VISUAL }
+        return viewportTop + lineTop + (ink.layoutBounds.minY - logical.layoutBounds.minY)
     }
 
     private fun resolve(d: GameDescription): GameDescription.Text = when (d) {

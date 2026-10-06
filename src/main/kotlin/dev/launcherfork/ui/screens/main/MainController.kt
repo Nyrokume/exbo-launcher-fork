@@ -27,7 +27,9 @@ import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.ClientStateStore
 import dev.launcherfork.ui.state.GameAction
 import dev.launcherfork.ui.state.GameActions
+import javafx.beans.value.ChangeListener
 import javafx.fxml.FXML
+import javafx.scene.Node
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.AnchorPane
@@ -38,7 +40,8 @@ import javafx.scene.layout.StackPane
 /**
  * main.fxml: coordination between the included areas (sidebar, links, profile, status bar, settings, modals).
  * Each area has its own FXML and controller. Layout is adaptive (BorderPane + anchors). [centerPane] holds the
- * selected game's banner text ([GameBannerController]).
+ * selected game's banner text ([GameBannerController]); its top follows the selected game's row in the sidebar
+ * ([alignBanner]), so the description starts on the line of its menu item.
  */
 class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var root: StackPane
@@ -113,6 +116,14 @@ class MainController(private val ctx: UiContext) : Disposable {
         headerController.headerPane.maxHeightProperty().bind(buttonHeight)
 
 
+        // the banner starts on the line of its game in the sidebar: re-placed whenever the row (followRow), the content
+        // area or the title moves, and after every layout of the title (a new font moves its text line inside the label
+        // only then); never higher than the FXML top (under the nav row)
+        bannerMinTop = AnchorPane.getTopAnchor(centerPane) ?: 0.0
+        homePane.localToSceneTransformProperty().addListener(alignOnChange)
+        gameBannerController.title.localToSceneTransformProperty().addListener(alignOnChange)
+        gameBannerController.title.needsLayoutProperty().addListener(alignOnChange)
+
         servers = ctx.services.servers.servers()
         serversListController.setServers(servers, store)
         servers.firstOrNull()?.let {
@@ -130,6 +141,38 @@ class MainController(private val ctx: UiContext) : Disposable {
     }
 
     private val keyFilter = javafx.event.EventHandler<KeyEvent> { onKey(it) }
+
+    // ChangeListener, not InvalidationListener: the transforms are revalidated on every change, so none is missed
+    private val alignOnChange = ChangeListener<Any?> { _, _, _ -> alignBanner() }
+    private var bannerMinTop = 0.0
+    private var alignedRow: Node? = null
+
+    /** Lines the banner up with [row] (the selected game's row) from now on. */
+    private fun followRow(row: Node?) {
+        if (row !== alignedRow) {
+            alignedRow?.localToSceneTransformProperty()?.removeListener(alignOnChange)
+            alignedRow = row
+            row?.localToSceneTransformProperty()?.addListener(alignOnChange)
+        }
+        alignBanner()
+    }
+
+    /**
+     * Puts the centre slot so that the top of the banner title's letters is on the top edge of the selected game's
+     * row (= its red marker): the description visually starts on the line of its menu item. Derived from the live
+     * layout (row position in the scene, title font metrics), so it holds in every theme and window size and follows
+     * a changed logo / sidebar spacing; no offset constant. Idempotent: only a real difference moves the slot.
+     */
+    private fun alignBanner() {
+        val row = alignedRow ?: return
+        if (row.scene == null || row.scene !== homePane.scene) return
+        val inkOffset = gameBannerController.titleInkOffset() ?: return
+        val rowTop = homePane.sceneToLocal(row.localToScene(0.0, 0.0)).y
+        val bannerTopInSlot = centerPane.sceneToLocal(gameBannerController.scroll.localToScene(0.0, 0.0)).y
+        val top = maxOf(bannerMinTop, rowTop - bannerTopInSlot - inkOffset)
+        val current = AnchorPane.getTopAnchor(centerPane)
+        if (current == null || Math.abs(top - current) > 0.1) AnchorPane.setTopAnchor(centerPane, top)
+    }
 
     private val modals: List<ModalController> by lazy {
         listOf(
@@ -164,6 +207,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         if (isDisposed) return
         isDisposed = true
         root.scene?.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
+        followRow(null)
         serversListController.dispose()
         defaultStatusPaneController.dispose()
         profileBarController.dispose()
@@ -215,6 +259,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         background.setImageBackground(loadImage(server.backgroundUri, background = true), cover = true)
         defaultStatusPaneController.showServer(server, store.state(server))
         gameBannerController.show(server)
+        followRow(serversListController.selectedEntry?.root)
         if (showHome) setSettingsVisible(false)
     }
 
