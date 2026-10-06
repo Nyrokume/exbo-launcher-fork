@@ -2,70 +2,74 @@ package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.domain.NewsItem
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.components.brightenOnHover
 import dev.launcherfork.ui.components.loadImage
 import javafx.fxml.FXML
+import javafx.geometry.Pos
 import javafx.scene.control.Label
+import javafx.scene.control.ScrollPane
 import javafx.scene.image.ImageView
-import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.Pane
-import javafx.scene.text.Text
-import javafx.scene.text.TextFlow
+import javafx.scene.layout.Region
+import javafx.scene.layout.StackPane
+import javafx.scene.layout.VBox
+import javafx.scene.shape.Rectangle
 
-/** main/news.fxml: four news cards from [dev.launcherfork.domain.NewsRepository] and social links. */
+/** main/news.fxml: news cards from [dev.launcherfork.domain.NewsRepository] in a scroll column + red scroll indicator. */
 class NewsController(private val ctx: UiContext) {
-    @FXML lateinit var advancedNewsPane: AnchorPane
-    @FXML lateinit var firstNewsPane: AnchorPane
-    @FXML lateinit var secondNewsPane: AnchorPane
-    @FXML lateinit var thirdNewsPane: AnchorPane
-    @FXML lateinit var fourthNewsPane: AnchorPane
-    @FXML lateinit var firstNewsBg: ImageView
-    @FXML lateinit var secondNewsBg: ImageView
-    @FXML lateinit var thirdNewsBg: ImageView
-    @FXML lateinit var fourthNewsBg: ImageView
-    @FXML lateinit var firstNewsDescPane: Pane
-    @FXML lateinit var secondNewsDesc: TextFlow
-    @FXML lateinit var thirdNewsDesc: TextFlow
-    @FXML lateinit var fourthNewsDesc: TextFlow
-    @FXML lateinit var discord: Pane
-    @FXML lateinit var youtube: Pane
-    @FXML lateinit var twitch: Pane
-    @FXML lateinit var instagram: Pane
-    @FXML lateinit var vk: Pane
-    @FXML lateinit var bigLogo: ImageView
+    @FXML lateinit var advancedNewsPane: VBox
     @FXML lateinit var mainLink: Label
+    @FXML lateinit var newsScroll: ScrollPane
+    @FXML lateinit var newsList: VBox
+    @FXML lateinit var scrollTrack: Pane
+    @FXML lateinit var scrollThumb: Region
 
     var onOpenArticle: (NewsItem) -> Unit = {}
+    val cards = mutableListOf<StackPane>()
 
     @FXML
     fun initialize() {
-        listOf(firstNewsPane, secondNewsPane, thirdNewsPane, fourthNewsPane, mainLink).forEach { it.brightenOnHover() }
-        // social links: hover overlay is pure CSS (#discord:hover ...); no browser in the fork
-        val news = ctx.services.news.latest()
-        val cards = listOf(firstNewsPane to firstNewsBg, secondNewsPane to secondNewsBg, thirdNewsPane to thirdNewsBg, fourthNewsPane to fourthNewsBg)
-        cards.forEachIndexed { i, (pane, bg) ->
-            val item = news.getOrNull(i)
-            pane.isVisible = item != null
-            if (item != null) {
-                bg.image = loadImage(item.imageUri, background = true)
-                pane.setOnMouseClicked { onOpenArticle(item) }
-            }
+        scrollThumb.styleClass += "zone-radius-sm"
+        ctx.services.news.latest().forEach { item -> cards += card(item) }
+        newsList.children.setAll(cards)
+        listOf(newsScroll.vvalueProperty(), newsScroll.viewportBoundsProperty(), newsList.heightProperty(), scrollTrack.heightProperty())
+            .forEach { it.addListener { _, _, _ -> layoutThumb() } }
+    }
+
+    private fun card(item: NewsItem): StackPane {
+        val image = ImageView(loadImage(item.imageUri, background = true)).apply {
+            fitWidth = CARD_W - 2
+            fitHeight = CARD_H - 2
+            clip = Rectangle(CARD_W - 2, CARD_H - 2).apply { arcWidth = 18.0; arcHeight = 18.0 }
         }
-        news.getOrNull(0)?.let { first ->
-            firstNewsDescPane.children.setAll(
-                Label(first.title).apply { styleClass += listOf("news-title", "font-display"); isWrapText = true; maxWidth = 300.0 },
-                Label(trim(first.summary, 200)).apply { styleClass += listOf("news-text", "font-display"); isWrapText = true; maxWidth = 300.0 },
-            )
+        return StackPane(image).apply {
+            styleClass.addAll("news-card", "card", "zone-radius-md")
+            setMinSize(CARD_W, CARD_H)
+            setPrefSize(CARD_W, CARD_H)
+            setMaxSize(CARD_W, CARD_H)
+            alignment = Pos.CENTER
+            accessibleText = item.title
+            setOnMouseClicked { onOpenArticle(item) }
         }
-        listOf(secondNewsDesc, thirdNewsDesc, fourthNewsDesc).forEachIndexed { i, flow ->
-            val item = news.getOrNull(i + 1)
-            flow.children.setAll(listOfNotNull(item?.let { Text(trim(it.title, 40)).apply { styleClass += listOf("news-text", "font-display") } }))
-        }
+    }
+
+    /** Thumb height = visible share of the list, position = scroll value (no track drawn, as in the reference). */
+    private fun layoutThumb() {
+        val track = scrollTrack.height
+        val content = newsList.height
+        val visible = newsScroll.viewportBounds.height
+        if (track <= 0 || content <= 0) return
+        val h = (track * (visible / content).coerceIn(0.0, 1.0)).coerceAtLeast(24.0)
+        scrollThumb.resize(4.0, h)
+        scrollThumb.relocate(0.0, (track - h) * newsScroll.vvalue)
+        scrollThumb.isVisible = content > visible + 1
     }
 
     fun setVisible(visible: Boolean) {
         advancedNewsPane.isVisible = visible
     }
 
-    private fun trim(s: String, length: Int): String = if (s.length < length + 3) s else s.take(length).trimEnd() + "..."
+    companion object {
+        const val CARD_W = 295.0
+        const val CARD_H = 165.0
+    }
 }

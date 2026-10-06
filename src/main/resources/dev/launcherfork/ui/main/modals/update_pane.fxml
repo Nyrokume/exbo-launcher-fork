@@ -7,17 +7,17 @@
 <?import javafx.scene.text.*?>
 
 <!-- "Launcher update is ready" question (original updatePane). -->
-<AnchorPane fx:id="updatePane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+<AnchorPane fx:id="updatePane" styleClass="modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.UpdateModalController">
     <Region styleClass="modal-dim-solid" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
     <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
         <center>
-            <Pane maxHeight="200" maxWidth="560">
-                <Label fx:id="updateTitle" layoutX="70" layoutY="15" styleClass="modal-title" text="%main.modal.update.title"/>
+            <Pane styleClass="modal-card,zone-radius-md" maxHeight="200" maxWidth="560">
+                <Label fx:id="updateTitle" layoutX="70" layoutY="15" styleClass="modal-title,font-display" text="%main.modal.update.title"/>
                 <Label fx:id="updateDesc" layoutX="70" layoutY="55" styleClass="modal-text" text="%main.modal.update.text"/>
-                <Button id="logoutButtonRight" fx:id="updateYes" layoutX="100" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.update.confirm"/>
-                <Button id="logoutButtonLeft" fx:id="updateNo" layoutX="270" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.update.cancel"/>
+                <Button id="modal-updateYes" fx:id="updateYes" layoutX="100" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button,btn-primary,zone-caps,zone-radius-sm" text="%main.modal.update.confirm"/>
+                <Button id="modal-updateNo" fx:id="updateNo" layoutX="270" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button,tile,zone-caps,zone-radius-sm" text="%main.modal.update.cancel"/>
             </Pane>
         </center>
     </BorderPane>

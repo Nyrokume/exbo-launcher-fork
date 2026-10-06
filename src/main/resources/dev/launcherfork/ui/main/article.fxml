@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 
-<!-- Full news article view (opened by clicking a news card). -->
-<AnchorPane fx:id="articleBg" visible="false" stylesheets="@../style/common.css,@../style/main.css"
-            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="dev.launcherfork.ui.screens.main.ArticleController">
-    <Button id="articleCloseButton" fx:id="articleCloseButton" prefWidth="17" prefHeight="19" AnchorPane.leftAnchor="0" AnchorPane.topAnchor="0"/>
-    <ImageView fx:id="articleCaptionUnderline" AnchorPane.leftAnchor="0" AnchorPane.topAnchor="72">
-        <Image url="@../style/image/line_settings_main.png"/>
-    </ImageView>
-    <Label fx:id="articleCaption" styleClass="article-caption" wrapText="true"
-           AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="5" AnchorPane.topAnchor="30"/>
-    <AnchorPane fx:id="articleContent" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="0.0"
-                AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="80.0"/>
-</AnchorPane>
+<!-- A news item opened inside the window (translucent dark panel). -->
+<VBox fx:id="articleBg" id="article" styleClass="article-panel,card,zone-radius-md" visible="false" spacing="10"
+      stylesheets="@../style/layout.css"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dev.launcherfork.ui.screens.main.ArticleController">
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label fx:id="articleCaption" id="articleCaption" styleClass="article-caption,font-display" wrapText="true" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+        <Button fx:id="articleCloseButton" id="articleClose" styleClass="article-close,tile,zone-radius-sm" mnemonicParsing="false" focusTraversable="false">
+            <graphic><Region styleClass="close-glyph"/></graphic>
+        </Button>
+    </HBox>
+    <Region fx:id="articleCaptionUnderline" styleClass="heading-rule"/>
+    <ScrollPane fx:id="articleScroll" styleClass="article-scroll" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+        <VBox fx:id="articleContent" spacing="12"/>
+    </ScrollPane>
+</VBox>

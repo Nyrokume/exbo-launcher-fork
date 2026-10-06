@@ -1,7 +1,6 @@
 package dev.launcherfork.ui.screens.main.modals
 
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.components.brightenOnHover
 import javafx.animation.PauseTransition
 import javafx.fxml.FXML
 import javafx.scene.Node
@@ -26,8 +25,8 @@ abstract class ModalController(protected val ctx: UiContext) {
     val isShowing: Boolean get() = layer.isVisible
 
     protected fun wire(confirm: Button?, cancel: Button?) {
-        confirm?.brightenOnHover()
-        cancel?.brightenOnHover()
+        // UPPERCASE buttons (.zone-caps) - to be swapped to SpacedLabel after the redesign/auth merge
+        listOfNotNull(confirm, cancel).forEach { it.text = it.text.uppercase(java.util.Locale.forLanguageTag(ctx.lang)) }
         confirm?.setOnAction { hide(); onConfirm() }
         cancel?.setOnAction { hide(); onCancel() }
     }
@@ -87,7 +86,7 @@ class OfflineModalController(ctx: UiContext) : ModalController(ctx) {
 
     @FXML
     fun initialize() {
-        offlineButton.brightenOnHover()
+        offlineButton.text = offlineButton.text.uppercase(java.util.Locale.forLanguageTag(ctx.lang))
         offlineButton.setOnAction {
             // fake reconnect: spinner for a second, then "connected"
             offlineButton.isVisible = false
@@ -181,7 +180,7 @@ class InstallModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML
     fun initialize() {
         wire(installYes, installNo)
-        installChangeFolder.brightenOnHover()
+        installChangeFolder.text = installChangeFolder.text.uppercase(java.util.Locale.forLanguageTag(ctx.lang))
     }
 
     fun show(path: String, requiredBytes: String, freeBytes: String) {

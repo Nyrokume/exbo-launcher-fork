@@ -11,10 +11,11 @@ import dev.launcherfork.data.mock.MockGameLauncher
 import dev.launcherfork.domain.UpdatePhase
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.domain.ProgressListener
-import dev.launcherfork.ui.components.WindowChrome
+import dev.launcherfork.ui.components.ResizeEdge
 import dev.launcherfork.theme.Theme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CountDownLatch
@@ -108,10 +109,26 @@ class MockServicesTest {
     }
 
     @Test
-    fun dragPolygonMatchesOriginalHeader() {
-        val poly = Theme.mainDragPolygon(886.0)
-        assertTrue(WindowChrome.isPointInPolygon(100.0, 10.0, poly))   // left header
-        assertFalse(WindowChrome.isPointInPolygon(400.0, 28.0, poly))  // below the notch
-        assertFalse(WindowChrome.isPointInPolygon(100.0, 100.0, poly)) // content
+    fun resizeEdgesAreDetectedOnlyAtTheBorder() {
+        val w = 1024.0
+        val h = 640.0
+        assertEquals(ResizeEdge.NW, ResizeEdge.at(2.0, 2.0, w, h))
+        assertEquals(ResizeEdge.SE, ResizeEdge.at(w - 1, h - 1, w, h))
+        assertEquals(ResizeEdge.E, ResizeEdge.at(w - 3, 300.0, w, h))
+        assertEquals(ResizeEdge.N, ResizeEdge.at(500.0, 1.0, w, h))
+        assertNull(ResizeEdge.at(500.0, 300.0, w, h)) // content
+        assertNull(ResizeEdge.at(500.0, 14.0, w, h))  // title bar drag area, not an edge
+    }
+
+    @Test
+    fun resizeKeepsMinimumSizeAndOppositeEdge() {
+        val start = javafx.geometry.Rectangle2D(100.0, 100.0, 1024.0, 640.0)
+        val grown = ResizeEdge.SE.resize(start, 50.0, 30.0, 900.0, 580.0)
+        assertEquals(1074.0, grown.width, 1e-9)
+        assertEquals(670.0, grown.height, 1e-9)
+        // dragging the left edge far to the right stops at the min width, the right edge stays put
+        val shrunk = ResizeEdge.W.resize(start, 500.0, 0.0, 900.0, 580.0)
+        assertEquals(900.0, shrunk.width, 1e-9)
+        assertEquals(start.maxX, shrunk.maxX, 1e-9)
     }
 }

@@ -7,14 +7,14 @@
 <?import javafx.scene.text.*?>
 
 <!-- License agreement update (original licensePane). -->
-<AnchorPane fx:id="licensePane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+<AnchorPane fx:id="licensePane" styleClass="modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.LicenseModalController">
     <Region styleClass="modal-dim-light" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
     <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
         <center>
             <Pane maxHeight="200" maxWidth="750">
-                <ImageView fitHeight="210" fitWidth="349" layoutX="290"><Image url="@../../style/image/license_bg.png"/></ImageView>
+                <Region styleClass="license-card,card,zone-radius-md" layoutX="290" prefWidth="349" prefHeight="210"/>
                 <Label alignment="BASELINE_CENTER" layoutX="290" layoutY="8" maxHeight="Infinity" maxWidth="349" prefHeight="70" prefWidth="349" styleClass="license-title,font-bold" text="%main.modal.license.title.1" textAlignment="CENTER" wrapText="true"/>
                 <Label alignment="BASELINE_CENTER" layoutX="290" layoutY="27" maxHeight="Infinity" maxWidth="349" prefHeight="70" prefWidth="349" styleClass="license-title,font-bold" text="%main.modal.license.title.2" textAlignment="CENTER" wrapText="true"/>
                 <CheckBox fx:id="licenseFirst" layoutX="320" layoutY="89"/>
@@ -29,8 +29,8 @@
                     <Text fx:id="confidentialityRef" styleClass="license-text,license-link,font-bold" text="%main.modal.license.confidentiality.second"/>
                 </TextFlow>
                 <ImageView layoutX="588" layoutY="120"><Image url="@../../style/image/external_link.png"/></ImageView>
-                <Button id="licenseLeft" fx:id="licenseYes" layoutX="376" layoutY="170" minHeight="28" prefHeight="22" prefWidth="83" styleClass="license-button" text="%main.modal.license.confirm"/>
-                <Button id="licenseRight" fx:id="licenseNo" layoutX="469" layoutY="170" minHeight="26" prefHeight="22" prefWidth="83" styleClass="license-button" text="%main.modal.license.cancel"/>
+                <Button id="modal-licenseYes" fx:id="licenseYes" layoutX="376" layoutY="170" minHeight="28" prefHeight="22" prefWidth="83" styleClass="modal-button,btn-primary,zone-caps,zone-radius-sm" text="%main.modal.license.confirm"/>
+                <Button id="modal-licenseNo" fx:id="licenseNo" layoutX="469" layoutY="170" minHeight="26" prefHeight="22" prefWidth="83" styleClass="modal-button,tile,zone-caps,zone-radius-sm" text="%main.modal.license.cancel"/>
             </Pane>
         </center>
     </BorderPane>

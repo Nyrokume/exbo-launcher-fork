@@ -3,138 +3,121 @@ package dev.launcherfork.ui.screens.settings
 import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.P2pMode
-import dev.launcherfork.theme.Theme
-import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.components.brightenOnHover
-import dev.launcherfork.ui.components.loadImage
-import dev.launcherfork.ui.screens.settings.entries.CheckBoxEntryController
-import dev.launcherfork.ui.screens.settings.entries.NumericEntryController
-import dev.launcherfork.ui.screens.settings.entries.PathEntryController
-import dev.launcherfork.ui.screens.settings.entries.ProgressionEntryController
-import dev.launcherfork.ui.screens.settings.entries.RadioEntryController
+import dev.launcherfork.ui.components.SegmentedBar
 import javafx.fxml.FXML
-import javafx.scene.Node
-import javafx.scene.Parent
-import javafx.scene.control.Button
+import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
+import javafx.scene.control.RadioButton
 import javafx.scene.control.ScrollPane
-import javafx.scene.image.ImageView
+import javafx.scene.control.TextField
+import javafx.scene.control.TextFormatter
+import javafx.scene.control.ToggleGroup
 import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.Pane
-import java.nio.file.Path
+import javafx.scene.layout.HBox
+import javafx.scene.layout.VBox
+import kotlin.math.roundToInt
 
 /**
- * settings.fxml: categories with entries, laid out with the same offsets as the original
- * SettingsController (title x=14, lines 407px, entries x=20). Values come from [dev.launcherfork.domain.SettingsStore].
+ * settings.fxml: static layout (sections ИГРА / ОБНОВЛЕНИЕ / ПРОЧЕЕ) bound to [dev.launcherfork.domain.SettingsStore].
+ * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var settingsRoot: AnchorPane
     @FXML lateinit var scroll: ScrollPane
+    @FXML lateinit var settingsContent: VBox
+    @FXML lateinit var gameHeading: Label
+    @FXML lateinit var updatesHeading: Label
+    @FXML lateinit var othersHeading: Label
 
-    var onNotAvailable: () -> Unit = {}
+    @FXML lateinit var ramBar: SegmentedBar
+    @FXML lateinit var exitGroup: ToggleGroup
+    @FXML lateinit var exitOnStart: RadioButton
+    @FXML lateinit var exitOnGameExit: RadioButton
+    @FXML lateinit var exitNever: RadioButton
+
+    @FXML lateinit var downloadLimitField: TextField
+    @FXML lateinit var uploadLimitField: TextField
+    @FXML lateinit var p2pGroup: ToggleGroup
+    @FXML lateinit var p2pAlways: RadioButton
+    @FXML lateinit var p2pNotMobile: RadioButton
+    @FXML lateinit var p2pNever: RadioButton
+    @FXML lateinit var defenderRow: HBox
+    @FXML lateinit var defenderToggle: CheckBox
+    @FXML lateinit var startOnDownloadedRow: HBox
+    @FXML lateinit var startOnDownloadedToggle: CheckBox
+
+    @FXML lateinit var trayRow: HBox
+    @FXML lateinit var trayToggle: CheckBox
+    @FXML lateinit var autostartRow: HBox
+    @FXML lateinit var autostartToggle: CheckBox
+    @FXML lateinit var languageGroup: ToggleGroup
+    @FXML lateinit var langRu: RadioButton
+    @FXML lateinit var langEn: RadioButton
+
     private val store get() = ctx.services.settings
 
     @FXML
     fun initialize() {
-        rebuild()
+        val s = store.load()
+
+        ramBar.formatter = { "${heapMb(it)}MB" }
+        ramBar.value = s.ramFraction
+        ramBar.onChange = { v -> update { it.copy(ramFraction = v) } }
+
+        bindRadios(exitGroup, mapOf(exitOnStart to ExitMode.ON_GAME_START, exitOnGameExit to ExitMode.ON_GAME_EXIT, exitNever to ExitMode.NEVER), s.exitMode) { v ->
+            update { it.copy(exitMode = v) }
+        }
+        bindRadios(p2pGroup, mapOf(p2pAlways to P2pMode.ALWAYS, p2pNotMobile to P2pMode.EXCEPT_MOBILE, p2pNever to P2pMode.NEVER), s.p2pMode) { v ->
+            update { it.copy(p2pMode = v) }
+        }
+
+        bindLimit(downloadLimitField, s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } }
+        bindLimit(uploadLimitField, s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } }
+
+        bindToggle(defenderRow, defenderToggle, s.defenderHint) { v -> update { it.copy(defenderHint = v) } }
+        bindToggle(startOnDownloadedRow, startOnDownloadedToggle, s.startOnDownloaded) { v -> update { it.copy(startOnDownloaded = v) } }
+        bindToggle(trayRow, trayToggle, s.hideToTray) { v -> update { it.copy(hideToTray = v) } }
+        bindToggle(autostartRow, autostartToggle, s.runOnStartUp) { v -> update { it.copy(runOnStartUp = v) } }
+
+        bindRadios(languageGroup, mapOf(langRu to "ru", langEn to "en"), if (ctx.lang == "en") "en" else "ru") { lang ->
+            update { it.copy(language = lang) }
+            ctx.navigator.switchLanguage(lang)
+        }
     }
+
+    /** RAM fraction -> MB shown in the bar (same mapping as before the redesign). */
+    fun heapMb(fraction: Double): Int = (3584 * fraction).roundToInt() + 512
 
     private fun update(change: (LauncherSettings) -> LauncherSettings) = store.save(change(store.load()))
 
-    private fun rebuild() {
-        val s = store.load()
-        val categories = listOf(
-            ctx.t("settings.category.game") to listOf(
-                progression(ctx.t("settings.ram"), s.ramFraction, { "${heapMb(it)} MB" }) { v -> update { it.copy(ramFraction = v) } },
-                choice(ctx.t("settings.exit"), ExitMode.entries, ::exitModeKey, s.exitMode) { v -> update { it.copy(exitMode = v) } },
-                checkBox(ctx.t("settings.start_on_downloaded"), s.startOnDownloaded) { v -> update { it.copy(startOnDownloaded = v) } },
-                path(ctx.t("settings.choose_root"), s.gameRoot),
-            ),
-            ctx.t("settings.category.updates") to listOf(
-                choice(ctx.t("settings.p2p"), P2pMode.entries, ::p2pModeKey, s.p2pMode) { v -> update { it.copy(p2pMode = v) } },
-                numeric(ctx.t("settings.download_limit"), s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } },
-                numeric(ctx.t("settings.upload_limit"), s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } },
-                checkBox(ctx.t("settings.defender"), s.defenderHint) { v -> update { it.copy(defenderHint = v) } },
-            ),
-            ctx.t("settings.category.others") to listOf(
-                checkBox(ctx.t("settings.run_on_start"), s.runOnStartUp) { v -> update { it.copy(runOnStartUp = v) } },
-                checkBox(ctx.t("settings.tray"), s.hideToTray) { v -> update { it.copy(hideToTray = v) } },
-                radio(ctx.t("fork.settings.language"), listOf("Русский", "English"), if (ctx.lang == "en") 1 else 0) { v ->
-                    val lang = if (v == 1) "en" else "ru"
-                    update { it.copy(language = lang) }
-                    ctx.navigator.switchLanguage(lang)
-                },
-            ),
-        )
-
-        val nodes = mutableListOf<Node>()
-        var y = -4.0
-        for ((name, entries) in categories) {
-            nodes += Label(name).apply { styleClass += listOf("settings-category", "font-display"); layoutX = 14.0; layoutY = y }
-            y += 32
-            nodes += line("line_settings_main.png", y)
-            y += 7
-            entries.forEachIndexed { i, node ->
-                if (i > 0) {
-                    nodes += line("line_settings_group.png", y)
-                    y += 1
-                }
-                node.layoutX = 20.0
-                node.layoutY = y
-                y += node.prefHeight(500.0)
-                nodes += node
+    private fun <T> bindRadios(group: ToggleGroup, options: Map<RadioButton, T>, selected: T, onChange: (T) -> Unit) {
+        options.forEach { (button, value) ->
+            button.userData = value
+            button.isSelected = value == selected
+        }
+        group.selectedToggleProperty().addListener { _, old, new ->
+            if (new == null) {
+                old?.isSelected = true // radio groups never become empty
+                return@addListener
             }
-            y += 24
+            @Suppress("UNCHECKED_CAST")
+            onChange(new.userData as T)
         }
-        nodes += Button(ctx.t("main.open_logs")).apply {
-            styleClass.setAll("logs-button")
-            setPrefSize(318.0, 46.0)
-            layoutX = 20.0
-            layoutY = y
-            brightenOnHover()
-            setOnAction { onNotAvailable() }
-        }
-        scroll.content = Pane().apply { children.setAll(nodes); setPrefSize(520.0, y + 60) }
     }
 
-    private fun line(image: String, y: Double) = ImageView(loadImage(Theme.IMAGE_ROOT + image)).apply {
-        fitHeight = 1.0; fitWidth = 407.0; layoutX = 14.0; layoutY = y
+    private fun bindToggle(row: HBox, toggle: CheckBox, value: Boolean, onChange: (Boolean) -> Unit) {
+        toggle.isSelected = value
+        toggle.selectedProperty().addListener { _, _, v -> onChange(v) }
+        // the whole row is clickable, like on the reference
+        row.setOnMouseClicked { e -> if (e.target !== toggle && !toggle.isHover) toggle.isSelected = !toggle.isSelected }
     }
 
-    private fun heapMb(v: Double): Int = (3584 * v).toInt() + 512
-
-    private fun <C> entry(path: String, init: (C) -> Unit): Parent =
-        Fxml.load<C>(ctx, path).also { init(it.controller) }.root
-
-    private fun checkBox(caption: String, value: Boolean, onChange: (Boolean) -> Unit) =
-        entry<CheckBoxEntryController>("settings/check_box_entry.fxml") { it.bind(caption, value, onChange) }
-
-    private fun numeric(caption: String, value: Int, onChange: (Int) -> Unit) =
-        entry<NumericEntryController>("settings/numeric_entry.fxml") { it.bind(caption, value, onChange) }
-
-    private fun progression(caption: String, value: Double, format: (Double) -> String, onChange: (Double) -> Unit) =
-        entry<ProgressionEntryController>("settings/progression_entry.fxml") { it.bind(caption, value, format, onChange) }
-
-    private fun radio(caption: String, options: List<String>, selected: Int, onChange: (Int) -> Unit) =
-        entry<RadioEntryController>("settings/radio_entry.fxml") { it.bind(caption, options, selected, onChange) }
-
-    /** Radio group over an enum; [labelKey] maps each value to its i18n key. */
-    private fun <E : Enum<E>> choice(caption: String, values: List<E>, labelKey: (E) -> String, selected: E, onChange: (E) -> Unit) =
-        radio(caption, values.map { ctx.t(labelKey(it)) }, values.indexOf(selected)) { i -> onChange(values[i]) }
-
-    private fun path(caption: String, value: Path) =
-        entry<PathEntryController>("settings/path_entry.fxml") { it.bind(caption, value.toString()); it.onChooseFolder = { onNotAvailable() } }
-
-    private fun exitModeKey(mode: ExitMode) = when (mode) {
-        ExitMode.ON_GAME_START -> "settings.exit.game_start"
-        ExitMode.ON_GAME_EXIT -> "settings.exit.game_exit"
-        ExitMode.NEVER -> "settings.exit.never"
-    }
-
-    private fun p2pModeKey(mode: P2pMode) = when (mode) {
-        P2pMode.ALWAYS -> "settings.p2p.always"
-        P2pMode.EXCEPT_MOBILE -> "settings.p2p.not_mobile"
-        P2pMode.NEVER -> "settings.p2p.never"
+    /** Digits only (max 7), empty means 0; saved on every edit. */
+    private fun bindLimit(field: TextField, value: Int, onChange: (Int) -> Unit) {
+        field.textFormatter = TextFormatter<String> { c -> if (c.controlNewText.matches(Regex("\\d{0,7}"))) c else null }
+        field.text = value.toString()
+        field.textProperty().addListener { _, _, t -> onChange(t.toIntOrNull() ?: 0) }
+        field.focusedProperty().addListener { _, _, focused -> if (!focused && field.text.isEmpty()) field.text = "0" }
     }
 }

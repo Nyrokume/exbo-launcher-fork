@@ -4,11 +4,10 @@ import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.components.WindowChrome
-import dev.launcherfork.ui.components.brightenOnHover
 import dev.launcherfork.ui.components.formatBytes
 import dev.launcherfork.ui.components.loadImage
 import dev.launcherfork.ui.components.setImageBackground
+import dev.launcherfork.ui.components.toggleClass
 import dev.launcherfork.ui.screens.main.modals.DefenderModalController
 import dev.launcherfork.ui.screens.main.modals.DeletionModalController
 import dev.launcherfork.ui.screens.main.modals.DownloadWarnModalController
@@ -23,37 +22,34 @@ import dev.launcherfork.ui.screens.settings.SettingsController
 import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.ClientStateStore
 import javafx.fxml.FXML
-import javafx.scene.control.Button
-import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.AnchorPane
+import javafx.scene.layout.BorderPane
 import javafx.scene.layout.Region
+import javafx.scene.layout.StackPane
 
 /**
- * main.fxml: only window chrome + coordination between the included areas.
- * Every area (sidebar, status bar, news, header, settings, each modal) has its own FXML and controller.
+ * main.fxml: coordination between the included areas (sidebar, hero, links, news, article, status bar,
+ * settings, modals). Each area has its own FXML and controller. Layout is adaptive (BorderPane + anchors).
  */
 class MainController(private val ctx: UiContext) : Disposable {
-    // own nodes (original fx:ids)
-    @FXML lateinit var root: AnchorPane
-    @FXML lateinit var main: AnchorPane
+    @FXML lateinit var root: StackPane
+    @FXML lateinit var layout: BorderPane
+    @FXML lateinit var main: StackPane
     @FXML lateinit var background: Region
+    @FXML lateinit var backgroundShade: Region
+    @FXML lateinit var homePane: AnchorPane
     @FXML lateinit var settingsPane: AnchorPane
-    @FXML lateinit var topCenter: Region
-    @FXML lateinit var loginButton: Button
-    @FXML lateinit var rightCorner: ImageView
-    @FXML lateinit var leftCorner: ImageView
-    @FXML lateinit var closeButton: Button
-    @FXML lateinit var hideButton: Button
 
     // included areas: FXMLLoader injects <fx:id>Controller
-    @FXML lateinit var defaultStatusPaneController: StatusPaneController
     @FXML lateinit var serversListController: ServersListController
-    @FXML lateinit var articleBgController: ArticleController
-    @FXML lateinit var advancedNewsPaneController: NewsController
-    @FXML lateinit var clientSettingsPaneController: ClientSettingsController
+    @FXML lateinit var heroController: HeroController
     @FXML lateinit var headerController: HeaderController
+    @FXML lateinit var advancedNewsPaneController: NewsController
+    @FXML lateinit var articleBgController: ArticleController
+    @FXML lateinit var defaultStatusPaneController: StatusPaneController
+    @FXML lateinit var clientSettingsPaneController: ClientSettingsController
     @FXML lateinit var settingsController: SettingsController
     @FXML lateinit var logoutPaneController: LogoutModalController
     @FXML lateinit var updatePaneController: UpdateModalController
@@ -75,12 +71,9 @@ class MainController(private val ctx: UiContext) : Disposable {
 
     @FXML
     fun initialize() {
-        WindowChrome.wireButtons(ctx.navigator, closeButton, hideButton)
-        background.effect = Theme.serverBackgroundEffect()
+        background.effect = Theme.gameArtEffect()
 
-        loginButton.text = ctx.services.auth.currentSession?.login ?: "player"
-        loginButton.brightenOnHover()
-        loginButton.setOnAction { logoutPaneController.show() }
+        serversListController.onAccountClicked = { logoutPaneController.show() }
         logoutPaneController.onConfirm = {
             ctx.services.auth.logout()
             store.shutdown()
@@ -88,31 +81,26 @@ class MainController(private val ctx: UiContext) : Disposable {
         }
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
 
-        serversListController.onServerSelected = { server -> selectServer(server, showDescription = true) }
+        serversListController.onServerSelected = { server -> selectServer(server, showHome = true) }
         serversListController.onSettingsClicked = { setSettingsVisible(!settingsPane.isVisible) }
 
         val status = defaultStatusPaneController
         status.onPrimaryAction = ::onPrimaryAction
         status.onClientSettings = { clientSettingsPaneController.toggle() }
-        status.onShowNews = { showNews() }
-        status.onShowServer = { selected?.let { selectServer(it, showDescription = true) } }
 
-        advancedNewsPaneController.onOpenArticle = { item ->
-            advancedNewsPaneController.setVisible(false)
-            articleBgController.open(item)
-        }
-        articleBgController.onClose = { showNews() }
+        headerController.onLink = { notAvailable() }
+        advancedNewsPaneController.onOpenArticle = { item -> articleBgController.open(item) }
+        articleBgController.onClose = {}
 
         clientSettingsPaneController.onDelete = { deletionPaneController.show() }
         clientSettingsPaneController.onNotAvailable = { notAvailable() }
         deletionPaneController.onConfirm = { notAvailable() }
-        settingsController.onNotAvailable = { notAvailable() }
 
         servers = ctx.services.servers.servers()
         serversListController.setServers(servers, store)
         servers.firstOrNull()?.let {
             serversListController.select(it, notify = false)
-            selectServer(it, showDescription = false)
+            selectServer(it, showHome = false)
         }
 
         root.sceneProperty().addListener { _, _, scene -> scene?.addEventFilter(KeyEvent.KEY_PRESSED, ::onKey) }
@@ -124,29 +112,22 @@ class MainController(private val ctx: UiContext) : Disposable {
         defaultStatusPaneController.dispose()
     }
 
-    fun selectServer(server: Server, showDescription: Boolean) {
+    fun selectServer(server: Server, showHome: Boolean) {
         selected = server
         clientSettingsPaneController.hide()
         background.setImageBackground(loadImage(server.backgroundUri, background = true), cover = true)
+        heroController.show(server)
         defaultStatusPaneController.showServer(server, store.state(server))
-        defaultStatusPaneController.showDescription(server)
-        if (showDescription) {
+        if (showHome) {
             setSettingsVisible(false)
             articleBgController.hide()
-            advancedNewsPaneController.setVisible(false)
-            defaultStatusPaneController.setPage(news = false)
         }
-    }
-
-    fun showNews() {
-        setSettingsVisible(false)
-        articleBgController.hide()
-        advancedNewsPaneController.setVisible(true)
-        defaultStatusPaneController.setPage(news = true)
     }
 
     fun setSettingsVisible(visible: Boolean) {
         settingsPane.isVisible = visible
+        homePane.isVisible = !visible
+        root.toggleClass("settings-mode", visible)
         serversListController.setSettingsActive(visible)
         if (visible) clientSettingsPaneController.hide()
     }

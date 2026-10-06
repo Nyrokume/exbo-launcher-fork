@@ -17,23 +17,25 @@ object Theme {
     const val STYLE_ROOT = UI_ROOT + "style/"
     const val IMAGE_ROOT = STYLE_ROOT + "image/"
 
-    // ---- window geometry (from the original launcher) ----
-    const val AUTH_WIDTH = 379.0
-    const val AUTH_HEIGHT = 490.0
-    const val MAIN_WIDTH = 886.0
-    const val MAIN_HEIGHT = 550.0
+    // ---- window geometry: one resizable, undecorated window ----
+    const val WINDOW_WIDTH = 1024.0
+    const val WINDOW_HEIGHT = 640.0
+    const val WINDOW_MIN_WIDTH = 900.0
+    const val WINDOW_MIN_HEIGHT = 580.0
+    /** Width of the invisible border zone that resizes the undecorated window. */
+    const val RESIZE_MARGIN = 6.0
 
-    /** Draggable header of the 379x490 auth/update windows (scene coordinates). */
-    val AUTH_DRAG_POLYGON: List<Pair<Double, Double>> = listOf(
-        5.0 to 5.0, 369.0 to 5.0, 369.0 to 36.0, 314.0 to 36.0,
-        303.0 to 25.0, 72.0 to 25.0, 61.0 to 36.0, 5.0 to 36.0,
-    )
+    // ---- overlay (auth / mail code / update panels over the main screen) ----
+    const val OVERLAY_BLUR_RADIUS = 16.0
+    const val OVERLAY_BRIGHTNESS = -0.3
 
-    /** Draggable header of the main window, depends on the window width. */
-    fun mainDragPolygon(w: Double): List<Pair<Double, Double>> = listOf(
-        0.0 to 0.0, w to 0.0, w to 31.0, w - 232.0 to 31.0,
-        w - 237.0 to 22.0, 237.0 to 22.0, 232.0 to 31.0, 0.0 to 31.0,
-    )
+    /** Applied to the main content while an overlay panel is shown. */
+    fun overlayBackdropEffect(): Effect = GaussianBlur(OVERLAY_BLUR_RADIUS).apply {
+        input = ColorAdjust(0.0, -0.3, OVERLAY_BRIGHTNESS, 0.0)
+    }
+
+    /** Game art behind the main/settings content: desaturated and slightly darkened. */
+    fun gameArtEffect(): Effect = ColorAdjust(0.0, -1.0, -0.15, 0.05)
 
     // ---- effects ----
     const val HOVER_BRIGHTNESS = 0.2

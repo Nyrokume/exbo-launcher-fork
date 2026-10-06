@@ -7,18 +7,18 @@
 <?import javafx.scene.text.*?>
 
 <!-- "No connection" screen (original offlinePane). Never shown automatically in the fork. -->
-<AnchorPane fx:id="offlinePane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+<AnchorPane fx:id="offlinePane" styleClass="modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.OfflineModalController">
     <Region styleClass="modal-dim-solid" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
     <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
         <center>
-            <Pane maxHeight="200" maxWidth="750">
-                <Label fx:id="offlineTitle" layoutX="130" layoutY="15" styleClass="modal-title" text="%main.modal.offline.title"/>
+            <Pane styleClass="modal-card,zone-radius-md" maxHeight="200" maxWidth="750">
+                <Label fx:id="offlineTitle" layoutX="130" layoutY="15" styleClass="modal-title,font-display" text="%main.modal.offline.title"/>
                 <ImageView><Image url="@../../style/image/offline_icon.png"/></ImageView>
                 <Label fx:id="offlineDesc" layoutX="130" layoutY="55" styleClass="modal-text" text="%main.modal.offline.text"/>
-                <ImageView layoutX="130" layoutY="45"><Image url="@../../style/image/line_settings_main.png"/></ImageView>
-                <Button id="offlineButton" fx:id="offlineButton" layoutX="205" layoutY="90" prefHeight="46" prefWidth="318" styleClass="modal-button" text="%main.modal.offline.repeat"/>
+                <Region styleClass="modal-rule" layoutX="130" layoutY="45" prefWidth="440" prefHeight="1"/>
+                <Button id="modal-offlineButton" fx:id="offlineButton" layoutX="205" layoutY="90" prefHeight="46" prefWidth="318" styleClass="modal-button,btn-primary,zone-caps,zone-radius-sm" text="%main.modal.offline.repeat"/>
                 <ProgressIndicator fx:id="offlineProgress" layoutX="340" layoutY="90" visible="false"/>
             </Pane>
         </center>

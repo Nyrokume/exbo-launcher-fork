@@ -1,7 +1,7 @@
 package dev.launcherfork.app
 
 import dev.launcherfork.ui.screens.auth.InitialAuthController
-import dev.launcherfork.ui.screens.main.MainController
+import dev.launcherfork.theme.Theme
 import javafx.animation.PauseTransition
 import javafx.application.Platform
 import javafx.scene.Scene
@@ -13,7 +13,7 @@ import javax.imageio.ImageIO
 
 /**
  * Dev tool: walks through the screens automatically and saves Scene snapshots as PNG
- * (`./gradlew run -Dlauncher.screenshots=docs/screenshots`). Not used in normal runs.
+ * (`./gradlew run -Dlauncher.theme=zone -Dlauncher.screenshots=docs/screenshots/zone`). Not used in normal runs.
  */
 class ScreenshotTour(private val stage: Stage, private val nav: StageNavigator, private val dir: File) {
     private val steps = ArrayDeque<Pair<Double, () -> Unit>>()
@@ -24,7 +24,7 @@ class ScreenshotTour(private val stage: Stage, private val nav: StageNavigator, 
         var mainDone = false
         nav.onScreenChanged = { name ->
             when {
-                name == "update" -> later(0.9) { shot("01_update_progress") }
+                name == "update" -> later(0.5) { shot("01_update_overlay") }
                 name == "auth" && !authDone -> { authDone = true; authFlow() }
                 name == "main" && !mainDone -> { mainDone = true; mainFlow() }
             }
@@ -32,48 +32,66 @@ class ScreenshotTour(private val stage: Stage, private val nav: StageNavigator, 
     }
 
     private fun authFlow() {
-        step(0.6) { shot("02_auth") }
+        val auth = { nav.overlayController as InitialAuthController }
+        step(0.6) { shot("02_auth_overlay") }
         step(0.1) {
-            val auth = nav.currentController as InitialAuthController
-            auth.loginField.text = ""
-            auth.passwordField.text = ""
-            auth.onEnter() // shows the "empty login" error
+            auth().loginField.text = ""
+            auth().passwordField.text = ""
+            auth().onEnter() // shows the "empty login" error
         }
         step(0.3) { shot("03_auth_error") }
         step(0.1) {
-            val auth = nav.currentController as InitialAuthController
-            auth.loginField.text = "player"
-            auth.passwordField.text = "secret"
-            auth.onEnter()
+            auth().loginField.text = "player"
+            auth().passwordField.text = "secret"
+            auth().onEnter()
         }
         run()
     }
 
     private fun mainFlow() {
-        val main = { nav.currentController as MainController }
-        step(1.0) { shot("04_main_news") }
-        step(0.1) { main().serversListController.select(main().selected!!) }
-        step(0.6) { shot("05_main_server") }
-        step(0.1) { main().setSettingsVisible(true) }
-        step(0.6) { shot("06_settings") }
-        step(0.1) { main().setSettingsVisible(false) }
+        val main = { nav.mainController!! }
+        step(1.0) { shot("04_main") }
+        step(0.1) { main().advancedNewsPaneController.newsScroll.vvalue = 1.0 }
+        step(0.4) { shot("05_main_news_scrolled") }
+        step(0.1) { main().advancedNewsPaneController.cards.first().onMouseClicked.handle(null) }
+        step(0.4) { shot("06_news_article") }
+        step(0.1) { main().articleBgController.hide(); main().setSettingsVisible(true) }
+        step(0.6) { shot("07_settings_game") }
+        step(0.1) { main().settingsController.scroll.vvalue = 0.55 }
+        step(0.4) { shot("08_settings_updates") }
+        step(0.1) { main().settingsController.scroll.vvalue = 1.0 }
+        step(0.4) { shot("09_settings_others") }
         step(0.1) {
             val m = main()
+            m.settingsController.scroll.vvalue = 0.0
+            m.setSettingsVisible(false)
             val bravo = m.servers.first { it.id == "bravo" }
             m.serversListController.select(bravo)
             m.defaultStatusPaneController.downloadButton.fire() // Download -> install dialog
         }
-        step(0.6) { shot("07_install_dialog") }
+        step(0.6) { shot("10_install_dialog") }
         step(0.1) { main().installPaneController.installYes.fire() } // start fake download
-        step(2.6) { shot("08_fake_progress") }
+        step(2.6) { shot("11_download_progress") }
         step(0.1) {
             val m = main()
             m.serversListController.select(m.servers.first())
             m.defaultStatusPaneController.downloadButton.fire() // Play -> Starting -> Running
         }
-        step(1.8) { shot("09_fake_running") }
-        step(0.1) { nav.switchLanguage("en") }
-        step(1.0) { shot("10_settings_en") }
+        step(1.8) { shot("12_running") }
+        step(0.1) { main().clientSettingsPaneController.toggle() }
+        step(0.3) { shot("13_tools_menu") }
+        step(0.1) {
+            main().clientSettingsPaneController.hide()
+            stage.width = 1366.0
+            stage.height = 800.0
+        }
+        step(0.8) { shot("14_resized_1366x800") }
+        step(0.1) {
+            stage.width = Theme.WINDOW_WIDTH
+            stage.height = Theme.WINDOW_HEIGHT
+            nav.switchLanguage("en")
+        }
+        step(1.0) { shot("15_settings_en") }
         step(0.3) { Platform.exit() }
         run()
     }

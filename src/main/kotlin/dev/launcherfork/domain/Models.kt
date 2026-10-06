@@ -20,6 +20,8 @@ data class Server(
     val installed: Boolean,
     /** Fake client size for the progress text, bytes. */
     val clientSizeBytes: Long,
+    /** Accent line of the hero title ("В ЧЕРНОБЫЛЬ"); the UI falls back to the caption. */
+    val tagline: String? = null,
 )
 
 data class NewsItem(

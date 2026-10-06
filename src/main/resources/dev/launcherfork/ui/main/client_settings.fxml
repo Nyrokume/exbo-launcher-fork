@@ -2,10 +2,10 @@
 
 <?import javafx.scene.layout.*?>
 
-<!-- Popup menu of the "client settings" (gear) button. Entries are added by ClientSettingsController. -->
-<Pane fx:id="clientSettingsPane" prefHeight="71" prefWidth="208" styleClass="client-settings-popup" visible="false"
-      stylesheets="@../style/common.css,@../style/main.css"
+<!-- Popup menu of the tools button. Entries are added by ClientSettingsController. -->
+<VBox fx:id="clientSettingsPane" id="toolsMenu" styleClass="client-settings-popup,zone-radius-md" visible="false" maxHeight="-Infinity" maxWidth="-Infinity"
+      stylesheets="@../style/layout.css"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.screens.main.ClientSettingsController">
-    <VBox fx:id="entries" layoutX="2" layoutY="2" prefWidth="204"/>
-</Pane>
+    <VBox fx:id="entries" prefWidth="220"/>
+</VBox>

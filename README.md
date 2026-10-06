@@ -8,6 +8,13 @@
 Исходник оригинала: JavaFX 9.0.3, прозрачное окно без рамки, главное окно 886×550, окна авторизации и
 обновления 379×490. Разбор оригинала лежит в `/workspace/stalzone/REPORT.md`.
 
+**Раскладка (ветка `redesign/zone`).** Теперь окно одно: без рамки, с ресайзом, 1024×640 (минимум 900×580).
+Слева колонка фиксированной ширины, контент справа тянется вместе с окном. Обновление и авторизация показываются
+панелями-оверлеями поверх размытого главного экрана (`docs/design/OVERLAY.md`). Эта адаптивная раскладка
+**заменила старую 886×550 для всех тем**. Темы `exbo` и `shadcn` работают на ней через общие токены, пусть и
+скромнее. Тема по умолчанию осталась `exbo`. Стиль `zone` (сайт STALZONE + раскладка лаунчера STALCRAFT)
+включается так: `-Dlauncher.theme=zone`, описание в `docs/design/STYLE-ZONE.md`.
+
 ## Запуск
 
 ```bash
@@ -23,16 +30,18 @@
 |---|---|
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
-| `-Dlauncher.theme=exbo\|shadcn` | тема: исходные цвета EXBO (по умолчанию) или тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) |
+| `-Dlauncher.theme=exbo\|shadcn\|zone` | тема: исходные цвета EXBO (по умолчанию), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE (`theme-zone.css`, Oswald + Roboto) |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 
-На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.screenshots=$PWD/docs/screenshots`.
+На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.theme=zone -Dlauncher.screenshots=$PWD/docs/screenshots/zone`.
 
 **Демо-логин** (всё фейковое): подходит любой логин и пароль. Логин `2fa` открывает экран ввода кода из e-mail
 (подходит любой 6-значный код). Пароль `wrong` показывает ошибку «неверный логин или пароль».
 
-Сценарий: фейковое самообновление (`update.fxml`) → авторизация → главное окно → (Настройки / Скачать → прогресс →
-Играть → «Игра запущена»). Кнопка с ником справа сверху открывает «Смену пользователя» и возвращает на авторизацию.
+Сценарий: главный экран под оверлеем фейкового самообновления → оверлей авторизации → главный экран
+(Настройки / Скачать → прогресс → Играть → «Игра запущена»). Карточка аккаунта внизу колонки открывает
+«Смену пользователя» и снова показывает оверлей авторизации. Окно перетаскивается за полосу заголовка, двойной клик
+разворачивает его, края окна тянутся.
 
 Dev-хоткеи главного окна для модальных слоёв, которые форк сам не показывает. Они работают **только с
 `-Dlauncher.dev=true`** (`./gradlew run -Dlauncher.dev=true`): **F1** обновление лаунчера,
@@ -45,9 +54,9 @@ Dev-хоткеи главного окна для модальных слоёв,
 src/main/kotlin/dev/launcherfork/
 ├─ app/                 точка входа и сборка приложения
 │  ├─ Main.kt             main() -> Application.launch
-│  ├─ LauncherApp.kt      Stage: TRANSPARENT, без рамки, без ресайза, иконка
+│  ├─ LauncherApp.kt      Stage: UNDECORATED, с ресайзом, 1024×640, иконка
 │  ├─ AppContext.kt       ЕДИНСТВЕННОЕ место, где выбираются реализации сервисов (ручной DI)
-│  ├─ StageNavigator.kt   переключение экранов (смена Scene + размер окна 379×490 / 886×550)
+│  ├─ StageNavigator.kt   одно окно: window.fxml + main.fxml в contentHost, оверлеи update/auth/mail (OVERLAY.md)
 │  └─ ScreenshotTour.kt   автотур для скриншотов (dev)
 ├─ domain/              модели и интерфейсы, от которых зависит UI
 │  ├─ Models.kt           Server, NewsItem, UserSession, AuthResult/AuthError, UpdatePhase, Progress,
@@ -55,35 +64,37 @@ src/main/kotlin/dev/launcherfork/
 │  └─ Services.kt         AuthService, ServerRepository, NewsRepository, UpdateService, GameLauncher,
 │                         SettingsStore, Services
 ├─ data/mock/           фейковые реализации (без сети, файлов и реестра)
-│  ├─ MockData.kt         4 сервера и 4 новости-заглушки
+│  ├─ MockData.kt         3 игры (STALCRAFT: X, Placeholder Game, Test Realm) и 4 новости-заглушки
 │  ├─ MockAuthService.kt, MockRepositories.kt (серверы, новости, InMemorySettingsStore)
 │  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
 │  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
 │  └─ MockScheduler.kt      общий таймер фейков (безопасная отмена/завершение)
 ├─ i18n/Strings.kt      ResourceBundle из локальных .properties (ru + en) вместо серверного LangManager
-├─ theme/Theme.kt       то, что нельзя выразить в CSS: пути, геометрия окон, полигон перетаскивания, эффекты
+├─ theme/Theme.kt       то, что нельзя выразить в CSS: пути, геометрия окна, эффекты (оверлей, арт игры), шрифты
 └─ ui/
-   ├─ UiContext.kt, Navigator.kt, Fxml.kt   контекст контроллеров, интерфейс навигации, загрузка FXML
+   ├─ UiContext.kt, Navigator.kt, Fxml.kt   контекст контроллеров, интерфейс навигации (+ UpdatePanel), загрузка FXML
    ├─ Messages.kt       AuthError / UpdatePhase -> ключи строк (домен ключей не знает)
    ├─ Disposable.kt     контроллер экрана освобождает таймеры/слушатели при уходе с экрана
    ├─ state/            ClientStateStore: состояния клиента Download/Pause/Continue/Play/Exit (на сессию)
-   ├─ components/       WindowChrome (drag/close/hide), Effects (hover-яркость), DownloadBar,
-   │                    ServerEntryController (карточка сервера)
+   ├─ components/       WindowChrome (WindowFrame: drag/maximize/resize, ResizeEdge), SegmentedBar (RAM),
+   │                    Effects, ServerEntryController (пункт игры в колонке)
    └─ screens/
+      ├─ window/        WindowController (window.fxml: полоса заголовка, contentHost, overlayLayer)
       ├─ update/        LauncherUpdateController     (update.fxml)
       ├─ auth/          InitialAuthController, MailAuthController (initial_auth.fxml, mail_auth.fxml)
       ├─ main/          MainController (main.fxml) + по контроллеру на каждую fx:include-область:
-      │                 ServersList, StatusPane, News, Article, ClientSettings, Header,
+      │                 ServersList, Hero, Header, News, Article, StatusPane, ClientSettings,
       │                 modals/ (10 модальных слоёв)
-      └─ settings/      SettingsController (settings.fxml) + entries/ (check box, numeric, progression, radio, path)
+      └─ settings/      SettingsController (статичный settings.fxml, привязан к SettingsStore)
 
 src/main/resources/dev/launcherfork/
-├─ ui/*.fxml, ui/main/*.fxml, ui/main/modals/*.fxml, ui/settings/*.fxml   разметка (спецификация)
-├─ ui/style/theme.css   токены цветов + шрифты (единственное место с литералами цветов)
-├─ ui/style/{common,auth,main,settings,lang_ru,lang_en}.css               стили компонентов (только токены)
-├─ ui/style/image/, ui/style/font/   PNG и Europe из оригинала, Manrope (OFL) (см. «Права на ассеты»)
+├─ ui/*.fxml, ui/main/*.fxml, ui/main/modals/*.fxml   разметка (спецификация)
+├─ ui/style/theme.css, theme-shadcn.css, theme-zone.css   токены цветов + шрифты + радиусы (литералы только тут)
+├─ ui/style/layout.css   стили новой раскладки (окно, главный экран, настройки, модалки; только токены)
+├─ ui/style/{common,auth,lang_ru,lang_en}.css   стили legacy-панелей авторизации/обновления
+├─ ui/style/image/, ui/style/font/   PNG и Europe из оригинала; Manrope, Oswald, Roboto (OFL) (см. «Права на ассеты»)
 ├─ ui/i18n/messages*.properties      строки ru/en
-└─ mock/                             сгенерированные картинки-заглушки (tools/GeneratePlaceholders.java)
+└─ mock/                             сгенерированные картинки-заглушки (tools/GenerateZoneArt.java)
 ```
 
 ## Архитектура и правила для дальнейшей работы
@@ -102,13 +113,15 @@ src/main/resources/dev/launcherfork/
 2. **Один контроллер на один FXML.** Гигантский `main.fxml` оригинала (132 узла, `MainController` на 2000 строк
    и ~100 полей) разбит на `fx:include`: `main/status_pane.fxml`, `servers_list.fxml`, `news.fxml`,
    `article.fxml`, `client_settings.fxml`, `header.fxml` и `main/modals/*.fxml`. У каждого файла свой
-   контроллер. `MainController` держит только хром окна и координирует области.
-   **Исходные `fx:id` сохранены.** Корень каждого include носит тот `fx:id`, который был у узла в оригинале
-   (`defaultStatusPane`, `advancedNewsPane`, `logoutPane`…). Порядок слоёв (z-order) тот же.
+   контроллер. `MainController` только координирует области (хром окна теперь в `window.fxml`).
+   Корни include по-прежнему носят исходные `fx:id` (`defaultStatusPane`, `advancedNewsPane`, `logoutPane`…).
+   В редизайне добавлены `main/hero.fxml`, перевёрстаны колонка, шапка-ссылки, новости, строка статуса и
+   настройки. Узлам, у которых `fx:id` совпадает со старым CSS-id, задан явный `id` (иначе к ним применились бы
+   PNG-правила из `lang_*.css`).
 3. **В коде нет `setStyle`/`setFont`/цветов.** Весь визуал задаётся CSS-классами. Состояния переключаются
    классами (`.selected`, `.active`, `.state-play`, `.state-pause`…). В коде остались только вещи, которых нет
-   в JavaFX CSS: `ColorAdjust`/`GaussianBlur` (константы в `Theme`), картинки из данных (иконка и фон
-   сервера, новости) и ширинозависимый «колпачок» полосы загрузки (`DownloadBar`, порт `setProgress` оригинала).
+   в JavaFX CSS: `ColorAdjust`/`GaussianBlur` (константы в `Theme`: размытие под оверлеем, обесцвечивание арта)
+   и картинки из данных (иконка и фон игры, новости).
 4. **`theme.css`: токены в стиле shadcn/ui** со значениями из оригинала:
    `-background #242428`, `-foreground #ffffff`, `-card #191919`, `-card-foreground #c7c7c7`,
    `-primary #1c4a61`, `-primary-foreground`, `-secondary #2b2b2b`, `-muted`, `-muted-foreground #b1b1b1`,
@@ -123,12 +136,20 @@ src/main/resources/dev/launcherfork/
    (SIL OFL 1.1, есть кириллица, лицензия в `ui/style/font/OFL-Manrope.txt`) заменил коммерческий Circe из оригинала.
    Чтобы сменить шрифт ещё раз, достаточно положить файлы в `ui/style/font/`,
    поправить список в `Theme.loadFonts()` и имена семейств в `theme.css`.
+   В теме `zone` шрифты другие: заголовки Oswald (свободная замена Bebas Neue Cyrillic с сайта STALZONE), текст
+   Roboto, оба SIL OFL 1.1 (`OFL-Oswald.txt`, `OFL-Roboto.txt`). Их регистрирует `Theme.zoneFonts`, а семейства
+   задаёт `theme-zone.css`. Разрядки (letter-spacing) в JavaFX CSS нет. CAPS-узлы с классом `.zone-caps` после
+   слияния с `redesign/auth` перейдут на `SpacedLabel`.
 6. **Тесты** (`./gradlew test`, JUnit 5 + headless Monocle):
    - `FxmlLoadingTest` загружает **каждый** FXML с настоящим контроллером на ru и en. Он падает на ошибках
      FXMLLoader (класс, свойство, include, обработчик) и на **любом неинжектированном `@FXML`-поле**
      (переименованный или удалённый `fx:id`), включая контроллеры из `fx:include`. Затем применяет CSS и layout.
-   - Проверка, что ~55 `fx:id` из оригинального `main.fxml` достижимы через `main.fxml` и его include.
-   - Совпадение ключей ru/en, фейковые сервисы, полигон перетаскивания.
+   - Проверка, что ~70 ключевых `fx:id` новой раскладки достижимы через `main.fxml` и его include, у
+     `window.fxml` есть рамка и `overlayLayer`, а новые FXML не используют legacy CSS-id.
+   - Совпадение ключей ru/en, фейковые сервисы, края ресайза и минимальный размер окна, токены всех тем.
+   - `OverlayNavigatorTest`: главный экран строится под оверлеем обновления, затем идут авторизация и код, а
+     `showMain()` снимает размытие и блокировку ввода. У legacy-панелей скрыты свои кнопки окна.
+     `SegmentedBar` прилипает к сегментам.
    - `ClientStateStore` (скачивание, пауза, продолжение, готово, запуск, «выйти», поздние колбэки после паузы
      и рестарта, shutdown) на ручных фейках, без таймеров.
    - `background()`: исключение доходит до UI как ошибка; окна авторизации разблокируются и показывают
@@ -137,9 +158,8 @@ src/main/resources/dev/launcherfork/
 
 ## Что перенесено
 
-- Окна: прозрачные `StageStyle.TRANSPARENT`, без рамки, без ресайза. Размеры 379×490 и 886×550. Кастомные
-  «закрыть» и «свернуть». Перетаскивание за шапку по тем же многоугольникам, что в оригинале
-  (`AuthController.headerArea`, `MainController.initializeStageMovement`).
+- Окно (в редизайне): одно, `UNDECORATED`, с ресайзом за края, разворачиванием и перетаскиванием за полосу
+  заголовка. Размеры оригинала (379×490 / 886×550) и многоугольники перетаскивания убраны.
 - Экраны: самообновление (`update.fxml`), авторизация (`initial_auth.fxml`), код из e-mail (`mail_auth.fxml`),
   главное окно (новости, описание сервера, список серверов, шапка со ссылками, статус и кнопка
   Скачать/Пауза/Продолжить/Играть/Выйти, меню клиента), настройки (категории, линии и отступы как в оригинале),
@@ -160,12 +180,17 @@ src/main/resources/dev/launcherfork/
 
 ## Что заглушка
 
-- `MockData`: 4 сервера (Alpha/Bravo/Charlie/Delta) и 4 новости. Картинки сгенерированы скриптом
-  `java tools/GeneratePlaceholders.java src/main/resources/dev/launcherfork/mock` и к EXBO не относятся.
+- `MockData`: 3 игры (STALCRAFT: X — установлена; Placeholder Game — не установлена; Test Realm — офлайн) и
+  4 новости. Тёмный процедурный арт (силуэт, лес, вышка) и иконки сгенерированы скриптом
+  `java tools/GenerateZoneArt.java src/main/resources/dev/launcherfork` и к EXBO не относятся: из эталонных
+  скриншотов ничего не скопировано, логотип — текстовый вордмарк «EXBO».
 - Авторизация, коды, «скачивание», «запуск игры», самообновление: таймеры в `MockAuthService`,
   `MockUpdateService` и `MockGameLauncher`.
 - Папка игр по умолчанию `~/Games/EXBO` (в оригинале был путь Windows). Путь установки строится через `Path.resolve`.
-- Настройки хранятся только в памяти (`InMemorySettingsStore`). Выбор папки и «Открыть логи» — заглушки.
+- Настройки хранятся только в памяти (`InMemorySettingsStore`). В редизайне со страницы настроек убраны выбор
+  корневой папки и кнопка «Открыть папку логов» (на эталоне их нет, а в форке они были заглушками). Поле
+  `gameRoot` осталось в модели, путь установки виден в диалоге установки. Порядок пунктов взят с эталона:
+  «Запускать игру по окончании загрузки» перенесён в раздел ОБНОВЛЕНИЕ.
 - Трей не реализован. Вместо диалогов ошибок используется встроенный слой `exceptionPane`.
 
 ## Что перенеслось неидеально
@@ -176,20 +201,22 @@ src/main/resources/dev/launcherfork/
 - **`-fx-effect: dropshadow(...), innershadow(...)`** на корне `main.fxml` в JavaFX 21 не парсится (два эффекта
   через запятую). Оставлен только `dropshadow`. Внутри прозрачного окна 886×550 тень всё равно обрезается.
 - **`NumberTextField`** (свой класс оригинала в `mail_auth.fxml`) заменён на `TextField` + `TextFormatter`.
-- **RAM-слайдер** (`progression_entry.fxml`): оригинал рисовал трек через `BorderImage` в коде. Здесь это два
-  региона с CSS-фоном, `fx:id="progress"` стал `Pane` с дочерним `bar`.
-- **`firstNewsDescPane`** стал `VBox` (подкласс `Pane`) вместо `Pane`. Позиции подписей новостей примерные.
-- Точную раскладку `pagesPane` (иконки «главная/новости») и меню клиента оригинал строил в коде. Здесь она
-  восстановлена по координатам из декомпиляции, но вживую с оригиналом не сверялась.
+- **RAM**: вместо слайдера оригинала теперь сегментная полоса `SegmentedBar` (9 сегментов, клик/перетаскивание).
+- Переключатель страниц «главная/новости» (`pagesPane`), соцсети и описание сервера в отдельной панели убраны:
+  в новой раскладке новости всегда видны справа, а описание стоит в hero.
 - Экраны `google_auth`, `mail_confirmation_*`, `password_changing_auth`, `distributor_pending`,
   `bootstrap_outdated`, `uninstaller` и инсталлятор не переносились.
 
 ## Скриншоты
 
-`docs/screenshots/` (снимки Scene, сделанные автотуром под Xvfb):
-`01_update_progress`, `02_auth`, `03_auth_error`, `04_main_news`, `05_main_server`, `06_settings`,
-`07_install_dialog`, `08_fake_progress`, `09_fake_running`, `10_settings_en`.
-Те же экраны в теме shadcn/ui (`-Dlauncher.theme=shadcn`) лежат в `docs/screenshots/shadcn/`.
+Снимки Scene, сделанные автотуром под Xvfb (`ScreenshotTour`), одинаковые для всех тем:
+`01_update_overlay`, `02_auth_overlay`, `03_auth_error`, `04_main`, `05_main_news_scrolled`, `06_news_article`,
+`07_settings_game`, `08_settings_updates`, `09_settings_others`, `10_install_dialog`, `11_download_progress`,
+`12_running`, `13_tools_menu`, `14_resized_1366x800`, `15_settings_en`.
+
+- `docs/screenshots/zone/` — тема `zone` (основная цель редизайна);
+- `docs/screenshots/` — тема по умолчанию `exbo` на новой раскладке;
+- `docs/screenshots/shadcn/` — тема shadcn/ui.
 
 ## Дистрибутивы: Windows-инсталлятор, portable, Linux
 

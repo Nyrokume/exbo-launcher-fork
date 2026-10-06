@@ -1,26 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.ProgressBar?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.Pane?>
-<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Text?>
 
-<!-- One server card in the sidebar (original server_entry.fxml; colors/fonts moved from code to CSS). -->
-<AnchorPane id="background" fx:id="root" maxHeight="47.0" minHeight="47" prefHeight="47.0" prefWidth="222.0" styleClass="server-entry"
-            stylesheets="@style/common.css,@style/main.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="dev.launcherfork.ui.components.ServerEntryController">
-   <children>
-      <Pane fx:id="image" cache="true" layoutX="7.0" layoutY="4.0" maxHeight="40.0" maxWidth="40.0" prefHeight="40.0" prefWidth="40.0" />
-      <Text fx:id="status" layoutX="62.0" layoutY="38.0" text="online" />
-      <Text fx:id="name" layoutX="62.0" layoutY="24.0" text="Server name" styleClass="font-display" />
-      <ProgressBar id="progress" fx:id="progress" maxHeight="1" minHeight="1" prefHeight="1" progress="0.0" visible="false" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="1" AnchorPane.rightAnchor="0" />
-      <Region fx:id="icon" layoutX="186.0" layoutY="14.0" maxHeight="33" prefHeight="22.0" prefWidth="22.0" />
-      <Text fx:id="downloadingStatus" layoutX="185.0" layoutY="26.0" text="99%" styleClass="font-display" />
-      <ImageView fx:id="cursor" fitHeight="47.0" fitWidth="3.0" pickOnBounds="true" preserveRatio="true" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="2.0" AnchorPane.topAnchor="0.0">
-         <Image url="@style/image/server_cursor.png" />
-      </ImageView>
-   </children>
-</AnchorPane>
+<!-- One game in the sidebar: red indicator when selected, icon, name, download progress. -->
+<HBox fx:id="root" id="serverEntry" styleClass="server-entry" alignment="CENTER_LEFT" spacing="0"
+      minHeight="40" prefHeight="40" maxHeight="40"
+      stylesheets="@style/layout.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dev.launcherfork.ui.components.ServerEntryController">
+    <Region fx:id="cursor" id="entryIndicator" styleClass="entry-indicator" minWidth="4" prefWidth="4" maxWidth="4" maxHeight="Infinity"/>
+    <Pane fx:id="image" id="entryIcon" styleClass="entry-icon" minWidth="24" prefWidth="24" maxWidth="24" minHeight="24" prefHeight="24" maxHeight="24">
+        <HBox.margin><Insets left="34" right="16"/></HBox.margin>
+    </Pane>
+    <VBox styleClass="entry-text" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" spacing="3" maxWidth="Infinity">
+        <Text fx:id="name" id="entryName" styleClass="entry-name,zone-caps" text="SERVER NAME"/>
+        <Text fx:id="status" id="entryStatus" styleClass="entry-status" text="online"/>
+        <ProgressBar fx:id="progress" id="entryProgress" styleClass="entry-progress" maxWidth="Infinity" progress="0.0" visible="false"/>
+    </VBox>
+    <Region fx:id="liveDot" styleClass="live-dot" minWidth="8" prefWidth="8" maxWidth="8" minHeight="8" prefHeight="8" maxHeight="8" visible="false">
+        <HBox.margin><Insets left="8" right="8"/></HBox.margin>
+    </Region>
+    <Text fx:id="downloadingStatus" id="entryPercent" styleClass="entry-percent" text="99%"/>
+    <Region fx:id="icon" id="entryState" styleClass="entry-state" minWidth="12" prefWidth="12" maxWidth="12" minHeight="12" prefHeight="12" maxHeight="12">
+        <HBox.margin><Insets left="6" right="18"/></HBox.margin>
+    </Region>
+</HBox>

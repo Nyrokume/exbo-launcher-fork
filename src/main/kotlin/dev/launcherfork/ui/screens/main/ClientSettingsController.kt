@@ -25,13 +25,11 @@ class ClientSettingsController(private val ctx: UiContext) {
         )
         entries.children.setAll(items.map { (key, icon, action) ->
             Button(ctx.t(key)).apply {
-                styleClass.setAll("context-button", "font-display", icon)
-                prefWidth = 204.0
-                prefHeight = 22.0
+                styleClass.setAll("context-button", "zone-radius-sm", icon)
+                maxWidth = Double.MAX_VALUE
                 setOnAction { hide(); action() }
             }
         })
-        clientSettingsPane.prefHeight = items.size * 22.0 + 4
     }
 
     val isVisible: Boolean get() = clientSettingsPane.isVisible

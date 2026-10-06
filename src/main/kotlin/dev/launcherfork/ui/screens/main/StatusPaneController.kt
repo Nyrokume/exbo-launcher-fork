@@ -1,68 +1,47 @@
 package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.domain.Server
-import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.components.DownloadBar
-import dev.launcherfork.ui.components.brightenOnHover
 import dev.launcherfork.ui.components.formatBytes
-import dev.launcherfork.ui.components.loadImage
 import dev.launcherfork.ui.components.toggleClass
 import dev.launcherfork.ui.state.ClientState
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
 import javafx.fxml.FXML
 import javafx.scene.control.Button
-import javafx.scene.control.Label
 import javafx.scene.control.ProgressBar
-import javafx.scene.image.ImageView
-import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.Pane
-import javafx.scene.layout.Region
+import javafx.scene.control.Tooltip
+import javafx.scene.layout.HBox
 import javafx.scene.text.Text
+import java.util.Locale
 
 /**
- * main/status_pane.fxml: Play/Download button, download bar + status text, server description and the
- * main/news page switcher. State comes from [dev.launcherfork.ui.state.ClientStateStore].
+ * main/status_pane.fxml: status text + progress bar (stretches with the window), tools button and the
+ * Play/Download CTA. State comes from [dev.launcherfork.ui.state.ClientStateStore].
  */
 class StatusPaneController(private val ctx: UiContext) : Disposable {
-    @FXML lateinit var defaultStatusPane: AnchorPane
+    @FXML lateinit var defaultStatusPane: HBox
     @FXML lateinit var clientSettingsButton: Button
     @FXML lateinit var progressBar: ProgressBar
     @FXML lateinit var downloadButton: Button
     @FXML lateinit var downloadingStatus: Text
-    @FXML lateinit var newsBg: AnchorPane
-    @FXML lateinit var serverDesc: Pane
-    @FXML lateinit var pagesPane: Pane
 
     var onPrimaryAction: (Server) -> Unit = {}
     var onClientSettings: () -> Unit = {}
-    var onShowNews: () -> Unit = {}
-    var onShowServer: () -> Unit = {}
 
-    private lateinit var downloadBar: DownloadBar
-    private val pageMain = Region().apply { styleClass += listOf("page-icon", "page-main"); setPrefSize(19.0, 16.0) }
-    private val pageNews = Region().apply { styleClass += listOf("page-icon", "page-news"); setPrefSize(19.0, 16.0); layoutX = 28.0 }
     private var current: Server? = null
     private var currentState: ObservableValue<ClientState>? = null
     private val stateListener = ChangeListener<ClientState> { _, _, s -> render(s) }
-
-    private val buttonStates = listOf("state-download", "state-play", "state-continue", "state-pause", "state-kill", "state-update")
+    private val buttonStates = listOf("state-download", "state-play", "state-continue", "state-pause", "state-kill")
 
     @FXML
     fun initialize() {
-        downloadBar = DownloadBar(progressBar)
         downloadingStatus.text = ""
         downloadButton.text = ""
         downloadButton.setOnAction { current?.let(onPrimaryAction) }
         clientSettingsButton.setOnAction { onClientSettings() }
-        clientSettingsButton.brightenOnHover()
-        pagesPane.children.setAll(pageMain, pageNews)
-        pageMain.setOnMouseClicked { onShowServer() }
-        pageNews.setOnMouseClicked { onShowNews() }
-        listOf(pageMain, pageNews).forEach { it.brightenOnHover() }
-        setPage(news = true)
+        clientSettingsButton.tooltip = Tooltip(ctx.t("main.client.tools"))
     }
 
     fun showServer(server: Server, state: ObservableValue<ClientState>) {
@@ -78,29 +57,6 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
         currentState = null
     }
 
-    fun setPage(news: Boolean) {
-        pageNews.toggleClass("selected", news)
-        pageMain.toggleClass("selected", !news)
-        serverDesc.isVisible = !news
-    }
-
-    /** Server caption + line + description, positioned like ServerPreviewSubController. */
-    fun showDescription(server: Server) {
-        serverDesc.children.clear()
-        val height = server.description.size * 16 + 40
-        var y = Theme.MAIN_HEIGHT / 2 - height / 2 - 70
-        serverDesc.children += Label(server.caption).apply { styleClass += "server-caption"; layoutY = y }
-        y += 50
-        serverDesc.children += ImageView(loadImage(Theme.IMAGE_ROOT + "line_settings_main.png")).apply {
-            fitHeight = 1.0; fitWidth = 407.0; layoutY = y
-        }
-        y += 25
-        server.description.forEach { line ->
-            serverDesc.children += Text(line).apply { styleClass += "server-desc"; layoutY = y }
-            y += 16
-        }
-    }
-
     private fun render(s: ClientState) {
         val server = current ?: return
         val (cls, textKey) = when (s) {
@@ -111,7 +67,8 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
             ClientState.Running -> "state-kill" to "main.client_button.kill"
         }
         buttonStates.forEach { downloadButton.toggleClass(it, it == cls) }
-        downloadButton.text = ctx.t(textKey)
+        // UPPERCASE CTA (.zone-caps) - to be swapped to SpacedLabel after the redesign/auth merge
+        downloadButton.text = ctx.t(textKey).uppercase(Locale.forLanguageTag(ctx.lang))
         downloadButton.isDisable = s == ClientState.Starting
         clientSettingsButton.isDisable = s == ClientState.NotInstalled
         downloadingStatus.text = when (s) {
@@ -122,17 +79,15 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
                 formatBytes(s.progress.bytesPerSecond),
             )
             is ClientState.Paused -> ctx.t("main.status.paused", formatBytes(((1 - s.fraction) * s.totalBytes).toLong()))
-            ClientState.Ready -> ctx.t("main.status.completed")
+            ClientState.Ready -> ctx.t("main.status.ready_to_launch")
             ClientState.Starting -> ctx.t("main.status.starting")
             ClientState.Running -> ctx.t("main.status.running")
         }
-        downloadBar.setProgress(
-            when (s) {
-                ClientState.NotInstalled -> 0.0
-                is ClientState.Downloading -> s.progress.fraction
-                is ClientState.Paused -> s.fraction
-                else -> 1.0
-            },
-        )
+        progressBar.progress = when (s) {
+            is ClientState.Downloading -> s.progress.fraction
+            is ClientState.Paused -> s.fraction
+            ClientState.Running, ClientState.Starting -> 1.0
+            else -> 0.0
+        }
     }
 }

@@ -7,18 +7,18 @@
 <?import javafx.scene.text.*?>
 
 <!-- In-window error dialog (original exceptionPane). Used as the simple error-dialog stub. -->
-<AnchorPane fx:id="exceptionPane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+<AnchorPane fx:id="exceptionPane" styleClass="modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.ExceptionModalController">
     <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
     <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
         <center>
-            <Pane maxHeight="200" maxWidth="750">
-                <Label fx:id="exceptionTitle" layoutX="150" layoutY="35" styleClass="modal-title" text="ddededdede"/>
+            <Pane styleClass="modal-card,zone-radius-md" maxHeight="200" maxWidth="750">
+                <Label fx:id="exceptionTitle" layoutX="150" layoutY="35" styleClass="modal-title,font-display" text="ddededdede"/>
                 <ImageView layoutX="10" layoutY="7"><Image url="@../../style/image/exception_icon.png"/></ImageView>
                 <Label fx:id="exceptionDesc" layoutX="150" layoutY="71" maxHeight="90" maxWidth="500" styleClass="modal-text" text="ddededdede" wrapText="true"/>
-                <ImageView layoutX="150" layoutY="68"><Image url="@../../style/image/line_settings_main.png"/></ImageView>
-                <Button id="offlineButton" fx:id="exceptionButton" layoutX="225" layoutY="157" prefHeight="46" prefWidth="318" styleClass="modal-button" text="%main.modal.exception.ok"/>
+                <Region styleClass="modal-rule" layoutX="150" layoutY="68" prefWidth="440" prefHeight="1"/>
+                <Button id="modal-exceptionButton" fx:id="exceptionButton" layoutX="225" layoutY="157" prefHeight="46" prefWidth="318" styleClass="modal-button,btn-primary,zone-caps,zone-radius-sm" text="%main.modal.exception.ok"/>
             </Pane>
         </center>
     </BorderPane>

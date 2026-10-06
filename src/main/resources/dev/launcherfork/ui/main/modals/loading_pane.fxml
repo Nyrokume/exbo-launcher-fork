@@ -7,7 +7,7 @@
 <?import javafx.scene.text.*?>
 
 <!-- Full-window spinner (original loadingPane). -->
-<BorderPane fx:id="loadingPane" styleClass="loading-pane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+<BorderPane fx:id="loadingPane" styleClass="loading-pane,modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.LoadingModalController">
     <center>
