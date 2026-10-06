@@ -12,6 +12,8 @@ import dev.launcherfork.domain.UpdatePhase
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.domain.ProgressListener
 import dev.launcherfork.ui.components.ResizeEdge
+import dev.launcherfork.ui.screens.auth.MailAuthController
+import dev.launcherfork.ui.screens.auth.TotpAuthController
 import dev.launcherfork.theme.Theme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -24,6 +26,13 @@ import java.util.concurrent.TimeUnit
 class MockServicesTest {
     /** The only mock game is installed; downloads run on a not-installed copy of it. */
     private val notInstalled = MockData.servers.single().copy(id = "not-installed", installed = false)
+
+    @Test
+    fun codeScreensAndMockAgreeOnCodeLengths() {
+        // the window cells and the mock check must not drift apart silently
+        assertEquals(MockAuthService.CODE_LENGTH, MailAuthController.CODE_LENGTH, "e-mail code length")
+        assertEquals(MockAuthService.TOTP_CODE_LENGTH, TotpAuthController.CODE_LENGTH, "TOTP code length")
+    }
 
     @Test
     fun authFlows() {
