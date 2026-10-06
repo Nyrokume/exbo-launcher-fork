@@ -173,14 +173,16 @@ class LoadingModalController(ctx: UiContext) : ModalController(ctx) {
     override val layer: Node get() = loadingPane
 }
 
-/** main/modals/deletion_pane.fxml */
+/** main/modals/deletion_pane.fxml: flow layout like logout; Esc = cancel, focus starts on Cancel ([deletionNo]). */
 class DeletionModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML lateinit var deletionPane: AnchorPane
+    @FXML lateinit var deletionCard: VBox
     @FXML lateinit var deletionTitle: Label
     @FXML lateinit var deletionDesc: Label
     @FXML lateinit var deletionYes: Button
     @FXML lateinit var deletionNo: Button
     override val layer: Node get() = deletionPane
+    override val initialFocus: Node get() = deletionNo
 
     @FXML fun initialize() = wire(deletionYes, deletionNo)
 }
