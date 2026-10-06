@@ -5,6 +5,8 @@ import dev.launcherfork.ui.screens.auth.InitialAuthController
 import dev.launcherfork.ui.screens.auth.RegisterController
 import dev.launcherfork.ui.screens.auth.TotpAuthController
 import dev.launcherfork.theme.Theme
+import dev.launcherfork.domain.Progress
+import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.GameAction
 import javafx.animation.PauseTransition
 import javafx.application.Platform
@@ -83,6 +85,12 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         step(0.1) { main().onGameAction(GameAction.VERIFY) } // the game runs: confirmation first
         step(0.3) { main().deletionPaneController.deletionYes.fire() } // close the game and verify
         step(0.5) { shot("10_verifying") }
+        // status pill states with a fixed sample (the mock's real download is too fast / too slow for a stable shot)
+        step(3.0) { main().run { store.state(selected!!).set(ClientState.Downloading(Progress(0.42, 4_509_715_660, 10_737_418_240, 25_165_824))) } }
+        step(0.4) { shot("10b_downloading") }
+        step(0.1) { main().run { store.state(selected!!).set(ClientState.Paused(0.42, 10_737_418_240)) } }
+        step(0.4) { shot("10c_paused") }
+        step(0.1) { main().run { store.state(selected!!).set(ClientState.Ready) } }
         step(0.1) {
             stage.width = 1366.0
             stage.height = 800.0

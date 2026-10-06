@@ -36,6 +36,8 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var progressBar: ProgressBar
     @FXML lateinit var downloadButton: Button
     @FXML lateinit var downloadingStatus: Text
+    @FXML lateinit var progressPercent: Text
+    @FXML lateinit var statusPill: javafx.scene.layout.StackPane
     @FXML lateinit var gameActionsController: GameActionsController
 
     var onPrimaryAction: (Server) -> Unit = {}
@@ -148,6 +150,16 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
             ClientState.Running, ClientState.Starting -> 1.0
             else -> 0.0
         }
+        // percentage inside the pill (right) while something is in progress
+        val fraction = when (s) {
+            is ClientState.Downloading -> s.progress.fraction
+            is ClientState.Paused -> s.fraction
+            else -> null
+        }
+        progressPercent.text = fraction?.let { "${(it * 100).roundToInt()}%" } ?: ""
+        statusPill.toggleClass("in-progress", s is ClientState.Downloading || s is ClientState.Busy)
+        statusPill.toggleClass("paused", s is ClientState.Paused)
+        statusPill.toggleClass("running", s == ClientState.Running || s == ClientState.Starting)
     }
 
     private companion object {

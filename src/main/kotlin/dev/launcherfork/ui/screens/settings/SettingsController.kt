@@ -16,25 +16,27 @@ import javafx.scene.control.TextFormatter
 import javafx.scene.control.Tooltip
 import javafx.scene.control.ToggleGroup
 import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 
 /**
- * settings.fxml: one-screen layout (blocks ИГРА / ОБНОВЛЕНИЕ / ЯЗЫК / ПОВЕДЕНИЕ) bound to [dev.launcherfork.domain.SettingsStore].
+ * settings.fxml: one-screen list (groups ОПЕРАТИВНАЯ ПАМЯТЬ / ПОВЕДЕНИЕ / ОБНОВЛЕНИЕ / ЯЗЫК) bound to [dev.launcherfork.domain.SettingsStore].
  * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var settingsRoot: AnchorPane
     @FXML lateinit var scroll: ScrollPane
     @FXML lateinit var settingsContent: VBox
-    @FXML lateinit var settingsTitle: Label
     @FXML lateinit var gameSection: VBox
     @FXML lateinit var updatesSection: VBox
     @FXML lateinit var languageSection: VBox
     @FXML lateinit var behaviourSection: VBox
-    @FXML lateinit var behaviourGrid: GridPane
-    @FXML lateinit var choicesGrid: GridPane
+    @FXML lateinit var ramCard: VBox
+    @FXML lateinit var behaviourCard: VBox
+    @FXML lateinit var exitRow: HBox
+    @FXML lateinit var p2pRow: HBox
+    @FXML lateinit var limitsRow: HBox
+    @FXML lateinit var languageRow: HBox
     @FXML lateinit var exitLabel: Label
     @FXML lateinit var p2pLabel: Label
     @FXML lateinit var columns: HBox
@@ -90,6 +92,7 @@ class SettingsController(private val ctx: UiContext) {
         exitLabel.tooltip = Tooltip(ctx.t("settings.exit"))
         p2pLabel.tooltip = Tooltip(ctx.t("settings.p2p"))
 
+        Tooltip.install(limitsRow, Tooltip(ctx.t("settings.speed_limit.note")))
         bindLimit(downloadLimitBox, downloadLimitField, "settings.limit.download", s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } }
         bindLimit(uploadLimitBox, uploadLimitField, "settings.limit.upload", s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } }
 

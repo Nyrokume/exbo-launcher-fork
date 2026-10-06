@@ -141,19 +141,32 @@ class HeaderMenuLayoutTest {
         assertFalse(profile.isMenuShown, "$theme: an outside press closes the menu")
     }
 
+    /**
+     * The nav row is the same on every screen and holds only the nav: links + profile stay on the settings screen,
+     * the row's children are exactly those two, and the page content (home centre slot, status bar, settings) starts
+     * below it.
+     */
     @Test
-    fun hiddenHeaderLinksLeaveTheLayout() = withMain { nav, theme ->
+    fun navRowIsTheSameOnEveryScreenAndHoldsOnlyTheNav() = withMain { nav, theme ->
         val main = nav.mainController!!
         val header = main.headerController.headerPane
         val nick = main.profileBarController.loginButton.sceneBounds()
+        val links = header.sceneBounds()
+        val profileRoot = generateSequence(main.profileBarController.loginButton as javafx.scene.Node) { it.parent }.first { it.parent === main.topBar }
+        assertEquals(listOf(header, profileRoot), main.topBar.children.toList(), "$theme: the nav row holds only the links and the profile")
+        val row = main.topBar.sceneBounds()
+        listOf(main.centerPane, main.defaultStatusPaneController.defaultStatusPane).forEach { n ->
+            assertTrue(n.sceneBounds().minY >= row.maxY, "$theme: ${n.id} reaches into the nav row")
+        }
         main.setSettingsVisible(true)
         relayout(nav)
-        assertFalse(header.isVisible, "$theme: links must hide on the settings screen")
-        assertFalse(header.isManaged, "$theme: hidden links must not take space in the row")
-        assertEquals(nick.maxX, main.profileBarController.loginButton.sceneBounds().maxX, 0.5, "$theme: nickname moved")
+        assertTrue(header.isVisible && header.isManaged, "$theme: the links stay on the settings screen")
+        assertEquals(nick, main.profileBarController.loginButton.sceneBounds(), "$theme: nickname moved")
+        assertEquals(links, header.sceneBounds(), "$theme: links moved")
+        assertTrue(main.settingsController.settingsRoot.sceneBounds().minY >= row.maxY, "$theme: settings reach into the nav row")
         main.setSettingsVisible(false)
         relayout(nav)
-        assertTrue(header.isVisible && header.isManaged, "$theme: links back on the home screen")
+        assertTrue(header.isVisible && header.isManaged, "$theme: links on the home screen")
     }
 
     private fun press(scene: Scene, target: Node): MouseEvent {

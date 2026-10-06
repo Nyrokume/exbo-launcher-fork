@@ -8,13 +8,13 @@
   Settings page: ONE screen at the minimum window size (Theme.WINDOW_MIN_*, 900x580) in every theme and language, no
   scrolling (SettingsScreenTest). Bound to SettingsStore by SettingsController, every change is saved.
 
-  Minimal: no cards, no decorative rules, no helper lines (explanations live in tooltips). Blocks:
-    ИГРА        RAM only (segmented bar like the original launcher, "Выделено: 6 ГБ из 16 ГБ" under it).
-    ОБНОВЛЕНИЕ | ЯЗЫК   two equal columns: speed limits (download / upload) | language radios.
-    ПОВЕДЕНИЕ   one uniform list (GridPane, same two columns): every row is "label left, control right" with the same
-                minimum height. The two choices (auto-exit, P2P) span both columns as single-line radio groups in a
-                shared inner grid (options line up in columns, the last one ends at the right edge); the four on/off
-                options are switch rows, two per line. Row heights align across the columns because they share rows.
+  The page starts BELOW the nav row (main.fxml anchors it under the top bar; no page title: the sidebar already marks
+  НАСТРОЙКИ as active). One tidy list: small Bebas group labels, each over a subtle card (.card) whose rows all look
+  the same: label left, control right, 36 px, thin separators between rows; no wrapping labels (long wording in
+  tooltips).
+    ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" + the segmented RAM bar (like the original launcher).
+    ПОВЕДЕНИЕ           auto-exit and P2P as segmented controls (accent on the selected part), four switches.
+    ОБНОВЛЕНИЕ | ЯЗЫК   one row each, side by side: speed limits (download / upload fields) | Русский / English.
 -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -27,114 +27,103 @@
     <ScrollPane fx:id="scroll" id="settingsScroll" styleClass="settings-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER"
                 AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
         <VBox fx:id="settingsContent" id="settingsContent" styleClass="settings-content">
-            <HBox styleClass="settings-title-row" alignment="CENTER_LEFT">
-                <Label fx:id="settingsTitle" styleClass="settings-title,font-display" text="%settings.page.title" minWidth="-Infinity"/>
-            </HBox>
-
-            <!-- ИГРА -->
-            <VBox fx:id="gameSection" id="settingsGame" styleClass="settings-section">
-                <Label fx:id="gameHeading" styleClass="settings-heading,font-display" text="%settings.heading.game" minHeight="-Infinity"/>
-                <VBox styleClass="settings-block,ram-block">
-                    <Label styleClass="settings-label" text="%settings.ram"/>
-                    <RamBar fx:id="ramBar" id="ramBar" maxWidth="Infinity"/>
-                    <Label fx:id="ramSummary" id="ramSummary" styleClass="ram-summary" minWidth="-Infinity"/>
+            <!-- ОПЕРАТИВНАЯ ПАМЯТЬ -->
+            <VBox fx:id="gameSection" id="settingsGame" styleClass="settings-group">
+                <Label fx:id="gameHeading" styleClass="settings-group-label,font-display" text="%settings.heading.ram" minHeight="-Infinity"/>
+                <VBox fx:id="ramCard" styleClass="settings-card,card,zone-radius-md,ram-card">
+                    <HBox styleClass="ram-head" alignment="CENTER_LEFT">
+                        <Label fx:id="ramSummary" id="ramSummary" styleClass="ram-summary" minWidth="-Infinity"/>
+                    </HBox>
+                    <RamBar fx:id="ramBar" id="ramBar" maxWidth="Infinity" accessibleText="%settings.ram"/>
                 </VBox>
             </VBox>
 
-            <Region styleClass="settings-divider"/>
+            <!-- ПОВЕДЕНИЕ -->
+            <VBox fx:id="behaviourSection" id="settingsBehaviour" styleClass="settings-group">
+                <Label fx:id="behaviourHeading" styleClass="settings-group-label,font-display" text="%settings.heading.behaviour" minHeight="-Infinity"/>
+                <VBox fx:id="behaviourCard" styleClass="settings-card,card,zone-radius-md">
+                    <HBox fx:id="exitRow" styleClass="settings-row" alignment="CENTER_LEFT">
+                        <Label fx:id="exitLabel" styleClass="settings-label,row-label" text="%settings.exit.short" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
+                            <RadioButton fx:id="exitOnStart" styleClass="segment,zone-radius-sm" text="%settings.exit.game_start" toggleGroup="$exitGroup" minWidth="-Infinity"/>
+                            <RadioButton fx:id="exitOnGameExit" styleClass="segment,zone-radius-sm" text="%settings.exit.game_exit" toggleGroup="$exitGroup" minWidth="-Infinity"/>
+                            <RadioButton fx:id="exitNever" styleClass="segment,zone-radius-sm" text="%settings.exit.never" toggleGroup="$exitGroup" minWidth="-Infinity"/>
+                        </HBox>
+                    </HBox>
+                    <HBox fx:id="p2pRow" styleClass="settings-row" alignment="CENTER_LEFT">
+                        <Label fx:id="p2pLabel" styleClass="settings-label,row-label" text="%settings.p2p.short" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
+                            <RadioButton fx:id="p2pAlways" styleClass="segment,zone-radius-sm" text="%settings.p2p.always" toggleGroup="$p2pGroup" minWidth="-Infinity"/>
+                            <RadioButton fx:id="p2pNotMobile" styleClass="segment,zone-radius-sm" text="%settings.p2p.not_mobile" toggleGroup="$p2pGroup" minWidth="-Infinity"/>
+                            <RadioButton fx:id="p2pNever" styleClass="segment,zone-radius-sm" text="%settings.p2p.never" toggleGroup="$p2pGroup" minWidth="-Infinity"/>
+                        </HBox>
+                    </HBox>
+                    <HBox fx:id="startOnDownloadedRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.start_on_downloaded" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <CheckBox fx:id="startOnDownloadedToggle" styleClass="switch" accessibleText="%settings.start_on_downloaded"/>
+                    </HBox>
+                    <HBox fx:id="defenderRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.defender" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <CheckBox fx:id="defenderToggle" styleClass="switch" accessibleText="%settings.defender"/>
+                    </HBox>
+                    <HBox fx:id="trayRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.tray" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <CheckBox fx:id="trayToggle" styleClass="switch" accessibleText="%settings.tray"/>
+                    </HBox>
+                    <HBox fx:id="autostartRow" styleClass="settings-row,toggle-row,last" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.run_on_start" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <CheckBox fx:id="autostartToggle" styleClass="switch" accessibleText="%settings.run_on_start"/>
+                    </HBox>
+                </VBox>
+            </VBox>
 
             <HBox fx:id="columns" styleClass="settings-columns">
                 <!-- ОБНОВЛЕНИЕ -->
-                <VBox fx:id="updatesSection" id="settingsUpdates" styleClass="settings-section"
-                      HBox.hgrow="ALWAYS" prefWidth="0" minWidth="0" maxWidth="Infinity">
-                    <Label fx:id="updatesHeading" styleClass="settings-heading,font-display" text="%settings.heading.updates" minHeight="-Infinity"/>
-                    <VBox styleClass="settings-block">
-                        <Label styleClass="settings-label" text="%settings.speed_limit"/>
-                        <HBox styleClass="limit-row">
-                            <HBox fx:id="downloadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT"
-                                  HBox.hgrow="ALWAYS" prefWidth="0" minWidth="0" maxWidth="Infinity">
-                                <Region styleClass="icon-download"/>
-                                <TextField fx:id="downloadLimitField" id="downloadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
-                                           accessibleText="%settings.limit.download"/>
-                                <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
-                            </HBox>
-                            <HBox fx:id="uploadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT"
-                                  HBox.hgrow="ALWAYS" prefWidth="0" minWidth="0" maxWidth="Infinity">
-                                <Region styleClass="icon-upload"/>
-                                <TextField fx:id="uploadLimitField" id="uploadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
-                                           accessibleText="%settings.limit.upload"/>
-                                <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
+                <VBox fx:id="updatesSection" id="settingsUpdates" styleClass="settings-group" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                    <Label fx:id="updatesHeading" styleClass="settings-group-label,font-display" text="%settings.heading.updates" minHeight="-Infinity"/>
+                    <VBox styleClass="settings-card,card,zone-radius-md">
+                        <HBox fx:id="limitsRow" styleClass="settings-row,last" alignment="CENTER_LEFT">
+                            <Label styleClass="settings-label,row-label" text="%settings.speed_limit" minWidth="-Infinity"/>
+                            <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                            <HBox styleClass="limit-row" alignment="CENTER_RIGHT" minWidth="-Infinity" maxHeight="-Infinity">
+                                <HBox fx:id="downloadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
+                                    <Region styleClass="icon-download"/>
+                                    <TextField fx:id="downloadLimitField" id="downloadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
+                                               accessibleText="%settings.limit.download"/>
+                                    <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
+                                </HBox>
+                                <HBox fx:id="uploadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
+                                    <Region styleClass="icon-upload"/>
+                                    <TextField fx:id="uploadLimitField" id="uploadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
+                                               accessibleText="%settings.limit.upload"/>
+                                    <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
+                                </HBox>
                             </HBox>
                         </HBox>
                     </VBox>
                 </VBox>
 
                 <!-- ЯЗЫК -->
-                <VBox fx:id="languageSection" id="settingsLanguage" styleClass="settings-section"
-                      HBox.hgrow="ALWAYS" prefWidth="0" minWidth="0" maxWidth="Infinity">
-                    <Label fx:id="languageHeading" styleClass="settings-heading,font-display" text="%settings.heading.language" minHeight="-Infinity"/>
-                    <VBox styleClass="settings-block">
-                        <Label styleClass="settings-label" text="%settings.language.interface"/>
-                        <HBox styleClass="choice-group,language-choices" alignment="CENTER_LEFT">
-                            <RadioButton fx:id="langRu" styleClass="settings-radio" text="Русский" toggleGroup="$languageGroup" minWidth="-Infinity"/>
-                            <RadioButton fx:id="langEn" styleClass="settings-radio" text="English" toggleGroup="$languageGroup" minWidth="-Infinity"/>
+                <VBox fx:id="languageSection" id="settingsLanguage" styleClass="settings-group" minWidth="-Infinity">
+                    <Label fx:id="languageHeading" styleClass="settings-group-label,font-display" text="%settings.heading.language" minHeight="-Infinity"/>
+                    <VBox styleClass="settings-card,card,zone-radius-md">
+                        <HBox fx:id="languageRow" styleClass="settings-row,last" alignment="CENTER_LEFT">
+                            <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
+                                <RadioButton fx:id="langRu" styleClass="segment,zone-radius-sm" text="Русский" toggleGroup="$languageGroup" minWidth="-Infinity"
+                                             accessibleText="%settings.language.interface"/>
+                                <RadioButton fx:id="langEn" styleClass="segment,zone-radius-sm" text="English" toggleGroup="$languageGroup" minWidth="-Infinity"
+                                             accessibleText="%settings.language.interface"/>
+                            </HBox>
                         </HBox>
                     </VBox>
                 </VBox>
             </HBox>
-
-            <Region styleClass="settings-divider"/>
-
-            <!-- ПОВЕДЕНИЕ -->
-            <VBox fx:id="behaviourSection" id="settingsBehaviour" styleClass="settings-section">
-                <Label fx:id="behaviourHeading" styleClass="settings-heading,font-display" text="%settings.heading.behaviour" minHeight="-Infinity"/>
-                <GridPane fx:id="behaviourGrid" styleClass="behaviour-grid">
-                    <columnConstraints>
-                        <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-                        <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
-                    </columnConstraints>
-
-                    <!-- the two choices share one inner grid so their options line up in columns; the last column ends
-                         at the right edge, like the switches below -->
-                    <GridPane fx:id="choicesGrid" styleClass="choices-grid" GridPane.rowIndex="0" GridPane.columnIndex="0" GridPane.columnSpan="2">
-                        <columnConstraints>
-                            <ColumnConstraints hgrow="ALWAYS"/>
-                            <ColumnConstraints hgrow="NEVER"/>
-                            <ColumnConstraints hgrow="NEVER"/>
-                            <ColumnConstraints hgrow="NEVER"/>
-                        </columnConstraints>
-                        <rowConstraints>
-                            <RowConstraints minHeight="32" valignment="CENTER"/>
-                            <RowConstraints minHeight="32" valignment="CENTER"/>
-                        </rowConstraints>
-                        <Label fx:id="exitLabel" styleClass="settings-label,row-label" text="%settings.exit.short" minWidth="-Infinity" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                        <RadioButton fx:id="exitOnStart" styleClass="settings-radio" text="%settings.exit.game_start" toggleGroup="$exitGroup" minWidth="-Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-                        <RadioButton fx:id="exitOnGameExit" styleClass="settings-radio" text="%settings.exit.game_exit" toggleGroup="$exitGroup" minWidth="-Infinity" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
-                        <RadioButton fx:id="exitNever" styleClass="settings-radio" text="%settings.exit.never" toggleGroup="$exitGroup" minWidth="-Infinity" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
-                        <Label fx:id="p2pLabel" styleClass="settings-label,row-label" text="%settings.p2p.short" minWidth="-Infinity" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <RadioButton fx:id="p2pAlways" styleClass="settings-radio" text="%settings.p2p.always" toggleGroup="$p2pGroup" minWidth="-Infinity" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-                        <RadioButton fx:id="p2pNotMobile" styleClass="settings-radio" text="%settings.p2p.not_mobile" toggleGroup="$p2pGroup" minWidth="-Infinity" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
-                        <RadioButton fx:id="p2pNever" styleClass="settings-radio" text="%settings.p2p.never" toggleGroup="$p2pGroup" minWidth="-Infinity" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
-                    </GridPane>
-
-                    <HBox fx:id="startOnDownloadedRow" styleClass="toggle-row" alignment="CENTER_LEFT" GridPane.rowIndex="1" GridPane.columnIndex="0">
-                        <Label styleClass="settings-label,toggle-label" text="%settings.start_on_downloaded" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true" minHeight="-Infinity"/>
-                        <CheckBox fx:id="startOnDownloadedToggle" styleClass="switch" accessibleText="%settings.start_on_downloaded"/>
-                    </HBox>
-                    <HBox fx:id="trayRow" styleClass="toggle-row" alignment="CENTER_LEFT" GridPane.rowIndex="1" GridPane.columnIndex="1">
-                        <Label styleClass="settings-label,toggle-label" text="%settings.tray" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true" minHeight="-Infinity"/>
-                        <CheckBox fx:id="trayToggle" styleClass="switch" accessibleText="%settings.tray"/>
-                    </HBox>
-                    <HBox fx:id="defenderRow" styleClass="toggle-row" alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="0">
-                        <Label styleClass="settings-label,toggle-label" text="%settings.defender" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true" minHeight="-Infinity"/>
-                        <CheckBox fx:id="defenderToggle" styleClass="switch" accessibleText="%settings.defender"/>
-                    </HBox>
-                    <HBox fx:id="autostartRow" styleClass="toggle-row" alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="1">
-                        <Label styleClass="settings-label,toggle-label" text="%settings.run_on_start" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true" minHeight="-Infinity"/>
-                        <CheckBox fx:id="autostartToggle" styleClass="switch" accessibleText="%settings.run_on_start"/>
-                    </HBox>
-                </GridPane>
-            </VBox>
         </VBox>
     </ScrollPane>
 </AnchorPane>

@@ -6,18 +6,25 @@
 <?import javafx.scene.text.*?>
 
 <!--
-  Bottom bar: status text + progress (stretches), the game-actions button (square, as tall as ИГРАТЬ, "more" glyph)
-  and the bracketed Play/Download button. The game-actions dropdown (main/game_actions.fxml) is an UNMANAGED child
-  of this row: it floats above the button (StatusPaneController.placeActionsMenu) and never moves the row.
+  Bottom bar, one row of equal-height controls (44 px), vertically centred: the status pill (stretches), the
+  game-actions button (ghost square, "more" glyph) and the Play/Download button.
+  Status pill: the progress bar IS the pill's fill (accent, translucent) behind the status text (left) and the
+  percentage (right, only while downloading / paused / busy), so status and progress read as one control on the
+  Play button's level. The game-actions dropdown (main/game_actions.fxml) is an UNMANAGED child of this row: it floats
+  above the button (StatusPaneController.placeActionsMenu) and never moves the row.
 -->
-<HBox fx:id="defaultStatusPane" id="statusBar" styleClass="status-bar" alignment="BOTTOM_LEFT" spacing="12" pickOnBounds="false"
+<HBox fx:id="defaultStatusPane" id="statusBar" styleClass="status-bar" alignment="CENTER_LEFT" spacing="12" pickOnBounds="false"
       stylesheets="@../style/layout.css"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.screens.main.StatusPaneController">
-    <VBox spacing="5" alignment="BOTTOM_LEFT" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-        <Text fx:id="downloadingStatus" id="playStatus" styleClass="play-status" text="status"/>
-        <ProgressBar fx:id="progressBar" id="playProgress" styleClass="play-progress,zone-radius-sm" maxWidth="Infinity" progress="0.0"/>
-    </VBox>
+    <StackPane fx:id="statusPill" id="statusPill" styleClass="status-pill,zone-radius-sm" HBox.hgrow="ALWAYS" maxWidth="Infinity" minWidth="120">
+        <ProgressBar fx:id="progressBar" id="playProgress" styleClass="play-progress,zone-radius-sm" maxWidth="Infinity" maxHeight="Infinity" progress="0.0"/>
+        <HBox styleClass="status-pill-content" alignment="CENTER_LEFT" maxWidth="Infinity" maxHeight="Infinity">
+            <Text fx:id="downloadingStatus" id="playStatus" styleClass="play-status" text="status"/>
+            <Region HBox.hgrow="ALWAYS" minWidth="12"/>
+            <Text fx:id="progressPercent" id="playPercent" styleClass="play-percent" text=""/>
+        </HBox>
+    </StackPane>
     <Button fx:id="gameActionsButton" id="gameActionsButton" styleClass="game-actions-button,zone-radius-sm" mnemonicParsing="false"
             accessibleText="%main.actions.button">
         <graphic>

@@ -49,6 +49,8 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var homePane: AnchorPane
     @FXML lateinit var centerPane: StackPane
     @FXML lateinit var settingsPane: AnchorPane
+    /** The nav row (communities / forum / support + profile): nothing else is placed on its level. */
+    @FXML lateinit var topBar: javafx.scene.layout.HBox
     @FXML lateinit var profileLayer: AnchorPane
 
     // included areas: FXMLLoader injects <fx:id>Controller
@@ -102,10 +104,8 @@ class MainController(private val ctx: UiContext) : Disposable {
         // one dropdown at a time: opening the communities menu closes the profile menu and vice versa
         headerController.onMenuShown = { profileBarController.hideMenu(); actions.hide() }
         profileBarController.onMenuShown = { headerController.hideCommunityMenu(); actions.hide() }
-        // the links sit in the top bar (outside homePane) but, as before, only show on the home screen
-        // (managed too: hidden links leave the row instead of keeping an empty slot left of the profile)
-        headerController.headerPane.visibleProperty().bind(homePane.visibleProperty())
-        headerController.headerPane.managedProperty().bind(homePane.visibleProperty())
+        // the top bar (links + profile) is the same nav row on every screen: it stays on the settings screen too, and
+        // nothing else (page titles, content) is placed on its level (settings start below it, see main.fxml)
         // same height as the profile button, so the links stay centred on it (the dropdown floats, see ProfileController)
         val buttonHeight = profileBarController.loginButton.heightProperty()
         headerController.headerPane.minHeightProperty().bind(buttonHeight)
@@ -222,6 +222,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         root.toggleClass("settings-mode", visible)
         serversListController.setSettingsActive(visible)
         if (visible) defaultStatusPaneController.gameActionsController.hide()
+        headerController.hideCommunityMenu() // a screen switch closes the open dropdown, the links themselves stay
     }
 
     private fun onPrimaryAction(server: Server) {

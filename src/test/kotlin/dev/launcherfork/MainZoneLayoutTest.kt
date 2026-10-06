@@ -81,9 +81,9 @@ class MainZoneLayoutTest {
         assertEquals(forum.centerY, main.headerController.forum.sceneBounds().centerY, 0.5,
             "links moved with the open dropdown: ${main.headerController.headerPane.sceneBounds()}")
         main.profileBarController.hideMenu()
-        // the links stay a home-screen thing, the profile stays everywhere
+        // the nav row (links + profile) is the same on every screen
         main.setSettingsVisible(true)
-        assertFalse(main.headerController.headerPane.isVisible)
+        assertTrue(main.headerController.headerPane.isVisible)
         assertTrue(main.profileBarController.loginButton.isVisible)
         main.setSettingsVisible(false)
         assertTrue(main.headerController.headerPane.isVisible)

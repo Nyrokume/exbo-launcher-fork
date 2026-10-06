@@ -253,7 +253,8 @@ class CommunityMenuTest {
 
         header.communities.fire()
         main.setSettingsVisible(true)
-        assertFalse(header.isCommunityMenuShown, "$theme: the settings screen hides the menu with the links")
+        assertFalse(header.isCommunityMenuShown, "$theme: switching to settings closes the open menu")
+        assertTrue(header.headerPane.isVisible, "$theme: the links stay in the nav row on settings")
         main.setSettingsVisible(false)
     }
 
