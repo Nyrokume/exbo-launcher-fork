@@ -15,8 +15,8 @@
         <!-- the single window has its own title bar (OVERLAY.md); kept for the controller fx:ids, hidden -->
         <HBox styleClass="zone-titlebar" alignment="CENTER_RIGHT" visible="false" managed="false">
             <ImageView fx:id="header" managed="false" visible="false" />
-            <Button fx:id="hideButton" styleClass="zone-window-button, zone-hide" mnemonicParsing="false" />
-            <Button fx:id="closeButton" styleClass="zone-window-button, zone-close" mnemonicParsing="false" />
+            <Button fx:id="hideButton" visible="false" styleClass="zone-window-button, zone-hide" mnemonicParsing="false" />
+            <Button fx:id="closeButton" visible="false" styleClass="zone-window-button, zone-close" mnemonicParsing="false" />
         </HBox>
         <VBox styleClass="zone-body" alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
             <Label styleClass="zone-logo" text="%fork.zone.logo" />

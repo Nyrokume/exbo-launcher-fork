@@ -55,25 +55,19 @@ class ZonePanelsTest {
         }
     }
 
-    private fun render(path: String, file: String, lang: String, prepare: (Any) -> Unit = {}) = FxTestSupport.onFx {
-        val ctx = FxTestSupport.context(lang)
-        val main = Fxml.load<Any?>(ctx, "main.fxml").root
-        // wrapper carries the blur: main.css may style the main root's own -fx-effect
-        val content = javafx.scene.Group(main).apply {
-            effect = GaussianBlur(18.0).apply { input = ColorAdjust(0.0, -0.2, -0.35, 0.0) }
-            scaleX = 1024.0 / 886.0; scaleY = 640.0 / 550.0
-        }
-        val panel = Fxml.load<Any>(ctx, path)
-        val host = StackPane(content, Region().apply { style = "-fx-background-color: rgba(0,0,0,0.35);" }, panel.root)
-        StackPane.setAlignment(panel.root, Pos.CENTER)
-        val scene = Scene(host, 1024.0, 640.0, Color.BLACK)
-        dev.launcherfork.theme.Theme.apply(scene, lang)
+    /** Real single window (StageNavigator + window.fxml), auth overlay on top, zone theme forced. */
+    private fun render(@Suppress("UNUSED_PARAMETER") path: String, file: String, lang: String, prepare: (Any) -> Unit = {}) = FxTestSupport.onFx {
+        val stage = javafx.stage.Stage(javafx.stage.StageStyle.UNDECORATED)
+        val nav = dev.launcherfork.app.StageNavigator(stage, dev.launcherfork.app.AppContext.mock(authDelayMs = 0), lang)
+        nav.showAuth()
+        val scene = stage.scene
         // preview always in the zone theme, whatever -Dlauncher.theme the test JVM got
         dev.launcherfork.theme.Theme.zoneFonts
         val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
         if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+        val host = scene.root
         host.applyCss(); host.layout()
-        prepare(panel.controller)
+        prepare(nav.overlayController!!)
         host.applyCss(); host.layout()
         val img = scene.snapshot(null)
         val w = img.width.toInt(); val h = img.height.toInt()
