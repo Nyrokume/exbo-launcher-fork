@@ -308,20 +308,26 @@
 .context-button:hover { -fx-background-color: -accent; }
 
 /* ===================== settings ===================== */
+/* sections: heading (display font) + fading rule + card; inside a card .settings-block = title/hint + control */
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.settings-content { -fx-padding: 14 40 40 37; -fx-max-width: 640; }
+.settings-content { -fx-padding: 14 40 40 37; -fx-max-width: 660; -fx-spacing: 30; }
+.settings-section { -fx-spacing: 0; }
 .settings-heading { -fx-font-size: 42; -fx-text-fill: -foreground; }
 .settings-section .heading-rule { -fx-translate-y: -2; }
-.settings-card { -fx-padding: 16 20 18 20; -fx-max-width: 600; }
+.settings-card { -fx-padding: 6 24 6 24; -fx-max-width: 620; -fx-spacing: 0; }
 .settings-section > .settings-card { -fx-translate-y: 12; }
+.settings-block { -fx-spacing: 12; -fx-padding: 16 0 16 0; }
+.settings-block.settings-toggles { -fx-spacing: 14; }
+.settings-block-head { -fx-spacing: 16; }
+.settings-titles { -fx-spacing: 3; }
 .settings-label { -fx-font-size: 15; -fx-text-fill: -text-label; }
-.settings-label-text { -fx-font-size: 15; -fx-fill: -text-label; }
-.settings-hint-text { -fx-font-size: 15; -fx-fill: -placeholder; }
+.settings-hint { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
 .settings-row-divider {
     -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
     -fx-background-color: -divider-light;
 }
+.radio-row { -fx-hgap: 30; -fx-vgap: 10; }
 
 /* radio: ring + red dot */
 .settings-radio { -fx-font-size: 15; -fx-text-fill: -text-label; -fx-label-padding: 0 0 0 12; -fx-cursor: hand; }
@@ -361,23 +367,48 @@
 }
 .ring-toggle:selected > .box > .mark { -fx-background-color: -primary; }
 
-/* segmented RAM bar (SegmentedBar) */
-.segmented-bar { -fx-spacing: 3; -fx-pref-width: 560; -fx-max-width: 560; -fx-cursor: hand; }
-.segment { -fx-background-color: -segment-off; -fx-min-height: 14; -fx-pref-height: 14; -fx-max-height: 14; }
-.segment.active { -fx-background-color: -primary; }
-.segmented-bar:hover .segment.active { -fx-background-color: -primary-hover; }
-.segment-value { -fx-font-size: 8; -fx-text-fill: -primary-foreground; }
+/* RAM selector (RamSelector): labelled chips in GB, selected = accent fill, recommended = caption under the chip */
+.ram-summary { -fx-font-size: 14; -fx-text-fill: -text-description; }
+.ram-selector { -fx-spacing: 8; }
+.ram-option { -fx-spacing: 6; }
+.ram-chip {
+    -fx-font-size: 14;
+    -fx-text-fill: -text-label;
+    -fx-background-color: -input;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 0 4 0 4;
+    -fx-min-height: 40; -fx-pref-height: 40; -fx-max-height: 40;
+    -fx-min-width: 0;
+    -fx-cursor: hand;
+}
+.ram-chip:hover { -fx-border-color: -border-hover; }
+.ram-chip:focused { -fx-border-color: -foreground; }
+.ram-chip.recommended { -fx-border-color: -muted-foreground; }
+.ram-chip:selected {
+    -fx-background-color: -primary;
+    -fx-border-color: -primary;
+    -fx-text-fill: -primary-foreground;
+}
+.ram-chip:selected:hover { -fx-background-color: -primary-hover; -fx-border-color: -primary-hover; }
+.ram-chip:selected:focused { -fx-border-color: -foreground; }
+.ram-caption { -fx-font-size: 11; -fx-text-fill: -muted-foreground; }
 
 /* inputs (dark tile + border, red on focus) */
 .zone-input {
     -fx-background-color: -input;
     -fx-border-color: -border;
     -fx-border-width: 1;
-    -fx-padding: 0 10 0 2;
-    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
+    -fx-padding: 0 12 0 12;
+    -fx-min-height: 40; -fx-pref-height: 40; -fx-max-height: 40;
 }
 .zone-input:hover { -fx-border-color: -border-hover; }
 .zone-input:focus-within { -fx-border-color: -ring; }
+.limit-row { -fx-spacing: 16; }
+.limit-group { -fx-spacing: 6; }
+.limit-caption { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
+.limit-field { -fx-spacing: 8; -fx-pref-width: 200; -fx-max-width: 200; }
 .limit-input {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
@@ -387,12 +418,12 @@
     -fx-highlight-text-fill: -primary-foreground;
     -fx-prompt-text-fill: -placeholder;
     -fx-font-size: 14;
-    -fx-padding: 0 0 0 8;
+    -fx-padding: 0 0 0 4;
     -fx-pref-width: 70;
 }
 .limit-unit { -fx-font-size: 14; -fx-text-fill: -placeholder; }
 .icon-download, .icon-upload {
-    -fx-background-color: -foreground;
+    -fx-background-color: -muted-foreground;
     -fx-min-width: 15; -fx-pref-width: 15; -fx-max-width: 15;
     -fx-min-height: 15; -fx-pref-height: 15; -fx-max-height: 15;
 }

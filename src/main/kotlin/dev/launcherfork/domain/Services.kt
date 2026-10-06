@@ -33,6 +33,12 @@ interface AuthService {
     fun logout()
 }
 
+/** Facts about the user's computer the UI needs (RAM options in settings). */
+fun interface SystemInfo {
+    /** Physical memory of the computer, MB. */
+    fun totalRamMb(): Long
+}
+
 interface ServerRepository {
     fun servers(): List<Server>
 }
@@ -67,4 +73,5 @@ data class Services(
     val updates: UpdateService,
     val launcher: GameLauncher,
     val settings: SettingsStore,
+    val system: SystemInfo,
 )

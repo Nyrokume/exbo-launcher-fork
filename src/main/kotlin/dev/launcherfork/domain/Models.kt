@@ -70,8 +70,13 @@ data class LauncherSettings(
     val defenderHint: Boolean = true,
     val p2pMode: P2pMode = P2pMode.EXCEPT_MOBILE,
     val exitMode: ExitMode = ExitMode.NEVER,
-    /** 0..1, mapped to MB by the UI */
-    val ramFraction: Double = 0.5,
+    /** Game heap in MB chosen in settings (one of the RAM options); null = not chosen yet -> recommended value. */
+    val ramMb: Int? = null,
+    /**
+     * Legacy value of the old segmented bar: 0..1, mapped to `512 + 3584 * f` MB. Only read when [ramMb] is null
+     * (settings saved before the RAM selector) and converted to the nearest RAM option; cleared on the next change.
+     */
+    val ramFraction: Double? = null,
     val downloadLimitKb: Int = 0,
     val uploadLimitKb: Int = 0,
     val gameRoot: Path = Path.of(System.getProperty("user.home"), "Games", "EXBO"),
