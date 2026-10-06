@@ -34,7 +34,8 @@
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
 | `-Dlauncher.theme=zone\|zone-light\|exbo\|shadcn` | тема: STALZONE (`theme-zone.css`, Bebas Neue + Roboto, по умолчанию), исходные цвета EXBO (`theme.css`), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE сразу в белой схеме (`theme-zone-light.css` поверх `theme-zone.css`; при старте важнее сохранённой настройки) |
-| `-Dlauncher.settingsFile=<путь>` | где хранится выбранная тема (по умолчанию `~/.launcher-fork/settings.properties`, одна строка `appearance=light\|dark`; остальные настройки по-прежнему только в памяти). Автотур ничего не сохраняет |
+| `-Dlauncher.settingsFile=<путь>` | где хранятся выбранная тема и номер последних обоев (по умолчанию `~/.launcher-fork/settings.properties`: `appearance=light\|dark` и `wallpaper.last=N`; остальные настройки по-прежнему только в памяти). Автотур ничего не сохраняет |
+| `-Dlauncher.wallpaper=1..6` | всегда эти обои главного окна (без свойства — случайные при каждом запуске, но не те же, что в прошлый раз; автотур без свойства берёт `03`) |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 | `-Dlauncher.mock2fa=random\|email\|totp\|none` | второй фактор после пароля: по умолчанию `random` (при каждом входе случайно код из письма или Google Authenticator), `email` / `totp` всегда один из них, `none` сразу на главную. Автотур без явного значения использует `none` |
 | `-Dlauncher.onlineTickMs=10000` | как часто фейковый онлайн в списке игр немного меняется (по умолчанию 10 с, `0` — всегда 1284; в автотуре всегда 0) |
@@ -91,6 +92,10 @@ src/main/kotlin/dev/launcherfork/
 │  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
 │  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
 │  └─ MockScheduler.kt      общий таймер фейков (безопасная отмена/завершение)
+├─ data/local/          settings.properties: SettingsFile (атомарная запись, ключи не теряются), AppearanceFileStore
+│                       (`appearance`), WallpaperFileMemory (`wallpaper.last`)
+├─ wallpaper/           обои главного окна без FX: Wallpapers (манифест, pick без повтора, один выбор на запуск —
+│                       Wallpapers.current), CoverFit (cover-кадрирование с точкой фокуса)
 ├─ i18n/Strings.kt      ResourceBundle из локальных .properties (ru + en) вместо серверного LangManager
 ├─ theme/Theme.kt       то, что нельзя выразить в CSS: пути, геометрия окна, эффекты (оверлей, арт игры), шрифты
 └─ ui/
@@ -98,7 +103,8 @@ src/main/kotlin/dev/launcherfork/
    ├─ Messages.kt       AuthError / UpdatePhase -> ключи строк (домен ключей не знает)
    ├─ Disposable.kt     контроллер экрана освобождает таймеры/слушатели при уходе с экрана
    ├─ state/            ClientStateStore: состояния клиента Download/Pause/Continue/Play/Exit (на сессию)
-   ├─ components/       WindowChrome (WindowFrame: drag/maximize/resize/центрирование, ResizeEdge), RamBar (шкала RAM), ActionGlyphs (иконки меню действий с игрой), CodeInput (ячейки кода TOTP),
+   ├─ components/       WallpaperLayer (фон окна: обои cover-fit + скрим, фоновая загрузка, запасной однотонный фон),
+   │                    WindowChrome (WindowFrame: drag/maximize/resize/центрирование, ResizeEdge), RamBar (шкала RAM), ActionGlyphs (иконки меню действий с игрой), CodeInput (ячейки кода TOTP),
    │                    LogoMark (вектор EXBO из exbo-logo.svg), InputBlock (блок мыши/клавиатуры под диалогом),
    │                    Effects, ServerEntryController (пункт игры в колонке)
    └─ screens/
@@ -117,6 +123,7 @@ src/main/resources/dev/launcherfork/
 ├─ ui/style/layout.css   стили новой раскладки (окно, главный экран, настройки, модалки; только токены)
 ├─ ui/style/{common,auth,lang_ru,lang_en}.css   стили legacy-панелей авторизации/обновления
 ├─ ui/style/image/, ui/style/font/   PNG и Europe из оригинала; Manrope, Roboto (OFL), Bebas Neue (шрифт stalzone.com) (см. «Права на ассеты»)
+├─ ui/wallpapers/01.jpg … 06.jpg, wallpapers.txt   обои главного окна (скриншоты STALZONE) и их манифест
 ├─ ui/i18n/messages*.properties      строки ru/en
 └─ mock/                             сгенерированные картинки-заглушки (tools/GenerateZoneArt.java)
 ```
@@ -297,7 +304,9 @@ src/main/resources/dev/launcherfork/
 `11_resized_1366x800`, `12_settings_en`, `13_auth_after_switch_account`, затем снова окно входа (ru):
 `14_age_gate`, `15_age_gate_too_young`, `16_register`, `17_register_error`, `18_registered_login`,
 `19_totp_error`. После `05_profile_menu` есть `05b_logout_confirm` (подтверждение «Выход из аккаунта»). После него `05c_community_menu` (выпадающее меню «Сообщества» со ссылками на соцсети). Единственная игра STALZONE установлена,
-поэтому диалога установки в туре нет.
+поэтому диалога установки в туре нет. Обои в туре всегда одни и те же (`03`, вышка на красном небе; другие —
+`-Dlauncher.wallpaper=N`), поэтому снимки воспроизводимы. Главное окно поверх всех шести обоев во всех темах
+снимает `WallpaperContrastTest` (`build/ui-preview/wallpaper-<тема>-<NN>.png`).
 
 - `docs/screenshots/zone/` — тема `zone`, по умолчанию (основная цель редизайна);
 - `docs/screenshots/` — тема `exbo` (`-Dlauncher.theme=exbo`) на новой раскладке;
@@ -350,7 +359,8 @@ PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/imag
 Это допустимо только для внутренней работы над редизайном. **Перед любым публичным распространением
 (релиз, публичный репозиторий, сборки) все эти ассеты и шрифты нужно заменить** на собственные или свободно
 лицензированные. Глифы соцсетей в меню «Сообщества» (`ui/components/BrandGlyphs.kt`) — Simple Icons, CC0 1.0
-(источник в docs/design/STYLE-ZONE.md). Картинки в `mock/` сгенерированы скриптом и свободны, кроме `mock/servers/game-stalzone.png` — это фавикон
+(источник в docs/design/STYLE-ZONE.md). Обои главного окна `ui/wallpapers/01.jpg`…`06.jpg` — внутриигровые скриншоты
+STALZONE, ассеты проекта (предоставлены владельцем, см. docs/design/STYLE-ZONE.md, «Обои главного окна»). Картинки в `mock/` сгенерированы скриптом и свободны, кроме `mock/servers/game-stalzone.png` — это фавикон
 stalzone.com (ассет проекта, источник в docs/design/STYLE-ZONE.md).
 
 ### Ассеты EXBO уже есть в истории git
