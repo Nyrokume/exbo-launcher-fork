@@ -174,8 +174,8 @@
 /* ---------- e-mail code panel (mail_auth_panel.fxml) ---------- */
 .zone-field-label { -fx-font-size: 14; -fx-text-fill: -text-description; }
 .zone-code {
-    -fx-font-family: "Oswald Medium";
-    -fx-font-size: 26;
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 30;
     -fx-alignment: center;
     -fx-padding: 0 20 0 20;
 }
