@@ -11,72 +11,124 @@ import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.UpdatePanel
 import dev.launcherfork.ui.components.WindowFrame
 import dev.launcherfork.ui.screens.main.MainController
+import dev.launcherfork.ui.screens.window.AuthWindowController
 import dev.launcherfork.ui.screens.window.WindowController
 import javafx.application.Platform
+import javafx.beans.binding.Bindings
+import javafx.geometry.Rectangle2D
+import javafx.scene.Node
 import javafx.scene.Parent
 import javafx.scene.Scene
+import javafx.scene.paint.Color
 import javafx.stage.Stage
+import javafx.stage.StageStyle
 import javafx.stage.Window
 
 /**
- * ONE undecorated, resizable window for the whole app. window.fxml is the frame; main.fxml lives in its
- * content host; update / auth / mail-code screens are overlay panels above the blurred main screen.
+ * TWO windows, as in the original launcher (docs/design/WINDOWS.md):
+ *  - the PRE-MAIN window ([stage], the primary stage): undecorated, not resizable, 460x620, auth_window.fxml
+ *    frame; shows the update, auth and mail-code panels one after another;
+ *  - the MAIN window ([mainStage]): undecorated, resizable, 1024x640, window.fxml frame with main.fxml.
+ * Login success closes the pre-main window and opens the main one; logout / account switch disposes the main
+ * screen, closes the main window and opens the pre-main window with the auth panel, centered on the same screen.
  *
- * Overlay panels are looked up by file name: the new panels (update_panel.fxml, auth_panel.fxml,
- * mail_auth_panel.fxml) win when they exist, otherwise the legacy 379x490 FXMLs are used. Adding the new
- * files needs no change here (docs/design/OVERLAY.md).
+ * Panels are looked up by file name: the new panels (update_panel.fxml, auth_panel.fxml, mail_auth_panel.fxml)
+ * win when they exist, otherwise the legacy 379x490 FXMLs are used. Adding the new files needs no change here.
+ * The main window keeps an overlay layer for in-window dialogs ([showOverlay]).
+ *
+ * Windows are only shown / hidden once the app has shown one of them (LauncherApp shows [stage] at start);
+ * before that (tests) only the state ([activeWindow], controllers) changes.
  */
 class StageNavigator(private val stage: Stage, private val app: AppContext, private var lang: String) : Navigator {
-    private var ctx = newContext()
-    private val frame = WindowFrame(stage)
-    private val windowController: WindowController
-    private val scene: Scene
+    enum class ActiveWindow { PRE_MAIN, MAIN }
 
-    /** Controller of the main screen and of the overlay panel currently shown (the screenshot tour uses them). */
+    private var ctx = newContext()
+
+    /** The pre-main window (update / auth / mail code). */
+    val authStage: Stage get() = stage
+    /** The main window, created here. */
+    val mainStage: Stage = Stage(StageStyle.UNDECORATED)
+
+    private val authFrame = WindowFrame(stage)
+    private val mainFrame = WindowFrame(mainStage)
+    private val authWindow: AuthWindowController
+    private val windowController: WindowController
+    private val authScene: Scene
+    private val mainScene: Scene
+    private var mainShownOnce = false
+
+    var activeWindow = ActiveWindow.PRE_MAIN
+        private set
+    /** Controller of the main screen (null while the pre-main window is active). */
     var mainController: MainController? = null
         private set
+    /** Controller of the panel in the pre-main window (update / auth / mail code), null while main is active. */
+    var panelController: Any? = null
+        private set
+    /** Controller of an in-window dialog shown in the main window's overlay layer (if any). */
     var overlayController: Any? = null
         private set
-    /** Overlay controller if an overlay is shown, else the main controller. */
-    val currentController: Any? get() = overlayController ?: mainController
+    /** What the user currently sees: overlay dialog, else the panel or the main screen of the active window. */
+    val currentController: Any?
+        get() = overlayController ?: if (activeWindow == ActiveWindow.PRE_MAIN) panelController else mainController
     var onScreenChanged: (String) -> Unit = {}
+    /** How [close] ends the app; tests replace it so the FX toolkit survives. */
+    var exit: () -> Unit = { Platform.exit() }
 
-    override val window: Window get() = stage
+    override val window: Window get() = if (activeWindow == ActiveWindow.MAIN) mainStage else stage
 
     init {
-        val loaded = Fxml.load<WindowController>(ctx, "window.fxml")
-        windowController = loaded.controller
-        scene = Scene(loaded.root, Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
-        Theme.apply(scene, lang)
-        frame.installDrag(windowController.dragArea)
-        frame.installResize(scene)
-        frame.maximizedProperty.addListener { _, _, max -> windowController.setMaximized(max) }
-        stage.minWidth = Theme.WINDOW_MIN_WIDTH
-        stage.minHeight = Theme.WINDOW_MIN_HEIGHT
-        stage.scene = scene
-        stage.title = ctx.strings.text("title.launcher")
+        // pre-main window
+        val auth = Fxml.load<AuthWindowController>(ctx, "auth_window.fxml")
+        authWindow = auth.controller
+        authScene = Scene(auth.root, Theme.AUTH_WINDOW_WIDTH, Theme.AUTH_WINDOW_HEIGHT, Color.TRANSPARENT)
+        Theme.apply(authScene, lang)
+        authFrame.installDrag(authWindow.authDragArea, maximizable = false)
+        stage.scene = authScene
+        stage.isResizable = false
+        stage.title = ctx.strings.text("title.auth")
+
+        // main window
+        val main = Fxml.load<WindowController>(ctx, "window.fxml")
+        windowController = main.controller
+        mainScene = Scene(main.root, Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
+        Theme.apply(mainScene, lang)
+        mainFrame.installDrag(windowController.dragArea)
+        mainFrame.installResize(mainScene) { windowController.windowButtons }
+        mainFrame.maximizedProperty.addListener { _, _, max -> windowController.setMaximized(max) }
+        mainStage.isResizable = true
+        mainStage.minWidth = Theme.WINDOW_MIN_WIDTH
+        mainStage.minHeight = Theme.WINDOW_MIN_HEIGHT
+        mainStage.scene = mainScene
+        mainStage.title = ctx.strings.text("title.launcher")
+        Bindings.bindContent(mainStage.icons, stage.icons)
+        // closing the main window by the OS (Alt+F4) ends the app like the close button
+        mainStage.setOnCloseRequest { close() }
+        stage.setOnCloseRequest { close() }
     }
 
     private fun newContext() = UiContext(app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode)
 
     override fun showLauncherUpdate(afterUpdate: () -> Unit) {
-        val loaded = showOverlay("update", "update_panel.fxml", "update.fxml", "title.update")
+        val loaded = showPanel("update", "update_panel.fxml", "update.fxml", "title.update")
         val panel = loaded.controller as? UpdatePanel
         if (panel != null) panel.start(afterUpdate) else afterUpdate()
     }
 
     override fun showAuth() {
-        showOverlay("auth", "auth_panel.fxml", "initial_auth.fxml", "title.auth")
+        showPanel("auth", "auth_panel.fxml", "initial_auth.fxml", "title.auth")
     }
 
     override fun showMailAuth() {
-        showOverlay("mail_auth", "mail_auth_panel.fxml", "mail_auth.fxml", "title.auth.email")
+        showPanel("mail_auth", "mail_auth_panel.fxml", "mail_auth.fxml", "title.auth.email")
     }
 
+    /** Closes the pre-main window and opens the main window with a fresh main screen (new session). */
     override fun showMain() {
-        hideOverlay()
-        loadMain() // rebuilt so that the new session (login name, servers) is picked up
-        stage.title = ctx.strings.text("title.launcher")
+        disposePanel()
+        loadMain()
+        mainStage.title = ctx.strings.text("title.launcher")
+        switchTo(ActiveWindow.MAIN)
         onScreenChanged("main")
     }
 
@@ -84,9 +136,11 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         if (lang == this.lang) return
         this.lang = lang
         ctx = newContext()
-        Theme.apply(scene, lang)
+        Theme.apply(mainScene, lang)
+        Theme.apply(authScene, lang)
         // rebuild the main screen in the new language and keep the settings page open
         Platform.runLater {
+            if (activeWindow != ActiveWindow.MAIN) return@runLater
             loadMain()
             mainController?.setSettingsVisible(true)
             onScreenChanged("main")
@@ -94,15 +148,31 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     }
 
     override fun minimize() {
-        stage.isIconified = true
+        (if (activeWindow == ActiveWindow.MAIN) mainStage else stage).isIconified = true
     }
 
-    override fun toggleMaximize() = frame.toggleMaximize()
+    override fun toggleMaximize() {
+        if (activeWindow == ActiveWindow.MAIN) mainFrame.toggleMaximize()
+    }
 
-    val isMaximized: Boolean get() = frame.isMaximized
+    val isMaximized: Boolean get() = mainFrame.isMaximized
 
+    /** Close button of either window: no hidden window stays behind, the app exits. */
     override fun close() {
-        Platform.exit()
+        mainController?.dispose()
+        disposePanel()
+        mainStage.hide()
+        stage.hide()
+        exit()
+    }
+
+    // ---- in-window dialogs of the main window ----
+
+    /** Shows [node] over the blurred, input-blocked main screen (mouse and keyboard, see WindowController). */
+    fun showOverlay(node: Node, controller: Any? = null) {
+        (overlayController as? Disposable)?.dispose()
+        overlayController = controller
+        windowController.showOverlay(node)
     }
 
     fun hideOverlay() {
@@ -113,9 +183,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     val isOverlayShown: Boolean get() = windowController.isOverlayShown
 
-    private fun ensureMain() {
-        if (mainController == null) loadMain()
-    }
+    // ---- internals ----
 
     private fun loadMain() {
         // leaving the old main screen: stop its listeners (downloads keep running in the session store)
@@ -125,17 +193,64 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         mainController = loaded.controller
     }
 
-    private fun showOverlay(name: String, panel: String, legacy: String, titleKey: String): Loaded<Any?> {
-        ensureMain()
-        (overlayController as? Disposable)?.dispose()
+    /** Leaving the main window: dispose the main screen (and any dialog) BEFORE the pre-main window shows up. */
+    private fun disposeMain() {
+        if (overlayController != null || isOverlayShown) hideOverlay()
+        mainController?.dispose()
+        mainController = null
+        windowController.setContent(javafx.scene.layout.Region())
+    }
+
+    private fun disposePanel() {
+        (panelController as? Disposable)?.dispose()
+        panelController = null
+        authWindow.clear()
+    }
+
+    private fun showPanel(name: String, panel: String, legacy: String, titleKey: String): Loaded<Any?> {
+        disposeMain()
+        (panelController as? Disposable)?.dispose()
         val isNew = Theme::class.java.getResource(Theme.UI_ROOT + panel) != null
         val loaded = Fxml.load<Any?>(ctx, if (isNew) panel else legacy)
         if (!isNew) hideLegacyChrome(loaded.root)
-        overlayController = loaded.controller
-        windowController.showOverlay(loaded.root)
+        panelController = loaded.controller
+        authWindow.setPanel(loaded.root)
         stage.title = ctx.strings.text(titleKey)
+        switchTo(ActiveWindow.PRE_MAIN)
         onScreenChanged(name)
         return loaded
+    }
+
+    /**
+     * Makes [target] the active window. Once the app is on screen the target window is shown FIRST (so the app
+     * never has zero windows and does not exit implicitly), centered on the screen where the other window was,
+     * then the other window is hidden.
+     */
+    private fun switchTo(target: ActiveWindow) {
+        val previous = activeWindow
+        activeWindow = target
+        val live = stage.isShowing || mainStage.isShowing
+        if (!live) return
+        val show = if (target == ActiveWindow.MAIN) mainStage else stage
+        val hide = if (target == ActiveWindow.MAIN) stage else mainStage
+        if (previous != target || !show.isShowing) {
+            val from: Rectangle2D = (if (hide.isShowing) (if (hide === stage) authFrame else mainFrame).bounds else null)
+                ?: (if (show === stage) authFrame else mainFrame).bounds
+            if (show === stage) {
+                stage.width = Theme.AUTH_WINDOW_WIDTH
+                stage.height = Theme.AUTH_WINDOW_HEIGHT
+                authFrame.centerOnScreenOf(from, Theme.AUTH_WINDOW_WIDTH, Theme.AUTH_WINDOW_HEIGHT)
+            } else if (!mainShownOnce || !mainFrame.isMaximized) {
+                val w = if (mainShownOnce) mainStage.width else Theme.WINDOW_WIDTH
+                val h = if (mainShownOnce) mainStage.height else Theme.WINDOW_HEIGHT
+                mainStage.width = w
+                mainStage.height = h
+                mainFrame.centerOnScreenOf(from, w, h)
+            }
+            show.show()
+            if (show === mainStage) mainShownOnce = true
+        }
+        if (hide.isShowing) hide.hide()
     }
 
     /** The legacy auth/update FXMLs were whole windows: their own close/minimize buttons and top strip go away. */

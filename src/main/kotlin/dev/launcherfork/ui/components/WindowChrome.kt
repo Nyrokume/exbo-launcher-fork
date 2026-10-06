@@ -4,6 +4,7 @@ import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Navigator
 import javafx.beans.property.ReadOnlyBooleanProperty
 import javafx.beans.property.ReadOnlyBooleanWrapper
+import javafx.geometry.Bounds
 import javafx.geometry.Rectangle2D
 import javafx.scene.Cursor
 import javafx.scene.Node
@@ -14,7 +15,7 @@ import javafx.scene.input.MouseEvent
 import javafx.stage.Screen
 import javafx.stage.Stage
 
-/** Undecorated-window helpers shared by every screen. */
+/** Undecorated-window helpers shared by both windows. */
 object WindowChrome {
     /** Legacy auth/update panels still carry their own close/minimize buttons. */
     fun wireButtons(navigator: Navigator, close: Button?, hide: Button?) {
@@ -36,8 +37,16 @@ enum class ResizeEdge(val cursor: Cursor, val left: Boolean, val top: Boolean, v
     ;
 
     companion object {
-        /** Which edge (if any) the scene point (x, y) is on, for a w x h scene and a [margin] px border. */
-        fun at(x: Double, y: Double, w: Double, h: Double, margin: Double = Theme.RESIZE_MARGIN): ResizeEdge? {
+        /**
+         * Which edge (if any) the scene point (x, y) is on, for a w x h scene and a [margin] px border.
+         * Points inside any of [exclusions] (scene bounds of the title-bar buttons) are never an edge, so the
+         * resize zone does not steal clicks on minimize / maximize / close in the corner.
+         */
+        fun at(
+            x: Double, y: Double, w: Double, h: Double, margin: Double = Theme.RESIZE_MARGIN,
+            exclusions: List<Bounds> = emptyList(),
+        ): ResizeEdge? {
+            if (exclusions.any { it.contains(x, y) }) return null
             val l = x < margin
             val r = x > w - margin
             val t = y < margin
@@ -81,6 +90,28 @@ enum class ResizeEdge(val cursor: Cursor, val left: Boolean, val top: Boolean, v
  * resize by the edges. Maximize is done by hand (screen visual bounds) so it also works without a window manager.
  */
 class WindowFrame(private val stage: Stage) {
+    companion object {
+        /** Visual bounds of the screen that holds most of [r] (primary screen if none). */
+        fun screenBoundsOf(r: Rectangle2D): Rectangle2D {
+            val screens = Screen.getScreensForRectangle(r.minX, r.minY, r.width.coerceAtLeast(1.0), r.height.coerceAtLeast(1.0))
+            return (screens.firstOrNull() ?: Screen.getPrimary()).visualBounds
+        }
+
+        /** Top-left corner that centers a w x h window in [screen]. */
+        fun centeredIn(screen: Rectangle2D, w: Double, h: Double): Pair<Double, Double> =
+            screen.minX + (screen.width - w) / 2 to screen.minY + (screen.height - h) / 2
+    }
+
+    /** Current bounds of the window. */
+    val bounds: Rectangle2D get() = Rectangle2D(stage.x, stage.y, stage.width.coerceAtLeast(0.0), stage.height.coerceAtLeast(0.0))
+
+    /** Centers the window (at w x h) on the screen that holds [reference], e.g. where the other window was. */
+    fun centerOnScreenOf(reference: Rectangle2D, w: Double, h: Double) {
+        val (x, y) = centeredIn(screenBoundsOf(reference), w, h)
+        stage.x = x
+        stage.y = y
+    }
+
     private var restoreBounds: Rectangle2D? = null
     private val maximized = ReadOnlyBooleanWrapper(false)
     val maximizedProperty: ReadOnlyBooleanProperty get() = maximized.readOnlyProperty
@@ -91,9 +122,7 @@ class WindowFrame(private val stage: Stage) {
     fun maximize() {
         if (isMaximized) return
         restoreBounds = Rectangle2D(stage.x, stage.y, stage.width, stage.height)
-        val screens = Screen.getScreensForRectangle(stage.x, stage.y, stage.width.coerceAtLeast(1.0), stage.height.coerceAtLeast(1.0))
-        val vb = (screens.firstOrNull() ?: Screen.getPrimary()).visualBounds
-        setBounds(vb)
+        setBounds(screenBoundsOf(bounds))
         maximized.set(true)
     }
 
@@ -111,8 +140,8 @@ class WindowFrame(private val stage: Stage) {
         stage.height = r.height
     }
 
-    /** [area] (the free part of the title bar) moves the window; a double click toggles maximize. */
-    fun installDrag(area: Node) {
+    /** [area] (the free part of the title bar) moves the window; a double click toggles maximize if [maximizable]. */
+    fun installDrag(area: Node, maximizable: Boolean = true) {
         var dx = 0.0
         var dy = 0.0
         area.addEventHandler(MouseEvent.MOUSE_PRESSED) { e ->
@@ -121,7 +150,7 @@ class WindowFrame(private val stage: Stage) {
         }
         area.addEventHandler(MouseEvent.MOUSE_DRAGGED) { e ->
             if (e.button != MouseButton.PRIMARY) return@addEventHandler
-            if (isMaximized) {
+            if (maximizable && isMaximized) {
                 // un-maximize under the cursor, keeping the grab point proportional
                 val ratio = (e.screenX - stage.x) / stage.width
                 restore()
@@ -132,17 +161,23 @@ class WindowFrame(private val stage: Stage) {
             stage.y = e.screenY + dy
         }
         area.addEventHandler(MouseEvent.MOUSE_CLICKED) { e ->
-            if (e.button == MouseButton.PRIMARY && e.clickCount == 2) toggleMaximize()
+            if (maximizable && e.button == MouseButton.PRIMARY && e.clickCount == 2) toggleMaximize()
         }
     }
 
-    /** Edge resizing via scene-level filters (they run before any control sees the press). */
-    fun installResize(scene: Scene, margin: Double = Theme.RESIZE_MARGIN) {
+    /**
+     * Edge resizing via scene-level filters (they run before any control sees the press). The [excluded] nodes
+     * (window buttons) keep their clicks: their scene bounds are cut out of the edge zone.
+     */
+    fun installResize(scene: Scene, margin: Double = Theme.RESIZE_MARGIN, excluded: () -> List<Node> = { emptyList() }) {
         var active: ResizeEdge? = null
         var start = Rectangle2D.EMPTY
         var sx = 0.0
         var sy = 0.0
-        fun edgeAt(e: MouseEvent) = if (isMaximized) null else ResizeEdge.at(e.sceneX, e.sceneY, scene.width, scene.height, margin)
+        fun edgeAt(e: MouseEvent) = if (isMaximized) null else ResizeEdge.at(
+            e.sceneX, e.sceneY, scene.width, scene.height, margin,
+            excluded().filter { it.isVisible && it.scene === scene }.map { it.localToScene(it.layoutBounds) },
+        )
         scene.addEventFilter(MouseEvent.MOUSE_MOVED) { e -> scene.cursor = edgeAt(e)?.cursor }
         scene.addEventFilter(MouseEvent.MOUSE_EXITED_TARGET) { if (active == null) scene.cursor = null }
         scene.addEventFilter(MouseEvent.MOUSE_PRESSED) { e ->

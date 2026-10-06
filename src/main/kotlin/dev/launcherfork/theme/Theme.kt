@@ -17,7 +17,7 @@ object Theme {
     const val STYLE_ROOT = UI_ROOT + "style/"
     const val IMAGE_ROOT = STYLE_ROOT + "image/"
 
-    // ---- window geometry: one resizable, undecorated window ----
+    // ---- window geometry: the main window is undecorated and resizable ----
     const val WINDOW_WIDTH = 1024.0
     const val WINDOW_HEIGHT = 640.0
     const val WINDOW_MIN_WIDTH = 900.0
@@ -25,11 +25,24 @@ object Theme {
     /** Width of the invisible border zone that resizes the undecorated window. */
     const val RESIZE_MARGIN = 6.0
 
-    // ---- overlay (auth / mail code / update panels over the main screen) ----
+    /**
+     * Separate pre-main window (update / auth / mail code, docs/design/WINDOWS.md): undecorated (transparent
+     * corners), not resizable, rounded like the stalzone.com/login card. 460x620 = 32 px title strip + 460x588
+     * panel host; the zone login panel stretches to the host (its min is 420x560), legacy 379x490 panels are centered.
+     */
+    const val AUTH_WINDOW_WIDTH = 460.0
+    const val AUTH_WINDOW_HEIGHT = 620.0
+    const val AUTH_TITLEBAR_HEIGHT = 32.0
+    const val AUTH_PANEL_WIDTH = AUTH_WINDOW_WIDTH
+    const val AUTH_PANEL_HEIGHT = AUTH_WINDOW_HEIGHT - AUTH_TITLEBAR_HEIGHT
+    /** Corner radius of the pre-main window clip; equals .zone-radius-md (CSS classes cannot clip). */
+    const val AUTH_WINDOW_RADIUS = 10.0
+
+    // ---- overlay (in-window dialogs over the main screen) ----
     const val OVERLAY_BLUR_RADIUS = 16.0
     const val OVERLAY_BRIGHTNESS = -0.3
 
-    /** Applied to the main content while an overlay panel is shown. */
+    /** Applied to the main content while an overlay dialog is shown. */
     fun overlayBackdropEffect(): Effect = GaussianBlur(OVERLAY_BLUR_RADIUS).apply {
         input = ColorAdjust(0.0, -0.3, OVERLAY_BRIGHTNESS, 0.0)
     }

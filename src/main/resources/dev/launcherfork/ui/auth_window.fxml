@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Frame of the separate PRE-MAIN window (update / auth / mail code), docs/design/WINDOWS.md.
+  Transparent corners, not resizable, 460x620, rounded like the stalzone.com/login card (.zone-radius-md):
+  a 32 px title strip (drag area, minimize, close) and panelHost below it. The panel FXML
+  (auth_panel.fxml / initial_auth.fxml / ...) is put into panelHost unchanged and sized by it (460x588).
+  Explicit ids (auth*) keep legacy #close/#hide rules of common.css away from these buttons.
+-->
+<StackPane fx:id="authWindowRoot" id="authWindow" styleClass="auth-window,zone-radius-md" stylesheets="@style/layout.css"
+           prefWidth="460" prefHeight="620"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="dev.launcherfork.ui.screens.window.AuthWindowController">
+    <BorderPane>
+        <top>
+            <HBox fx:id="authTitleBar" id="authTitleBar" styleClass="auth-title-bar" alignment="CENTER_LEFT">
+                <Region fx:id="authDragArea" id="authDragArea" styleClass="title-drag-area" HBox.hgrow="ALWAYS" maxWidth="Infinity" maxHeight="Infinity"/>
+                <Button fx:id="authHideButton" id="authHide" styleClass="window-button,window-hide" focusTraversable="false" mnemonicParsing="false">
+                    <graphic><Region styleClass="window-glyph"/></graphic>
+                </Button>
+                <Button fx:id="authCloseButton" id="authClose" styleClass="window-button,window-close,auth-close" focusTraversable="false" mnemonicParsing="false">
+                    <graphic><Region styleClass="window-glyph"/></graphic>
+                </Button>
+            </HBox>
+        </top>
+        <center>
+            <StackPane fx:id="panelHost" id="authPanelHost" styleClass="auth-panel-host"/>
+        </center>
+    </BorderPane>
+    <Region fx:id="authFrame" styleClass="auth-window-frame,zone-radius-md" mouseTransparent="true"/>
+</StackPane>

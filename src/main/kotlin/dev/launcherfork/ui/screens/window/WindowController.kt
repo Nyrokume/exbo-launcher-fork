@@ -2,6 +2,7 @@ package dev.launcherfork.ui.screens.window
 
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.toggleClass
 import javafx.fxml.FXML
 import javafx.scene.Node
@@ -11,8 +12,9 @@ import javafx.scene.layout.Region
 import javafx.scene.layout.StackPane
 
 /**
- * window.fxml: the frame of the single launcher window - title bar (drag area + minimize/maximize/close),
- * the content host (main screen) and the overlay layer (update / auth panels, see docs/design/OVERLAY.md).
+ * window.fxml: the frame of the MAIN launcher window - title bar (drag area + minimize/maximize/close),
+ * the content host (main screen) and the overlay layer for in-window dialogs (docs/design/WINDOWS.md).
+ * Update / auth / mail code are NOT here: they live in the separate pre-main window (auth_window.fxml).
  */
 class WindowController(private val ctx: UiContext) {
     @FXML lateinit var windowRoot: StackPane
@@ -38,14 +40,21 @@ class WindowController(private val ctx: UiContext) {
 
     val isOverlayShown: Boolean get() = overlayLayer.isVisible
 
-    /** Shows [panel] centered over the blurred, dimmed and input-blocked main content. */
+    /** The title-bar buttons: the edge-resize filter must leave clicks on them alone. */
+    val windowButtons: List<Node> get() = listOf(hideButton, maximizeButton, closeButton)
+
+    /**
+     * Shows [panel] centered over the blurred, dimmed main content. The content is input-blocked for mouse and
+     * keyboard ([InputBlock]: disabled, so nothing in it can take focus) and cached while blurred; focus moves
+     * into the panel.
+     */
     fun showOverlay(panel: Node) {
         overlayLayer.children.setAll(panel)
         overlayLayer.isVisible = true
         contentHost.effect = Theme.overlayBackdropEffect()
         contentHost.isMouseTransparent = true
-        contentHost.isFocusTraversable = false
-        panel.requestFocus()
+        InputBlock.set(contentHost, true)
+        InputBlock.focusInto(panel)
     }
 
     fun hideOverlay() {
@@ -53,6 +62,7 @@ class WindowController(private val ctx: UiContext) {
         overlayLayer.isVisible = false
         contentHost.effect = null
         contentHost.isMouseTransparent = false
+        InputBlock.set(contentHost, false)
     }
 
     fun setMaximized(maximized: Boolean) {

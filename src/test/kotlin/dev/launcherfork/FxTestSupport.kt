@@ -25,6 +25,8 @@ object FxTestSupport {
             latch.countDown() // already running
         }
         check(latch.await(20, TimeUnit.SECONDS)) { "JavaFX toolkit did not start" }
+        // tests show and close real windows (AuthWindowTest): closing the last one must not stop the toolkit
+        Platform.setImplicitExit(false)
         Theme.loadFonts()
         started = true
     }

@@ -84,6 +84,13 @@ class FxmlLoadingTest {
             .forEach { assertTrue(it in present, "window.fxml misses fx:id '$it'") }
     }
 
+    @org.junit.jupiter.api.Test
+    fun authWindowFxmlHasFrameAndPanelHost() {
+        val present = fxIdsReachableFrom("auth_window.fxml")
+        listOf("authWindowRoot", "authTitleBar", "authDragArea", "authHideButton", "authCloseButton", "panelHost")
+            .forEach { assertTrue(it in present, "auth_window.fxml misses fx:id '$it'") }
+    }
+
     /** fx:id without an explicit id becomes the CSS id; legacy #rules (lang_*.css, auth.css, common.css) must not hit new nodes. */
     @org.junit.jupiter.api.Test
     fun newFxmlDoNotReuseLegacyCssIds() {
@@ -141,5 +148,18 @@ class FxmlLoadingTest {
         val ru = dev.launcherfork.i18n.Strings.bundle("ru").keySet()
         val en = dev.launcherfork.i18n.Strings.bundle("en").keySet()
         assertEquals(ru, en)
+    }
+
+    /** No word mixes Latin and Cyrillic letters (the old "Aвторизация" had a Latin A). */
+    @org.junit.jupiter.api.Test
+    fun noMixedScriptWords() {
+        val bundle = dev.launcherfork.i18n.Strings.bundle("ru")
+        val mixed = bundle.keySet().flatMap { key ->
+            Regex("""[\p{L}]+""").findAll(bundle.getString(key)).map { it.value }
+                .filter { w -> w.any { it in 'A'..'Z' || it in 'a'..'z' } && w.any { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.CYRILLIC } }
+                .map { "$key: $it" }.toList()
+        }
+        assertTrue(mixed.isEmpty(), "mixed Latin/Cyrillic words: $mixed")
+        assertEquals("EXBO Launcher: Авторизация", bundle.getString("title.auth"))
     }
 }

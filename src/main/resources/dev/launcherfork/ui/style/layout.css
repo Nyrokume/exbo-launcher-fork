@@ -48,6 +48,28 @@
 
 .content-host { -fx-background-color: -background; }
 .overlay-layer { -fx-background-color: -scrim; }
+/* content under a dialog is disabled (no mouse, no keyboard focus) but must not fade like disabled controls */
+.input-blocked *:disabled { -fx-opacity: 1; }
+
+/* ===================== pre-main window (update / auth / mail code) ===================== */
+.auth-window { -fx-background-color: -background; }
+/* 1px frame drawn ABOVE the panel (mouse transparent), so the panel can fill the host edge to edge */
+.auth-window-frame {
+    -fx-background-color: transparent;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+}
+.auth-title-bar {
+    -fx-background-color: -titlebar;
+    -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32;
+    -fx-padding: 0 0 0 16;
+}
+.auth-title-bar .window-button { -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32; -fx-min-width: 44; -fx-pref-width: 44; -fx-max-width: 44; }
+.auth-close .window-glyph { -fx-background-color: -titlebar-foreground; }
+.auth-close:hover { -fx-background-color: -window-close; }
+.auth-close:hover .window-glyph { -fx-background-color: -primary-foreground; }
+.auth-panel-host { -fx-background-color: -background; }
+
 
 /* ===================== shared bits ===================== */
 .tile {
