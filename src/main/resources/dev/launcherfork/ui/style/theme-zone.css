@@ -1,70 +1,81 @@
 /*
  * theme-zone.css - "zone" theme, loaded AFTER theme.css when -Dlauncher.theme=zone.
- * Dark, flat, red-accented look of the STALCRAFT launcher / in-game UI references.
- * Only tokens + font families live here; component styles reference the tokens (see docs/design/STYLE-ZONE.md).
- * Colors were sampled from the reference screenshots (1598x1000).
+ * Palette and shapes follow the STALZONE site (stalzone.com/start, its CSS variables), applied to the launcher
+ * layout of the STALCRAFT launcher references. Warm off-white text, warm beige muted text, near-black surfaces,
+ * 1px #2E2D2D borders, 5px radius (10px cards), red accent.
+ * Only tokens, font families and radius groups live here; component styles reference the tokens
+ * (see docs/design/STYLE-ZONE.md).
  */
 
 .root {
     /* ---- shared token names (same as theme.css) ---- */
-    -background: #0e0e0e;                 /* window / sidebar fill */
-    -foreground: #ffffff;                 /* headings, primary text */
-    -card: rgba(16, 16, 16, 0.82);        /* translucent dark panel: news cards, popups, tooltips */
-    -card-foreground: #e6e6e6;
-    -popover: rgba(14, 14, 14, 0.94);     /* context menu, tooltip */
-    -popover-foreground: #e6e6e6;
-    -primary: #e93046;                    /* accent red: filled button, active segment, radio dot, indicator */
+    -background: #0a0a0a;                     /* --black-bg-color: window / content */
+    -foreground: #ece7e1;                     /* warm off-white: headings, primary text */
+    -card: rgba(26, 26, 26, 0.92);            /* #1a1a1a cards (news, panels, modals), slightly translucent */
+    -card-foreground: #ece7e1;
+    -popover: rgba(15, 15, 15, 0.97);         /* #0f0f0f: context menu, tooltip */
+    -popover-foreground: #ece7e1;
+    -primary: #ff3b52;                        /* site red: filled CTA, active segment, radio dot, indicator, live dot */
     -primary-foreground: #ffffff;
-    -secondary: #1a1a19;                  /* outlined (bracket) button fill */
-    -secondary-foreground: #ffffff;
-    -muted: #1b1b1b;                      /* input fill */
-    -muted-foreground: #5e5e5e;           /* units, hints, status text, header links */
-    -accent: rgba(255, 255, 255, 0.06);   /* hover fill */
-    -accent-foreground: #ffffff;
-    -border: #353535;                     /* inactive segments, radio ring, panel border */
-    -ring: #e93046;                       /* focus: input underline */
-    -destructive: #e93046;
-    -destructive-border: rgba(233, 48, 70, 0.40);
-    -input-foreground: #ffffff;
-    -placeholder: #5e5e5e;
+    -secondary: #121212;                      /* --black-btn-color: secondary buttons / tiles */
+    -secondary-foreground: #ece7e1;
+    -muted: #121212;                          /* input fill */
+    -muted-foreground: rgba(202, 185, 166, 0.64); /* --accent-500: labels, links, hints */
+    -accent: rgba(202, 185, 166, 0.04);       /* hover fill */
+    -accent-foreground: #ece7e1;
+    -border: #2e2d2d;                         /* 1px borders of tiles, inputs, cards; radio ring */
+    -ring: #ff3b52;                           /* focus border of inputs */
+    -destructive: #ff3b52;
+    -destructive-border: rgba(255, 59, 82, 0.40);
+    -input-foreground: #ece7e1;
+    -placeholder: rgba(202, 185, 166, 0.46);  /* --accent-400 */
     -overlay: rgba(0, 0, 0, 0.80);
     -overlay-light: rgba(0, 0, 0, 0.40);
     -overlay-solid: #000000;
     -shadow: rgba(0, 0, 0, 0.60);
     -shadow-inner: rgba(0, 0, 0, 0.40);
 
-    -text-strong: #ffffff;
-    -text-description: #e6e6e6;
-    -text-label: #ffffff;
-    -text-status: #4f4f4f;
-    -text-nav: #ffffff;
-    -text-dim: #5e5e5e;
-    -text-dim-active: #8e8e8e;
-    -text-link: #656565;
+    -text-strong: #ece7e1;
+    -text-description: rgba(236, 231, 225, 0.86);
+    -text-label: #ece7e1;
+    -text-status: rgba(202, 185, 166, 0.46);
+    -text-nav: #ece7e1;
+    -text-dim: rgba(202, 185, 166, 0.46);
+    -text-dim-active: rgba(202, 185, 166, 0.64);
+    -text-link: rgba(202, 185, 166, 0.64);
     -transparent: transparent;
 
     /* ---- extra tokens (also defined in theme.css / theme-shadcn.css) ---- */
-    -titlebar: #0b0b0b;                   /* window title bar strip */
-    -titlebar-foreground: #ffffff;        /* minimize / maximize glyphs */
-    -window-close: #d83e3e;               /* close glyph (red even at rest) */
-    -window-close-hover: #ff4a4a;
-    -sidebar: #0f0f0f;
-    -divider: #1a1a19;                    /* sidebar | content separator */
-    -divider-light: rgba(255, 255, 255, 0.12); /* thin light dividers (in-game panels) */
-    -heading-rule: #ffffff;               /* section header underline, fades to transparent */
-    -segment-off: #353535;                /* inactive RAM segment */
-    -track: #2d2d2c;                      /* progress bar track, tool button border */
-    -icon: #8e8e8e;                       /* small icon buttons (tools) */
-    -primary-hover: #ff3f56;
-    -input: #1b1b1b;                      /* filled input (auth) */
-    -scrim: rgba(0, 0, 0, 0.55);          /* dim behind overlay panels */
+    -titlebar: #0a0a0a;                       /* window title bar strip (bottom border -border) */
+    -titlebar-foreground: #ece7e1;            /* minimize / maximize glyphs */
+    -window-close: #ff3b52;                   /* close glyph (red even at rest) */
+    -window-close-hover: #ff6276;
+    -sidebar: #0f0f0f;                        /* left column */
+    -divider: #2e2d2d;                        /* sidebar | content separator, section-label lines */
+    -divider-light: rgba(202, 185, 166, 0.12);/* thin warm dividers inside panels */
+    -heading-rule: #ece7e1;                   /* section heading underline (fades to transparent) */
+    -segment-off: #2e2d2d;                    /* inactive RAM segment */
+    -track: #1f1e1e;                          /* progress track */
+    -icon: rgba(202, 185, 166, 0.64);         /* small icon buttons, menu arrows */
+    -primary-hover: #ff5a6d;
+    -input: #121212;                          /* filled inputs */
+    -scrim: rgba(0, 0, 0, 0.55);              /* dim behind overlay panels */
+    -tile: #121212;                           /* full-width dark tiles (secondary buttons, menu rows) */
+    -tile-hover: #1a1a1a;
+    -border-hover: #525252;                   /* tile/input border on hover */
+    -fill-subtle: rgba(202, 185, 166, 0.04);  /* faint fills, watermarks */
+    -fill-strong: rgba(202, 185, 166, 0.12);
+    -card-alt: #0f0f0f;                       /* second card shade (nested cards, sidebar items) */
 
     /* body font: Roboto (SIL OFL 1.1) */
     -fx-font-family: "Roboto";
     -fx-font-size: 13;
 }
 
-/* Headings / wordmark: Oswald (SIL OFL 1.1, Cyrillic). Replaces the commercial "Europe" in this theme. */
+/*
+ * Headings / wordmark: Oswald (SIL OFL 1.1, Cyrillic) is the free stand-in for the site's Bebas Neue Cyrillic
+ * (whose license is not clearly OFL). Regular weight keeps the tall, light Bebas look.
+ */
 .font-display {
     -fx-font-family: "Oswald";
 }
@@ -79,9 +90,31 @@
     -fx-font-family: "Roboto Light";
 }
 
-/* Flat: radius 0 everywhere (same selector group as theme.css). */
+/*
+ * Radii. JavaFX looked-up values work for colors only, so radii cannot be tokens.
+ * 1) The generic control group defaults to 5 px (same selector group as theme.css, which sets 0).
+ * 2) Utility classes come AFTER it (same specificity, later wins); FXML uses them instead of numeric radii:
+ *    .zone-radius-sm = 5 px (buttons, inputs, tiles), .zone-radius-md = 10 px (cards, panels, modals).
+ * Component CSS must not contain numeric radii (exception: round radio/checkbox circles).
+ */
 .button, .text-field, .progress-bar, .progress-bar > .bar, .progress-bar > .track,
 .scroll-bar .thumb, .check-box > .box, .context-button {
-    -fx-background-radius: 0;
-    -fx-border-radius: 0;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+.zone-radius-sm {
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+.zone-radius-md {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+/*
+ * JavaFX CSS has no letter-spacing. Nodes that should be tracked (.05-.1em on the site) carry .zone-caps and
+ * uppercase text for now; they will be swapped to SpacedLabel (ui/controls, redesign/auth branch) after merge.
+ */
+.zone-caps {
+    -fx-font-family: "Roboto Medium";
 }

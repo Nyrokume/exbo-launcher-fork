@@ -61,6 +61,12 @@
     -primary-hover: #25607d;
     -input: #191919;
     -scrim: rgba(0, 0, 0, 0.55);
+    -tile: #191919;
+    -tile-hover: #242428;
+    -border-hover: #414141;
+    -fill-subtle: rgba(255, 255, 255, 0.04);
+    -fill-strong: rgba(255, 255, 255, 0.12);
+    -card-alt: #191919;
 
     /* body font: defined once. Manrope Light (OFL) replaces the original commercial "Circe Light". */
     -fx-font-family: "Manrope Light";
