@@ -7,7 +7,7 @@
 
 <!--
   Login panel for the separate login window, after stalzone.com/login (docs: /workspace/stalzone/site-ref/LOGIN.md).
-  Top block (card): title, social tiles. Bottom block (card description): fields, remember / restore, ВОЙТИ, sign up.
+  Top block (card): title, social tiles (Steam, Epic Games; no Google: not supported by the auth backend). Bottom block (card description): fields, remember / restore, ВОЙТИ, sign up.
   Self-contained: own stylesheet, flow layout, same fx:ids and controller as initial_auth.fxml.
   The panel fills the window (pref 460x588 under a 32 px title bar), so the blocks have no rounded corners of their own.
   Explicit ids where the fx:id matches a legacy CSS id (lang_*.css / auth.css paint old PNGs on those).
@@ -29,9 +29,6 @@
             <Label styleClass="zone-title" text="%fork.zone.title" wrapText="true" minHeight="-Infinity" />
             <Label styleClass="zone-description" text="%fork.zone.social" wrapText="true" minHeight="-Infinity" />
             <HBox styleClass="zone-socials">
-                <Button id="zoneGoogle" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterGoogle" accessibleText="Google">
-                    <graphic><Region styleClass="zone-social-icon, icon-google" /></graphic>
-                </Button>
                 <Button id="zoneSteam" fx:id="enterSteamButton" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterSteam" accessibleText="Steam">
                     <graphic><Region styleClass="zone-social-icon, icon-steam" /></graphic>
                 </Button>
