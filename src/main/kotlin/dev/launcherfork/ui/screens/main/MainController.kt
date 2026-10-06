@@ -94,8 +94,10 @@ class MainController(private val ctx: UiContext) : Disposable {
 
         headerController.onLink = { notAvailable() }
         // the links sit in the top bar (outside homePane) but, as before, only show on the home screen
+        // (managed too: hidden links leave the row instead of keeping an empty slot left of the profile)
         headerController.headerPane.visibleProperty().bind(homePane.visibleProperty())
-        // same height as the profile button, so the links stay centred on it when the profile dropdown opens
+        headerController.headerPane.managedProperty().bind(homePane.visibleProperty())
+        // same height as the profile button, so the links stay centred on it (the dropdown floats, see ProfileController)
         val buttonHeight = profileBarController.loginButton.heightProperty()
         headerController.headerPane.minHeightProperty().bind(buttonHeight)
         headerController.headerPane.maxHeightProperty().bind(buttonHeight)
