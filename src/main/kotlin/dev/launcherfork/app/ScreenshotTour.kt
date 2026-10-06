@@ -18,7 +18,7 @@ import javax.imageio.ImageIO
 
 /**
  * Dev tool: walks through the screens automatically and saves Scene snapshots as PNG
- * (`./gradlew run -Dlauncher.theme=zone -Dlauncher.screenshots=docs/screenshots/zone`). Not used in normal runs.
+ * (`./gradlew run -Dlauncher.screenshots=docs/screenshots/zone`, zone is the default theme). Not used in normal runs.
  */
 class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
     private val steps = ArrayDeque<Pair<Double, () -> Unit>>()

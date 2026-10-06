@@ -3,8 +3,10 @@
  * theme.css + theme-zone.css (Theme.stylesheets). Tokens only: fonts, radii and every component rule stay those of
  * the zone theme, so the layout is identical and only colours change (also on the login / registration / code panels,
  * whose stylesheets use the same tokens). White window, #f4f4f5 cards, near-black text, zinc greys, light borders;
- * the STALZONE red stays the accent. It is #dc2239 darkened a hair to #d62037 so red TEXT (links, selected combo row)
- * is >= 4.5:1 on the #f4f4f5 cards too (#dc2239 there: 4.41:1). SettingsContrastTest checks the ratios below.
+ * the site red #e91932 (stalzone.com --red-color) stays the accent on every fill (selected segment, RAM, switch,
+ * focus ring, close glyph). -primary also colours TEXT (login links, the selected combo row on a card): #e91932 is
+ * 4.52:1 on white but 4.11:1 on the #f4f4f5 cards, so -primary is darkened minimally to #dd152d (4.5:1 on cards,
+ * white text on it 5.0:1). SettingsContrastTest checks the ratios below.
  */
 
 .root {
@@ -15,8 +17,8 @@
     -card-foreground: #0a0a0a;
     -popover: rgba(255, 255, 255, 0.98);      /* context menu, tooltip */
     -popover-foreground: #0a0a0a;
-    -primary: #d62037;                        /* red accent: CTA, selected segment, links: 5.1:1 on white, 4.6:1 on cards */
-    -primary-foreground: #ffffff;             /* white text on red: 5.1:1 */
+    -primary: #dd152d;                        /* site red #e91932, a hair darker for red text: 5.0:1 on white, 4.5:1 on cards */
+    -primary-foreground: #ffffff;             /* white text on -primary: 5.0:1 */
     -secondary: #f4f4f5;
     -secondary-foreground: #0a0a0a;
     -muted: #f4f4f5;
@@ -24,12 +26,12 @@
     -accent: rgba(10, 10, 10, 0.04);          /* hover fill */
     -accent-foreground: #0a0a0a;
     -border: #e4e4e7;                         /* 1px borders of tiles, inputs, cards */
-    -ring: #d62037;                           /* focus border of inputs */
-    -destructive: #d62037;
-    -destructive-border: rgba(214, 32, 55, 0.40);
-    -destructive-soft: rgba(214, 32, 55, 0.08);
+    -ring: #e91932;                           /* focus border of inputs */
+    -destructive: #e91932;
+    -destructive-border: rgba(233, 25, 50, 0.40);
+    -destructive-soft: rgba(233, 25, 50, 0.08);
     -destructive-text: #c81e33;               /* red menu rows: 5.7:1 on white, 5.2:1 on cards */
-    -primary-tint: rgba(214, 32, 55, 0.12);   /* progress fill behind the status text */
+    -primary-tint: rgba(233, 25, 50, 0.12);   /* progress fill behind the status text */
     -input-foreground: #0a0a0a;
     -placeholder: #71717a;                    /* 4.8:1 on white */
     -overlay: rgba(10, 10, 10, 0.45);
@@ -50,7 +52,7 @@
     /* ---- extra tokens (also defined in theme.css / theme-zone.css) ---- */
     -titlebar: #ffffff;                       /* window title bar strip (bottom border -border) */
     -titlebar-foreground: #3f3f46;            /* minimize / maximize glyphs */
-    -window-close: #d62037;
+    -window-close: #e91932;
     -window-close-hover: #b91c30;
     -sidebar: #fafafa;                        /* left column, a shade off the white content */
     -divider: #e4e4e7;
@@ -79,15 +81,15 @@
     -settings-label: #18181b;                 /* row labels, RAM summary on -card: 16.1:1 */
     -settings-muted: #52525b;                 /* inactive segments, KB/s, RAM scale: 7.7:1 on -input, 7.0:1 on -card */
     -settings-divider: #e4e4e7;               /* row separators inside the cards */
-    -ram-filled: #d62037;                     /* RAM: selected, red, the loudest part of the bar (4.6:1 on -card) */
+    -ram-filled: #e91932;                     /* RAM: selected, site red, the loudest part of the bar (4.1:1 on -card) */
     -ram-filled-hover: #b91c30;
-    -switch-on: #d62037;                      /* switch on: red track (4.6:1 on -card) with the white knob (5.1:1) */
+    -switch-on: #e91932;                      /* switch on: site red track (4.1:1 on -card) with the white knob (4.5:1) */
     -switch-on-hover: #b91c30;
-    -ram-free: #85858d;                       /* RAM: available, quiet grey (3.3:1 on -card, below the red's 4.6:1) */
+    -ram-free: #85858d;                       /* RAM: available, quiet grey (3.3:1 on -card, below the red's 4.1:1) */
     -ram-reserve: #d4d4d8;                    /* RAM: system reserve, outline only */
     -switch-off-knob: #71717a;                /* switch off: knob (4.8:1 on -input) */
     -switch-off-border: #85858d;              /* switch off: track ring (3.3:1 on -card) */
-    -segment-selected: #d62037;               /* selected segment: white text 5.1:1 */
+    -segment-selected: #e91932;               /* selected segment: site red, white text 4.5:1 */
 }
 
 /*

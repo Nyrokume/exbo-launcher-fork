@@ -2,7 +2,8 @@
  * theme-zone.css - "zone" theme, loaded AFTER theme.css when -Dlauncher.theme=zone.
  * Palette and shapes follow the STALZONE site (stalzone.com/start, its CSS variables), applied to the launcher
  * layout of the STALCRAFT launcher references. Warm off-white text, warm beige muted text, near-black surfaces,
- * 1px #2E2D2D borders, 5px radius (10px cards), red accent.
+ * 1px #2E2D2D borders, 5px radius (10px cards), red accent: the site's --red-color #E91932 (stalzone.com/download,
+ * app.css :root; .main-btn background, .play_free border, links), hover #FF3B52 (.text-btn:hover, link :hover).
  * Only tokens, font families and radius groups live here; component styles reference the tokens
  * (see docs/design/STYLE-ZONE.md).
  */
@@ -15,21 +16,21 @@
     -card-foreground: #ece7e1;
     -popover: rgba(15, 15, 15, 0.97);         /* #0f0f0f: context menu, tooltip */
     -popover-foreground: #ece7e1;
-    -primary: #ff3b52;                        /* site red: filled CTA, active segment, radio dot, indicator, live dot */
+    -primary: #e91932;                        /* site --red-color (.main-btn fill, .play_free border): CTA, indicator; white text 4.5:1 */
     -primary-foreground: #ffffff;
     -secondary: #121212;                      /* --black-btn-color: secondary buttons / tiles */
     -secondary-foreground: #ece7e1;
     -muted: #121212;                          /* input fill */
     -muted-foreground: rgba(202, 185, 166, 0.64); /* --accent-500: labels, links, hints */
-    -accent: rgba(202, 185, 166, 0.04);       /* hover fill */
+    -accent: rgba(233, 25, 50, 0.05);         /* hover fill: the site's red tint (linear-gradient(#e919320d) over #0f0f0f) */
     -accent-foreground: #ece7e1;
     -border: #2e2d2d;                         /* 1px borders of tiles, inputs, cards; radio ring */
-    -ring: #ff3b52;                           /* focus border of inputs */
-    -destructive: #ff3b52;
-    -destructive-border: rgba(255, 59, 82, 0.40);
-    -destructive-soft: rgba(255, 59, 82, 0.08);  /* hover fill of red menu rows (game actions) */
-    -destructive-text: #ff3b52;  /* red text / icons of destructive menu rows, readable on -card */
-    -primary-tint: rgba(255, 59, 82, 0.20);  /* translucent accent: progress fill behind the status text */
+    -ring: #e91932;                           /* focus border of inputs */
+    -destructive: #e91932;
+    -destructive-border: rgba(233, 25, 50, 0.40);
+    -destructive-soft: rgba(233, 25, 50, 0.08);  /* hover fill of red menu rows (game actions) */
+    -destructive-text: #ff3b52;  /* red TEXT: the site's hover red (.text-btn:hover), 5.1:1 on -card (#e91932 is 3.9:1) */
+    -primary-tint: rgba(233, 25, 50, 0.20);  /* translucent accent: progress fill behind the status text */
     -input-foreground: #ece7e1;
     -placeholder: rgba(202, 185, 166, 0.46);  /* --accent-400 */
     -overlay: rgba(0, 0, 0, 0.80);
@@ -51,8 +52,8 @@
     /* ---- extra tokens (also defined in theme.css / theme-shadcn.css) ---- */
     -titlebar: #0a0a0a;                       /* window title bar strip (bottom border -border) */
     -titlebar-foreground: #ece7e1;            /* minimize / maximize glyphs */
-    -window-close: #ff3b52;                   /* close glyph (red even at rest) */
-    -window-close-hover: #ff6276;
+    -window-close: #e91932;                   /* close glyph (red even at rest) */
+    -window-close-hover: #ff3b52;
     -sidebar: #0f0f0f;                        /* left column */
     -divider: #2e2d2d;                        /* sidebar | content separator, section-label lines */
     -divider-light: rgba(202, 185, 166, 0.12);/* thin warm dividers inside panels */
@@ -60,7 +61,7 @@
     -segment-off: #2e2d2d;                    /* inactive RAM segment */
     -track: #1f1e1e;                          /* progress track */
     -icon: rgba(202, 185, 166, 0.64);         /* small icon buttons, menu arrows */
-    -primary-hover: #ff5a6d;
+    -primary-hover: #ff3b52;                  /* site hover red (.text-btn:hover, links :hover) */
     -input: #121212;                          /* filled inputs */
     -scrim: rgba(0, 0, 0, 0.55);              /* dim behind overlay panels */
     -tile: #121212;                           /* full-width dark tiles (secondary buttons, menu rows) */
@@ -81,15 +82,15 @@
     -settings-label: #efeae4;                 /* row labels, RAM summary on -card: 14.9:1 */
     -settings-muted: #bdb2a6;                 /* inactive segments, KB/s, RAM scale on -input / -card: 9.0:1 / 8.5:1 */
     -settings-divider: #383532;               /* row separators inside the cards */
-    -ram-filled: #ff3b52;                     /* RAM segment: selected, site red (5.1:1 on -card) */
-    -ram-filled-hover: #ff5a6d;
-    -switch-on: #ff3b52;                      /* switch on: track, site red (5.1:1 on -card) */
-    -switch-on-hover: #ff5a6d;
+    -ram-filled: #e91932;                     /* RAM segment: selected, site red (3.9:1 on -card, above -ram-free 3.0:1) */
+    -ram-filled-hover: #ff3b52;
+    -switch-on: #e91932;                      /* switch on: site red track (3.9:1 on -card), white knob 4.5:1 */
+    -switch-on-hover: #ff3b52;
     -ram-free: #6a645e;                       /* RAM segment: available, not selected (3.0:1 on -card) */
     -ram-reserve: #3d3936;                    /* RAM segment: system reserve, outline only */
     -switch-off-knob: #a8a097;                /* switch off: knob (7.3:1 on -input) */
     -switch-off-border: #6a645e;              /* switch off: track ring (3.0:1 on -card) */
-    -segment-selected: #dc2239;               /* selected segment: deeper site red, white text 4.9:1 (#ff3b52 is 3.5:1) */
+    -segment-selected: #e91932;               /* selected segment: site red, white text 4.5:1 */
 
     /* body font: Roboto (SIL OFL 1.1) */
     -fx-font-family: "Roboto";

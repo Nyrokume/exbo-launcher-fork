@@ -21,7 +21,7 @@ import java.nio.file.Path
  * Entry point of the visual fork. Two windows (docs/design/WINDOWS.md): the pre-main window (primary stage:
  * update, then auth / mail code) and, after login, the main window.
  * System properties: launcher.lang=ru|en, launcher.mockSpeed=<factor>, launcher.screenshots=<dir> (auto tour),
- * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=exbo|shadcn|zone|zone-light (zone-light: start in the white
+ * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=zone|zone-light|exbo|shadcn (zone by default; zone-light: start in the white
  * scheme), launcher.settingsFile=<path> (where the chosen theme is kept),
  * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour).
  */

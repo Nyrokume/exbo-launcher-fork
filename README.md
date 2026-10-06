@@ -13,8 +13,8 @@
 главное окно: без рамки, с ресайзом, 1024×640 (минимум 900×580). Слева колонка фиксированной ширины с векторным
 логотипом EXBO, профиль (ник ▾ и меню) в правом верхнем углу, контент тянется вместе с окном. Эта адаптивная раскладка
 **заменила старую 886×550 для всех тем**. Темы `exbo` и `shadcn` работают на ней через общие токены, пусть и
-скромнее. Тема по умолчанию осталась `exbo`. Стиль `zone` (сайт STALZONE + раскладка лаунчера STALCRAFT)
-включается так: `-Dlauncher.theme=zone`, описание в `docs/design/STYLE-ZONE.md`. У неё есть **белая тема**:
+скромнее. **Тема по умолчанию — `zone`** (красный стиль сайта STALZONE + раскладка лаунчера STALCRAFT), описание в
+`docs/design/STYLE-ZONE.md`; прежние `exbo` и `shadcn` включаются через `-Dlauncher.theme=exbo|shadcn`. У неё есть **белая тема**:
 в настройках «Тема: Тёмная / Белая» (переключается сразу во всех окнах и сохраняется между запусками) или сразу
 `-Dlauncher.theme=zone-light`.
 
@@ -33,13 +33,13 @@
 |---|---|
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
-| `-Dlauncher.theme=exbo\|shadcn\|zone\|zone-light` | тема: исходные цвета EXBO (по умолчанию), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`), STALZONE (`theme-zone.css`, Bebas Neue + Roboto) или STALZONE сразу в белой схеме (`theme-zone-light.css` поверх `theme-zone.css`; при старте важнее сохранённой настройки) |
+| `-Dlauncher.theme=zone\|zone-light\|exbo\|shadcn` | тема: STALZONE (`theme-zone.css`, Bebas Neue + Roboto, по умолчанию), исходные цвета EXBO (`theme.css`), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE сразу в белой схеме (`theme-zone-light.css` поверх `theme-zone.css`; при старте важнее сохранённой настройки) |
 | `-Dlauncher.settingsFile=<путь>` | где хранится выбранная тема (по умолчанию `~/.launcher-fork/settings.properties`, одна строка `appearance=light\|dark`; остальные настройки по-прежнему только в памяти). Автотур ничего не сохраняет |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 | `-Dlauncher.mock2fa=random\|email\|totp\|none` | второй фактор после пароля: по умолчанию `random` (при каждом входе случайно код из письма или Google Authenticator), `email` / `totp` всегда один из них, `none` сразу на главную. Автотур без явного значения использует `none` |
 | `-Dlauncher.onlineTickMs=10000` | как часто фейковый онлайн в списке игр немного меняется (по умолчанию 10 с, `0` — всегда 1284; в автотуре всегда 0) |
 
-На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.theme=zone -Dlauncher.screenshots=$PWD/docs/screenshots/zone`.
+На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.screenshots=$PWD/docs/screenshots/zone` (тема `zone` по умолчанию; для остальных `-Dlauncher.theme=...` и свой каталог).
 
 **Демо-логин** (всё фейковое): подходит любой логин и пароль. После пароля мок при каждой попытке случайно
 выбирает второй фактор (`MockAuthService` + `MockSecondFactor`, `Random` внедряется, режим задаёт
@@ -288,8 +288,8 @@ src/main/resources/dev/launcherfork/
 `19_totp_error`. После `05_profile_menu` есть `05b_logout_confirm` (подтверждение «Выход из аккаунта»). После него `05c_community_menu` (выпадающее меню «Сообщества» со ссылками на соцсети). Единственная игра STALZONE установлена,
 поэтому диалога установки в туре нет.
 
-- `docs/screenshots/zone/` — тема `zone` (основная цель редизайна);
-- `docs/screenshots/` — тема по умолчанию `exbo` на новой раскладке;
+- `docs/screenshots/zone/` — тема `zone`, по умолчанию (основная цель редизайна);
+- `docs/screenshots/` — тема `exbo` (`-Dlauncher.theme=exbo`) на новой раскладке;
 - `docs/screenshots/shadcn/` — тема shadcn/ui;
 - `docs/screenshots/zone-light/` — белая тема zone (`-Dlauncher.theme=zone-light`).
 

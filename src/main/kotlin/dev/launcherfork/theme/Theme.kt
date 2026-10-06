@@ -85,13 +85,16 @@ object Theme {
      */
     private val FONT_FILES = listOf("Manrope-Light.ttf", "Manrope-Bold.ttf", "europe.ttf", "Roboto-Regular.ttf")
 
+    /** Theme without -Dlauncher.theme: the red STALZONE look (exbo / shadcn stay available through the property). */
+    const val DEFAULT_THEME = "zone"
+
     /** -Dlauncher.theme value that starts in the white scheme (on top of "zone"). */
     const val ZONE_LIGHT = "zone-light"
 
-    private val requestedTheme: String = System.getProperty("launcher.theme", "exbo").lowercase()
+    private val requestedTheme: String = System.getProperty("launcher.theme", DEFAULT_THEME).lowercase()
 
     /**
-     * Dark base theme: "exbo" (original colors, default), "shadcn" (shadcn/ui dark neutral) or "zone" (STALZONE).
+     * Dark base theme: "zone" (STALZONE, default), "exbo" (original EXBO colors) or "shadcn" (shadcn/ui dark neutral).
      * -Dlauncher.theme=shadcn; -Dlauncher.theme=zone-light is "zone" started in the white scheme.
      */
     var themeName: String = if (requestedTheme == ZONE_LIGHT) "zone" else requestedTheme

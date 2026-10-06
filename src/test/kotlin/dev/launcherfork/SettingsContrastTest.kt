@@ -126,7 +126,7 @@ class SettingsContrastTest {
         Triple("main: header links", "-text-nav" to "-background", 4.5),
         Triple("main: status text in the pill", "-text-status" to "-input", 4.5),
         Triple("main: red menu rows", "-destructive-text" to "-card", 4.5),
-        Triple("main / login: ИГРАТЬ, ВОЙТИ (white on red, large Bebas 24 px)", "-primary-foreground" to "-primary", 3.0),
+        Triple("main / login: ИГРАТЬ, ВОЙТИ (white on red)", "-primary-foreground" to "-primary", 4.5),
         Triple("main: hovered tile text", "-foreground" to "-tile-hover", 4.5),
         Triple("window glyphs (non-text)", "-titlebar-foreground" to "-titlebar", 3.0),
         Triple("icons (non-text)", "-icon" to "-background", 3.0),
@@ -139,10 +139,14 @@ class SettingsContrastTest {
     )
 
     /**
-     * Gaps of the DARK zone theme that predate the white scheme (not touched here: the status pill and the login error
-     * belong to other branches): -text-status on -input 2.98:1, -error on -card-description 4.41:1.
+     * Known gaps of the DARK zone theme (rules owned by other branches, not touched here): -text-status on -input
+     * 2.98:1 and -error on -card-description 4.41:1 predate the white scheme; red TEXT in -primary (login links in
+     * zone-auth.css, the selected registration combo row) is the site's --red-color #e91932: 4.24:1 on
+     * -card-description, 3.93:1 on -card (no red can carry white text >= 4.5:1 AND be >= 4.5:1 text on near-black;
+     * the fix is -destructive-text #ff3b52 in those rules).
      */
-    private val knownDarkZoneGaps = setOf("-text-status" to "-input", "-error" to "-card-description")
+    private val knownDarkZoneGaps = setOf("-text-status" to "-input", "-error" to "-card-description",
+        "-primary" to "-card-description", "-primary" to "-card")
 
     /**
      * Main and login window text in the zone look, dark and white. The exbo / shadcn dev themes keep the original
@@ -159,6 +163,19 @@ class SettingsContrastTest {
                 assertTrue(r >= minRatio, "$theme: $what ${tokens.first} on ${tokens.second} = ${"%.2f".format(r)}:1 < $minRatio:1")
             }
         }
+    }
+
+    /** The zone accent is the red of stalzone.com (--red-color #E91932) on every red fill, dark and white. */
+    @Test
+    fun zoneUsesTheSiteRed() {
+        val site = parseColor("#e91932")
+        for (theme in listOf("zone", "zone-light")) {
+            val t = tokens(theme)
+            for (tok in listOf("-segment-selected", "-ram-filled", "-switch-on", "-ring", "-window-close"))
+                assertEquals(site, parseColor(t.getValue(tok)), "$theme: $tok is not the site red")
+        }
+        assertEquals(site, parseColor(tokens("zone").getValue("-primary")), "zone: -primary is not the site red")
+        assertEquals(parseColor("#ff3b52"), parseColor(tokens("zone").getValue("-primary-hover")), "zone: site hover red")
     }
 
     /** The white scheme really is light: light surfaces, dark text, no translucent white left over from the dark tokens. */
