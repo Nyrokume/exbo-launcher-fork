@@ -93,7 +93,8 @@ class ZonePanelsTest {
 
     @Test
     fun socialTilesAreSteamAndEpicOnly() = FxTestSupport.onFx {
-        // Google auth is not supported: only Steam and Epic Games tiles, left-aligned 54x54 with 12 px spacing
+        // Google auth is not supported: only Steam and Epic Games tiles, 44x44 with 10 px spacing, right-aligned in the form
+        // row under remember / restore (user's sketch), the top card keeps only the title
         val panel = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml")
         val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
         dev.launcherfork.theme.Theme.apply(scene, "ru")
@@ -109,9 +110,16 @@ class ZonePanelsTest {
         assertTrue(tiles.all { it.isFocusTraversable })
         val row = tiles[0].parent as javafx.scene.layout.HBox
         assertEquals(tiles, row.children.toList())
-        tiles.forEach { assertEquals(54.0, it.width, 0.5); assertEquals(54.0, it.height, 0.5) }
-        assertEquals(0.0, tiles[0].layoutX - row.padding.left, 0.5)
-        assertEquals(54.0 + 12.0, tiles[1].layoutX - tiles[0].layoutX, 0.5)
+        tiles.forEach { assertEquals(44.0, it.width, 0.5); assertEquals(44.0, it.height, 0.5) }
+        assertEquals(44.0 + 10.0, tiles[1].layoutX - tiles[0].layoutX, 0.5)
+        val c = panel.controller
+        val form = c.enterButton.localToScene(c.enterButton.layoutBounds)
+        val epic = tiles[1].localToScene(tiles[1].layoutBounds)
+        val steam = tiles[0].localToScene(tiles[0].layoutBounds)
+        assertEquals(form.maxX, epic.maxX, 1.0, "tiles end at the form's right edge")
+        assertTrue(steam.minY > c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY, "tiles under remember me")
+        assertTrue(steam.maxY < form.minY, "tiles above ВОЙТИ")
+        assertTrue(scene.root.lookupAll(".zone-top .zone-social").isEmpty(), "tiles left in the top card")
     }
 
     @Test
@@ -162,9 +170,9 @@ class ZonePanelsTest {
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
                 // no hole above ВОЙТИ: the spare height of the fixed window goes to the top card, not between the form rows
-                val rememberBottom = c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY
+                val socialsBottom = c.enterSteamButton.localToScene(c.enterSteamButton.layoutBounds).maxY
                 val enterTop = c.enterButton.localToScene(c.enterButton.layoutBounds).minY
-                assertTrue(enterTop - rememberBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - rememberBottom}")
+                assertTrue(enterTop - socialsBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - socialsBottom}")
                 assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)

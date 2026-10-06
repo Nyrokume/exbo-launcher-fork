@@ -7,7 +7,7 @@
 
 <!--
   Login panel for the separate login window, after stalzone.com/login (docs: /workspace/stalzone/site-ref/LOGIN.md).
-  Top block (card): title, social tiles (Steam, Epic Games; no Google: not supported by the auth backend). Bottom block (card description): fields, remember / restore, ВОЙТИ, sign up.
+  Top block (card): title only, takes the spare height. Bottom block (card description): fields, remember / restore, a row of other services (Steam, Epic Games; no Google: not supported by the auth backend), ВОЙТИ, sign up.
   Self-contained: own stylesheet, flow layout, same fx:ids and controller as initial_auth.fxml.
   The panel fills the window (pref 460x588 under a 32 px title bar), so the blocks have no rounded corners of their own.
   Explicit ids where the fx:id matches a legacy CSS id (lang_*.css / auth.css paint old PNGs on those).
@@ -27,15 +27,6 @@
 
         <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
             <Label styleClass="zone-title" text="%fork.zone.title" wrapText="true" minHeight="-Infinity" />
-            <Label styleClass="zone-description" text="%fork.zone.social" wrapText="true" minHeight="-Infinity" />
-            <HBox styleClass="zone-socials">
-                <Button id="zoneSteam" fx:id="enterSteamButton" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterSteam" accessibleText="Steam">
-                    <graphic><Region styleClass="zone-social-icon, icon-steam" /></graphic>
-                </Button>
-                <Button id="zoneEpic" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterEpic" accessibleText="Epic Games">
-                    <graphic><Region styleClass="zone-social-icon, icon-epic" /></graphic>
-                </Button>
-            </HBox>
         </VBox>
 
         <VBox styleClass="zone-bottom">
@@ -61,6 +52,18 @@
                     <Button id="zoneRestore" fx:id="restoreButton" styleClass="zone-link-accent" mnemonicParsing="false" onAction="#onRestore" text="%fork.zone.restore" BorderPane.alignment="CENTER_RIGHT" />
                 </right>
             </BorderPane>
+            <!-- other services next to the form (user's sketch 2026-10-06): one row under remember / restore -->
+            <HBox styleClass="zone-social-row" alignment="CENTER_LEFT">
+                <Label styleClass="zone-social-label" text="%fork.zone.social_short" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+                <HBox styleClass="zone-socials">
+                    <Button id="zoneSteam" fx:id="enterSteamButton" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterSteam" accessibleText="Steam">
+                        <graphic><Region styleClass="zone-social-icon, icon-steam" /></graphic>
+                    </Button>
+                    <Button id="zoneEpic" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterEpic" accessibleText="Epic Games">
+                        <graphic><Region styleClass="zone-social-icon, icon-epic" /></graphic>
+                    </Button>
+                </HBox>
+            </HBox>
             <Region styleClass="zone-spacer" />
             <Button id="zoneEnter" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#onEnter" text="%fork.zone.enter" maxWidth="Infinity" />
             <HBox styleClass="zone-footer">
