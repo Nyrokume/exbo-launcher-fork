@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Main window, zone theme: plain content background, Forum / Support next to the profile, STALZONE as the only game,
- * an empty centre slot (no hero / news) waiting for the centre redesign.
+ * the centre slot holding only the game banner text (no hero / news).
  */
 class MainZoneLayoutTest {
     private fun Node.sceneBounds(): Bounds = localToScene(layoutBounds)
@@ -49,9 +49,9 @@ class MainZoneLayoutTest {
     }
 
     @Test
-    fun centreIsAnEmptySlotAndStalzoneIsTheOnlyGame() = withZoneMain { nav ->
+    fun centreHoldsOnlyTheBannerAndStalzoneIsTheOnlyGame() = withZoneMain { nav ->
         val main = nav.mainController!!
-        assertTrue(main.centerPane.children.isEmpty(), "centre slot must stay empty: ${main.centerPane.children}")
+        assertEquals(listOf(main.gameBannerController.scroll), main.centerPane.children.toList(), "centre slot: only the game banner")
         assertTrue(main.centerPane.isVisible)
         // home layer: centre slot and status bar (the game-actions dropdown floats inside the status bar); no hero / news / article
         assertEquals(2, main.homePane.children.size, "${main.homePane.children}")
@@ -93,8 +93,8 @@ class MainZoneLayoutTest {
     fun onlyGameIsStalzoneWithTheSiteFavicon() {
         val game = MockData.servers.single()
         assertEquals("STALZONE", game.caption)
-        assertTrue(game.description.first().startsWith("STALZONE — "))
+        assertEquals(dev.launcherfork.domain.GameDescription.Keys("game.stalzone"), game.description)
         assertTrue(game.iconUri.toString().endsWith("/servers/game-stalzone.png"))
-        assertTrue("STALCRAFT" !in game.caption && game.description.none { "STALCRAFT" in it })
+        assertTrue("STALCRAFT" !in game.caption)
     }
 }

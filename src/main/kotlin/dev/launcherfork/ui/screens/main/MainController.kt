@@ -37,8 +37,8 @@ import javafx.scene.layout.StackPane
 
 /**
  * main.fxml: coordination between the included areas (sidebar, links, profile, status bar, settings, modals).
- * Each area has its own FXML and controller. Layout is adaptive (BorderPane + anchors). [centerPane] is an empty
- * slot for the upcoming centre redesign.
+ * Each area has its own FXML and controller. Layout is adaptive (BorderPane + anchors). [centerPane] holds the
+ * selected game's banner text ([GameBannerController]).
  */
 class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var root: StackPane
@@ -58,6 +58,7 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var profileBarController: ProfileController
     @FXML lateinit var headerController: HeaderController
     @FXML lateinit var defaultStatusPaneController: StatusPaneController
+    @FXML lateinit var gameBannerController: GameBannerController
     @FXML lateinit var settingsController: SettingsController
     @FXML lateinit var logoutPaneController: LogoutModalController
     @FXML lateinit var updatePaneController: UpdateModalController
@@ -213,6 +214,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         defaultStatusPaneController.gameActionsController.hide()
         background.setImageBackground(loadImage(server.backgroundUri, background = true), cover = true)
         defaultStatusPaneController.showServer(server, store.state(server))
+        gameBannerController.show(server)
         if (showHome) setSettingsVisible(false)
     }
 

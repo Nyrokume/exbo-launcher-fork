@@ -1,5 +1,6 @@
 package dev.launcherfork.data.mock
 
+import dev.launcherfork.domain.GameDescription
 import dev.launcherfork.domain.Server
 import java.net.URI
 
@@ -20,10 +21,8 @@ object MockData {
             caption = "STALZONE",
             online = true,
             players = 1284,
-            description = listOf(
-                "STALZONE — это игра в жанре MMOFPS с элементами Survival Horror, которая сочетает в себе " +
-                    "открытый мир, RPG и динамичный шутер.",
-            ),
+            // banner text: i18n keys game.stalzone.* (messages_ru / messages_en), resolved by GameBannerController
+            description = GameDescription.Keys("game.stalzone"),
             // favicon of stalzone.com/start (favicon-master.svg rendered to 48x48, 2x of the 24 px entry icon)
             iconUri = res("$IMG/servers/game-stalzone.png"),
             backgroundUri = res("$IMG/servers/stalcraft_x_bg.jpg"),
