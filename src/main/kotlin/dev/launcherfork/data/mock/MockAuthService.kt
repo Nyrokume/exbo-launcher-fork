@@ -64,6 +64,7 @@ class MockAuthService(private val delayMs: Long = 500) : AuthService {
     }
 
     private fun success(login: String): AuthResult {
+        pending = null // a finished sign-in drops any half-done 2FA attempt
         val s = UserSession(login)
         currentSession = s
         return AuthResult.Success(s)
