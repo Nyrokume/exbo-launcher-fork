@@ -1,6 +1,7 @@
 package dev.launcherfork.app
 
 import dev.launcherfork.domain.LinkOpener
+import dev.launcherfork.domain.LinkPolicy
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.components.loadImage
 import javafx.application.Application
@@ -27,8 +28,12 @@ class LauncherApp : Application() {
         // community links (header «Сообщества») open in the system browser through JavaFX HostServices
         val browser = hostServices
         val links = LinkOpener { url ->
-            System.err.println("[launcher-fork] open link: $url")
-            browser.showDocument(url)
+            if (LinkPolicy.isAllowed(url)) {
+                System.err.println("[launcher-fork] open link: $url")
+                browser.showDocument(url)
+            } else {
+                System.err.println("[launcher-fork] WARNING: refused to open non-allowlisted link: $url")
+            }
         }
         val shotsDir = System.getProperty("launcher.screenshots")
         // the games list shows the online count: the mock drifts a little in normal runs, the tour keeps it fixed
