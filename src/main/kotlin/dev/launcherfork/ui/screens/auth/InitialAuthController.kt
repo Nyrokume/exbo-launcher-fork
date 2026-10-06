@@ -3,11 +3,13 @@ package dev.launcherfork.ui.screens.auth
 import dev.launcherfork.domain.AuthError
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
+import dev.launcherfork.ui.components.PasswordReveal
 import dev.launcherfork.ui.components.brightenOnHover
 import javafx.css.PseudoClass
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
+import javafx.scene.control.Label
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.scene.control.ToggleButton
@@ -25,6 +27,8 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     /** Only in auth_panel.fxml (zone style): plain-text twin of [passwordField] shown by the eye toggle. */
     @FXML var passwordVisibleField: TextField? = null
     @FXML var passwordToggle: ToggleButton? = null
+    /** Only in auth_panel.fxml: success notice after a registration ("Аккаунт создан…"), hidden while empty. */
+    @FXML var noticeLabel: Label? = null
     /** `<Boolean fx:id="cssHover" fx:value="true"/>` in the FXML: hover comes from CSS, skip the brightness effect. */
     @FXML var cssHover: Boolean? = null
 
@@ -45,21 +49,21 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     private fun wirePasswordToggle() {
         val plain = passwordVisibleField ?: return
         val toggle = passwordToggle ?: return
-        plain.textProperty().bindBidirectional(passwordField.textProperty())
-        plain.visibleProperty().bind(toggle.selectedProperty())
-        passwordField.visibleProperty().bind(toggle.selectedProperty().not())
-        toggle.selectedProperty().addListener { _, _, shown ->
-            val target = if (shown) plain else passwordField
-            target.requestFocus()
-            target.positionCaret(target.text.length)
+        PasswordReveal.wire(passwordField, plain, toggle) { shown ->
+            ctx.t(if (shown) "fork.zone.hide_password" else "fork.zone.show_password")
         }
-        fun label(shown: Boolean) = ctx.t(if (shown) "fork.zone.hide_password" else "fork.zone.show_password")
-        toggle.accessibleText = label(toggle.isSelected)
-        toggle.tooltip = Tooltip(toggle.accessibleText)
-        toggle.selectedProperty().addListener { _, _, shown ->
-            toggle.accessibleText = label(shown)
-            toggle.tooltip.text = toggle.accessibleText
-        }
+    }
+
+    /**
+     * Back from a successful registration (StageNavigator.showRegistered): the new [login] in the login field, an
+     * empty password (focused) and the success notice above the remember row, until the next login attempt.
+     */
+    fun showRegistered(login: String) {
+        loginField.text = login
+        passwordField.text = ""
+        showError(null)
+        noticeLabel?.text = ctx.t("fork.reg.success", login)
+        passwordField.requestFocus()
     }
 
     /**
@@ -75,7 +79,8 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
             fields.forEach { it.pseudoClassStateChanged(ERROR, !text.isNullOrEmpty()) }
         }
         fields.forEach { f -> f.textProperty().addListener { _, _, _ -> fields.forEach { it.pseudoClassStateChanged(ERROR, false) } } }
-        listOf(errorFirst, errorSecond).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
+        listOfNotNull(errorFirst, errorSecond, noticeLabel).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
+        noticeLabel?.let { notice -> notice.visibleProperty().bind(notice.textProperty().isNotEmpty) }
         // as on the site: the cursor starts in the first empty field, not on a social tile
         loginField.sceneProperty().addListener { _, _, scene ->
             if (scene != null) javafx.application.Platform.runLater {
@@ -95,6 +100,7 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
             password.isEmpty() -> return showError(AuthError.EMPTY_PASSWORD)
         }
         showError(null)
+        noticeLabel?.text = ""
         setBusy(true)
         val remember = autoAuthCheckBox.isSelected
         background({ ctx.services.auth.login(login, password, remember) }, onResult = ::handle)
@@ -107,7 +113,8 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         autoAuthCheckBox.isSelected = !autoAuthCheckBox.isSelected
     }
 
-    @FXML fun onRegister() = showError(ctx.t("fork.not_available"))
+    /** "Создать" (zone) / "Регистрация" (legacy): registration starts with the age gate. */
+    @FXML fun onRegister() = ctx.navigator.showAgeGate()
     @FXML fun onRestore() = showError(ctx.t("fork.not_available"))
     @FXML fun onEnterSteam() = showError(ctx.t("fork.not_available"))
     @FXML fun onEnterEpic() = showError(ctx.t("fork.not_available"))

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import dev.launcherfork.ui.components.CodeInput?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<!--
+  Authenticator-app (TOTP) panel, after the stalzone.com 2FA step: "Для подтверждения учётной записи введите код из
+  **вашего мобильного приложения**", 6 digit cells (CodeInput, cellCount = TotpAuthController.CODE_LENGTH), light ОТПРАВИТЬ.
+  A wrong code shows the site's error toast at the bottom (title in Bebas, message, X strip, red bottom border);
+  errorFirst is the toast message, the toast is visible while it has text (X or editing the code hides it).
+-->
+<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css,@style/zone-steps.css,@style/zone-totp.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="588.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.TotpAuthController">
+    <VBox styleClass="zone-frame">
+        <HBox styleClass="zone-titlebar" visible="false" managed="false">
+            <ImageView fx:id="header" managed="false" visible="false" />
+            <Button fx:id="hideButton" visible="false" mnemonicParsing="false" />
+            <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
+        </HBox>
+
+        <VBox styleClass="zone-top">
+            <Label styleClass="zone-title" text="%fork.totp.title" wrapText="true" minHeight="-Infinity" />
+            <TextFlow styleClass="zone-description-flow">
+                <Text styleClass="zone-description-text" text="%fork.totp.info" />
+                <Text styleClass="zone-description-text, zone-strong" text="%fork.totp.info_app" />
+            </TextFlow>
+        </VBox>
+
+        <VBox styleClass="zone-bottom" VBox.vgrow="ALWAYS">
+            <CodeInput fx:id="codeInput" id="zoneTotpCode" cellCount="6" />
+            <Region VBox.vgrow="ALWAYS" styleClass="zone-spacer" />
+            <Button id="zoneTotpSend" fx:id="enterButton" styleClass="zone-light, zone-radius-sm" mnemonicParsing="false" onAction="#enter" text="%fork.totp.send" maxWidth="Infinity" />
+            <HBox styleClass="zone-footer">
+                <Label styleClass="zone-footer-text" text="%fork.totp.wrong_account" />
+                <Button id="zoneTotpBack" fx:id="backButton" styleClass="zone-link-underline" mnemonicParsing="false" onAction="#onBack" text="%fork.totp.back" />
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <VBox fx:id="toast" id="zoneToast" styleClass="zone-toast" StackPane.alignment="BOTTOM_CENTER" visible="false" maxHeight="-Infinity">
+        <VBox styleClass="zone-toast-body">
+            <Label styleClass="zone-toast-title" text="%fork.totp.error_title" wrapText="true" minHeight="-Infinity" />
+            <Label id="zoneErrorFirst" fx:id="errorFirst" styleClass="zone-toast-text" wrapText="true" minHeight="-Infinity" />
+            <Label id="zoneErrorSecond" fx:id="errorSecond" styleClass="zone-toast-text" wrapText="true" minHeight="-Infinity" />
+        </VBox>
+        <Button fx:id="toastClose" id="zoneToastClose" styleClass="zone-toast-close" mnemonicParsing="false" onAction="#onCloseToast" maxWidth="Infinity">
+            <graphic><Region styleClass="zone-toast-x" /></graphic>
+        </Button>
+    </VBox>
+    <ProgressIndicator fx:id="rollingBar" styleClass="zone-spinner" visible="false" />
+</StackPane>

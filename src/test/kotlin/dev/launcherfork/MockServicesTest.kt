@@ -33,7 +33,14 @@ class MockServicesTest {
         assertEquals(AuthResult.CodeRequired, auth.login("2fa", "x", false))
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("12"))
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("1234567"))
+        assertEquals(AuthResult.Failure(AuthError.SERVER_ERROR), auth.confirmTotp("123456"))   // not the TOTP step
         assertTrue(auth.confirmCode("123456") is AuthResult.Success)
+
+        assertEquals(AuthResult.TotpRequired, auth.login("totp", "x", false))
+        assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmTotp("000000"))     // the mock's wrong code
+        assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmTotp("12345"))
+        assertEquals(AuthResult.Failure(AuthError.SERVER_ERROR), auth.confirmCode("123456"))   // not the e-mail step
+        assertTrue(auth.confirmTotp("123456") is AuthResult.Success)
     }
 
     @Test

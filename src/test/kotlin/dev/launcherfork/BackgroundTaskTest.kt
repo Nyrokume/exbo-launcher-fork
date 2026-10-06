@@ -44,6 +44,9 @@ class BackgroundTaskTest {
         override val currentSession: UserSession? = null
         override fun login(login: String, password: String, remember: Boolean): AuthResult = throw java.io.IOException("connection reset")
         override fun confirmCode(code: String): AuthResult = throw IllegalStateException("boom")
+        override fun confirmTotp(code: String): AuthResult = throw IllegalStateException("boom")
+        override fun register(request: dev.launcherfork.domain.RegistrationRequest): dev.launcherfork.domain.RegisterResult =
+            throw java.io.IOException("connection reset")
         override fun logout() = Unit
     }
 

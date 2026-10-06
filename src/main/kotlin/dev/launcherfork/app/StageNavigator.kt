@@ -10,6 +10,9 @@ import dev.launcherfork.ui.Navigator
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.UpdatePanel
 import dev.launcherfork.ui.components.WindowFrame
+import dev.launcherfork.ui.screens.auth.AgeGateController
+import dev.launcherfork.ui.screens.auth.InitialAuthController
+import dev.launcherfork.ui.screens.auth.RegisterController
 import dev.launcherfork.ui.screens.main.MainController
 import dev.launcherfork.ui.screens.window.AuthWindowController
 import dev.launcherfork.ui.screens.window.WindowController
@@ -23,11 +26,13 @@ import javafx.scene.paint.Color
 import javafx.stage.Stage
 import javafx.stage.StageStyle
 import javafx.stage.Window
+import java.time.LocalDate
 
 /**
  * TWO windows, as in the original launcher (docs/design/WINDOWS.md):
  *  - the PRE-MAIN window ([stage], the primary stage): undecorated, not resizable, 460x620, auth_window.fxml
- *    frame; shows the update, auth and mail-code panels one after another;
+ *    frame; shows the update, auth and second-factor panels (e-mail code, authenticator code) one after another,
+ *    and the registration steps (age gate -> form -> back to auth with a notice);
  *  - the MAIN window ([mainStage]): undecorated, resizable, 1024x640, window.fxml frame with main.fxml.
  * Login success closes the pre-main window and opens the main one; logout / account switch disposes the main
  * screen, closes the main window and opens the pre-main window with the auth panel, centered on the same screen.
@@ -126,6 +131,25 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     override fun showMailAuth() {
         showPanel("mail_auth", "mail_auth_panel.fxml", "mail_auth.fxml", "title.auth.email")
+    }
+
+    override fun showTotpAuth() {
+        showPanel("totp_auth", "totp_auth_panel.fxml", "totp_auth_panel.fxml", "title.auth.totp")
+    }
+
+    override fun showAgeGate(birthDate: LocalDate?) {
+        val gate = showPanel("age_gate", "age_gate_panel.fxml", "age_gate_panel.fxml", "fork.title.register").controller
+        if (birthDate != null) (gate as? AgeGateController)?.preset(birthDate)
+    }
+
+    override fun showRegister(birthDate: LocalDate) {
+        val form = showPanel("register", "register_panel.fxml", "register_panel.fxml", "fork.title.register").controller
+        (form as? RegisterController)?.birthDate = birthDate
+    }
+
+    override fun showRegistered(login: String) {
+        showAuth()
+        (panelController as? InitialAuthController)?.showRegistered(login)
     }
 
     /** Closes the pre-main window and opens the main window with a fresh main screen (new session). */

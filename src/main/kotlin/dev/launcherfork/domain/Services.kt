@@ -29,7 +29,12 @@ interface AuthService {
 
     /** Blocking call; run it off the FX thread. May throw on transport errors. */
     fun login(login: String, password: String, remember: Boolean): AuthResult
+    /** E-mail code after [AuthResult.CodeRequired]. Blocking. */
     fun confirmCode(code: String): AuthResult
+    /** Authenticator-app code (6 digits) after [AuthResult.TotpRequired]. Blocking. */
+    fun confirmTotp(code: String): AuthResult
+    /** Creates an account (age gate + registration form). Blocking; may throw on transport errors. */
+    fun register(request: RegistrationRequest): RegisterResult
     fun logout()
 }
 
