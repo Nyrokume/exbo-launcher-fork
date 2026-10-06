@@ -32,6 +32,7 @@ class TotpAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     @FXML
     fun initialize() {
         initChrome()
+        codeInput.strings = ctx.strings
         codeInput.cellCount = CODE_LENGTH
         enterButton.disableProperty().bind(codeInput.completeProperty.not())
         errorFirst.textProperty().addListener { _, _, text -> codeInput.error = !text.isNullOrEmpty() }

@@ -53,7 +53,11 @@ data class RegistrationRequest(
     val birthDate: LocalDate,
     /** "Я даю согласие на получение информационной рассылки". */
     val newsletter: Boolean,
-)
+) {
+    /** Never print the password (logs, crash reports): the generated toString would. */
+    override fun toString(): String =
+        "RegistrationRequest(email=$email, username=$username, password=***, birthDate=$birthDate, newsletter=$newsletter)"
+}
 
 /** Why registration failed on the server side. The UI maps these to localized strings. */
 enum class RegisterError {

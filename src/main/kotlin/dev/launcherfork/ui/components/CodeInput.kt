@@ -11,6 +11,8 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
+import dev.launcherfork.i18n.text
+import java.util.ResourceBundle
 
 /**
  * One-time code as separate digit cells (stalzone.com 2FA): [cellCount] one-digit fields in a row.
@@ -35,6 +37,13 @@ class CodeInput : HBox() {
             require(v in 1..12) { "cellCount must be 1..12" }
             field = v
             rebuild()
+        }
+
+    /** Strings for the cells' screen-reader labels ("Цифра N из M"); null -> English. */
+    var strings: ResourceBundle? = null
+        set(v) {
+            field = v
+            updateLabels()
         }
 
     val codeProperty: ReadOnlyStringProperty get() = codeWrapper.readOnlyProperty
@@ -104,10 +113,15 @@ class CodeInput : HBox() {
         cellList.clear()
         repeat(cellCount) { i -> cellList += Cell(i) }
         children.setAll(cellList)
+        updateLabels()
         // .cells-N lets a stylesheet size the cells by their number (zone-totp.css styles the 6-cell row)
         styleClass.removeIf { it.startsWith("cells-") }
         styleClass += "cells-$cellCount"
         sync()
+    }
+
+    private fun updateLabels() = cellList.forEachIndexed { i, cell ->
+        cell.accessibleText = strings?.text(CELL_KEY, i + 1, cellCount) ?: "Digit ${i + 1} of $cellCount"
     }
 
     private fun back(index: Int) {
@@ -129,7 +143,6 @@ class CodeInput : HBox() {
             minWidth = USE_PREF_SIZE
             maxWidth = USE_PREF_SIZE
             setHgrow(this, Priority.NEVER)
-            accessibleText = "${index + 1}"
             addEventFilter(KeyEvent.KEY_PRESSED) { e ->
                 when (e.code) {
                     KeyCode.BACK_SPACE -> { back(index); e.consume() }
@@ -155,5 +168,6 @@ class CodeInput : HBox() {
     private companion object {
         val ERROR: PseudoClass = PseudoClass.getPseudoClass("error")
         val FILLED: PseudoClass = PseudoClass.getPseudoClass("filled")
+        const val CELL_KEY = "fork.code.cell"
     }
 }
