@@ -47,7 +47,23 @@ class ZonePrePanelsTest {
         c.codeField.text = "123456"
         assertFalse(c.enterButton.isDisabled)
         c.codeField.text = "12a"
-        assertEquals("123456", c.codeField.text, "digits only, max 6")
+        assertEquals("12", c.codeField.text, "letters are dropped, digits stay")
+    }
+
+    @Test
+    fun pastedCodeKeepsOnlyDigitsAndIsCutToSix() = FxTestSupport.onFx {
+        val c = mail()
+        c.codeField.replaceSelection("123 456\n")
+        assertEquals("123456", c.codeField.text, "spaces and the newline from the e-mail are dropped")
+        assertFalse(c.enterButton.isDisabled)
+        c.codeField.clear()
+        c.codeField.replaceSelection("12-34-56-78")
+        assertEquals("123456", c.codeField.text, "cut to six digits")
+        c.codeField.selectRange(2, 4)
+        c.codeField.replaceSelection("9 9 9")
+        assertEquals("129956", c.codeField.text, "a selection is replaced by as many digits as fit")
+        c.codeField.replaceSelection("x")
+        assertEquals("129956", c.codeField.text)
     }
 
     @Test

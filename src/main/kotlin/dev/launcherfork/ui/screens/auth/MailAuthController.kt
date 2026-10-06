@@ -24,9 +24,16 @@ class MailAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     @FXML
     fun initialize() {
         initChrome()
-        // replaces the original custom NumberTextField; the code is exactly CODE_LENGTH digits
+        // replaces the original custom NumberTextField; the code is exactly CODE_LENGTH digits.
+        // Typed or pasted text keeps only its digits ("123 456", a trailing newline) and is cut to what still fits.
         codeField.textFormatter = TextFormatter<String> { c ->
-            if (c.controlNewText.length <= CODE_LENGTH && c.controlNewText.all(Char::isDigit)) c else null
+            if (c.isContentChange) {
+                val room = CODE_LENGTH - (c.controlText.length - (c.rangeEnd - c.rangeStart))
+                c.text = c.text.filter(Char::isDigit).take(room.coerceAtLeast(0))
+                c.caretPosition = c.rangeStart + c.text.length
+                c.anchor = c.caretPosition
+            }
+            c
         }
         if (cssHover != true) enterButton.brightenOnHover() else wireZoneForm()
     }
