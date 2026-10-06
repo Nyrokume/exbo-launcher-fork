@@ -77,7 +77,7 @@ class BackgroundTaskTest {
         val ctx = throwingContext()
         val c = FxTestSupport.onFx {
             Fxml.load<MailAuthController>(ctx, "mail_auth.fxml").controller.apply {
-                codeField.text = "123456"
+                codeField!!.text = "268419249"
                 enter()
             }
         }
@@ -86,17 +86,18 @@ class BackgroundTaskTest {
     }
 
     @Test
-    fun mailCodeFieldAcceptsAtMostSixDigits() {
+    fun mailCodeFieldAcceptsAtMostNineDigits() {
         val c = FxTestSupport.onFx { Fxml.load<MailAuthController>(FxTestSupport.context(), "mail_auth.fxml").controller }
         FxTestSupport.onFx {
-            c.codeField.text = ""
-            c.codeField.appendText("123456789")
-            assertTrue(c.codeField.text.length <= MailAuthController.CODE_LENGTH)
-            c.codeField.text = ""
-            "1234567".forEach { c.codeField.appendText(it.toString()) }
-            assertEquals("123456", c.codeField.text)
-            c.codeField.appendText("a")
-            assertEquals("123456", c.codeField.text)
+            val field = c.codeField!!
+            field.text = ""
+            field.appendText("1234567890")
+            assertEquals(MailAuthController.CODE_LENGTH, field.text.length)
+            field.text = ""
+            "1234567890".forEach { field.appendText(it.toString()) }
+            assertEquals("123456789", field.text)
+            field.appendText("a")
+            assertEquals("123456789", field.text)
         }
     }
 }

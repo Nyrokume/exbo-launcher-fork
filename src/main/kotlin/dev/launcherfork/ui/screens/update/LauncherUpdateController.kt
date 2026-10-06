@@ -14,6 +14,7 @@ import dev.launcherfork.ui.components.fx
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.control.Label
+import javafx.scene.control.ProgressBar
 import javafx.scene.control.ProgressIndicator
 import javafx.scene.image.ImageView
 import javafx.scene.layout.Pane
@@ -31,6 +32,8 @@ class LauncherUpdateController(private val ctx: UiContext) : Disposable, UpdateP
     @FXML lateinit var closeButton: Button
     @FXML lateinit var hideButton: Button
     @FXML lateinit var rollingBar: ProgressIndicator
+    /** Only in update_panel.fxml (zone style): thin bar instead of the spinner; indeterminate while checking. */
+    @FXML var progressBar: ProgressBar? = null
 
     private var job: Cancellable? = null
     private var stopped = false
@@ -42,19 +45,23 @@ class LauncherUpdateController(private val ctx: UiContext) : Disposable, UpdateP
         errorSecond.text = ""
         statusLabel.text = ctx.t(Messages.key(UpdatePhase.CHECKING))
         rollingBar.progress = ProgressIndicator.INDETERMINATE_PROGRESS
+        progressBar?.progress = ProgressIndicator.INDETERMINATE_PROGRESS
     }
 
     /** Starts the fake update; [done] runs on the FX thread. */
     override fun start(done: () -> Unit) {
-        rollingBar.isVisible = true
+        rollingBar.isVisible = progressBar == null
         job = ctx.services.updates.checkLauncherUpdate(object : ProgressListener {
             override fun onPhase(phase: UpdatePhase) = fx {
-                if (!stopped) statusLabel.text = ctx.t(Messages.key(phase))
+                if (stopped) return@fx
+                statusLabel.text = ctx.t(Messages.key(phase))
+                if (phase != UpdatePhase.DOWNLOADING) progressBar?.progress = ProgressIndicator.INDETERMINATE_PROGRESS
             }
 
             override fun onProgress(progress: Progress) = fx {
                 // the original shows an indeterminate spinner + text, not a determinate pie
                 if (stopped) return@fx
+                progressBar?.progress = progress.fraction.coerceIn(0.0, 1.0)
                 statusLabel.text = ctx.t(Messages.key(UpdatePhase.DOWNLOADING)) +
                     "${formatBytes(progress.doneBytes)} / ${formatBytes(progress.totalBytes)}"
             }

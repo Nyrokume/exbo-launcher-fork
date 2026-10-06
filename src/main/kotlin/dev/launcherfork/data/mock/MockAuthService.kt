@@ -75,8 +75,8 @@ class MockAuthService(private val delayMs: Long = 500) : AuthService {
     }
 
     companion object {
-        /** Digits of the e-mail code (unchanged; the e-mail code screen belongs to redesign/panels-zone). */
-        const val CODE_LENGTH = 6
+        /** Digits of the e-mail code (e.g. 268419249). */
+        const val CODE_LENGTH = 9
         /** Digits of the authenticator-app code. */
         const val TOTP_CODE_LENGTH = 6
         /** The only authenticator code the mock rejects (any other 6 digits pass). */
