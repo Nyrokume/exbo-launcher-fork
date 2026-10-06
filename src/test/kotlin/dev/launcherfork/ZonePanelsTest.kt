@@ -1,0 +1,192 @@
+package dev.launcherfork
+
+import dev.launcherfork.ui.Fxml
+import dev.launcherfork.ui.screens.auth.InitialAuthController
+import javafx.css.CssParser
+import javafx.scene.Scene
+import javafx.scene.paint.Color
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import java.awt.image.BufferedImage
+import java.io.File
+import javax.imageio.ImageIO
+
+/**
+ * Zone login panel (stalzone.com/login). Behaviour checks; the render test also writes PNGs of the panel at the
+ * login window size into build/zone-preview/ (or -Dzone.preview=<dir>) for design review.
+ */
+class ZonePanelsTest {
+    private val previewDir = File(System.getProperty("zone.preview", "build/zone-preview"))
+
+    @Test
+    fun zoneStylesheetParses() {
+        CssParser.errorsProperty().clear()
+        CssParser().parse(dev.launcherfork.theme.Theme.resource("style/zone-auth.css"))
+        assertTrue(CssParser.errorsProperty().isEmpty(), "CSS errors: ${CssParser.errorsProperty().map { it.message }}")
+    }
+
+    @Test
+    fun passwordEyeTogglesPlainTextTwin() = FxTestSupport.onFx {
+        val loaded = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml")
+        val c = loaded.controller
+        c.passwordField.text = "secret"
+        assertEquals("secret", c.passwordVisibleField!!.text)
+        assertFalse(c.passwordVisibleField!!.isVisible)
+        c.passwordToggle!!.isSelected = true
+        assertTrue(c.passwordVisibleField!!.isVisible)
+        assertFalse(c.passwordField.isVisible)
+        c.passwordVisibleField!!.text = "changed"
+        assertEquals("changed", c.passwordField.text)
+    }
+
+    @Test
+    fun eyeIsKeyboardReachableAndLabelled() = FxTestSupport.onFx {
+        val ctx = FxTestSupport.context("ru")
+        val c = Fxml.load<InitialAuthController>(ctx, "auth_panel.fxml").controller
+        val eye = c.passwordToggle!!
+        assertTrue(eye.isFocusTraversable)
+        assertEquals(ctx.t("fork.zone.show_password"), eye.accessibleText)
+        eye.isSelected = true
+        assertEquals(ctx.t("fork.zone.hide_password"), eye.accessibleText)
+    }
+
+    @Test
+    fun enterIsDisabledUntilBothFieldsAreFilled() = FxTestSupport.onFx {
+        val c = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml").controller
+        c.loginField.text = ""; c.passwordField.text = ""
+        assertTrue(c.enterButton.isDisabled)
+        c.loginField.text = "player"
+        assertTrue(c.enterButton.isDisabled)
+        c.passwordField.text = "secret"
+        assertFalse(c.enterButton.isDisabled)
+    }
+
+    @Test
+    fun enterInAFieldDoesNotBypassTheGreyButton() = FxTestSupport.onFx {
+        val c = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml").controller
+        c.loginField.text = ""; c.passwordField.text = "x"
+        c.onEnter() // Enter in the password field with an empty login
+        assertTrue(c.errorFirst.text.isNullOrEmpty(), "no validation error, the button is grey")
+        assertFalse(c.loginField.pseudoClassStates.any { it.pseudoClassName == "error" })
+    }
+
+    @Test
+    fun errorPaintsFieldsUntilEdited() {
+        val c = FxTestSupport.onFx {
+            Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml").controller.also {
+                it.loginField.text = "player"; it.passwordField.text = "wrong"; it.onEnter() // mock: wrong credentials
+            }
+        }
+        assertTrue(FxTestSupport.waitFx { !c.errorFirst.text.isNullOrEmpty() }, "server error never shown")
+        FxTestSupport.onFx {
+            assertTrue(c.errorFirst.isManaged)
+            assertTrue(c.loginField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            assertTrue(c.passwordField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            c.passwordField.text = "wrong2"
+            assertFalse(c.loginField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            assertFalse(c.errorSecond.isManaged)
+        }
+    }
+
+    @Test
+    fun legacyLoginKeepsBrightnessHover() = FxTestSupport.onFx {
+        // initial_auth.fxml has no cssHover flag: no disable binding, legacy behaviour untouched
+        val c = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "initial_auth.fxml").controller
+        assertEquals(null, c.cssHover)
+        assertFalse(c.enterButton.disableProperty().isBound)
+    }
+
+    @Test
+    fun renderPreviews() {
+        listOf("ru", "en").forEach { lang -> render("auth_panel_$lang.png", lang) }
+        render("auth_panel_filled.png", "ru") { c ->
+            c.loginField.text = "player"; c.passwordField.text = "secret"; c.autoAuthCheckBox.isSelected = true
+        }
+        render("auth_panel_error.png", "ru", ready = { !it.errorFirst.text.isNullOrEmpty() }) { c ->
+            c.loginField.text = "player"; c.passwordField.text = "wrong"; c.onEnter()
+        }
+    }
+
+    /** The real separate login window (StageNavigator: title strip + PanelHost), snapshot of the whole scene. */
+    @Test
+    fun renderLoginWindow() {
+        val app = dev.launcherfork.app.AppContext.mock(speed = 50.0, authDelayMs = 0)
+        val nav = FxTestSupport.onFx {
+            val stage = javafx.stage.Stage(javafx.stage.StageStyle.TRANSPARENT)
+            dev.launcherfork.app.StageNavigator(stage, app, "ru").also { it.exit = {}; it.showAuth(); stage.show() }
+        }
+        assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
+        // focus lands in the first empty field (login is pre-filled -> password), not on a social tile
+        assertTrue(FxTestSupport.waitFx(5_000) {
+            val c = nav.panelController as InitialAuthController
+            val expected = if (c.loginField.text.isNullOrEmpty()) c.loginField else c.passwordField
+            nav.authStage.scene.focusOwner === expected
+        }, "initial focus is not in the form")
+        listOf("auth_window_ru.png" to false, "auth_window_error.png" to true).forEach { (file, error) ->
+            val c = nav.panelController as InitialAuthController
+            if (error) {
+                FxTestSupport.onFx { c.loginField.text = "player"; c.passwordField.text = "wrong"; c.onEnter() }
+                assertTrue(FxTestSupport.waitFx { !c.errorFirst.text.isNullOrEmpty() }, "server error never shown")
+            }
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
+                val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+                if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+                scene.root.applyCss(); scene.root.layout()
+                val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
+                assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
+                val img = scene.snapshot(null)
+                val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
+                for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))
+                previewDir.mkdirs()
+                ImageIO.write(out, "png", File(previewDir, file))
+            }
+        }
+        FxTestSupport.onFx { nav.close() }
+        app.shutdown()
+    }
+
+    /** The panel alone at the login window's content size (460x588 under LR's 32 px title bar), zone theme forced. */
+    private fun render(
+        file: String,
+        lang: String,
+        ready: (InitialAuthController) -> Boolean = { true },
+        prepare: (InitialAuthController) -> Unit = {},
+    ) {
+        val panel = FxTestSupport.onFx {
+            val panel = Fxml.load<InitialAuthController>(FxTestSupport.context(lang), "auth_panel.fxml")
+            val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
+            dev.launcherfork.theme.Theme.apply(scene, lang)
+            // preview always in the zone theme, whatever -Dlauncher.theme the test JVM got
+            dev.launcherfork.theme.Theme.zoneFonts
+            val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+            if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+            scene.root.applyCss(); scene.root.layout()
+            prepare(panel.controller)
+            panel
+        }
+        assertTrue(FxTestSupport.waitFx { ready(panel.controller) }, "$file: state never reached")
+        snapshot(file, panel.controller.registerButton.scene, panel.controller)
+    }
+
+    private fun snapshot(file: String, scene: Scene, c: InitialAuthController) = FxTestSupport.onFx {
+        val host = scene.root
+        host.applyCss(); host.layout()
+        // the panel must fill the window and keep every control inside it
+        assertEquals(460.0, host.layoutBounds.width, 0.5)
+        val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
+        // at least 20 px of air under "Создать", also with an error line shown
+        assertTrue(bottom <= 568.0, "footer too close to the window edge: maxY=$bottom")
+        val img = scene.snapshot(null)
+        val w = img.width.toInt(); val h = img.height.toInt()
+        val out = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
+        val reader = img.pixelReader
+        for (y in 0 until h) for (x in 0 until w) out.setRGB(x, y, reader.getArgb(x, y))
+        assertNotEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "top and bottom blocks should differ")
+        previewDir.mkdirs()
+        ImageIO.write(out, "png", File(previewDir, file))
+    }
+}
