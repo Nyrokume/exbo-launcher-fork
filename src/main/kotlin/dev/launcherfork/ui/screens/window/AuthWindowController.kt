@@ -4,6 +4,7 @@ import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.LogoMark
+import dev.launcherfork.ui.components.PanelHost
 import javafx.fxml.FXML
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -24,7 +25,7 @@ class AuthWindowController(private val ctx: UiContext) {
     @FXML lateinit var authDragArea: Region
     @FXML lateinit var authHideButton: Button
     @FXML lateinit var authCloseButton: Button
-    @FXML lateinit var panelHost: StackPane
+    @FXML lateinit var panelHost: PanelHost
 
     @FXML
     fun initialize() {
@@ -44,8 +45,8 @@ class AuthWindowController(private val ctx: UiContext) {
     val windowButtons: List<Node> get() = listOf(authHideButton, authCloseButton)
 
     /**
-     * Puts [panel] into the host. A StackPane resizes its child to the host size clamped by the child's own
-     * min/max, so a panel without fixed max sizes fills the whole 460x588 area, a fixed-size panel is centered.
+     * Puts [panel] into the host ([PanelHost]): a stretchable panel gets exactly the 460x588 area (like a Scene
+     * root), a fixed-size panel is centered.
      */
     fun setPanel(panel: Parent) {
         panelHost.children.setAll(panel)

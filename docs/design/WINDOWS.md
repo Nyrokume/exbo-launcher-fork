@@ -18,7 +18,7 @@ auth_window.fxml (AuthWindowController)            ← 460×620, clip со ск�
 └─ StackPane#authWindowRoot .auth-window (фон -background)
    ├─ BorderPane
    │  ├─ top:    HBox#authTitleBar 32 px [authLogo (вектор EXBO) | authDragArea | authHideButton | authCloseButton]
-   │  └─ center: StackPane#panelHost 460×588  ← сюда кладётся корень панели
+   │  └─ center: PanelHost#panelHost 460×588  ← сюда кладётся корень панели (размер как у Scene root)
    └─ Region .auth-window-frame               ← рамка 1 px -border ПОВЕРХ панели (mouseTransparent)
 ```
 
@@ -65,9 +65,12 @@ auth_window.fxml (AuthWindowController)            ← 460×620, clip со ск�
 ### Контракт панели (как подключается панель Front.end.master)
 
 - Тот же FXML грузится как есть и кладётся в `panelHost` (`AuthWindowController.setPanel`). `panelHost` — это
-  StackPane: он растягивает корень панели до 460×588 в пределах её min/max. Значит, панель без фиксированного max
-  (как `auth_panel.fxml`: min 420×560, pref 460×588) заполняет окно целиком, а панель фиксированного размера
-  встаёт по центру.
+  `PanelHost` (ui/components): он задаёт размер корню панели так же, как Scene своему root. Панель, которую можно
+  растянуть (max ≥ 460×588, как `auth_panel.fxml`: min 420×560, pref 460×588), получает **ровно** 460×588, даже
+  если её содержимое просит минимум чуть больше: она не залезает под полосу заголовка. Панель фиксированного
+  размера (legacy, max = pref) встаёт по центру. Хост обрезает содержимое по своим границам и не увеличивает окно.
+  Проверено слиянием `redesign/auth-zone` (ef53456) поверх этой ветки во временном worktree: слияние без
+  конфликтов, 186 тестов зелёные, панель заполняет окно.
 - Скругление окна, рамку 1 px и полосу заголовка с логотипом, «свернуть», «закрыть» даёт окно. Свои кнопки окна
   у панели можно оставить скрытыми (`visible="false"`), fx:id `closeButton`, `hideButton`, `header` сохраняются
   для контроллера.

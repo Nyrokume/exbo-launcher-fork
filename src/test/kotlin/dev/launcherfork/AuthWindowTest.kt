@@ -125,6 +125,32 @@ class AuthWindowTest {
     }
 
     @Test
+    fun panelAskingForMoreThanTheHostStillFitsBelowTheTitleStrip() {
+        // content of a real panel may compute a min height a bit above 588: the host sizes it like a Scene root
+        FxTestSupport.onFx {
+            val nav = StageNavigator(Stage(StageStyle.TRANSPARENT), AppContext.mock(authDelayMs = 0), "ru")
+            val panel = javafx.scene.layout.StackPane().apply { setMinSize(420.0, 610.0); setPrefSize(460.0, 610.0) }
+            authWindow(nav).setPanel(panel)
+            nav.authStage.scene.root.applyCss(); nav.authStage.scene.root.layout()
+            assertEquals(Theme.AUTH_PANEL_HEIGHT, panel.height, 0.5)
+            assertEquals(Theme.AUTH_TITLEBAR_HEIGHT, panel.localToScene(0.0, 0.0).y, 0.5, "panel must not cover the title strip")
+            assertEquals(Theme.AUTH_TITLEBAR_HEIGHT, authWindow(nav).authTitleBar.height, 0.5)
+        }
+    }
+
+    @Test
+    fun fixedSizePanelIsCentered() {
+        FxTestSupport.onFx {
+            val nav = StageNavigator(Stage(StageStyle.TRANSPARENT), AppContext.mock(authDelayMs = 0), "ru")
+            val panel = javafx.scene.layout.Pane().apply { setMinSize(379.0, 490.0); setPrefSize(379.0, 490.0); setMaxSize(379.0, 490.0) }
+            authWindow(nav).setPanel(panel)
+            nav.authStage.scene.root.applyCss(); nav.authStage.scene.root.layout()
+            assertEquals(379.0, panel.width, 0.5)
+            assertEquals((Theme.AUTH_PANEL_WIDTH - 379) / 2, panel.localToScene(0.0, 0.0).x, 1.0)
+        }
+    }
+
+    @Test
     fun loginClosesAuthWindowAndOpensMain() {
         val live = loggedIn()
         FxTestSupport.onFx {

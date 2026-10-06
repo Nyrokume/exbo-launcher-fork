@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import dev.launcherfork.ui.components.LogoMark?>
+<?import dev.launcherfork.ui.components.PanelHost?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
@@ -29,7 +30,7 @@
             </HBox>
         </top>
         <center>
-            <StackPane fx:id="panelHost" id="authPanelHost" styleClass="auth-panel-host"/>
+            <PanelHost fx:id="panelHost" id="authPanelHost" styleClass="auth-panel-host"/>
         </center>
     </BorderPane>
     <Region fx:id="authFrame" styleClass="auth-window-frame,zone-radius-md" mouseTransparent="true"/>
