@@ -22,12 +22,9 @@
                 <Region fx:id="backgroundShade" styleClass="game-art-shade" mouseTransparent="true"/>
 
                 <AnchorPane fx:id="homePane" pickOnBounds="false">
-                    <fx:include fx:id="hero" source="main/hero.fxml"
-                                AnchorPane.leftAnchor="15" AnchorPane.topAnchor="0" AnchorPane.rightAnchor="250"/>
-                    <fx:include fx:id="advancedNewsPane" source="main/news.fxml"
-                                AnchorPane.rightAnchor="8" AnchorPane.topAnchor="157" AnchorPane.bottomAnchor="82"/>
-                    <fx:include fx:id="articleBg" source="main/article.fxml"
-                                AnchorPane.leftAnchor="15" AnchorPane.topAnchor="200" AnchorPane.rightAnchor="330" AnchorPane.bottomAnchor="82"/>
+                    <!-- empty centre slot (between the top bar and the status bar) for the upcoming centre redesign -->
+                    <StackPane fx:id="centerPane" id="centerPane" styleClass="center-pane" pickOnBounds="false"
+                               AnchorPane.leftAnchor="15" AnchorPane.topAnchor="70" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="82"/>
                     <fx:include fx:id="defaultStatusPane" source="main/status_pane.fxml"
                                 AnchorPane.leftAnchor="11" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="20"/>
                     <fx:include fx:id="clientSettingsPane" source="main/client_settings.fxml"

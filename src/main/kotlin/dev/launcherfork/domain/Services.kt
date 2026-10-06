@@ -37,10 +37,6 @@ interface ServerRepository {
     fun servers(): List<Server>
 }
 
-interface NewsRepository {
-    fun latest(): List<NewsItem>
-}
-
 interface UpdateService {
     /** Launcher self-update check shown on update.fxml. */
     fun checkLauncherUpdate(listener: ProgressListener): Cancellable
@@ -68,7 +64,6 @@ interface SettingsStore {
 data class Services(
     val auth: AuthService,
     val servers: ServerRepository,
-    val news: NewsRepository,
     val updates: UpdateService,
     val launcher: GameLauncher,
     val settings: SettingsStore,

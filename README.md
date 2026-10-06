@@ -61,13 +61,13 @@ src/main/kotlin/dev/launcherfork/
 │  ├─ StageNavigator.kt   два окна: auth_window.fxml (update/auth/mail) и window.fxml + main.fxml (WINDOWS.md)
 │  └─ ScreenshotTour.kt   автотур для скриншотов (dev)
 ├─ domain/              модели и интерфейсы, от которых зависит UI
-│  ├─ Models.kt           Server, NewsItem, UserSession, AuthResult/AuthError, UpdatePhase, Progress,
+│  ├─ Models.kt           Server, UserSession, AuthResult/AuthError, UpdatePhase, Progress,
 │  │                      LauncherSettings (+ enum P2pMode, ExitMode; gameRoot: java.nio.file.Path)
-│  └─ Services.kt         AuthService, ServerRepository, NewsRepository, UpdateService, GameLauncher,
+│  └─ Services.kt         AuthService, ServerRepository, UpdateService, GameLauncher,
 │                         SettingsStore, Services
 ├─ data/mock/           фейковые реализации (без сети, файлов и реестра)
-│  ├─ MockData.kt         3 игры (STALZONE, Placeholder Game, Test Realm) и 4 новости-заглушки
-│  ├─ MockAuthService.kt, MockRepositories.kt (серверы, новости, InMemorySettingsStore)
+│  ├─ MockData.kt         одна игра: STALZONE
+│  ├─ MockAuthService.kt, MockRepositories.kt (серверы, InMemorySettingsStore)
 │  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
 │  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
 │  └─ MockScheduler.kt      общий таймер фейков (безопасная отмена/завершение)
@@ -87,7 +87,7 @@ src/main/kotlin/dev/launcherfork/
       ├─ update/        LauncherUpdateController     (update.fxml)
       ├─ auth/          InitialAuthController, MailAuthController (initial_auth.fxml, mail_auth.fxml)
       ├─ main/          MainController (main.fxml) + по контроллеру на каждую fx:include-область:
-      │                 ServersList, Profile, Hero, Header, News, Article, StatusPane, ClientSettings,
+      │                 ServersList, Profile, Header, StatusPane, ClientSettings,
       │                 modals/ (10 модальных слоёв)
       └─ settings/      SettingsController (статичный settings.fxml, привязан к SettingsStore)
 
@@ -103,7 +103,7 @@ src/main/resources/dev/launcherfork/
 
 ## Архитектура и правила для дальнейшей работы
 
-1. **Данные только через интерфейсы.** `AuthService`, `ServerRepository`, `NewsRepository`, `UpdateService`,
+1. **Данные только через интерфейсы.** `AuthService`, `ServerRepository`, `UpdateService`,
    `GameLauncher`, `SettingsStore` лежат в `domain/`. Фейки лежат в `data/mock/`. Связываются они один раз, в `app/AppContext.kt`.
    UI получает `UiContext` (интерфейсы + навигатор + строки) через controller factory в `ui/Fxml.kt` и про моки
    ничего не знает. Чтобы подключить другой источник данных, достаточно собрать `Services` с другими реализациями.
@@ -115,17 +115,18 @@ src/main/resources/dev/launcherfork/
    после паузы и повторного старта) игнорируются. Исключения из блокирующих вызовов (`background()` в
    `ui/components/Fx.kt`) приходят в UI как `Result.failure`: форма разблокируется и показывает ошибку сервера.
 2. **Один контроллер на один FXML.** Гигантский `main.fxml` оригинала (132 узла, `MainController` на 2000 строк
-   и ~100 полей) разбит на `fx:include`: `main/status_pane.fxml`, `servers_list.fxml`, `news.fxml`,
-   `article.fxml`, `client_settings.fxml`, `header.fxml` и `main/modals/*.fxml`. У каждого файла свой
+   и ~100 полей) разбит на `fx:include`: `main/status_pane.fxml`, `servers_list.fxml`, `client_settings.fxml`,
+   `header.fxml`, `profile.fxml` и `main/modals/*.fxml`. У каждого файла свой
    контроллер. `MainController` только координирует области (хром окна теперь в `window.fxml`).
-   Корни include по-прежнему носят исходные `fx:id` (`defaultStatusPane`, `advancedNewsPane`, `logoutPane`…).
-   В редизайне добавлены `main/hero.fxml`, перевёрстаны колонка, шапка-ссылки, новости, строка статуса и
-   настройки. Узлам, у которых `fx:id` совпадает со старым CSS-id, задан явный `id` (иначе к ним применились бы
+   Корни include по-прежнему носят исходные `fx:id` (`defaultStatusPane`, `logoutPane`…).
+   В редизайне перевёрстаны колонка, шапка-ссылки, строка статуса и настройки. Hero, колонка новостей и
+   окно статьи из центра главного окна убраны: на их месте пустой `StackPane` `centerPane` (между шапкой и
+   строкой статуса) под новый дизайн центра. Узлам, у которых `fx:id` совпадает со старым CSS-id, задан явный `id` (иначе к ним применились бы
    PNG-правила из `lang_*.css`).
 3. **В коде нет `setStyle`/`setFont`/цветов.** Весь визуал задаётся CSS-классами. Состояния переключаются
    классами (`.selected`, `.active`, `.state-play`, `.state-pause`…). В коде остались только вещи, которых нет
    в JavaFX CSS: `ColorAdjust`/`GaussianBlur` (константы в `Theme`: размытие под оверлеем, обесцвечивание арта)
-   и картинки из данных (иконка и фон игры, новости).
+   и картинки из данных (иконка и фон игры).
 4. **`theme.css`: токены в стиле shadcn/ui** со значениями из оригинала:
    `-background #242428`, `-foreground #ffffff`, `-card #191919`, `-card-foreground #c7c7c7`,
    `-primary #1c4a61`, `-primary-foreground`, `-secondary #2b2b2b`, `-muted`, `-muted-foreground #b1b1b1`,
@@ -148,7 +149,7 @@ src/main/resources/dev/launcherfork/
    - `FxmlLoadingTest` загружает **каждый** FXML с настоящим контроллером на ru и en. Он падает на ошибках
      FXMLLoader (класс, свойство, include, обработчик) и на **любом неинжектированном `@FXML`-поле**
      (переименованный или удалённый `fx:id`), включая контроллеры из `fx:include`. Затем применяет CSS и layout.
-   - Проверка, что ~75 ключевых `fx:id` новой раскладки достижимы через `main.fxml` и его include, у
+   - Проверка, что ~65 ключевых `fx:id` новой раскладки достижимы через `main.fxml` и его include, у
      `window.fxml` и `auth_window.fxml` есть рамка, аккаунт живёт только в меню профиля, новые FXML не используют
      legacy CSS-id.
    - Совпадение ключей ru/en, нет слов со смесью латиницы и кириллицы, фейковые сервисы, края ресайза (кнопки окна
@@ -165,6 +166,9 @@ src/main/resources/dev/launcherfork/
    - `background()`: исключение доходит до UI как ошибка; окна авторизации разблокируются и показывают
      `auth.error.server_error`, если `login()`/`confirmCode()` бросили исключение. Поле кода принимает не больше 6 цифр.
    - Главное окно: загрузка переживает пересборку сцены; F1–F7 выключены без `-Dlauncher.dev=true`.
+   - `MainZoneLayoutTest` (тема zone): нет арта игры, ссылки Форум / Поддержка в ряду профиля, STALZONE —
+     единственная игра (иконка — фавикон сайта), центр `centerPane` пустой и стоит между шапкой и строкой статуса,
+     hero / новостей / статьи в окне нет.
 
 ## Что перенесено
 
@@ -172,8 +176,8 @@ src/main/resources/dev/launcherfork/
   разворачивание и перетаскивание за полосу заголовка). Размеры оригинала (379×490 / 886×550) и многоугольники
   перетаскивания убраны.
 - Экраны: самообновление (`update.fxml`), авторизация (`initial_auth.fxml`), код из e-mail (`mail_auth.fxml`),
-  главное окно (новости, описание сервера, список серверов, шапка со ссылками, статус и кнопка
-  Скачать/Пауза/Продолжить/Играть/Выйти, меню клиента), настройки (категории, линии и отступы как в оригинале),
+  главное окно (список серверов, шапка со ссылками, статус и кнопка
+  Скачать/Пауза/Продолжить/Играть/Выйти, меню клиента; центр пустой под редизайн), настройки (категории, линии и отступы как в оригинале),
   10 модальных слоёв.
 - Эффекты: hover `ColorAdjust(brightness +0.2)` (+0.1 у карточек серверов), фон сервера
   `GaussianBlur(3)` поверх `ColorAdjust(-0.2)`, обесцвечивание полосы загрузки `(p-1)*1.3` и правый колпачок 82 px,
@@ -191,8 +195,8 @@ src/main/resources/dev/launcherfork/
 
 ## Что заглушка
 
-- `MockData`: 3 игры (STALZONE — установлена, иконка — фавикон stalzone.com; Placeholder Game — не установлена; Test Realm — офлайн) и
-  4 новости. Тёмный процедурный арт (силуэт, лес, вышка) и иконки сгенерированы скриптом
+- `MockData`: одна игра, STALZONE (установлена, иконка — фавикон stalzone.com). Тёмный процедурный арт
+  (силуэт, лес, вышка; фон игры в темах exbo и shadcn) сгенерирован скриптом
   `java tools/GenerateZoneArt.java src/main/resources/dev/launcherfork` и к EXBO не относятся: из эталонных
   скриншотов ничего не скопировано. Логотип EXBO — вектор из `ui/style/image/exbo-logo.svg` (логотип владельца
   форка), рисуется `SVGPath`-ами (`LogoMark`), цвет из токена `-foreground`.
@@ -214,8 +218,9 @@ src/main/resources/dev/launcherfork/
   через запятую). Оставлен только `dropshadow`. Внутри прозрачного окна 886×550 тень всё равно обрезается.
 - **`NumberTextField`** (свой класс оригинала в `mail_auth.fxml`) заменён на `TextField` + `TextFormatter`.
 - **RAM**: вместо слайдера оригинала теперь сегментная полоса `SegmentedBar` (9 сегментов, клик/перетаскивание).
-- Переключатель страниц «главная/новости» (`pagesPane`), соцсети и описание сервера в отдельной панели убраны:
-  в новой раскладке новости всегда видны справа, а описание стоит в hero.
+- Переключатель страниц «главная/новости» (`pagesPane`), соцсети и описание сервера в отдельной панели убраны.
+  Hero и новости редизайна тоже убраны (вместе с `NewsRepository`/`NewsItem` и моками новостей): центр
+  главного окна будет спроектирован заново.
 - Экраны `google_auth`, `mail_confirmation_*`, `password_changing_auth`, `distributor_pending`,
   `bootstrap_outdated`, `uninstaller` и инсталлятор не переносились.
 
@@ -223,9 +228,9 @@ src/main/resources/dev/launcherfork/
 
 Снимки Scene активного окна, сделанные автотуром под Xvfb (`ScreenshotTour`), одинаковые для всех тем:
 `01_update_window`, `02_auth_window`, `03_auth_error` (окно до входа, 460×620), `04_main`, `05_profile_menu`,
-`06_main_news_scrolled`, `07_news_article`, `08_settings_game`, `09_settings_updates`, `10_settings_others`,
-`11_install_dialog`, `12_download_progress`, `13_running`, `14_tools_menu`, `15_resized_1366x800`,
-`16_settings_en`, `17_auth_after_switch_account`.
+`06_settings_game`, `07_settings_updates`, `08_settings_others`, `09_running`, `10_tools_menu`,
+`11_resized_1366x800`, `12_settings_en`, `13_auth_after_switch_account`. Единственная игра STALZONE установлена,
+поэтому диалога установки и прогресса скачивания в туре нет.
 
 - `docs/screenshots/zone/` — тема `zone` (основная цель редизайна);
 - `docs/screenshots/` — тема по умолчанию `exbo` на новой раскладке;

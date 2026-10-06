@@ -12,7 +12,7 @@
     -background: #242428;            /* main window fill */
     -foreground: #ffffff;            /* titles, primary text */
     -card: #191919;                  /* side panels, frame strips */
-    -card-foreground: #c7c7c7;       /* server name, news text */
+    -card-foreground: #c7c7c7;       /* server name */
     -popover: rgba(25, 25, 25, 0.86);/* client settings popup */
     -popover-foreground: #b4b4b4;
     -primary: #1c4a61;               /* blue accent (window border) */
@@ -36,7 +36,7 @@
     -shadow-inner: rgba(0, 0, 0, 0.5);
 
     /* ---- extra text shades used by the original ---- */
-    -text-strong: #d7d7d7;           /* selected server name, news title */
+    -text-strong: #d7d7d7;           /* selected server name */
     -text-description: #cdcdcd;      /* server description */
     -text-label: #bcbcbc;            /* settings labels */
     -text-status: #b4b4b4;           /* download status */

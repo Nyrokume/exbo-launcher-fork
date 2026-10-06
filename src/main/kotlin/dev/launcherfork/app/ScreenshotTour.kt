@@ -53,49 +53,35 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         step(1.0) { shot("04_main") }
         step(0.1) { main().profileBarController.showMenu() }
         step(0.3) { shot("05_profile_menu") }
-        step(0.1) { main().profileBarController.hideMenu(); main().advancedNewsPaneController.newsScroll.vvalue = 1.0 }
-        step(0.4) { shot("06_main_news_scrolled") }
-        step(0.1) { main().advancedNewsPaneController.cards.first().onMouseClicked.handle(null) }
-        step(0.4) { shot("07_news_article") }
-        step(0.1) { main().articleBgController.hide(); main().setSettingsVisible(true) }
-        step(0.6) { shot("08_settings_game") }
+        step(0.1) { main().profileBarController.hideMenu(); main().setSettingsVisible(true) }
+        step(0.6) { shot("06_settings_game") }
         step(0.1) { main().settingsController.scroll.vvalue = 0.55 }
-        step(0.4) { shot("09_settings_updates") }
+        step(0.4) { shot("07_settings_updates") }
         step(0.1) { main().settingsController.scroll.vvalue = 1.0 }
-        step(0.4) { shot("10_settings_others") }
+        step(0.4) { shot("08_settings_others") }
         step(0.1) {
             val m = main()
             m.settingsController.scroll.vvalue = 0.0
             m.setSettingsVisible(false)
-            val bravo = m.servers.first { it.id == "bravo" }
-            m.serversListController.select(bravo)
-            m.defaultStatusPaneController.downloadButton.fire() // Download -> install dialog
-        }
-        step(0.6) { shot("11_install_dialog") }
-        step(0.1) { main().installPaneController.installYes.fire() } // start fake download
-        step(2.6) { shot("12_download_progress") }
-        step(0.1) {
-            val m = main()
-            m.serversListController.select(m.servers.first())
             m.defaultStatusPaneController.downloadButton.fire() // Play -> Starting -> Running
         }
-        step(1.8) { shot("13_running") }
+        step(1.8) { shot("09_running") }
         step(0.1) { main().clientSettingsPaneController.toggle() }
-        step(0.3) { shot("14_tools_menu") }
+        step(0.3) { shot("10_tools_menu") }
         step(0.1) {
             main().clientSettingsPaneController.hide()
             stage.width = 1366.0
             stage.height = 800.0
         }
-        step(0.8) { shot("15_resized_1366x800") }
+        step(0.8) { shot("11_resized_1366x800") }
         step(0.1) {
             stage.width = Theme.WINDOW_WIDTH
             stage.height = Theme.WINDOW_HEIGHT
             nav.switchLanguage("en")
         }
-        step(1.0) { shot("16_settings_en") }
+        step(1.0) { shot("12_settings_en") }
         step(0.1) { main().profileBarController.switchAccount.fire() } // back to the separate auth window
-        step(0.6) { shot("17_auth_after_switch_account") }
+        step(0.6) { shot("13_auth_after_switch_account") }
         step(0.3) { Platform.exit() }
         run()
     }

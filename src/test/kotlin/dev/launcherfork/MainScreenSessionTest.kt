@@ -1,6 +1,8 @@
 package dev.launcherfork
 
 import dev.launcherfork.app.AppContext
+import dev.launcherfork.data.mock.MockData
+import dev.launcherfork.data.mock.MockServerRepository
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.screens.main.MainController
 import dev.launcherfork.ui.state.ClientState
@@ -22,9 +24,12 @@ class MainScreenSessionTest {
 
     @Test
     fun downloadSurvivesMainSceneRebuild() {
-        val app = AppContext(AppContext.mock(speed = 0.05, authDelayMs = 0).services)
+        // the only mock game is installed: serve a not-installed copy so there is something to download
+        val notInstalled = MockData.servers.single().copy(installed = false)
+        val services = AppContext.mock(speed = 0.05, authDelayMs = 0).services
+        val app = AppContext(services.copy(servers = MockServerRepository(listOf(notInstalled))))
         val first = loadMain(app)
-        val server = first.servers.first { !app.services.updates.isInstalled(it) }
+        val server = first.servers.single()
         FxTestSupport.onFx { app.clientStates.startDownload(server) }
 
         // what a language switch does: dispose the old controller, build a new scene

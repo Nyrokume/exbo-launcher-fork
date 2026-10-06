@@ -22,6 +22,9 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class MockServicesTest {
+    /** The only mock game is installed; downloads run on a not-installed copy of it. */
+    private val notInstalled = MockData.servers.single().copy(id = "not-installed", installed = false)
+
     @Test
     fun authFlows() {
         val auth = MockAuthService(delayMs = 0)
@@ -50,7 +53,7 @@ class MockServicesTest {
     @Test
     fun cancelledDownloadDeliversNoMoreCallbacks() {
         val updates = MockUpdateService(speed = 1.0)
-        val server = MockData.servers.first { !it.installed }
+        val server = notInstalled
         val calls = java.util.concurrent.atomic.AtomicInteger()
         val job: Cancellable = updates.downloadClient(server, object : ProgressListener {
             override fun onProgress(progress: Progress) { calls.incrementAndGet() }
@@ -87,7 +90,7 @@ class MockServicesTest {
 
     @Test
     fun mockImagesAreUrisThatResolve() {
-        (MockData.servers.flatMap { listOf(it.iconUri, it.backgroundUri) } + MockData.news.map { it.imageUri }).forEach { uri ->
+        MockData.servers.flatMap { listOf(it.iconUri, it.backgroundUri) }.forEach { uri ->
             uri.toURL().openStream().use { assertTrue(it.read() >= 0, "$uri is empty") }
         }
     }
@@ -95,7 +98,7 @@ class MockServicesTest {
     @Test
     fun fakeDownloadCompletesAndMarksInstalled() {
         val updates = MockUpdateService(speed = 100.0)
-        val server = MockData.servers.first { !it.installed }
+        val server = notInstalled
         assertFalse(updates.isInstalled(server))
         val done = CountDownLatch(1)
         var last = 0.0

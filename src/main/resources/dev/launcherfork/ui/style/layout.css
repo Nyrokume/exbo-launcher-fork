@@ -174,12 +174,6 @@
     -fx-min-width: 14; -fx-pref-width: 14; -fx-max-width: 14;
     -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8;
 }
-.close-glyph {
-    -fx-shape: "M0,1.1 L1.1,0 L5.5,4.4 L9.9,0 L11,1.1 L6.6,5.5 L11,9.9 L9.9,11 L5.5,6.6 L1.1,11 L0,9.9 L4.4,5.5 Z";
-    -fx-background-color: -foreground;
-    -fx-min-width: 10; -fx-pref-width: 10; -fx-max-width: 10;
-    -fx-min-height: 10; -fx-pref-height: 10; -fx-max-height: 10;
-}
 .live-dot {
     -fx-background-color: -primary;
     -fx-background-radius: 4;
@@ -260,32 +254,9 @@
         linear-gradient(to top, -background 0%, transparent 35%);
 }
 
-.hero-title { -fx-font-size: 46; -fx-text-fill: -foreground; -fx-padding: 0 0 0 0; }
-.hero-tagline {
-    -fx-font-size: 40;
-    -fx-text-fill: -primary-foreground;
-    -fx-background-color: -primary;
-    -fx-padding: -4 9 -4 8;
-    -fx-translate-x: -8;
-}
-.hero-description { -fx-font-size: 13; -fx-text-fill: -text-description; -fx-padding: 8 0 0 0; -fx-line-spacing: 1; }
-
 .header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
 .header-link:hover { -fx-text-fill: -foreground; }
 .header-link:hover .external-arrow { -fx-background-color: -foreground; }
-
-.news-heading { -fx-font-size: 44; -fx-text-fill: -foreground; -fx-padding: 0 13 0 0; }
-.news-scroll, .news-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.news-card { -fx-cursor: hand; -fx-padding: 1; }
-.news-card:hover { -fx-border-color: -border-hover; }
-.news-card-title {
-    -fx-font-size: 12;
-    -fx-text-fill: -foreground;
-    -fx-background-color: linear-gradient(to top, -card 0%, transparent 100%);
-    -fx-padding: 22 12 9 12;
-}
-.news-scroll-track { -fx-background-color: transparent; }
-.news-scroll-thumb { -fx-background-color: -primary; }
 
 /* bottom bar */
 .play-status { -fx-font-size: 11; -fx-fill: -text-status; }
@@ -335,17 +306,6 @@
     -fx-cursor: hand;
 }
 .context-button:hover { -fx-background-color: -accent; }
-
-/* article */
-.article-panel { -fx-padding: 18 20; }
-.article-caption { -fx-font-size: 30; -fx-text-fill: -foreground; }
-.article-close {
-    -fx-min-width: 30; -fx-pref-width: 30; -fx-max-width: 30;
-    -fx-min-height: 30; -fx-pref-height: 30; -fx-max-height: 30;
-    -fx-padding: 0;
-}
-.article-text { -fx-font-size: 14; -fx-text-fill: -text-description; }
-.article-scroll, .article-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
 
 /* ===================== settings ===================== */
 .settings-root { -fx-background-color: transparent; }

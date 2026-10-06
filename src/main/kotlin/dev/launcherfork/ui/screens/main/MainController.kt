@@ -32,8 +32,9 @@ import javafx.scene.layout.Region
 import javafx.scene.layout.StackPane
 
 /**
- * main.fxml: coordination between the included areas (sidebar, hero, links, news, article, status bar,
- * settings, modals). Each area has its own FXML and controller. Layout is adaptive (BorderPane + anchors).
+ * main.fxml: coordination between the included areas (sidebar, links, profile, status bar, settings, modals).
+ * Each area has its own FXML and controller. Layout is adaptive (BorderPane + anchors). [centerPane] is an empty
+ * slot for the upcoming centre redesign.
  */
 class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var root: StackPane
@@ -42,16 +43,14 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var background: Region
     @FXML lateinit var backgroundShade: Region
     @FXML lateinit var homePane: AnchorPane
+    @FXML lateinit var centerPane: StackPane
     @FXML lateinit var settingsPane: AnchorPane
     @FXML lateinit var profileLayer: AnchorPane
 
     // included areas: FXMLLoader injects <fx:id>Controller
     @FXML lateinit var serversListController: ServersListController
     @FXML lateinit var profileBarController: ProfileController
-    @FXML lateinit var heroController: HeroController
     @FXML lateinit var headerController: HeaderController
-    @FXML lateinit var advancedNewsPaneController: NewsController
-    @FXML lateinit var articleBgController: ArticleController
     @FXML lateinit var defaultStatusPaneController: StatusPaneController
     @FXML lateinit var clientSettingsPaneController: ClientSettingsController
     @FXML lateinit var settingsController: SettingsController
@@ -99,8 +98,6 @@ class MainController(private val ctx: UiContext) : Disposable {
         val buttonHeight = profileBarController.loginButton.heightProperty()
         headerController.headerPane.minHeightProperty().bind(buttonHeight)
         headerController.headerPane.maxHeightProperty().bind(buttonHeight)
-        advancedNewsPaneController.onOpenArticle = { item -> articleBgController.open(item) }
-        articleBgController.onClose = {}
 
         clientSettingsPaneController.onDelete = { deletionPaneController.show() }
         clientSettingsPaneController.onNotAvailable = { notAvailable() }
@@ -166,12 +163,8 @@ class MainController(private val ctx: UiContext) : Disposable {
         selected = server
         clientSettingsPaneController.hide()
         background.setImageBackground(loadImage(server.backgroundUri, background = true), cover = true)
-        heroController.show(server)
         defaultStatusPaneController.showServer(server, store.state(server))
-        if (showHome) {
-            setSettingsVisible(false)
-            articleBgController.hide()
-        }
+        if (showHome) setSettingsVisible(false)
     }
 
     fun setSettingsVisible(visible: Boolean) {
