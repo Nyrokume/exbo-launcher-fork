@@ -93,6 +93,9 @@ class MainController(private val ctx: UiContext) : Disposable {
         status.onClientSettings = { clientSettingsPaneController.toggle() }
 
         headerController.onLink = { notAvailable() }
+        // one dropdown at a time: opening the communities menu closes the profile menu and vice versa
+        headerController.onMenuShown = { profileBarController.hideMenu() }
+        profileBarController.onMenuShown = { headerController.hideCommunityMenu() }
         // the links sit in the top bar (outside homePane) but, as before, only show on the home screen
         // (managed too: hidden links leave the row instead of keeping an empty slot left of the profile)
         headerController.headerPane.visibleProperty().bind(homePane.visibleProperty())
@@ -137,7 +140,7 @@ class MainController(private val ctx: UiContext) : Disposable {
     private fun onModalVisibility(changed: ModalController) {
         val blocked = isModalShown
         InputBlock.set(layout, blocked)
-        if (blocked) profileBarController.hideMenu()
+        if (blocked) hideMenus()
         if (changed.isShowing) changed.initialFocus?.requestFocus() ?: InputBlock.focusInto(changed.layer)
     }
 
@@ -160,6 +163,13 @@ class MainController(private val ctx: UiContext) : Disposable {
         serversListController.dispose()
         defaultStatusPaneController.dispose()
         profileBarController.dispose()
+        headerController.dispose()
+    }
+
+    /** Closes both top-bar dropdowns (profile, communities). */
+    fun hideMenus() {
+        profileBarController.hideMenu()
+        headerController.hideCommunityMenu()
     }
 
     fun selectServer(server: Server, showHome: Boolean) {
@@ -220,7 +230,7 @@ class MainController(private val ctx: UiContext) : Disposable {
             KeyCode.F6 -> exceptionPaneController.show("Exception title", "Exception description placeholder")
             KeyCode.F7 -> loadingPaneController.apply { if (isShowing) hide() else show() }
             KeyCode.ESCAPE -> {
-                profileBarController.hideMenu()
+                hideMenus()
                 modals.forEach { it.hide() }
             }
             else -> return

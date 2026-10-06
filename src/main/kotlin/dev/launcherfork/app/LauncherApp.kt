@@ -1,5 +1,6 @@
 package dev.launcherfork.app
 
+import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.components.loadImage
 import javafx.application.Application
@@ -22,7 +23,13 @@ class LauncherApp : Application() {
         val lang = System.getProperty("launcher.lang", "ru")
         val speed = System.getProperty("launcher.mockSpeed")?.toDoubleOrNull() ?: 1.0
         val devMode = System.getProperty("launcher.dev").toBoolean()
-        val app = AppContext.mock(language = lang, speed = speed, devMode = devMode)
+        // community links (header «Сообщества») open in the system browser through JavaFX HostServices
+        val browser = hostServices
+        val links = LinkOpener { url ->
+            System.err.println("[launcher-fork] open link: $url")
+            browser.showDocument(url)
+        }
+        val app = AppContext.mock(language = lang, speed = speed, devMode = devMode, links = links)
         this.app = app
 
         // pre-main window: no OS frame, transparent outside its rounded corners, fixed size

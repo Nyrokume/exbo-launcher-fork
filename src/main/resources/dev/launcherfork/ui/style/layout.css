@@ -119,6 +119,24 @@
     -fx-background-color: -divider;
 }
 
+/* communities dropdown (header «СООБЩЕСТВА ▾»): the profile card (.profile-menu) and rows (.profile-menu-item),
+   narrower, rows = icon tile + brand name + ↗. Tile like the stalzone.com footer: dark square, 1px border, cream glyph. */
+.profile-menu.community-menu { -fx-min-width: 164; -fx-pref-width: 164; -fx-max-width: 164; }
+.profile-menu-item.community-menu-item { -fx-padding: 5 10; }
+.community-item-row { -fx-spacing: 10; }
+.community-item-name { -fx-text-fill: -foreground; -fx-font-size: 13; }
+.community-icon-tile {
+    -fx-background-color: -tile;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-min-width: 28; -fx-pref-width: 28; -fx-max-width: 28;
+    -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28;
+}
+.community-glyph { -fx-fill: -foreground; }
+.community-menu-item:hover .community-icon-tile, .community-menu-item:focused .community-icon-tile { -fx-border-color: -border-hover; }
+.community-menu-item:hover .external-arrow, .community-menu-item:focused .external-arrow { -fx-background-color: -foreground; }
+
 /* ===================== shared bits ===================== */
 .tile {
     -fx-background-color: -tile;
@@ -259,6 +277,24 @@
 .header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
 .header-link:hover { -fx-text-fill: -foreground; }
 .header-link:hover .external-arrow { -fx-background-color: -foreground; }
+/* «СООБЩЕСТВА ▾»: a focusable Button that looks exactly like the Label links next to it, caret instead of ↗ */
+.header-menu-toggle {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+.header-menu-toggle:hover, .header-menu-toggle.open, .header-menu-toggle:focus-visible { -fx-text-fill: -foreground; }
+.header-menu-toggle:focus-visible { -fx-underline: true; }
+.header-caret {
+    -fx-shape: "M0,0 H9 L4.5,5 Z";
+    -fx-background-color: -icon;
+    -fx-min-width: 8; -fx-pref-width: 8; -fx-max-width: 8;
+    -fx-min-height: 5; -fx-pref-height: 5; -fx-max-height: 5;
+}
+.header-menu-toggle:hover .header-caret, .header-menu-toggle:focus-visible .header-caret { -fx-background-color: -foreground; }
+.header-menu-toggle.open .header-caret { -fx-rotate: 180; -fx-background-color: -foreground; }
 
 /* bottom bar */
 .play-status { -fx-font-size: 11; -fx-fill: -text-status; }

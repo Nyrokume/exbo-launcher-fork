@@ -119,6 +119,14 @@ Oswald), поэтому кегли заголовков в `theme-zone.css` ув
   `<link rel="icon" type="image/svg+xml">`), скачан 2026-10-06, отрисован ImageMagick в PNG 48×48 (2× от 24 px
   иконки), рисунок не менялся.
 
+**Иконки соцсетей (меню «Сообщества»).** Монохромные бренд-глифы Discord, YouTube, Reddit, X, Telegram —
+**Simple Icons 16.34.0** (https://simpleicons.org, https://github.com/simple-icons/simple-icons), лицензия
+**CC0 1.0** (public domain). Path-данные скачаны curl 2026-10-06 с
+`https://cdn.jsdelivr.net/npm/simple-icons@16.34.0/icons/{discord,youtube,reddit,x,telegram}.svg` (viewBox 24×24) и
+лежат строками в `ui/components/BrandGlyphs.kt`. Пути не менялись, кроме Telegram: оставлен только подконтур
+бумажного самолётика (полная иконка — самолётик, вырезанный из круга; в футере stalzone.com, который взят за
+референс, самолётик без круга). Сами знаки — товарные знаки их владельцев; CC0 касается только векторных путей.
+
 **Разрядка (letter-spacing .05–.1em).** В JavaFX CSS свойства letter-spacing нет. Пока что узлы, где нужна
 разрядка, — это обычные Label/Text с UPPERCASE-текстом и классом `.zone-caps`. После слияния с веткой
 `redesign/auth` их заменят на `SpacedLabel` (`ui/controls`, делает Front.end.master). Собственную реализацию
@@ -169,4 +177,13 @@ Oswald), поэтому кегли заголовков в `theme-zone.css` ув
 - **Оверлей** (диалоги главного окна): `-scrim` и размытие контента, контент под ним отключён.
 - **Профиль**: ник CAPS + ▾ в плитке `.zone-radius-sm`, меню — карточка `-card` `.zone-radius-md`, пункты
   с hover `-card-description`, «Выйти» цветом `-destructive`.
+- **Сообщества** (`main/header.fxml`, `HeaderController`): в ряду шапки первым пунктом «СООБЩЕСТВА ▾» — `Button`,
+  оформленный как соседние ссылки (`.header-link`, без фона и отступов), вместо ↗ треугольник `.header-caret`,
+  который переворачивается при открытом меню (`.open`); фокус с клавиатуры — подчёркивание (`:focus-visible`).
+  Меню — та же карточка, что у профиля (`.profile-menu`, ширина 164), строки `.profile-menu-item` с тем же hover:
+  плитка 28×28 `.community-icon-tile` (`-tile`, рамка 1 px `-border`, `.zone-radius-sm`, при hover/фокусе
+  `-border-hover`), в ней глиф 14 px `-foreground` по центру (как плитки в футере stalzone.com), затем название и ↗.
+  Карточка плавающая (unmanaged): левый край по левому краю «СООБЩЕСТВА», верх на уровне меню профиля, не выходит
+  за окно. Ссылки — только в `domain/CommunityLinks`, открываются через `LinkOpener` (в приложении
+  `HostServices.showDocument`). Открыто не больше одного меню; закрывается выбором, Esc и кликом мимо.
 - **Логотип**: `LogoMark`, 4 `SVGPath` (even-odd), заливка `.logo-path { -fx-fill: -foreground; }`.

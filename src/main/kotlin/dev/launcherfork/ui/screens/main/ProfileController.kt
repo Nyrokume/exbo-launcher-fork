@@ -35,6 +35,8 @@ class ProfileController(private val ctx: UiContext) : Disposable {
     var onProfile: () -> Unit = {}
     var onSwitchAccount: () -> Unit = {}
     var onLogout: () -> Unit = {}
+    /** Fired after the dropdown opened (MainController closes the communities menu: one menu at a time). */
+    var onMenuShown: () -> Unit = {}
 
     private var scene: Scene? = null
     private val outsideClick = EventHandler<MouseEvent> { e ->
@@ -69,9 +71,11 @@ class ProfileController(private val ctx: UiContext) : Disposable {
     fun hideMenu() = setMenu(false)
 
     private fun setMenu(shown: Boolean) {
+        val wasShown = isMenuShown
         loginButton.toggleClass("open", shown)
         profileMenu.isVisible = shown
         if (shown) placeMenu()
+        if (shown && !wasShown) onMenuShown()
     }
 
     /** Pref-size the unmanaged card and hang it under the button, right-aligned with it (the parent never lays it out). */
