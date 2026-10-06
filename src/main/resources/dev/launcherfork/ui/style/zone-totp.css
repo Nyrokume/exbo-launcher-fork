@@ -26,7 +26,7 @@
 .code-cell:filled { -fx-background-color: -card; -fx-border-color: -text-dim; }
 .code-cell:hover { -fx-border-color: -text-dim; }
 .code-cell:focused { -fx-border-color: -foreground; }
-.code-cell:error { -fx-border-color: -error; -fx-text-fill: -error; -fx-highlight-text-fill: -error; }
+.code-cell:error { -fx-border-color: -error; -fx-text-fill: -destructive-text; -fx-highlight-text-fill: -destructive-text; }
 
 /* ---------- error toast (stalzone.com): card, Bebas title, message, X strip, red bottom line ---------- */
 .zone-toast {

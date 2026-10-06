@@ -235,6 +235,8 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     /** Background picture of the main window (this launch's wallpaper), null when none was chosen. */
     val wallpaperLayer: WallpaperLayer? get() = windowController.wallpaper
+    /** Background picture of the pre-main window: the same wallpaper as [wallpaperLayer], null when none was chosen. */
+    val authWallpaperLayer: WallpaperLayer? get() = authWindow.wallpaper
 
     // ---- internals ----
 

@@ -32,7 +32,7 @@
     -destructive-text: #ff3b52;  /* red TEXT: the site's hover red (.text-btn:hover), 5.1:1 on -card (#e91932 is 3.9:1) */
     -primary-tint: rgba(233, 25, 50, 0.20);  /* translucent accent: progress fill behind the status text */
     -input-foreground: #ece7e1;
-    -placeholder: rgba(202, 185, 166, 0.46);  /* --accent-400 */
+    -placeholder: rgba(202, 185, 166, 0.68);  /* the site's --accent-400 at .68 (was .46: 2.97:1 on -input): AA on -input */
     -overlay: rgba(0, 0, 0, 0.80);
     -overlay-light: rgba(0, 0, 0, 0.40);
     -overlay-solid: #000000;
@@ -84,6 +84,10 @@
     -wallpaper-sidebar: rgba(10, 10, 10, 0.55);   /* sidebar, on top of the scrim */
     -wallpaper-titlebar: rgba(10, 10, 10, 0.50);  /* title bar strip, on top of the scrim */
     -wallpaper-text-muted: #d8cfc5;               /* quiet text on the picture (warm beige): links, online count, status */
+    /* pre-main window (layout.css «auth-wallpaper»): one scrim over the picture behind the title strip and the panels'
+       top blocks (logo, heading); the form block stays solid. WallpaperContrastTest, pre-main windows */
+    -auth-wallpaper-scrim: rgba(10, 10, 10, 0.50);
+    -auth-wallpaper-scrim-bright: rgba(10, 10, 10, 0.62);
 
     /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
     -settings-heading: #f7f3ee;               /* group headings on -background: 17.9:1 */

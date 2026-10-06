@@ -79,7 +79,9 @@
 }
 .zone-input:hover { -fx-border-color: -text-dim; }
 .zone-input:focused { -fx-border-color: -foreground; }
-.zone-input:error { -fx-border-color: -error; -fx-text-fill: -error; }
+/* red TEXT on the dark fills is -destructive-text (AA: 5.4:1 on -input, 5.5:1 on -card-description in zone; -error is
+   4.41:1), the border keeps -error */
+.zone-input:error { -fx-border-color: -error; -fx-text-fill: -destructive-text; }
 .zone-password { -fx-max-width: Infinity; }
 
 .zone-eye {
@@ -103,7 +105,7 @@
 }
 
 .zone-errors { -fx-spacing: 2; }
-.zone-error { -fx-font-size: 13; -fx-text-fill: -error; }
+.zone-error { -fx-font-size: 13; -fx-text-fill: -destructive-text; }
 
 /* ---------- remember me (square 24 px) + restore ---------- */
 .zone-check {
@@ -195,6 +197,11 @@
 .zone-login-logo { -fx-padding: 0; }
 /* login: one monotone black, the logo block takes the form colour instead of the grey card */
 .zone-top.zone-top-plain { -fx-background-color: -card-description; }
+/* wallpaper in the pre-main window (layout.css «auth-wallpaper»): the picture shows through the panel and its top
+   block (logo, heading) under the scrim; the form block keeps its solid -card-description; quiet text on the picture
+   takes the opaque -wallpaper-text-muted (the translucent -muted-foreground only works on a plain fill) */
+.wallpaper-on .zone-panel, .wallpaper-on .zone-top, .wallpaper-on .zone-top.zone-top-plain { -fx-background-color: transparent; }
+.wallpaper-on .zone-top .zone-description { -fx-text-fill: -wallpaper-text-muted; }
 .zone-bottom-status { -fx-spacing: 12; -fx-padding: 26 28 30 28; }
 .zone-status { -fx-font-size: 15; -fx-text-fill: -foreground; }
 .zone-progress { -fx-pref-height: 6; -fx-min-height: 6; -fx-max-height: 6; }

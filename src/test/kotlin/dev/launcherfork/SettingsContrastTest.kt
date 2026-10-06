@@ -111,19 +111,21 @@ class SettingsContrastTest {
         Triple("login: form text", "-foreground" to "-card-description", 4.5),
         Triple("login: hints, labels", "-muted-foreground" to "-card-description", 4.5),
         Triple("login: input text", "-input-foreground" to "-input", 4.5),
+        Triple("login: placeholder in an empty field", "-placeholder" to "-input", 4.5),
         Triple("login: red links", "-destructive-text" to "-card-description", 4.5),
         Triple("registration: selected combo row (red text on card)", "-destructive-text" to "-card", 4.5),
-        Triple("login: error text", "-error" to "-card-description", 4.5),
+        Triple("login: error text", "-destructive-text" to "-card-description", 4.5),
+        Triple("login: field text in the error state", "-destructive-text" to "-input", 4.5),
     )
 
     /**
-     * Known gaps of the DARK zone theme (rules owned by other branches, not touched here): -text-status on -input
-     * 2.98:1 and -error on -card-description 4.41:1 predate the white scheme. Red TEXT (login links, the selected
-     * registration combo row) uses -destructive-text, not -primary, so it is AA in both zone themes. Self-checking:
+     * Known gap of the DARK zone theme (a rule owned by another branch, not touched here): -text-status on -input
+     * 2.98:1 predates the white scheme. Red TEXT (login links, error lines and field text, the selected registration
+     * combo row) uses -destructive-text, not -primary / -error (4.41:1), so it is AA in both zone themes. Self-checking:
      * [knownDarkZoneGapsAreStillGaps] fails as soon as a listed pair passes (or no longer exists), so a stale entry is
      * removed when the fix lands.
      */
-    private val knownDarkZoneGaps = setOf("-text-status" to "-input", "-error" to "-card-description")
+    private val knownDarkZoneGaps = setOf("-text-status" to "-input")
 
     /** Every exception above is a real, still failing window pair of the dark zone theme; otherwise delete it. */
     @TestFactory

@@ -97,6 +97,13 @@
 .auth-close:hover { -fx-background-color: -window-close; }
 .auth-close:hover .window-glyph { -fx-background-color: -primary-foreground; }
 .auth-panel-host { -fx-background-color: -background; }
+/* wallpaper behind the pre-main window (AuthWindowController, the main window's picture): its own scrim tokens; while
+   it shows (.wallpaper-on on the window root) the window, title strip and host are see-through, the panel sheet
+   (zone-auth.css) clears its top block and keeps the form block solid. WallpaperContrastTest measures every text. */
+.auth-wallpaper-scrim { -fx-background-color: -auth-wallpaper-scrim; }
+.auth-wallpaper-scrim.wallpaper-bright { -fx-background-color: -auth-wallpaper-scrim-bright; }
+.auth-window.wallpaper-on, .auth-window.wallpaper-on .auth-panel-host { -fx-background-color: transparent; }
+.auth-window.wallpaper-on .auth-title-bar { -fx-background-color: transparent; }
 
 /* ===================== profile (top-right of the main window) ===================== */
 /* one gap for the whole top-right row: ФОРУМ ↔ ПОДДЕРЖКА (links row) and ПОДДЕРЖКА ↔ nickname (top bar) */
