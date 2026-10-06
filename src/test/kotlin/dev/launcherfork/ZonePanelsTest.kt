@@ -161,6 +161,11 @@ class ZonePanelsTest {
                 scene.root.applyCss(); scene.root.layout()
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
+                // no hole above ВОЙТИ: the spare height of the fixed window goes to the top card, not between the form rows
+                val rememberBottom = c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY
+                val enterTop = c.enterButton.localToScene(c.enterButton.layoutBounds).minY
+                assertTrue(enterTop - rememberBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - rememberBottom}")
+                assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
                 for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))

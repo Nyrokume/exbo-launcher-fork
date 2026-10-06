@@ -25,7 +25,7 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <VBox styleClass="zone-top">
+        <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
             <Label styleClass="zone-title" text="%fork.zone.title" wrapText="true" minHeight="-Infinity" />
             <Label styleClass="zone-description" text="%fork.zone.social" wrapText="true" minHeight="-Infinity" />
             <HBox styleClass="zone-socials">
@@ -38,7 +38,7 @@
             </HBox>
         </VBox>
 
-        <VBox styleClass="zone-bottom" VBox.vgrow="ALWAYS">
+        <VBox styleClass="zone-bottom">
             <!-- after a registration: "Аккаунт создан…" (zone-steps.css), hidden while empty -->
             <Label id="zoneNotice" fx:id="noticeLabel" styleClass="zone-notice" wrapText="true" maxWidth="Infinity" minHeight="-Infinity" visible="false" managed="false" />
             <TextField id="zoneLogin" fx:id="loginField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%fork.zone.login_prompt" />
@@ -61,7 +61,7 @@
                     <Button id="zoneRestore" fx:id="restoreButton" styleClass="zone-link-accent" mnemonicParsing="false" onAction="#onRestore" text="%fork.zone.restore" BorderPane.alignment="CENTER_RIGHT" />
                 </right>
             </BorderPane>
-            <Region VBox.vgrow="ALWAYS" styleClass="zone-spacer" />
+            <Region styleClass="zone-spacer" />
             <Button id="zoneEnter" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#onEnter" text="%fork.zone.enter" maxWidth="Infinity" />
             <HBox styleClass="zone-footer">
                 <Label styleClass="zone-footer-text" text="%fork.zone.no_account" />

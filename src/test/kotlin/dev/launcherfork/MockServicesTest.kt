@@ -12,6 +12,8 @@ import dev.launcherfork.domain.UpdatePhase
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.domain.ProgressListener
 import dev.launcherfork.ui.components.ResizeEdge
+import dev.launcherfork.ui.screens.auth.MailAuthController
+import dev.launcherfork.ui.screens.auth.TotpAuthController
 import dev.launcherfork.theme.Theme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -26,6 +28,13 @@ class MockServicesTest {
     private val notInstalled = MockData.servers.single().copy(id = "not-installed", installed = false)
 
     @Test
+    fun codeScreensAndMockAgreeOnCodeLengths() {
+        // the window cells and the mock check must not drift apart silently
+        assertEquals(MockAuthService.CODE_LENGTH, MailAuthController.CODE_LENGTH, "e-mail code length")
+        assertEquals(MockAuthService.TOTP_CODE_LENGTH, TotpAuthController.CODE_LENGTH, "TOTP code length")
+    }
+
+    @Test
     fun authFlows() {
         val auth = MockAuthService(delayMs = 0)
         assertTrue(auth.login("player", "x", false) is AuthResult.Success)
@@ -34,7 +43,8 @@ class MockServicesTest {
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("12"))
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("1234567"))
         assertEquals(AuthResult.Failure(AuthError.SERVER_ERROR), auth.confirmTotp("123456"))   // not the TOTP step
-        assertTrue(auth.confirmCode("123456") is AuthResult.Success)
+        assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("123456"))     // 6 digits: too short now
+        assertTrue(auth.confirmCode("268419249") is AuthResult.Success)
 
         assertEquals(AuthResult.TotpRequired, auth.login("totp", "x", false))
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmTotp("000000"))     // the mock's wrong code

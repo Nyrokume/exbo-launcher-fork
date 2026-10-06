@@ -38,7 +38,11 @@ MODULES="$JDK_MODULES,javafx.controls,javafx.fxml"
 echo "   modules: $MODULES"
 JLINK_OPTS=(--add-modules "$MODULES" --strip-debug --no-header-files --no-man-pages --compress zip-6)
 
-java "$ROOT/packaging/MakeIco.java" src/main/resources/dev/launcherfork/ui/style/image/icon.png "$WORK/$APP.ico"
+# Prebuilt multi-size icon (16..256, pixel-snapped renders from docs/design/icon/gen.py), not an upscale of the
+# 54 px icon.png.
+ICO_SRC=$ROOT/docs/design/icon/icon.ico
+test -f "$ICO_SRC" || { echo "missing $ICO_SRC" >&2; exit 1; }
+cp "$ICO_SRC" "$WORK/$APP.ico"
 
 readme() { # $1 = platform notes
     cat <<TXT
