@@ -314,9 +314,8 @@
     -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
     -fx-padding: 0;
 }
-.game-actions-glyph { -fx-fill: -icon; }
-.game-actions-button:hover .game-actions-glyph, .game-actions-button:focused .game-actions-glyph,
-.game-actions-button.open .game-actions-glyph { -fx-fill: -foreground; }
+/* Horizontal ellipsis: three round 3 px dots with 4 px gaps, cream -foreground in every state. */
+.game-actions-glyph { -fx-fill: -foreground; }
 .game-actions-button.open { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
 .game-actions-button:focused { -fx-border-color: -border-hover; }
 .play-button {

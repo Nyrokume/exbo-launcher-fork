@@ -85,6 +85,7 @@ class GameActionsMenuTest {
         val glyph = status.gameActionsGlyph.sceneBounds()
         assertEquals(btn.centerX, glyph.centerX, 1.0, "$where: glyph off-centre"); assertEquals(btn.centerY, glyph.centerY, 1.0)
         assertTrue(glyph.width in 14.0..22.0, "$where: glyph $glyph")
+        checkEllipsis(status.gameActionsGlyph, theme, where)
 
         main.menu().show()
         relayout(nav)
@@ -111,6 +112,32 @@ class GameActionsMenuTest {
         main.hideMenus()
         relayout(nav)
         assertFalse(main.menu().isShown)
+    }
+
+    /** The actions glyph is a horizontal ellipsis: three equal 3 px round dots, 4 px apart, in the theme's -foreground. */
+    private fun checkEllipsis(glyph: javafx.scene.shape.SVGPath, theme: String, where: String) {
+        val dots = Regex("""M([\d.]+),([\d.]+) A([\d.]+),([\d.]+) 0 1,1 ([\d.]+),([\d.]+) A[\d.]+,[\d.]+ 0 1,1 [\d.]+,[\d.]+ Z""")
+            .findAll(glyph.content).map { m -> m.groupValues.drop(1).map(String::toDouble) }.toList()
+        assertEquals(3, dots.size, "$where: expected three dots in '${glyph.content}'")
+        dots.forEach { (x, y, rx, ry, x2, y2) ->
+            assertEquals(1.5, rx, 1e-9); assertEquals(1.5, ry, 1e-9)       // round, Ø3
+            assertEquals(x, x2, 1e-9); assertEquals(y + 3.0, y2, 1e-9)      // a full circle
+            assertEquals(0.0, y, 1e-9)                                     // all on one horizontal line
+        }
+        val gaps = dots.zipWithNext { a, b -> (b[0] - 1.5) - (a[0] + 1.5) }
+        assertEquals(listOf(4.0, 4.0), gaps, "$where: dots not 4 px apart")
+        assertNull(glyph.stroke, "$where: dots must be filled, not stroked")
+        assertEquals(17.0, glyph.layoutBounds.width, 0.01); assertEquals(3.0, glyph.layoutBounds.height, 0.01)
+        assertEquals(foreground(theme), glyph.fill, "$where: dots not in the theme foreground colour")
+    }
+
+    private operator fun <T> List<T>.component6() = this[5]
+
+    private fun foreground(theme: String): javafx.scene.paint.Color {
+        val file = mapOf("exbo" to "theme.css", "zone" to "theme-zone.css", "shadcn" to "theme-shadcn.css").getValue(theme)
+        val css = javaClass.getResource("/dev/launcherfork/ui/style/$file")!!.readText()
+        val hex = Regex("""(?m)^\s*-foreground:\s*([^;]+);""").find(css)!!.groupValues[1].trim()
+        return javafx.scene.paint.Color.web(hex)
     }
 
     @Test

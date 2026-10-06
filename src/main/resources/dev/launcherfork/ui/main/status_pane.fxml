@@ -23,7 +23,7 @@
         <graphic>
             <!-- three dots ("more"), 18x4 in a 44x44 tile -->
             <SVGPath fx:id="gameActionsGlyph" styleClass="game-actions-glyph"
-                     content="M2,0 A2,2 0 1,1 2,4 A2,2 0 1,1 2,0 Z M9,0 A2,2 0 1,1 9,4 A2,2 0 1,1 9,0 Z M16,0 A2,2 0 1,1 16,4 A2,2 0 1,1 16,0 Z"/>
+                     content="M1.5,0 A1.5,1.5 0 1,1 1.5,3 A1.5,1.5 0 1,1 1.5,0 Z M8.5,0 A1.5,1.5 0 1,1 8.5,3 A1.5,1.5 0 1,1 8.5,0 Z M15.5,0 A1.5,1.5 0 1,1 15.5,3 A1.5,1.5 0 1,1 15.5,0 Z"/>
         </graphic>
     </Button>
     <Button fx:id="downloadButton" id="playButton" styleClass="play-button,btn-primary,zone-caps,zone-radius-sm" mnemonicParsing="false" text="BUTTON"/>
