@@ -49,8 +49,8 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     /** The main window, created here. */
     val mainStage: Stage = Stage(StageStyle.UNDECORATED)
 
-    /** A window paired with its own frame, so the auth and main frames cannot be mixed up. */
-    private data class WindowSlot(val stage: Stage, val frame: WindowFrame = WindowFrame(stage)) {
+    /** A window paired with its own frame, so the auth and main frames cannot be mixed up (plain class: no `copy()`, slots compare by identity). */
+    private class WindowSlot(val stage: Stage, val frame: WindowFrame = WindowFrame(stage)) {
         val isShowing: Boolean get() = stage.isShowing
     }
 
@@ -238,11 +238,11 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         activeWindow = target
         if (!authSlot.isShowing && !mainSlot.isShowing) return
         val show = slotOf(target)
-        val hide = if (show == mainSlot) authSlot else mainSlot
+        val hide = if (show === mainSlot) authSlot else mainSlot
         if (previous != target || !show.isShowing) {
             place(show, from = if (hide.isShowing) hide.frame.bounds else show.frame.bounds)
             show.stage.show()
-            if (show == mainSlot) mainShownOnce = true
+            if (show === mainSlot) mainShownOnce = true
         }
         if (hide.isShowing) hide.stage.hide()
     }
@@ -253,7 +253,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
      */
     private fun place(slot: WindowSlot, from: Rectangle2D) {
         val (w, h) = when {
-            slot == authSlot -> Theme.AUTH_WINDOW_WIDTH to Theme.AUTH_WINDOW_HEIGHT
+            slot === authSlot -> Theme.AUTH_WINDOW_WIDTH to Theme.AUTH_WINDOW_HEIGHT
             !mainShownOnce -> Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT
             slot.frame.isMaximized -> return
             else -> slot.stage.width to slot.stage.height
