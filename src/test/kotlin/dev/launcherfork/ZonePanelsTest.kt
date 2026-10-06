@@ -65,16 +65,30 @@ class ZonePanelsTest {
     }
 
     @Test
-    fun errorPaintsFieldsUntilEdited() = FxTestSupport.onFx {
+    fun enterInAFieldDoesNotBypassTheGreyButton() = FxTestSupport.onFx {
         val c = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml").controller
         c.loginField.text = ""; c.passwordField.text = "x"
-        c.onEnter() // empty login -> error
-        assertTrue(c.errorFirst.text.isNotEmpty())
-        assertTrue(c.errorFirst.isManaged)
-        assertTrue(c.loginField.pseudoClassStates.any { it.pseudoClassName == "error" })
-        c.loginField.text = "p"
+        c.onEnter() // Enter in the password field with an empty login
+        assertTrue(c.errorFirst.text.isNullOrEmpty(), "no validation error, the button is grey")
         assertFalse(c.loginField.pseudoClassStates.any { it.pseudoClassName == "error" })
-        assertFalse(c.errorSecond.isManaged)
+    }
+
+    @Test
+    fun errorPaintsFieldsUntilEdited() {
+        val c = FxTestSupport.onFx {
+            Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml").controller.also {
+                it.loginField.text = "player"; it.passwordField.text = "wrong"; it.onEnter() // mock: wrong credentials
+            }
+        }
+        assertTrue(FxTestSupport.waitFx { !c.errorFirst.text.isNullOrEmpty() }, "server error never shown")
+        FxTestSupport.onFx {
+            assertTrue(c.errorFirst.isManaged)
+            assertTrue(c.loginField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            assertTrue(c.passwordField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            c.passwordField.text = "wrong2"
+            assertFalse(c.loginField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            assertFalse(c.errorSecond.isManaged)
+        }
     }
 
     @Test
@@ -91,8 +105,8 @@ class ZonePanelsTest {
         render("auth_panel_filled.png", "ru") { c ->
             c.loginField.text = "player"; c.passwordField.text = "secret"; c.autoAuthCheckBox.isSelected = true
         }
-        render("auth_panel_error.png", "ru") { c ->
-            c.loginField.text = ""; c.passwordField.text = "x"; c.onEnter()
+        render("auth_panel_error.png", "ru", ready = { !it.errorFirst.text.isNullOrEmpty() }) { c ->
+            c.loginField.text = "player"; c.passwordField.text = "wrong"; c.onEnter()
         }
     }
 
@@ -112,12 +126,15 @@ class ZonePanelsTest {
             nav.authStage.scene.focusOwner === expected
         }, "initial focus is not in the form")
         listOf("auth_window_ru.png" to false, "auth_window_error.png" to true).forEach { (file, error) ->
+            val c = nav.panelController as InitialAuthController
+            if (error) {
+                FxTestSupport.onFx { c.loginField.text = "player"; c.passwordField.text = "wrong"; c.onEnter() }
+                assertTrue(FxTestSupport.waitFx { !c.errorFirst.text.isNullOrEmpty() }, "server error never shown")
+            }
             FxTestSupport.onFx {
                 val scene = nav.authStage.scene
                 val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
                 if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
-                val c = nav.panelController as InitialAuthController
-                if (error) { c.loginField.text = ""; c.passwordField.text = "x"; c.onEnter() }
                 scene.root.applyCss(); scene.root.layout()
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
@@ -133,21 +150,34 @@ class ZonePanelsTest {
     }
 
     /** The panel alone at the login window's content size (460x588 under LR's 32 px title bar), zone theme forced. */
-    private fun render(file: String, lang: String, prepare: (InitialAuthController) -> Unit = {}) = FxTestSupport.onFx {
-        val panel = Fxml.load<InitialAuthController>(FxTestSupport.context(lang), "auth_panel.fxml")
-        val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
-        dev.launcherfork.theme.Theme.apply(scene, lang)
-        // preview always in the zone theme, whatever -Dlauncher.theme the test JVM got
-        dev.launcherfork.theme.Theme.zoneFonts
-        val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
-        if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+    private fun render(
+        file: String,
+        lang: String,
+        ready: (InitialAuthController) -> Boolean = { true },
+        prepare: (InitialAuthController) -> Unit = {},
+    ) {
+        val panel = FxTestSupport.onFx {
+            val panel = Fxml.load<InitialAuthController>(FxTestSupport.context(lang), "auth_panel.fxml")
+            val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
+            dev.launcherfork.theme.Theme.apply(scene, lang)
+            // preview always in the zone theme, whatever -Dlauncher.theme the test JVM got
+            dev.launcherfork.theme.Theme.zoneFonts
+            val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+            if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+            scene.root.applyCss(); scene.root.layout()
+            prepare(panel.controller)
+            panel
+        }
+        assertTrue(FxTestSupport.waitFx { ready(panel.controller) }, "$file: state never reached")
+        snapshot(file, panel.controller.registerButton.scene, panel.controller)
+    }
+
+    private fun snapshot(file: String, scene: Scene, c: InitialAuthController) = FxTestSupport.onFx {
         val host = scene.root
-        host.applyCss(); host.layout()
-        prepare(panel.controller)
         host.applyCss(); host.layout()
         // the panel must fill the window and keep every control inside it
         assertEquals(460.0, host.layoutBounds.width, 0.5)
-        val bottom = panel.controller.registerButton.localToScene(panel.controller.registerButton.layoutBounds).maxY
+        val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
         // at least 20 px of air under "Создать", also with an error line shown
         assertTrue(bottom <= 568.0, "footer too close to the window edge: maxY=$bottom")
         val img = scene.snapshot(null)

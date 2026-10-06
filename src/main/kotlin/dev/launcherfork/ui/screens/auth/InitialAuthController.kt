@@ -86,6 +86,8 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
 
     @FXML
     fun onEnter() {
+        // zone form: Enter in a field must not bypass the grey ВОЙТИ (as on stalzone.com/login)
+        if (enterButton.disableProperty().isBound && enterButton.isDisabled) return
         val login = loginField.text.trim()
         val password = passwordField.text
         when {
