@@ -1,8 +1,7 @@
 /*
  * zone-auth.css - login panel (separate login window) after stalzone.com/login, see LOGIN.md.
  * Colors come only from theme tokens; corners from .zone-radius-sm in the FXML (children use `inherit`).
- * TODO(tokens): -card-description / -input-border / -error arrive from redesign/zone; until then the closest
- * existing tokens stand in: -popover (#0f0f0f), -border, -destructive.
+ * Login tokens (theme-zone.css): -card top block and inputs, -card-description form block, -input-border, -error.
  */
 @font-face {
     font-family: "Oswald Medium";
@@ -15,8 +14,8 @@
 /* ---------- top block: title + social tiles ---------- */
 .zone-top {
     -fx-background-color: -card;
-    -fx-padding: 30 28 28 28;
-    -fx-spacing: 14;
+    -fx-padding: 26 28 24 28;
+    -fx-spacing: 12;
 }
 .zone-title {
     -fx-font-family: "Oswald Medium";
@@ -39,8 +38,8 @@
     -fx-cursor: hand;
 }
 .zone-social .zone-social-icon { -fx-background-color: -foreground; }
-.zone-social:hover, .zone-social:focused { -fx-background-color: -foreground; }
-.zone-social:hover .zone-social-icon, .zone-social:focused .zone-social-icon { -fx-background-color: -background; }
+.zone-social:hover, .zone-social:focus-visible { -fx-background-color: -foreground; }
+.zone-social:hover .zone-social-icon, .zone-social:focus-visible .zone-social-icon { -fx-background-color: -background; }
 .zone-social-icon {
     -fx-min-width: 26; -fx-pref-width: 26; -fx-max-width: 26;
     -fx-min-height: 26; -fx-pref-height: 26; -fx-max-height: 26;
@@ -55,9 +54,9 @@
 
 /* ---------- bottom block: form ---------- */
 .zone-bottom {
-    -fx-background-color: -popover;
-    -fx-padding: 30 24 22 24;
-    -fx-spacing: 14;
+    -fx-background-color: -card-description;
+    -fx-padding: 24 24 24 24;
+    -fx-spacing: 12;
 }
 
 .zone-input {
@@ -68,7 +67,7 @@
     -fx-alignment: center-left;
     -fx-background-color: -card;
     -fx-background-insets: 0;
-    -fx-border-color: -border;
+    -fx-border-color: -input-border;
     -fx-border-width: 1;
     -fx-text-fill: -foreground;
     -fx-prompt-text-fill: -placeholder;
@@ -77,7 +76,7 @@
 }
 .zone-input:hover { -fx-border-color: -text-dim; }
 .zone-input:focused { -fx-border-color: -foreground; }
-.zone-input:error { -fx-border-color: -destructive; -fx-text-fill: -destructive; }
+.zone-input:error { -fx-border-color: -error; -fx-text-fill: -error; }
 .zone-password { -fx-max-width: Infinity; }
 
 .zone-eye {
@@ -101,7 +100,7 @@
 }
 
 .zone-errors { -fx-spacing: 2; }
-.zone-error { -fx-font-size: 13; -fx-text-fill: -destructive; }
+.zone-error { -fx-font-size: 13; -fx-text-fill: -error; }
 
 /* ---------- remember me (square 24 px) + restore ---------- */
 .zone-check {
@@ -113,10 +112,10 @@
 }
 .zone-check > .box {
     -fx-background-image: null;
-    -fx-background-color: -popover;
+    -fx-background-color: -card-description;
     -fx-background-insets: 0;
     -fx-background-radius: inherit;
-    -fx-border-color: -border;
+    -fx-border-color: -input-border;
     -fx-border-width: 1;
     -fx-border-radius: inherit;
     -fx-padding: 5;

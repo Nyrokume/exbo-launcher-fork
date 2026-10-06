@@ -96,6 +96,42 @@ class ZonePanelsTest {
         }
     }
 
+    /** The real separate login window (StageNavigator: title strip + PanelHost), snapshot of the whole scene. */
+    @Test
+    fun renderLoginWindow() {
+        val app = dev.launcherfork.app.AppContext.mock(speed = 50.0, authDelayMs = 0)
+        val nav = FxTestSupport.onFx {
+            val stage = javafx.stage.Stage(javafx.stage.StageStyle.TRANSPARENT)
+            dev.launcherfork.app.StageNavigator(stage, app, "ru").also { it.exit = {}; it.showAuth(); stage.show() }
+        }
+        assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
+        // focus lands in the first empty field (login is pre-filled -> password), not on a social tile
+        assertTrue(FxTestSupport.waitFx(5_000) {
+            val c = nav.panelController as InitialAuthController
+            val expected = if (c.loginField.text.isNullOrEmpty()) c.loginField else c.passwordField
+            nav.authStage.scene.focusOwner === expected
+        }, "initial focus is not in the form")
+        listOf("auth_window_ru.png" to false, "auth_window_error.png" to true).forEach { (file, error) ->
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
+                val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+                if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+                val c = nav.panelController as InitialAuthController
+                if (error) { c.loginField.text = ""; c.passwordField.text = "x"; c.onEnter() }
+                scene.root.applyCss(); scene.root.layout()
+                val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
+                assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
+                val img = scene.snapshot(null)
+                val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
+                for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))
+                previewDir.mkdirs()
+                ImageIO.write(out, "png", File(previewDir, file))
+            }
+        }
+        FxTestSupport.onFx { nav.close() }
+        app.shutdown()
+    }
+
     /** The panel alone at the login window's content size (460x588 under LR's 32 px title bar), zone theme forced. */
     private fun render(file: String, lang: String, prepare: (InitialAuthController) -> Unit = {}) = FxTestSupport.onFx {
         val panel = Fxml.load<InitialAuthController>(FxTestSupport.context(lang), "auth_panel.fxml")
@@ -112,7 +148,8 @@ class ZonePanelsTest {
         // the panel must fill the window and keep every control inside it
         assertEquals(460.0, host.layoutBounds.width, 0.5)
         val bottom = panel.controller.registerButton.localToScene(panel.controller.registerButton.layoutBounds).maxY
-        assertTrue(bottom <= 588.0, "footer is cut off: maxY=$bottom")
+        // at least 20 px of air under "Создать", also with an error line shown
+        assertTrue(bottom <= 568.0, "footer too close to the window edge: maxY=$bottom")
         val img = scene.snapshot(null)
         val w = img.width.toInt(); val h = img.height.toInt()
         val out = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)

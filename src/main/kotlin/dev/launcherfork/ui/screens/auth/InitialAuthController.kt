@@ -76,6 +76,12 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         }
         fields.forEach { f -> f.textProperty().addListener { _, _, _ -> fields.forEach { it.pseudoClassStateChanged(ERROR, false) } } }
         listOf(errorFirst, errorSecond).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
+        // as on the site: the cursor starts in the first empty field, not on the Google tile
+        loginField.sceneProperty().addListener { _, _, scene ->
+            if (scene != null) javafx.application.Platform.runLater {
+                (if (loginField.text.isNullOrEmpty()) loginField else passwordField).requestFocus()
+            }
+        }
     }
 
     @FXML
