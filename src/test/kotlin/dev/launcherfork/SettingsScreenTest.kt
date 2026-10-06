@@ -186,6 +186,8 @@ class SettingsScreenTest {
         return c to store
     }
 
+    private fun segmentCentre(c: SettingsController, gb: Int) = c.ramBar.segments[gb - 1].sceneBounds().centerX
+
     /** [gbValue] of [totalGb] segments are filled, from the left, and they cover gbValue/totalGb of the bar. */
     private fun assertFill(c: SettingsController, gbValue: Int, totalGb: Int, why: String) {
         val bar = c.ramBar
@@ -219,10 +221,18 @@ class SettingsScreenTest {
             val seg = bar.segments.map { it.sceneBounds() }
             seg.zipWithNext { a, b -> assertTrue(b.minX - a.maxX in 1.0..3.0, "gap ${b.minX - a.maxX}") }
             seg.dropLast(1).forEach { assertEquals(seg[0].width, it.width, 1.0, "segments not equal") }
-            assertTrue(seg.all { it.height in 10.0..14.0 }, "segment height ${seg[0].height}")
+            assertTrue(seg.all { it.height in 14.0..18.0 }, "segment height ${seg[0].height}")
             assertTrue(bar.childrenUnmodifiable.all { "ram-segment" in it.styleClass }, "only segments inside the bar")
             // the value label sits in the RAM card, right above the bar
             assertTrue(c.ramSummary.sceneBounds().maxY <= bar.sceneBounds().minY, "value label not above the bar")
+            // min / max captions right under the bar, each centred under its segment (2 GB, 14 GB), on one line
+            val scale = c.ramScale
+            assertEquals("2 ГБ", scale.minLabel.text); assertEquals("14 ГБ", scale.maxLabel.text)
+            val minB = scale.minLabel.sceneBounds(); val maxB = scale.maxLabel.sceneBounds()
+            assertTrue(minB.minY >= bar.sceneBounds().maxY, "captions not under the bar")
+            assertEquals(minB.centerY, maxB.centerY, 0.5, "captions not on one line")
+            assertEquals(segmentCentre(c, 2), minB.centerX, 1.0, "min caption not under the 2 GB segment")
+            assertEquals(segmentCentre(c, 14), maxB.centerX, 1.0, "max caption not under the 14 GB segment")
             // the system reserve (15, 16 GB) is marked and cannot be reached
             assertEquals(listOf(15, 16), bar.segments.filter { it.pseudoClassStates.any { p -> p.pseudoClassName == "reserve" } }.map { it.userData })
             // the recommended value is explained in the tooltip / accessible help, not in an extra line
@@ -309,6 +319,23 @@ class SettingsScreenTest {
             assertEquals("Allocated: 4 GB of 8 GB", c.ramSummary.text)
             assertTrue(c.ramBar.accessibleHelp.contains("4 GB"), c.ramBar.accessibleHelp)
             assertFill(c, 4, 8, "8 GB machine")
+            assertEquals("2 GB", c.ramScale.minLabel.text); assertEquals("6 GB", c.ramScale.maxLabel.text)
+            assertEquals(segmentCentre(c, 6), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the 6 GB segment")
+        }
+    }
+
+    @Test
+    fun fourGbMachineShowsOneCaption() {
+        listOf(4 * gb, 3 * gb).forEach { total ->
+            val (c, _) = settingsWith(LauncherSettings(), totalMb = total)
+            FxTestSupport.onFx {
+                assertEquals(2, c.ramBar.minGb); assertEquals(2, c.ramBar.maxGb, "$total MB: only 2 GB can be chosen")
+                val scale = c.ramScale
+                assertEquals("2 ГБ", scale.minLabel.text)
+                assertFalse(scale.maxLabel.isVisible, "$total MB: «2 ГБ … 2 ГБ» shown twice")
+                assertEquals(1, scale.childrenUnmodifiable.count { it.isVisible }, "$total MB: one caption")
+                assertEquals(segmentCentre(c, 2), scale.minLabel.sceneBounds().centerX, 1.0, "$total MB: caption not under the 2 GB segment")
+            }
         }
     }
 

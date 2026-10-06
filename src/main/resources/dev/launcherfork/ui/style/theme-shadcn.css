@@ -71,6 +71,21 @@
     -error: #ff6467;
     -status-online: #10b981;          /* emerald-500 */
     -status-offline: #525252;         /* neutral-600 */
+
+    /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
+    -settings-heading: #fafafa;       /* group headings on -background: 19.0:1 */
+    -settings-label: #e5e5e5;         /* row labels, RAM summary on -card: 14.2:1 */
+    -settings-muted: #b4b4b4;         /* inactive segments, KB/s, RAM scale on -input / -card: 8.7:1 */
+    -settings-divider: #2e2e2e;       /* row separators inside the cards */
+    -ram-filled: #e5e5e5;             /* RAM segment: selected (14.2:1 on -card) */
+    -ram-filled-hover: #fafafa;
+    -switch-on: #e5e5e5;              /* switch on: track (14.2:1 on -card) */
+    -switch-on-hover: #fafafa;
+    -ram-free: #666666;               /* RAM segment: available, not selected (3.1:1 on -card) */
+    -ram-reserve: #3a3a3a;            /* RAM segment: system reserve, outline only */
+    -switch-off-knob: #a3a3a3;        /* switch off: knob (7.1:1 on -input) */
+    -switch-off-border: #666666;      /* switch off: track ring (3.1:1 on -card) */
+    -segment-selected: #e5e5e5;       /* selected segment fill under -primary-foreground: 14.2:1 */
 }
 
 /* shadcn radius-md (0.625rem - 2px = 8px). JavaFX has no size variables, so it is a selector group. */

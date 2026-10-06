@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import dev.launcherfork.ui.components.RamBar?>
+<?import dev.launcherfork.ui.components.RamScale?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
@@ -12,7 +13,8 @@
   НАСТРОЙКИ as active). One tidy list: small Bebas group labels, each over a subtle card (.card) whose rows all look
   the same: label left, control right, 36 px, thin separators between rows; no wrapping labels (long wording in
   tooltips).
-    ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" + the segmented RAM bar (like the original launcher).
+    ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" + the segmented RAM bar (like the original launcher) + min / max
+                        captions under the selectable range (RamScale).
     ПОВЕДЕНИЕ           auto-exit and P2P as segmented controls (accent on the selected part), four switches.
     ОБНОВЛЕНИЕ | ЯЗЫК   one row each, side by side: speed limits (download / upload fields) | Русский / English.
 -->
@@ -35,6 +37,7 @@
                         <Label fx:id="ramSummary" id="ramSummary" styleClass="ram-summary" minWidth="-Infinity"/>
                     </HBox>
                     <RamBar fx:id="ramBar" id="ramBar" maxWidth="Infinity" accessibleText="%settings.ram"/>
+                    <RamScale fx:id="ramScale" id="ramScale" maxWidth="Infinity"/>
                 </VBox>
             </VBox>
 

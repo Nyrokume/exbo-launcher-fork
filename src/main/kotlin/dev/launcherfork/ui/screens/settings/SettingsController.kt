@@ -6,6 +6,7 @@ import dev.launcherfork.domain.P2pMode
 import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.RamBar
+import dev.launcherfork.ui.components.RamScale
 import javafx.fxml.FXML
 import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
@@ -47,6 +48,7 @@ class SettingsController(private val ctx: UiContext) {
 
     @FXML lateinit var ramBar: RamBar
     @FXML lateinit var ramSummary: Label
+    @FXML lateinit var ramScale: RamScale
     @FXML lateinit var exitGroup: ToggleGroup
     @FXML lateinit var exitOnStart: RadioButton
     @FXML lateinit var exitOnGameExit: RadioButton
@@ -113,8 +115,8 @@ class SettingsController(private val ctx: UiContext) {
     /**
      * RAM bar (segmented like the original launcher): one segment per GB of the computer's memory, value = stored MB
      * (or the legacy 0..1 fraction) rounded to whole GB and clamped to [RamOptions.MIN_GB]..[RamOptions.maxGb]. The
-     * line under it, "Выделено: N ГБ из M ГБ", follows the bar's value; the recommended value is in the tooltip. A move
-     * is stored as MB and drops the legacy fraction.
+     * line above it, "Выделено: N ГБ из M ГБ", follows the bar's value; the captions under it ([RamScale]) name the min
+     * and max; the recommended value is in the tooltip. A move is stored as MB and drops the legacy fraction.
      */
     private fun bindRam(s: LauncherSettings) {
         val total = totalRamMb
@@ -128,6 +130,9 @@ class SettingsController(private val ctx: UiContext) {
             recommendedGb = RamOptions.recommended(total),
             value = RamOptions.selectedGb(s, total),
         )
+        // the selectable range under the bar: «2 ГБ» under the first, «14 ГБ» under the last reachable segment
+        ramScale.setCaptions(fmt(ramBar.minGb), fmt(ramBar.maxGb))
+        ramScale.bar = ramBar
         val hint = ctx.t("settings.ram.hint", fmt(ramBar.recommendedGb))
         ramBar.accessibleHelp = hint
         Tooltip.install(ramBar, Tooltip(hint))
