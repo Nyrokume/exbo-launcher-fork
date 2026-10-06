@@ -76,7 +76,7 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         }
         fields.forEach { f -> f.textProperty().addListener { _, _, _ -> fields.forEach { it.pseudoClassStateChanged(ERROR, false) } } }
         listOf(errorFirst, errorSecond).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
-        // as on the site: the cursor starts in the first empty field, not on the Google tile
+        // as on the site: the cursor starts in the first empty field, not on a social tile
         loginField.sceneProperty().addListener { _, _, scene ->
             if (scene != null) javafx.application.Platform.runLater {
                 (if (loginField.text.isNullOrEmpty()) loginField else passwordField).requestFocus()
@@ -110,7 +110,6 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     @FXML fun onRegister() = showError(ctx.t("fork.not_available"))
     @FXML fun onRestore() = showError(ctx.t("fork.not_available"))
     @FXML fun onEnterSteam() = showError(ctx.t("fork.not_available"))
-    @FXML fun onEnterGoogle() = showError(ctx.t("fork.not_available"))
     @FXML fun onEnterEpic() = showError(ctx.t("fork.not_available"))
 
     private companion object {

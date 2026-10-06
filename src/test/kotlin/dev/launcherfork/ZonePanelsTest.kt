@@ -92,6 +92,29 @@ class ZonePanelsTest {
     }
 
     @Test
+    fun socialTilesAreSteamAndEpicOnly() = FxTestSupport.onFx {
+        // Google auth is not supported: only Steam and Epic Games tiles, left-aligned 54x54 with 12 px spacing
+        val panel = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml")
+        val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
+        dev.launcherfork.theme.Theme.apply(scene, "ru")
+        val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+        if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+        scene.root.applyCss(); scene.root.layout()
+        val tiles = scene.root.lookupAll(".zone-social").map { it as javafx.scene.control.Button }
+        assertEquals(listOf("Steam", "Epic Games"), tiles.map { it.accessibleText })
+        assertTrue(scene.root.lookup("#zoneGoogle") == null, "Google tile is back")
+        assertTrue(scene.root.lookupAll(".icon-google").isEmpty())
+        // Tab order: Steam -> Epic (document order, both traversable), Steam is the controller's enterSteamButton
+        assertTrue(tiles[0] === panel.controller.enterSteamButton)
+        assertTrue(tiles.all { it.isFocusTraversable })
+        val row = tiles[0].parent as javafx.scene.layout.HBox
+        assertEquals(tiles, row.children.toList())
+        tiles.forEach { assertEquals(54.0, it.width, 0.5); assertEquals(54.0, it.height, 0.5) }
+        assertEquals(0.0, tiles[0].layoutX - row.padding.left, 0.5)
+        assertEquals(54.0 + 12.0, tiles[1].layoutX - tiles[0].layoutX, 0.5)
+    }
+
+    @Test
     fun legacyLoginKeepsBrightnessHover() = FxTestSupport.onFx {
         // initial_auth.fxml has no cssHover flag: no disable binding, legacy behaviour untouched
         val c = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "initial_auth.fxml").controller
