@@ -215,7 +215,7 @@
     -fx-background-color: -sidebar;
     -fx-border-color: transparent -divider transparent transparent;
     -fx-border-width: 0 1 0 0;
-    -fx-padding: 0 0 20 0;
+    -fx-padding: 0 0 20 0; /* = status bar bottomAnchor (main.fxml): НАСТРОЙКИ and the status row share one line */
 }
 .sidebar-logo { -fx-padding: 34 0 8 40; }
 .logo-path { -fx-fill: -foreground; }
@@ -254,7 +254,11 @@
     -fx-text-fill: -foreground;
     -fx-font-size: 14;
     -fx-graphic-text-gap: 14;
-    -fx-padding: 18 0 0 58;
+    /* on the bottom status row's line: 44 px like the status pill / «⋯» / ИГРАТЬ, and the sidebar's 20 px bottom
+       padding equals the status bar's bottom anchor (main.fxml), so both share the centre (SidebarSettingsAlignTest) */
+    -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
+    -fx-alignment: center-left;
+    -fx-padding: 0 0 0 58;
     -fx-cursor: hand;
 }
 .gear-icon {
