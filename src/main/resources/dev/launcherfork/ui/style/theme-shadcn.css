@@ -42,6 +42,21 @@
     -text-dim: #737373;
     -text-dim-active: #a1a1a1;
     -text-link: #a1a1a1;
+
+    -titlebar: #0a0a0a;
+    -titlebar-foreground: #a1a1a1;
+    -window-close: #a1a1a1;
+    -window-close-hover: #ff6467;
+    -sidebar: #0a0a0a;
+    -divider: rgba(255, 255, 255, 0.10);
+    -divider-light: rgba(255, 255, 255, 0.10);
+    -heading-rule: #737373;
+    -segment-off: #262626;
+    -track: #262626;
+    -icon: #a1a1a1;
+    -primary-hover: #fafafa;
+    -input: #171717;
+    -scrim: rgba(0, 0, 0, 0.60);
 }
 
 /* shadcn radius-md (0.625rem - 2px = 8px). JavaFX has no size variables, so it is a selector group. */

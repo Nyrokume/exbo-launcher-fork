@@ -71,10 +71,28 @@ object Theme {
 
     fun stylesheet(name: String): String = resource("style/$name").toExternalForm()
 
-    /** theme.css must be on the Scene so that .root defines the color tokens for every subtree. */
+    /** Oswald (headings) + Roboto (body) for the "zone" theme, SIL OFL 1.1. Registered once, on first use. */
+    private val ZONE_FONT_FILES = listOf(
+        "Oswald-Regular.ttf", "Oswald-Medium.ttf", "Oswald-SemiBold.ttf",
+        "Roboto-Light.ttf", "Roboto-Regular.ttf", "Roboto-Medium.ttf",
+    )
+    val zoneFonts: List<String> by lazy {
+        ZONE_FONT_FILES.mapNotNull { file ->
+            Theme::class.java.getResourceAsStream(STYLE_ROOT + "font/" + file)?.use { Font.loadFont(it, 12.0)?.family }
+        }
+    }
+
+    /**
+     * theme.css must be on the Scene so that .root defines the color tokens for every subtree.
+     * Optional theme overrides (-Dlauncher.theme=shadcn|zone) come right after it.
+     */
     fun apply(scene: Scene, lang: String) {
         val sheets = mutableListOf(stylesheet("theme.css"))
         if (themeName == "shadcn") sheets += stylesheet("theme-shadcn.css")
+        if (themeName == "zone") {
+            zoneFonts // fonts must be registered before the stylesheet names them
+            sheets += stylesheet("theme-zone.css")
+        }
         sheets += stylesheet(if (lang == "en") "lang_en.css" else "lang_ru.css")
         scene.stylesheets.setAll(sheets)
     }

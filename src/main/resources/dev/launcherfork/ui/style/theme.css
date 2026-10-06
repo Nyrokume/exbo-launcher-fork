@@ -46,6 +46,22 @@
     -text-link: #5f5f62;             /* header links */
     -transparent: transparent;
 
+    /* ---- extra tokens shared with theme-zone.css (new adaptive layout) ---- */
+    -titlebar: #191919;
+    -titlebar-foreground: #b1b1b1;
+    -window-close: #b1b1b1;
+    -window-close-hover: #ae171c;
+    -sidebar: #191919;
+    -divider: #2b2b2b;
+    -divider-light: rgba(255, 255, 255, 0.10);
+    -heading-rule: #1c4a61;
+    -segment-off: #414141;
+    -track: #2b2b2b;
+    -icon: #949494;
+    -primary-hover: #25607d;
+    -input: #191919;
+    -scrim: rgba(0, 0, 0, 0.55);
+
     /* body font: defined once. Manrope Light (OFL) replaces the original commercial "Circe Light". */
     -fx-font-family: "Manrope Light";
     -fx-font-size: 12;

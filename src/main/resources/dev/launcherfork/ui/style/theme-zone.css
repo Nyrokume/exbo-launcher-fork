@@ -1,0 +1,87 @@
+/*
+ * theme-zone.css - "zone" theme, loaded AFTER theme.css when -Dlauncher.theme=zone.
+ * Dark, flat, red-accented look of the STALCRAFT launcher / in-game UI references.
+ * Only tokens + font families live here; component styles reference the tokens (see docs/design/STYLE-ZONE.md).
+ * Colors were sampled from the reference screenshots (1598x1000).
+ */
+
+.root {
+    /* ---- shared token names (same as theme.css) ---- */
+    -background: #0e0e0e;                 /* window / sidebar fill */
+    -foreground: #ffffff;                 /* headings, primary text */
+    -card: rgba(16, 16, 16, 0.82);        /* translucent dark panel: news cards, popups, tooltips */
+    -card-foreground: #e6e6e6;
+    -popover: rgba(14, 14, 14, 0.94);     /* context menu, tooltip */
+    -popover-foreground: #e6e6e6;
+    -primary: #e93046;                    /* accent red: filled button, active segment, radio dot, indicator */
+    -primary-foreground: #ffffff;
+    -secondary: #1a1a19;                  /* outlined (bracket) button fill */
+    -secondary-foreground: #ffffff;
+    -muted: #1b1b1b;                      /* input fill */
+    -muted-foreground: #5e5e5e;           /* units, hints, status text, header links */
+    -accent: rgba(255, 255, 255, 0.06);   /* hover fill */
+    -accent-foreground: #ffffff;
+    -border: #353535;                     /* inactive segments, radio ring, panel border */
+    -ring: #e93046;                       /* focus: input underline */
+    -destructive: #e93046;
+    -destructive-border: rgba(233, 48, 70, 0.40);
+    -input-foreground: #ffffff;
+    -placeholder: #5e5e5e;
+    -overlay: rgba(0, 0, 0, 0.80);
+    -overlay-light: rgba(0, 0, 0, 0.40);
+    -overlay-solid: #000000;
+    -shadow: rgba(0, 0, 0, 0.60);
+    -shadow-inner: rgba(0, 0, 0, 0.40);
+
+    -text-strong: #ffffff;
+    -text-description: #e6e6e6;
+    -text-label: #ffffff;
+    -text-status: #4f4f4f;
+    -text-nav: #ffffff;
+    -text-dim: #5e5e5e;
+    -text-dim-active: #8e8e8e;
+    -text-link: #656565;
+    -transparent: transparent;
+
+    /* ---- extra tokens (also defined in theme.css / theme-shadcn.css) ---- */
+    -titlebar: #0b0b0b;                   /* window title bar strip */
+    -titlebar-foreground: #ffffff;        /* minimize / maximize glyphs */
+    -window-close: #d83e3e;               /* close glyph (red even at rest) */
+    -window-close-hover: #ff4a4a;
+    -sidebar: #0f0f0f;
+    -divider: #1a1a19;                    /* sidebar | content separator */
+    -divider-light: rgba(255, 255, 255, 0.12); /* thin light dividers (in-game panels) */
+    -heading-rule: #ffffff;               /* section header underline, fades to transparent */
+    -segment-off: #353535;                /* inactive RAM segment */
+    -track: #2d2d2c;                      /* progress bar track, tool button border */
+    -icon: #8e8e8e;                       /* small icon buttons (tools) */
+    -primary-hover: #ff3f56;
+    -input: #1b1b1b;                      /* filled input (auth) */
+    -scrim: rgba(0, 0, 0, 0.55);          /* dim behind overlay panels */
+
+    /* body font: Roboto (SIL OFL 1.1) */
+    -fx-font-family: "Roboto";
+    -fx-font-size: 13;
+}
+
+/* Headings / wordmark: Oswald (SIL OFL 1.1, Cyrillic). Replaces the commercial "Europe" in this theme. */
+.font-display {
+    -fx-font-family: "Oswald";
+}
+.font-display-strong {
+    -fx-font-family: "Oswald SemiBold";
+}
+.font-bold {
+    -fx-font-family: "Roboto Medium";
+    -fx-font-weight: normal;
+}
+.font-light {
+    -fx-font-family: "Roboto Light";
+}
+
+/* Flat: radius 0 everywhere (same selector group as theme.css). */
+.button, .text-field, .progress-bar, .progress-bar > .bar, .progress-bar > .track,
+.scroll-bar .thumb, .check-box > .box, .context-button {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
