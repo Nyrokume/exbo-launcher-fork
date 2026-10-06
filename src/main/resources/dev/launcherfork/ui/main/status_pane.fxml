@@ -2,10 +2,15 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 
-<!-- Bottom bar: status text + progress (stretches), tools button, bracketed Play/Download button. -->
-<HBox fx:id="defaultStatusPane" id="statusBar" styleClass="status-bar" alignment="BOTTOM_LEFT" spacing="15" pickOnBounds="false"
+<!--
+  Bottom bar: status text + progress (stretches), the game-actions button (square, as tall as ИГРАТЬ, "more" glyph)
+  and the bracketed Play/Download button. The game-actions dropdown (main/game_actions.fxml) is an UNMANAGED child
+  of this row: it floats above the button (StatusPaneController.placeActionsMenu) and never moves the row.
+-->
+<HBox fx:id="defaultStatusPane" id="statusBar" styleClass="status-bar" alignment="BOTTOM_LEFT" spacing="12" pickOnBounds="false"
       stylesheets="@../style/layout.css"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.screens.main.StatusPaneController">
@@ -13,8 +18,14 @@
         <Text fx:id="downloadingStatus" id="playStatus" styleClass="play-status" text="status"/>
         <ProgressBar fx:id="progressBar" id="playProgress" styleClass="play-progress,zone-radius-sm" maxWidth="Infinity" progress="0.0"/>
     </VBox>
-    <Button fx:id="clientSettingsButton" id="toolsButton" styleClass="tools-button,tile,zone-radius-sm" mnemonicParsing="false" focusTraversable="false">
-        <graphic><Region styleClass="tools-icon"/></graphic>
+    <Button fx:id="gameActionsButton" id="gameActionsButton" styleClass="game-actions-button,tile,zone-radius-sm" mnemonicParsing="false"
+            accessibleText="%main.actions.button">
+        <graphic>
+            <!-- three dots ("more"), 18x4 in a 44x44 tile -->
+            <SVGPath fx:id="gameActionsGlyph" styleClass="game-actions-glyph"
+                     content="M2,0 A2,2 0 1,1 2,4 A2,2 0 1,1 2,0 Z M9,0 A2,2 0 1,1 9,4 A2,2 0 1,1 9,0 Z M16,0 A2,2 0 1,1 16,4 A2,2 0 1,1 16,0 Z"/>
+        </graphic>
     </Button>
     <Button fx:id="downloadButton" id="playButton" styleClass="play-button,btn-primary,zone-caps,zone-radius-sm" mnemonicParsing="false" text="BUTTON"/>
+    <fx:include fx:id="gameActions" source="game_actions.fxml"/>
 </HBox>

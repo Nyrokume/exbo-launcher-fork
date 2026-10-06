@@ -90,7 +90,7 @@ src/main/kotlin/dev/launcherfork/
    ├─ Messages.kt       AuthError / UpdatePhase -> ключи строк (домен ключей не знает)
    ├─ Disposable.kt     контроллер экрана освобождает таймеры/слушатели при уходе с экрана
    ├─ state/            ClientStateStore: состояния клиента Download/Pause/Continue/Play/Exit (на сессию)
-   ├─ components/       WindowChrome (WindowFrame: drag/maximize/resize/центрирование, ResizeEdge), RamSelector (RAM), CodeInput (ячейки кода TOTP),
+   ├─ components/       WindowChrome (WindowFrame: drag/maximize/resize/центрирование, ResizeEdge), RamBar (шкала RAM), ActionGlyphs (иконки меню действий с игрой), CodeInput (ячейки кода TOTP),
    │                    LogoMark (вектор EXBO из exbo-logo.svg), InputBlock (блок мыши/клавиатуры под диалогом),
    │                    Effects, ServerEntryController (пункт игры в колонке)
    └─ screens/
@@ -99,7 +99,7 @@ src/main/kotlin/dev/launcherfork/
       ├─ update/        LauncherUpdateController     (update.fxml)
       ├─ auth/          InitialAuthController, MailAuthController (initial_auth.fxml, mail_auth.fxml)
       ├─ main/          MainController (main.fxml) + по контроллеру на каждую fx:include-область:
-      │                 ServersList, Profile, Header, StatusPane, ClientSettings,
+      │                 ServersList, Profile, Header, StatusPane, GameActions,
       │                 modals/ (10 модальных слоёв)
       └─ settings/      SettingsController (статичный settings.fxml, привязан к SettingsStore)
 
@@ -127,7 +127,7 @@ src/main/resources/dev/launcherfork/
    после паузы и повторного старта) игнорируются. Исключения из блокирующих вызовов (`background()` в
    `ui/components/Fx.kt`) приходят в UI как `Result.failure`: форма разблокируется и показывает ошибку сервера.
 2. **Один контроллер на один FXML.** Гигантский `main.fxml` оригинала (132 узла, `MainController` на 2000 строк
-   и ~100 полей) разбит на `fx:include`: `main/status_pane.fxml`, `servers_list.fxml`, `client_settings.fxml`,
+   и ~100 полей) разбит на `fx:include`: `main/status_pane.fxml`, `main/game_actions.fxml`, `servers_list.fxml`,
    `header.fxml`, `profile.fxml` и `main/modals/*.fxml`. У каждого файла свой
    контроллер. `MainController` только координирует области (хром окна теперь в `window.fxml`).
    Корни include по-прежнему носят исходные `fx:id` (`defaultStatusPane`, `logoutPane`…).
@@ -176,7 +176,10 @@ src/main/resources/dev/launcherfork/
      фиксированного размера заполняет `panelHost` 460×588.
    - `OverlayNavigatorTest`: под диалогом (overlay и модальные слои) ничто не получает фокус, контент отключён и
      закэширован, фокус в диалоге; логотип — 4 `SVGPath` с even-odd, равномерный масштаб, заливка из токена.
-     `RamSelector` — чипы в ГБ.
+   - `SettingsScreenTest`: настройки помещаются без прокрутки при 900×580 и при размере по умолчанию во всех темах
+     и языках (`localToScene`), заливка шкалы RAM = N/M и совпадает с подписью, клавиатура и мышь меняют значение
+     с шагом 1 ГБ в границах и сохраняют его. `GameActionsMenuTest`: меню плавает и не сдвигает ИГРАТЬ, пункты по
+     состоянию клиента, подтверждение (отмена = ничего не происходит), папка через `FolderOpener`.
    - `ClientStateStore` (скачивание, пауза, продолжение, готово, запуск, «выйти», поздние колбэки после паузы
      и рестарта, shutdown) на ручных фейках, без таймеров.
    - `background()`: исключение доходит до UI как ошибка; окна авторизации разблокируются и показывают
@@ -236,8 +239,17 @@ src/main/resources/dev/launcherfork/
 - **`-fx-effect: dropshadow(...), innershadow(...)`** на корне `main.fxml` в JavaFX 21 не парсится (два эффекта
   через запятую). Оставлен только `dropshadow`. Внутри прозрачного окна 886×550 тень всё равно обрезается.
 - **`NumberTextField`** (свой класс оригинала в `mail_auth.fxml`) заменён на `TextField` + `TextFormatter`.
-- **RAM**: вместо слайдера оригинала — чипы `RamSelector` с реальными значениями в ГБ (2…16, не больше
-  памяти компьютера − 2 ГБ, рекомендуемое отмечено), подпись «Выделено: X ГБ из Y ГБ» (`domain/RamOptions`).
+- **RAM**: заполняемая шкала `RamBar` вместо слайдера оригинала. Шкала = вся память компьютера, заливка =
+  выделенное («Выделено: 6 ГБ из 16 ГБ»), шаг ровно 1 ГБ, границы от 2 ГБ до «память − 2 ГБ» (резерв системы
+  заштрихован), рекомендуемое отмечено (`domain/RamOptions`). Мышь (клик / перетаскивание) и клавиши
+  ←/→/↑/↓, PgUp/PgDn, Home/End.
+- **Страница настроек** собрана заново и помещается на один экран при минимальном окне 900×580 во всех темах и
+  обоих языках: заголовок НАСТРОЙКИ в строке профиля, карточка ИГРА на всю ширину, ОБНОВЛЕНИЕ | ПРОЧЕЕ в две колонки.
+- **Действия с игрой**: квадратная кнопка «⋯» слева от ИГРАТЬ открывает плавающее меню (Проверить файлы, Открыть
+  папку игры, Настройки игры, Переустановить, Удалить игру). Переустановка и удаление (и проверка запущенной игры)
+  сначала спрашивают подтверждение, пока операция идёт, ИГРАТЬ неактивна. Операции — моки `MockUpdateService`.
+  Папка открывается через отдельный сервис `FolderOpener` (не через `LinkOpener`) и только папка игры из настроек
+  (`domain/GameFolders`).
 - Переключатель страниц «главная/новости» (`pagesPane`), соцсети и описание сервера в отдельной панели убраны.
   Hero и новости редизайна тоже убраны (вместе с `NewsRepository`/`NewsItem` и моками новостей): центр
   главного окна будет спроектирован заново.
@@ -248,7 +260,8 @@ src/main/resources/dev/launcherfork/
 
 Снимки Scene активного окна, сделанные автотуром под Xvfb (`ScreenshotTour`), одинаковые для всех тем:
 `01_update_window`, `02_auth_window`, `03_auth_error` (окно до входа, 460×620), `04_main`, `05_profile_menu`,
-`06_settings_game`, `07_settings_updates`, `08_settings_others`, `09_running`, `10_tools_menu`,
+`06_settings` (настройки на один экран), `07_settings_min_size` (900×580), `08_game_actions` (меню действий с
+игрой), `08b_game_actions_delete_confirm`, `09_running`, `10_verifying` (проверка файлов, ИГРАТЬ неактивна),
 `11_resized_1366x800`, `12_settings_en`, `13_auth_after_switch_account`, затем снова окно входа (ru):
 `14_age_gate`, `15_age_gate_too_young`, `16_register`, `17_register_error`, `18_registered_login`,
 `19_totp_error`. После `05_profile_menu` есть `05b_logout_confirm` (подтверждение «Выход из аккаунта»). После него `05c_community_menu` (выпадающее меню «Сообщества» со ссылками на соцсети). Единственная игра STALZONE установлена,

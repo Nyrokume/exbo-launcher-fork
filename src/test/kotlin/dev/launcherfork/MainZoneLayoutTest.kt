@@ -53,8 +53,8 @@ class MainZoneLayoutTest {
         val main = nav.mainController!!
         assertTrue(main.centerPane.children.isEmpty(), "centre slot must stay empty: ${main.centerPane.children}")
         assertTrue(main.centerPane.isVisible)
-        // home layer: centre slot, status bar and the (hidden) tools popup; no hero / news / article
-        assertEquals(3, main.homePane.children.size, "${main.homePane.children}")
+        // home layer: centre slot and status bar (the game-actions dropdown floats inside the status bar); no hero / news / article
+        assertEquals(2, main.homePane.children.size, "${main.homePane.children}")
         listOf("#hero", "#news", "#article").forEach { assertTrue(main.root.lookup(it) == null, "$it is still in the main window") }
         // centre slot sits between the top bar and the status bar
         val centre = main.centerPane.sceneBounds()

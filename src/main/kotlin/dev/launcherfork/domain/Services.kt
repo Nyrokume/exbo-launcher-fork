@@ -72,6 +72,12 @@ interface UpdateService {
 
     /** Progress kept after a pause, so "Continue" resumes from it (0 if none). */
     fun pausedProgress(server: Server): Double
+
+    /**
+     * Verify / reinstall / delete the client of [server] ([ClientOperation]); progress through [listener], then
+     * onFinished. After DELETE [isInstalled] is false, after REINSTALL / VERIFY it is true.
+     */
+    fun runOperation(server: Server, operation: ClientOperation, listener: ProgressListener): Cancellable
 }
 
 /** Starts the game client. Cancelling the returned handle stops ("kills") the game. */
@@ -92,6 +98,15 @@ fun interface LinkOpener {
     fun open(url: String)
 }
 
+/**
+ * Opens a local folder in the OS file manager (game-actions menu «Открыть папку игры»). Separate from [LinkOpener],
+ * which only takes allowlisted https URLs and must keep refusing file: URLs. Callers pass a directory computed by
+ * [GameFolders] from the settings, never a string typed or shown in the UI.
+ */
+fun interface FolderOpener {
+    fun open(dir: java.nio.file.Path)
+}
+
 /** Everything the UI is allowed to depend on. Built once in app/AppContext. */
 data class Services(
     val auth: AuthService,
@@ -101,4 +116,5 @@ data class Services(
     val settings: SettingsStore,
     val system: SystemInfo,
     val links: LinkOpener,
+    val folders: FolderOpener,
 )

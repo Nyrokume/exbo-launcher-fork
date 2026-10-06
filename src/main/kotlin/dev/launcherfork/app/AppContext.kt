@@ -6,6 +6,7 @@ import dev.launcherfork.data.mock.MockGameLauncher
 import dev.launcherfork.data.mock.MockServerRepository
 import dev.launcherfork.data.mock.MockSystemInfo
 import dev.launcherfork.data.mock.MockUpdateService
+import dev.launcherfork.domain.FolderOpener
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.Services
@@ -33,6 +34,8 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
             devMode: Boolean = false,
             /** LauncherApp passes the real browser opener (HostServices); tests pass a recording fake. */
             links: LinkOpener = LinkOpener { url -> System.err.println("[launcher-fork] open link (no browser here): $url") },
+            /** LauncherApp passes the real file-manager opener (HostServices); tests pass a recording fake. */
+            folders: FolderOpener = FolderOpener { dir -> System.err.println("[launcher-fork] open folder (no file manager here): $dir") },
             /** > 0: the mock online count drifts every [onlineTickMs] ms (live app); 0 = fixed 1284 (tests, tour). */
             onlineTickMs: Long = 0,
         ): AppContext = AppContext(
@@ -44,6 +47,7 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
                 settings = InMemorySettingsStore(LauncherSettings(language = language)),
                 system = MockSystemInfo(),
                 links = links,
+                folders = folders,
             ),
             devMode,
         )

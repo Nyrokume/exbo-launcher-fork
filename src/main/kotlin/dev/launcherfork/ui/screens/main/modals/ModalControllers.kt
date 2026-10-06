@@ -173,7 +173,10 @@ class LoadingModalController(ctx: UiContext) : ModalController(ctx) {
     override val layer: Node get() = loadingPane
 }
 
-/** main/modals/deletion_pane.fxml: flow layout like logout; Esc = cancel, focus starts on Cancel ([deletionNo]). */
+/**
+ * main/modals/deletion_pane.fxml: flow layout like logout; Esc = cancel, focus starts on Cancel ([deletionNo]).
+ * Also the confirmation of every destructive game action ([ask]: reinstall, delete, verify of a running game).
+ */
 class DeletionModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML lateinit var deletionPane: AnchorPane
     @FXML lateinit var deletionCard: VBox
@@ -185,6 +188,21 @@ class DeletionModalController(ctx: UiContext) : ModalController(ctx) {
     override val initialFocus: Node get() = deletionNo
 
     @FXML fun initialize() = wire(deletionYes, deletionNo)
+
+    /**
+     * Shows the confirmation with these texts; [action] runs only on the red confirm button. Cancel / Esc run nothing
+     * (the previous action is dropped, so a later confirm can never run a stale one).
+     */
+    fun ask(title: String, text: String, confirm: String, cancel: String, action: () -> Unit) {
+        val locale = java.util.Locale.forLanguageTag(ctx.lang)
+        deletionTitle.text = title
+        deletionDesc.text = text
+        deletionYes.text = confirm.uppercase(locale)
+        deletionNo.text = cancel.uppercase(locale)
+        onConfirm = { onConfirm = {}; action() }
+        onCancel = { onConfirm = {} }
+        show()
+    }
 }
 
 /** main/modals/install_pane.fxml */
