@@ -1,14 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import dev.launcherfork.ui.components.RamSelector?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<!-- Settings screen (original settings.fxml). Categories and entries are built by SettingsController. -->
-<AnchorPane fx:id="settingsRoot" prefHeight="400.0" prefWidth="544.0" styleClass="settings-root" stylesheets="@style/common.css,@style/settings.css"
+<!--
+  Settings page (static FXML, bound to SettingsStore by SettingsController). Sections ИГРА / ОБНОВЛЕНИЕ / ПРОЧЕЕ:
+  display-font (zone: Bebas Neue) heading + fading rule, then one card per section. Inside a card every setting is a
+  .settings-block: title (+ muted hint) on top, its control below, blocks split by thin dividers; titles, hints and
+  controls share one left edge. Radios of one setting sit in a row (FlowPane: wraps for long English labels).
+  RAM: labelled chips in GB (RamSelector) with "Выделено: X ГБ из Y ГБ" on the right of the title.
+  Scrolls with the wheel (no visible bar, as in the reference).
+-->
+<AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.settings.SettingsController">
-    <children>
-        <ScrollPane fx:id="scroll" pannable="true" prefHeight="329.0" maxWidth="539.0" prefWidth="544.0" styleClass="settings-scroll"
-                    hbarPolicy="NEVER" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="56.0" />
-    </children>
+    <fx:define>
+        <ToggleGroup fx:id="exitGroup"/>
+        <ToggleGroup fx:id="p2pGroup"/>
+        <ToggleGroup fx:id="languageGroup"/>
+    </fx:define>
+    <ScrollPane fx:id="scroll" id="settingsScroll" styleClass="settings-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER"
+                AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <VBox fx:id="settingsContent" styleClass="settings-content">
+            <!-- ИГРА -->
+            <VBox styleClass="settings-section">
+                <Label fx:id="gameHeading" styleClass="settings-heading,font-display" text="%settings.heading.game" minHeight="-Infinity"/>
+                <Region styleClass="heading-rule"/>
+                <VBox styleClass="settings-card,card,zone-radius-md">
+                    <VBox styleClass="settings-block">
+                        <VBox styleClass="settings-titles">
+                            <HBox styleClass="settings-block-head" alignment="BASELINE_LEFT">
+                                <Label styleClass="settings-label" text="%settings.ram" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                                <Label fx:id="ramSummary" id="ramSummary" styleClass="ram-summary" minWidth="-Infinity"/>
+                            </HBox>
+                            <Label styleClass="settings-hint" text="%settings.ram.hint" wrapText="true" minHeight="-Infinity"/>
+                        </VBox>
+                        <RamSelector fx:id="ramSelector" id="ramSelector"/>
+                    </VBox>
+                    <Region styleClass="settings-row-divider"/>
+                    <VBox styleClass="settings-block">
+                        <Label styleClass="settings-label" text="%settings.exit"/>
+                        <FlowPane styleClass="radio-row">
+                            <RadioButton fx:id="exitOnStart" styleClass="settings-radio" text="%settings.exit.game_start" toggleGroup="$exitGroup"/>
+                            <RadioButton fx:id="exitOnGameExit" styleClass="settings-radio" text="%settings.exit.game_exit" toggleGroup="$exitGroup"/>
+                            <RadioButton fx:id="exitNever" styleClass="settings-radio" text="%settings.exit.never" toggleGroup="$exitGroup"/>
+                        </FlowPane>
+                    </VBox>
+                </VBox>
+            </VBox>
+
+            <!-- ОБНОВЛЕНИЕ -->
+            <VBox styleClass="settings-section">
+                <Label fx:id="updatesHeading" styleClass="settings-heading,font-display" text="%settings.heading.updates" minHeight="-Infinity"/>
+                <Region styleClass="heading-rule"/>
+                <VBox styleClass="settings-card,card,zone-radius-md">
+                    <VBox styleClass="settings-block">
+                        <VBox styleClass="settings-titles">
+                            <Label styleClass="settings-label" text="%settings.speed_limit"/>
+                            <Label styleClass="settings-hint" text="%settings.speed_limit.note" wrapText="true" minHeight="-Infinity"/>
+                        </VBox>
+                        <HBox styleClass="limit-row">
+                            <VBox styleClass="limit-group">
+                                <Label styleClass="limit-caption" text="%settings.limit.download"/>
+                                <HBox styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
+                                    <Region styleClass="icon-download"/>
+                                    <TextField fx:id="downloadLimitField" id="downloadLimit" styleClass="limit-input" prefColumnCount="5" HBox.hgrow="ALWAYS"/>
+                                    <Label styleClass="limit-unit" text="%settings.unit.kbs"/>
+                                </HBox>
+                            </VBox>
+                            <VBox styleClass="limit-group">
+                                <Label styleClass="limit-caption" text="%settings.limit.upload"/>
+                                <HBox styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
+                                    <Region styleClass="icon-upload"/>
+                                    <TextField fx:id="uploadLimitField" id="uploadLimit" styleClass="limit-input" prefColumnCount="5" HBox.hgrow="ALWAYS"/>
+                                    <Label styleClass="limit-unit" text="%settings.unit.kbs"/>
+                                </HBox>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                    <Region styleClass="settings-row-divider"/>
+                    <VBox styleClass="settings-block">
+                        <Label styleClass="settings-label" text="%settings.p2p"/>
+                        <FlowPane styleClass="radio-row">
+                            <RadioButton fx:id="p2pAlways" styleClass="settings-radio" text="%settings.p2p.always" toggleGroup="$p2pGroup"/>
+                            <RadioButton fx:id="p2pNotMobile" styleClass="settings-radio" text="%settings.p2p.not_mobile" toggleGroup="$p2pGroup"/>
+                            <RadioButton fx:id="p2pNever" styleClass="settings-radio" text="%settings.p2p.never" toggleGroup="$p2pGroup"/>
+                        </FlowPane>
+                    </VBox>
+                    <Region styleClass="settings-row-divider"/>
+                    <VBox styleClass="settings-block,settings-toggles">
+                        <HBox fx:id="defenderRow" styleClass="toggle-row" alignment="CENTER_LEFT">
+                            <Label styleClass="settings-label" text="%settings.defender" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true"/>
+                            <CheckBox fx:id="defenderToggle" styleClass="ring-toggle"/>
+                        </HBox>
+                        <HBox fx:id="startOnDownloadedRow" styleClass="toggle-row" alignment="CENTER_LEFT">
+                            <Label styleClass="settings-label" text="%settings.start_on_downloaded" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true"/>
+                            <CheckBox fx:id="startOnDownloadedToggle" styleClass="ring-toggle"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </VBox>
+
+            <!-- ПРОЧЕЕ -->
+            <VBox styleClass="settings-section">
+                <Label fx:id="othersHeading" styleClass="settings-heading,font-display" text="%settings.heading.others" minHeight="-Infinity"/>
+                <Region styleClass="heading-rule"/>
+                <VBox styleClass="settings-card,card,zone-radius-md">
+                    <VBox styleClass="settings-block,settings-toggles">
+                        <HBox fx:id="trayRow" styleClass="toggle-row" alignment="CENTER_LEFT">
+                            <Label styleClass="settings-label" text="%settings.tray" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true"/>
+                            <CheckBox fx:id="trayToggle" styleClass="ring-toggle"/>
+                        </HBox>
+                        <HBox fx:id="autostartRow" styleClass="toggle-row" alignment="CENTER_LEFT">
+                            <Label styleClass="settings-label" text="%settings.run_on_start" HBox.hgrow="ALWAYS" maxWidth="Infinity" wrapText="true"/>
+                            <CheckBox fx:id="autostartToggle" styleClass="ring-toggle"/>
+                        </HBox>
+                    </VBox>
+                    <Region styleClass="settings-row-divider"/>
+                    <VBox styleClass="settings-block">
+                        <Label styleClass="settings-label" text="%fork.settings.language"/>
+                        <FlowPane styleClass="radio-row">
+                            <RadioButton fx:id="langRu" styleClass="settings-radio" text="Русский" toggleGroup="$languageGroup"/>
+                            <RadioButton fx:id="langEn" styleClass="settings-radio" text="English" toggleGroup="$languageGroup"/>
+                        </FlowPane>
+                    </VBox>
+                </VBox>
+            </VBox>
+        </VBox>
+    </ScrollPane>
 </AnchorPane>

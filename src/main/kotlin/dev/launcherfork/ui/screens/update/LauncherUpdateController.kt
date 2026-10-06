@@ -7,6 +7,7 @@ import dev.launcherfork.domain.UpdatePhase
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.Messages
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.UpdatePanel
 import dev.launcherfork.ui.components.WindowChrome
 import dev.launcherfork.ui.components.formatBytes
 import dev.launcherfork.ui.components.fx
@@ -21,7 +22,7 @@ import javafx.scene.layout.Pane
  * update.fxml: the launcher self-update window. In the fork it only plays a fake progress
  * from [dev.launcherfork.domain.UpdateService] and then continues to [onFinished].
  */
-class LauncherUpdateController(private val ctx: UiContext) : Disposable {
+class LauncherUpdateController(private val ctx: UiContext) : Disposable, UpdatePanel {
     @FXML lateinit var root: Pane
     @FXML lateinit var statusLabel: Label
     @FXML lateinit var errorFirst: Label
@@ -44,7 +45,7 @@ class LauncherUpdateController(private val ctx: UiContext) : Disposable {
     }
 
     /** Starts the fake update; [done] runs on the FX thread. */
-    fun start(done: () -> Unit) {
+    override fun start(done: () -> Unit) {
         rollingBar.isVisible = true
         job = ctx.services.updates.checkLauncherUpdate(object : ProgressListener {
             override fun onPhase(phase: UpdatePhase) = fx {

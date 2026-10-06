@@ -11,7 +11,7 @@
     /* ---- shared token names (same as theme.css) ---- */
     -background: #0a0a0a;                     /* --black-bg-color: window / content */
     -foreground: #ece7e1;                     /* warm off-white: headings, primary text */
-    -card: rgba(26, 26, 26, 0.92);            /* #1a1a1a cards (news, panels, modals), slightly translucent */
+    -card: #181818;                           /* --card: cards (login card, panels, modals, dropdown) */
     -card-foreground: #ece7e1;
     -popover: rgba(15, 15, 15, 0.97);         /* #0f0f0f: context menu, tooltip */
     -popover-foreground: #ece7e1;
@@ -66,6 +66,10 @@
     -fill-subtle: rgba(202, 185, 166, 0.04);  /* faint fills, watermarks */
     -fill-strong: rgba(202, 185, 166, 0.12);
     -card-alt: #0f0f0f;                       /* second card shade (nested cards, sidebar items) */
+    /* stalzone.com/login card (site-ref/LOGIN.md) */
+    -card-description: #0f0f0f;               /* --card-description: lower part of the login card, dropdown rows */
+    -input-border: #2e2d2d;                   /* 1px input border (focus: -foreground) */
+    -error: #e63030;                          /* --error-color: error text and error input border */
 
     /* body font: Roboto (SIL OFL 1.1) */
     -fx-font-family: "Roboto";
@@ -73,14 +77,15 @@
 }
 
 /*
- * Headings / wordmark: Oswald (SIL OFL 1.1, Cyrillic) is the free stand-in for the site's Bebas Neue Cyrillic
- * (whose license is not clearly OFL). Regular weight keeps the tall, light Bebas look.
+ * Headings / big buttons: Bebas Neue Regular (Dharma Type 001.003, Cyrillic, SIL OFL 1.1), the font of the site's
+ * h1-h5 and ВОЙТИ / ИГРАТЬ БЕСПЛАТНО (stalzone.com CSS: font-family: var(--beb) = "Bebas Neue").
+ * JavaFX names the family "Bebas Neue Regular" (name ID 1). Only one weight is bundled.
  */
 .font-display {
-    -fx-font-family: "Oswald";
+    -fx-font-family: "Bebas Neue Regular";
 }
 .font-display-strong {
-    -fx-font-family: "Oswald SemiBold";
+    -fx-font-family: "Bebas Neue Regular";
 }
 .font-bold {
     -fx-font-family: "Roboto Medium";
@@ -118,3 +123,22 @@
 .zone-caps {
     -fx-font-family: "Roboto Medium";
 }
+
+/*
+ * Bebas Neue sizes. layout.css (shared by all themes) sizes these nodes for Europe (exbo theme) and the old zone
+ * heading font Oswald; Bebas has a lower cap height (0.70 em vs 0.81 em), so the zone theme scales them by ~1.15.
+ * Two-class selectors: they must beat the one-class rules of layout.css, which sits on the FXML parents.
+ */
+.settings-heading.font-display { -fx-font-size: 48; }
+.modal-title.font-display { -fx-font-size: 30; -fx-translate-y: -4; } /* air above the fixed modal-rule (layoutY 35) */
+/* ИГРАТЬ: like the site's big buttons (.play_free / .login: var(--beb) 24px) */
+.button.play-button {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 24;
+}
+
+/*
+ * Main window: no game artwork in the zone theme, the content area stays plain -background (.main-content in
+ * layout.css). The art regions stay in main.fxml for the other themes; CSS visibility only hides them here.
+ */
+.main-content > .game-art, .main-content > .game-art-shade { visibility: hidden; }

@@ -51,8 +51,9 @@ class ClientStateStoreTest {
     private val updates = FakeUpdates()
     private val launcher = FakeLauncher()
     private val store = ClientStateStore(updates, launcher, ui = { it() })
-    private val server = MockData.servers.first { !it.installed }
-    private val other = MockData.servers.last { it.id != server.id }
+    // the store keeps state per server id: three not-installed copies of the single mock game
+    private val server = MockData.servers.single().copy(id = "a", installed = false)
+    private val other = server.copy(id = "b")
 
     private fun state() = store.state(server).get()
     private fun progress(f: Double) = Progress(f, (f * server.clientSizeBytes).toLong(), server.clientSizeBytes, 1000)
@@ -63,7 +64,7 @@ class ClientStateStoreTest {
         updates.installed += other.id
         assertEquals(ClientState.Ready, store.state(other).get())
         updates.paused = 0.4
-        val third = MockData.servers.first { it.id != server.id && it.id != other.id }
+        val third = server.copy(id = "c", clientSizeBytes = 1_000)
         assertEquals(ClientState.Paused(0.4, third.clientSizeBytes), store.state(third).get())
     }
 

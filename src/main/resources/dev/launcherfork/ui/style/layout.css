@@ -1,0 +1,511 @@
+/*
+ * layout.css - components of the adaptive layout (window frame, main screen, settings, modals, overlay).
+ * Rules: colors = theme tokens only; no font families (theme files own them via .font-* / .zone-caps);
+ * no numeric radii (FXML uses .zone-radius-sm / .zone-radius-md, defined by the theme) except round
+ * radio / toggle / dot circles. Sizes are in px of the 1024x640 window.
+ */
+
+/* ===================== window frame ===================== */
+.app-window { -fx-background-color: -background; }
+.title-bar {
+    -fx-background-color: -titlebar;
+    -fx-border-color: transparent transparent -divider transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28;
+}
+.window-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-min-width: 40; -fx-pref-width: 40; -fx-max-width: 40;
+    -fx-min-height: 27; -fx-pref-height: 27; -fx-max-height: 27;
+    -fx-cursor: hand;
+}
+.window-button:hover { -fx-background-color: -accent; }
+.window-glyph { -fx-background-color: -titlebar-foreground; }
+.window-hide .window-glyph {
+    -fx-shape: "M0,0 H12 V1.6 H0 Z";
+    -fx-min-width: 12; -fx-pref-width: 12; -fx-max-width: 12;
+    -fx-min-height: 1.6; -fx-pref-height: 1.6; -fx-max-height: 1.6;
+    -fx-translate-y: 5;
+}
+.window-maximize .window-glyph {
+    -fx-shape: "M0,0 H11 V11 H0 Z M1.6,1.6 V9.4 H9.4 V1.6 Z";
+    -fx-min-width: 11; -fx-pref-width: 11; -fx-max-width: 11;
+    -fx-min-height: 11; -fx-pref-height: 11; -fx-max-height: 11;
+}
+.window-maximize.maximized .window-glyph {
+    -fx-shape: "M2.5,0 H11 V8.5 H9.4 V1.6 H2.5 Z M0,2.5 H8.5 V11 H0 Z M1.6,4.1 V9.4 H6.9 V4.1 Z";
+}
+.window-close .window-glyph {
+    -fx-background-color: -window-close;
+    -fx-shape: "M0,1.1 L1.1,0 L5.5,4.4 L9.9,0 L11,1.1 L6.6,5.5 L11,9.9 L9.9,11 L5.5,6.6 L1.1,11 L0,9.9 L4.4,5.5 Z";
+    -fx-min-width: 11; -fx-pref-width: 11; -fx-max-width: 11;
+    -fx-min-height: 11; -fx-pref-height: 11; -fx-max-height: 11;
+}
+.window-close:hover .window-glyph { -fx-background-color: -window-close-hover; }
+
+.content-host { -fx-background-color: -background; }
+.overlay-layer { -fx-background-color: -scrim; }
+/* content under a dialog is disabled (no mouse, no keyboard focus) but must not fade like disabled controls */
+.input-blocked *:disabled { -fx-opacity: 1; }
+
+/* ===================== pre-main window (update / auth / mail code) ===================== */
+.auth-window { -fx-background-color: -background; }
+/* 1px frame drawn ABOVE the panel (mouse transparent), so the panel can fill the host edge to edge */
+.auth-window-frame {
+    -fx-background-color: transparent;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+}
+.auth-title-bar {
+    -fx-background-color: -titlebar;
+    -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32;
+    -fx-padding: 0 0 0 16;
+}
+.auth-title-bar .window-button { -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32; -fx-min-width: 44; -fx-pref-width: 44; -fx-max-width: 44; }
+.auth-close .window-glyph { -fx-background-color: -titlebar-foreground; }
+.auth-close:hover { -fx-background-color: -window-close; }
+.auth-close:hover .window-glyph { -fx-background-color: -primary-foreground; }
+.auth-panel-host { -fx-background-color: -background; }
+
+/* ===================== profile (top-right of the main window) ===================== */
+.profile-button {
+    -fx-background-color: -tile;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 8 14 8 16;
+    -fx-cursor: hand;
+}
+.profile-button:hover, .profile-button.open { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
+.profile-name { -fx-font-size: 13; -fx-text-fill: -foreground; }
+.profile-caret {
+    -fx-shape: "M0,0 H9 L4.5,5 Z";
+    -fx-background-color: -icon;
+    -fx-min-width: 9; -fx-pref-width: 9; -fx-max-width: 9;
+    -fx-min-height: 5; -fx-pref-height: 5; -fx-max-height: 5;
+}
+.profile-button.open .profile-caret { -fx-rotate: 180; -fx-background-color: -foreground; }
+.profile-menu {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 6;
+    -fx-spacing: 2;
+    -fx-min-width: 210; -fx-pref-width: 210; -fx-max-width: 210;
+    -fx-translate-y: 6;
+    -fx-effect: dropshadow(gaussian, -shadow, 18, 0.2, 0, 4);
+}
+.profile-menu-item {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-text-fill: -foreground;
+    -fx-font-size: 13;
+    -fx-alignment: center-left;
+    -fx-padding: 9 12;
+    -fx-graphic-text-gap: 8;
+    -fx-cursor: hand;
+}
+.profile-menu-item:hover, .profile-menu-item:focused { -fx-background-color: -card-description; }
+.profile-menu-item:hover .external-arrow { -fx-background-color: -foreground; }
+.profile-menu-item.danger { -fx-text-fill: -destructive; }
+.profile-menu-rule {
+    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
+    -fx-background-color: -divider;
+}
+
+/* ===================== shared bits ===================== */
+.tile {
+    -fx-background-color: -tile;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-text-fill: -foreground;
+    -fx-cursor: hand;
+}
+.tile:hover { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
+.tile:pressed { -fx-background-color: -fill-strong; }
+.tile:disabled { -fx-opacity: 0.45; }
+
+.btn-primary {
+    -fx-background-color: -primary;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-text-fill: -primary-foreground;
+    -fx-cursor: hand;
+}
+.btn-primary:hover { -fx-background-color: -primary-hover; }
+.btn-primary:pressed { -fx-background-color: derive(-primary, -12%); }
+.btn-primary:disabled { -fx-opacity: 0.55; }
+
+.card {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+}
+
+.heading-rule {
+    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
+    -fx-pref-width: 410; -fx-max-width: 410;
+    -fx-background-color: linear-gradient(to right, -heading-rule 0%, transparent 100%);
+}
+
+.section-label { -fx-spacing: 10; }
+.section-line {
+    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
+    -fx-background-color: -divider;
+}
+.section-label-text { -fx-font-size: 11; -fx-text-fill: -placeholder; }
+
+.menu-item { -fx-text-fill: -foreground; -fx-graphic-text-gap: 8; -fx-cursor: hand; }
+
+.external-arrow {
+    -fx-shape: "M2,0 H10 V8 H8.5 V2.6 L1.1,10 L0,8.9 L7.4,1.5 H2 Z";
+    -fx-background-color: -icon;
+    -fx-min-width: 8; -fx-pref-width: 8; -fx-max-width: 8;
+    -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8;
+}
+.arrow-right {
+    -fx-shape: "M0,3.4 H11 L8.4,0.9 L9.3,0 L13.3,4 L9.3,8 L8.4,7.1 L11,4.6 H0 Z";
+    -fx-background-color: -muted-foreground;
+    -fx-min-width: 14; -fx-pref-width: 14; -fx-max-width: 14;
+    -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8;
+}
+.live-dot {
+    -fx-background-color: -primary;
+    -fx-background-radius: 4;
+    -fx-effect: dropshadow(gaussian, -destructive-border, 6, 0.3, 0, 0);
+}
+
+.scroll-pane, .scroll-pane > .viewport { -fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0; }
+.scroll-pane .corner { -fx-background-color: transparent; }
+.scroll-bar:vertical, .scroll-bar:horizontal { -fx-background-color: transparent; -fx-padding: 0 0 0 4; }
+.scroll-bar:horizontal { -fx-padding: 4 0 0 0; }
+.scroll-bar .thumb { -fx-background-color: -border; -fx-background-insets: 0; }
+.scroll-bar .thumb:hover, .scroll-bar .thumb:pressed { -fx-background-color: -border-hover; }
+.scroll-bar .track, .scroll-bar .track-background { -fx-background-color: transparent; -fx-border-color: transparent; }
+.scroll-bar .increment-button, .scroll-bar .decrement-button { -fx-background-color: transparent; -fx-padding: 0; }
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow { -fx-background-color: transparent; -fx-padding: 0; }
+
+/* ===================== sidebar ===================== */
+.sidebar {
+    -fx-background-color: -sidebar;
+    -fx-border-color: transparent -divider transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 0 0 20 0;
+}
+.sidebar-logo { -fx-padding: 34 0 8 40; }
+.logo-path { -fx-fill: -foreground; }
+.sidebar .section-label { -fx-padding: 26 24 14 24; }
+.servers-scroll, .servers-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
+
+.server-entry { -fx-background-color: transparent; -fx-cursor: hand; }
+.server-entry:hover { -fx-background-color: -accent; }
+.entry-indicator { -fx-background-color: transparent; }
+.server-entry.selected .entry-indicator { -fx-background-color: -primary; }
+.settings-mode .server-entry.selected .entry-indicator { -fx-background-color: transparent; }
+.entry-name { -fx-font-size: 15; -fx-fill: -text-dim-active; }
+.server-entry.selected .entry-name, .server-entry:hover .entry-name { -fx-fill: -foreground; }
+.entry-status { -fx-font-size: 10; -fx-fill: -text-dim; }
+.entry-percent { -fx-font-size: 11; -fx-fill: -muted-foreground; }
+.entry-progress { -fx-pref-height: 3; -fx-max-height: 3; -fx-min-height: 3; -fx-padding: 0; }
+.entry-progress > .track { -fx-background-color: -track; -fx-background-insets: 0; }
+.entry-progress > .bar { -fx-background-color: -primary; -fx-background-insets: 0; -fx-padding: 0; }
+.entry-state { -fx-background-color: transparent; }
+.entry-state.icon-download {
+    -fx-background-color: -icon;
+    -fx-shape: "M7,0 H9 V8 L11.6,5.4 L13,6.8 L8,11.8 L3,6.8 L4.4,5.4 L7,8 Z M1,10 H3 V13 H13 V10 H15 V15 H1 Z";
+}
+
+.sidebar-settings {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-text-fill: -foreground;
+    -fx-font-size: 14;
+    -fx-graphic-text-gap: 14;
+    -fx-padding: 18 0 0 58;
+    -fx-cursor: hand;
+}
+.gear-icon {
+    -fx-shape: "M17.18,7.51 L19.77,7.86 L19.77,12.14 L17.18,12.49 L16.84,13.32 L18.42,15.39 L15.39,18.42 L13.32,16.84 L12.49,17.18 L12.14,19.77 L7.86,19.77 L7.51,17.18 L6.68,16.84 L4.61,18.42 L1.58,15.39 L3.16,13.32 L2.82,12.49 L0.23,12.14 L0.23,7.86 L2.82,7.51 L3.16,6.68 L1.58,4.61 L4.61,1.58 L6.68,3.16 L7.51,2.82 L7.86,0.23 L12.14,0.23 L12.49,2.82 L13.32,3.16 L15.39,1.58 L18.42,4.61 L16.84,6.68 Z M13.6,10 A3.6,3.6 0 0,0 6.4,10 A3.6,3.6 0 0,0 13.6,10 Z";
+    -fx-background-color: -foreground;
+    -fx-min-width: 20; -fx-pref-width: 20; -fx-max-width: 20;
+    -fx-min-height: 20; -fx-pref-height: 20; -fx-max-height: 20;
+}
+.sidebar-settings:hover .gear-icon { -fx-background-color: -muted-foreground; }
+.sidebar-settings.active .gear-icon { -fx-background-color: -primary; }
+
+/* ===================== main content ===================== */
+.main-content { -fx-background-color: -background; }
+.game-art-shade {
+    -fx-background-color:
+        linear-gradient(to right, -background 0%, transparent 30%),
+        linear-gradient(to left, -background 0%, transparent 40%),
+        linear-gradient(to top, -background 0%, transparent 28%);
+}
+.settings-mode .game-art-shade {
+    -fx-background-color:
+        -scrim,
+        linear-gradient(to right, -background 0%, transparent 40%),
+        linear-gradient(to top, -background 0%, transparent 35%);
+}
+
+.header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
+.header-link:hover { -fx-text-fill: -foreground; }
+.header-link:hover .external-arrow { -fx-background-color: -foreground; }
+
+/* bottom bar */
+.play-status { -fx-font-size: 11; -fx-fill: -text-status; }
+.play-progress { -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8; -fx-padding: 0; -fx-indeterminate-bar-length: 0; }
+.play-progress > .track { -fx-background-color: -track; -fx-background-insets: 0; }
+.play-progress > .bar { -fx-background-color: -primary; -fx-background-insets: 0; -fx-padding: 0; }
+.tools-button {
+    -fx-min-width: 44; -fx-pref-width: 44; -fx-max-width: 44;
+    -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
+    -fx-padding: 0;
+}
+.tools-icon {
+    -fx-shape: "M0,0 H4.5 V4.5 H0 Z M1,2.4 L2.4,1 L13,11.6 L11.6,13 Z M11.6,1 L13,2.4 L2.4,13 L1,11.6 Z M10,10 H14 V14 H10 Z";
+    -fx-background-color: -icon;
+    -fx-min-width: 15; -fx-pref-width: 15; -fx-max-width: 15;
+    -fx-min-height: 15; -fx-pref-height: 15; -fx-max-height: 15;
+}
+.tools-button:hover .tools-icon { -fx-background-color: -foreground; }
+.play-button {
+    -fx-min-width: 164; -fx-pref-width: 164; -fx-max-width: 164;
+    -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
+    -fx-font-size: 15;
+}
+.play-button.state-pause, .play-button.state-kill {
+    -fx-background-color: -tile;
+    -fx-border-color: -primary;
+    -fx-border-width: 1;
+    -fx-text-fill: -foreground;
+}
+.play-button.state-pause:hover, .play-button.state-kill:hover { -fx-background-color: -tile-hover; }
+
+/* tools popup */
+.client-settings-popup {
+    -fx-background-color: -popover;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 6;
+    -fx-effect: dropshadow(gaussian, -shadow, 18, 0.2, 0, 4);
+}
+.context-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-text-fill: -popover-foreground;
+    -fx-font-size: 13;
+    -fx-alignment: center-left;
+    -fx-padding: 8 12;
+    -fx-cursor: hand;
+}
+.context-button:hover { -fx-background-color: -accent; }
+
+/* ===================== settings ===================== */
+/* sections: heading (display font) + fading rule + card; inside a card .settings-block = title/hint + control */
+.settings-root { -fx-background-color: transparent; }
+.settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
+.settings-content { -fx-padding: 14 40 40 37; -fx-max-width: 660; -fx-spacing: 30; }
+.settings-section { -fx-spacing: 0; }
+.settings-heading { -fx-font-size: 42; -fx-text-fill: -foreground; }
+.settings-section .heading-rule { -fx-translate-y: -2; }
+.settings-card { -fx-padding: 6 24 6 24; -fx-max-width: 620; -fx-spacing: 0; }
+.settings-section > .settings-card { -fx-translate-y: 12; }
+.settings-block { -fx-spacing: 12; -fx-padding: 16 0 16 0; }
+.settings-block.settings-toggles { -fx-spacing: 14; }
+.settings-block-head { -fx-spacing: 16; }
+.settings-titles { -fx-spacing: 3; }
+.settings-label { -fx-font-size: 15; -fx-text-fill: -text-label; }
+.settings-hint { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
+.settings-row-divider {
+    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
+    -fx-background-color: -divider-light;
+}
+.radio-row { -fx-hgap: 30; -fx-vgap: 10; }
+
+/* radio: ring + red dot */
+.settings-radio { -fx-font-size: 15; -fx-text-fill: -text-label; -fx-label-padding: 0 0 0 12; -fx-cursor: hand; }
+.settings-radio > .radio {
+    -fx-background-color: -border, -input;
+    -fx-background-insets: 0, 1.5;
+    -fx-background-radius: 11, 9.5;
+    -fx-border-color: transparent;
+    -fx-padding: 5;
+}
+.settings-radio:hover > .radio { -fx-background-color: -border-hover, -input; }
+.settings-radio > .radio > .dot {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 6;
+    -fx-padding: 6;
+}
+.settings-radio:selected > .radio > .dot { -fx-background-color: -primary; }
+.settings-radio:focused > .radio { -fx-background-color: -border-hover, -input; }
+
+/* toggle: same ring + dot, on the right of a row */
+.toggle-row { -fx-spacing: 16; -fx-cursor: hand; }
+.ring-toggle { -fx-padding: 0; -fx-label-padding: 0; -fx-cursor: hand; }
+.ring-toggle > .box {
+    -fx-background-color: -border, -input;
+    -fx-background-insets: 0, 1.5;
+    -fx-background-radius: 11, 9.5;
+    -fx-border-color: transparent;
+    -fx-padding: 5;
+}
+.ring-toggle:hover > .box { -fx-background-color: -border-hover, -input; }
+.ring-toggle > .box > .mark {
+    -fx-shape: "M0,6 A6,6 0 1,1 12,6 A6,6 0 1,1 0,6 Z";
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 6;
+}
+.ring-toggle:selected > .box > .mark { -fx-background-color: -primary; }
+
+/* RAM selector (RamSelector): labelled chips in GB, selected = accent fill, recommended = caption under the chip */
+.ram-summary { -fx-font-size: 14; -fx-text-fill: -text-description; }
+.ram-selector { -fx-spacing: 8; }
+.ram-option { -fx-spacing: 6; }
+.ram-chip {
+    -fx-font-size: 14;
+    -fx-text-fill: -text-label;
+    -fx-background-color: -input;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 0 4 0 4;
+    -fx-min-height: 40; -fx-pref-height: 40; -fx-max-height: 40;
+    -fx-min-width: 0;
+    -fx-cursor: hand;
+}
+.ram-chip:hover { -fx-border-color: -border-hover; }
+.ram-chip:focused { -fx-border-color: -foreground; }
+.ram-chip.recommended { -fx-border-color: -muted-foreground; }
+.ram-chip:selected {
+    -fx-background-color: -primary;
+    -fx-border-color: -primary;
+    -fx-text-fill: -primary-foreground;
+}
+.ram-chip:selected:hover { -fx-background-color: -primary-hover; -fx-border-color: -primary-hover; }
+.ram-chip:selected:focused { -fx-border-color: -foreground; }
+.ram-caption { -fx-font-size: 11; -fx-text-fill: -muted-foreground; }
+
+/* inputs (dark tile + border, red on focus) */
+.zone-input {
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 0 12 0 12;
+    -fx-min-height: 40; -fx-pref-height: 40; -fx-max-height: 40;
+}
+.zone-input:hover { -fx-border-color: -border-hover; }
+.zone-input:focus-within { -fx-border-color: -ring; }
+.limit-row { -fx-spacing: 16; }
+.limit-group { -fx-spacing: 6; }
+.limit-caption { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
+.limit-field { -fx-spacing: 8; -fx-pref-width: 200; -fx-max-width: 200; }
+.limit-input {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-text-fill: -input-foreground;
+    -fx-highlight-fill: -primary;
+    -fx-highlight-text-fill: -primary-foreground;
+    -fx-prompt-text-fill: -placeholder;
+    -fx-font-size: 14;
+    -fx-padding: 0 0 0 4;
+    -fx-pref-width: 70;
+}
+.limit-unit { -fx-font-size: 14; -fx-text-fill: -placeholder; }
+.icon-download, .icon-upload {
+    -fx-background-color: -muted-foreground;
+    -fx-min-width: 15; -fx-pref-width: 15; -fx-max-width: 15;
+    -fx-min-height: 15; -fx-pref-height: 15; -fx-max-height: 15;
+}
+.icon-download { -fx-shape: "M7,0 H9 V8 L11.6,5.4 L13,6.8 L8,11.8 L3,6.8 L4.4,5.4 L7,8 Z M1,10 H3 V13 H13 V10 H15 V15 H1 Z"; }
+.icon-upload { -fx-shape: "M7,12 H9 V4 L11.6,6.6 L13,5.2 L8,0.2 L3,5.2 L4.4,6.6 L7,4 Z M1,10 H3 V13 H13 V10 H15 V15 H1 Z"; }
+
+/* ===================== modals ===================== */
+.modal-dim, .modal-dim-light { -fx-background-color: -scrim; }
+.modal-dim-solid { -fx-background-color: -background; }
+.loading-pane { -fx-background-color: -scrim; }
+.modal-card {
+    -fx-background-color: -card;
+    -fx-background-insets: -28;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-border-insets: -28;
+}
+.modal-title { -fx-font-size: 26; -fx-text-fill: -foreground; }
+.modal-text { -fx-font-size: 14; -fx-text-fill: -muted-foreground; -fx-wrap-text: true; }
+.modal-rule { -fx-background-color: linear-gradient(to right, -heading-rule 0%, transparent 100%); }
+.modal-rule-light { -fx-background-color: -divider-light; }
+.modal-button { -fx-font-size: 13; }
+
+/* flow-laid-out confirm card (logout_pane.fxml): sized by its content, real padding, buttons inside */
+.modal-box {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 22 28 28 28;
+    -fx-spacing: 14;
+    -fx-min-width: 440; -fx-pref-width: 440;
+}
+.modal-box .modal-title.font-display { -fx-translate-y: 0; }
+.modal-box-rule {
+    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
+    -fx-background-color: linear-gradient(to right, -heading-rule 0%, transparent 100%);
+}
+.modal-actions { -fx-spacing: 10; -fx-padding: 10 0 0 0; }
+.modal-action {
+    -fx-font-size: 20;
+    -fx-min-height: 44; -fx-pref-height: 44;
+    -fx-min-width: 140;
+    -fx-padding: 0 22;
+}
+.btn-outline {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: -border-hover;
+    -fx-border-width: 1;
+    -fx-text-fill: -foreground;
+    -fx-cursor: hand;
+}
+.btn-outline:hover { -fx-background-color: -tile-hover; -fx-border-color: -foreground; }
+.btn-outline:pressed { -fx-background-color: -fill-strong; }
+.modal-action.btn-outline:focused { -fx-border-color: -foreground; }
+.modal-action.btn-primary:focused { -fx-background-color: -primary-hover; }
+.license-title { -fx-font-size: 15; -fx-text-fill: -foreground; -fx-line-spacing: -13px; }
+.license-text { -fx-fill: -foreground; -fx-font-size: 11; }
+.license-link { -fx-underline: true; -fx-cursor: hand; }
+.modal-layer .text-field {
+    -fx-background-color: -input;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-text-fill: -input-foreground;
+    -fx-font-size: 13;
+}
+.modal-layer .text-field:focused { -fx-border-color: -ring; }
+
+/* generic check box inside modals: small ring + dot */
+.modal-layer .check-box { -fx-text-fill: -muted-foreground; -fx-font-size: 12; -fx-label-padding: 0 0 0 8; }
+.modal-layer .check-box > .box {
+    -fx-background-color: -border, -input;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 8, 7;
+    -fx-border-color: transparent;
+    -fx-padding: 4;
+}
+.modal-layer .check-box > .box > .mark {
+    -fx-shape: "M0,4 A4,4 0 1,1 8,4 A4,4 0 1,1 0,4 Z";
+    -fx-background-color: transparent;
+    -fx-padding: 4;
+}
+.modal-layer .check-box:selected > .box > .mark { -fx-background-color: -primary; }
+.progress-indicator { -fx-progress-color: -primary; }

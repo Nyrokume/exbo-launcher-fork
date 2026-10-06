@@ -17,23 +17,46 @@ object Theme {
     const val STYLE_ROOT = UI_ROOT + "style/"
     const val IMAGE_ROOT = STYLE_ROOT + "image/"
 
-    // ---- window geometry (from the original launcher) ----
-    const val AUTH_WIDTH = 379.0
-    const val AUTH_HEIGHT = 490.0
-    const val MAIN_WIDTH = 886.0
-    const val MAIN_HEIGHT = 550.0
+    // ---- window geometry: the main window is undecorated and resizable ----
+    const val WINDOW_WIDTH = 1024.0
+    const val WINDOW_HEIGHT = 640.0
+    const val WINDOW_MIN_WIDTH = 900.0
+    const val WINDOW_MIN_HEIGHT = 580.0
+    /** Width of the invisible border zone that resizes the undecorated window. */
+    const val RESIZE_MARGIN = 6.0
 
-    /** Draggable header of the 379x490 auth/update windows (scene coordinates). */
-    val AUTH_DRAG_POLYGON: List<Pair<Double, Double>> = listOf(
-        5.0 to 5.0, 369.0 to 5.0, 369.0 to 36.0, 314.0 to 36.0,
-        303.0 to 25.0, 72.0 to 25.0, 61.0 to 36.0, 5.0 to 36.0,
-    )
+    /**
+     * Separate pre-main window (update / auth / mail code, docs/design/WINDOWS.md): undecorated (transparent
+     * corners), not resizable, rounded like the stalzone.com/login card. 460x620 = 32 px title strip + 460x588
+     * panel host; the zone login panel stretches to the host (its min is 420x560), legacy 379x490 panels are centered.
+     */
+    const val AUTH_WINDOW_WIDTH = 460.0
+    const val AUTH_WINDOW_HEIGHT = 620.0
+    const val AUTH_TITLEBAR_HEIGHT = 32.0
+    const val AUTH_PANEL_WIDTH = AUTH_WINDOW_WIDTH
+    const val AUTH_PANEL_HEIGHT = AUTH_WINDOW_HEIGHT - AUTH_TITLEBAR_HEIGHT
+    /** Corner radius of the pre-main window clip; equals .zone-radius-md (CSS classes cannot clip). */
+    const val AUTH_WINDOW_RADIUS = 10.0
 
-    /** Draggable header of the main window, depends on the window width. */
-    fun mainDragPolygon(w: Double): List<Pair<Double, Double>> = listOf(
-        0.0 to 0.0, w to 0.0, w to 31.0, w - 232.0 to 31.0,
-        w - 237.0 to 22.0, 237.0 to 22.0, 232.0 to 31.0, 0.0 to 31.0,
-    )
+    /**
+     * Window / taskbar icon sizes: ui/style/image/icon-<size>.png (docs/design/icon/). All of them go into
+     * Stage.icons so the OS picks a crisp one (16 title bar, 32/48 taskbar, 256 Alt-Tab / HiDPI).
+     */
+    val APP_ICON_SIZES = listOf(16, 32, 48, 64, 128, 256)
+
+    fun appIconResources(): List<String> = APP_ICON_SIZES.map { IMAGE_ROOT + "icon-$it.png" }
+
+    // ---- overlay (in-window dialogs over the main screen) ----
+    const val OVERLAY_BLUR_RADIUS = 16.0
+    const val OVERLAY_BRIGHTNESS = -0.3
+
+    /** Applied to the main content while an overlay dialog is shown. */
+    fun overlayBackdropEffect(): Effect = GaussianBlur(OVERLAY_BLUR_RADIUS).apply {
+        input = ColorAdjust(0.0, -0.3, OVERLAY_BRIGHTNESS, 0.0)
+    }
+
+    /** Game art behind the main/settings content: desaturated and slightly darkened. */
+    fun gameArtEffect(): Effect = ColorAdjust(0.0, -1.0, -0.15, 0.05)
 
     // ---- effects ----
     const val HOVER_BRIGHTNESS = 0.2
@@ -71,9 +94,13 @@ object Theme {
 
     fun stylesheet(name: String): String = resource("style/$name").toExternalForm()
 
-    /** Oswald (headings) + Roboto (body) for the "zone" theme, SIL OFL 1.1. Registered once, on first use. */
+    /**
+     * "zone" theme fonts, as on stalzone.com (site CSS: h1-h5 and the ВОЙТИ / ИГРАТЬ buttons use --beb "Bebas Neue",
+     * body and caps menu items use --font-body "Roboto"): Bebas Neue Regular (Dharma Type, Cyrillic, SIL OFL 1.1)
+     * for headings and big buttons, Roboto (SIL OFL 1.1) for text. Registered once, on first use.
+     */
     private val ZONE_FONT_FILES = listOf(
-        "Oswald-Regular.ttf", "Oswald-Medium.ttf", "Oswald-SemiBold.ttf",
+        "BebasNeue-Regular.ttf",
         "Roboto-Light.ttf", "Roboto-Regular.ttf", "Roboto-Medium.ttf",
     )
     val zoneFonts: List<String> by lazy {

@@ -4,23 +4,17 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<!-- Bottom status area of the main window: Play/Download button, progress bar, server description. -->
-<AnchorPane fx:id="defaultStatusPane" pickOnBounds="false" stylesheets="@../style/common.css,@../style/main.css"
-            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="dev.launcherfork.ui.screens.main.StatusPaneController">
-    <Button id="clientSettingsButton" fx:id="clientSettingsButton" prefHeight="25" prefWidth="22"
-            AnchorPane.bottomAnchor="38" AnchorPane.rightAnchor="30.0"/>
-    <ProgressBar id="downloadBar" fx:id="progressBar" maxHeight="17.0" prefHeight="17.0" prefWidth="524.0" progress="0.5"
-                 AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="419.0" AnchorPane.rightAnchor="30.0"/>
-    <Button id="downloadButton" fx:id="downloadButton" maxHeight="58.0" maxWidth="172.0" minHeight="46.0" minWidth="160.0"
-            mnemonicParsing="false" prefHeight="58.0" prefWidth="172.0" text="Button" styleClass="font-display"
-            AnchorPane.bottomAnchor="9.0" AnchorPane.leftAnchor="247.0"/>
-    <Text id="downloadingStatus" fx:id="downloadingStatus" text="dededede" styleClass="font-display"
-          AnchorPane.bottomAnchor="38.0" AnchorPane.leftAnchor="420.0"/>
-    <AnchorPane fx:id="newsBg" prefHeight="200.0" prefWidth="728.0" visible="false"
-                AnchorPane.bottomAnchor="100.0" AnchorPane.leftAnchor="253.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="60.0"/>
-    <Pane fx:id="serverDesc" prefHeight="367.0" prefWidth="646.0" pickOnBounds="false"
-          AnchorPane.bottomAnchor="75.0" AnchorPane.leftAnchor="236.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="4.0"/>
-    <Pane fx:id="pagesPane" prefHeight="20.0" prefWidth="728.0" pickOnBounds="false"
-          AnchorPane.leftAnchor="253.0" AnchorPane.rightAnchor="220.0" AnchorPane.topAnchor="30.0"/>
-</AnchorPane>
+<!-- Bottom bar: status text + progress (stretches), tools button, bracketed Play/Download button. -->
+<HBox fx:id="defaultStatusPane" id="statusBar" styleClass="status-bar" alignment="BOTTOM_LEFT" spacing="15" pickOnBounds="false"
+      stylesheets="@../style/layout.css"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dev.launcherfork.ui.screens.main.StatusPaneController">
+    <VBox spacing="5" alignment="BOTTOM_LEFT" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+        <Text fx:id="downloadingStatus" id="playStatus" styleClass="play-status" text="status"/>
+        <ProgressBar fx:id="progressBar" id="playProgress" styleClass="play-progress,zone-radius-sm" maxWidth="Infinity" progress="0.0"/>
+    </VBox>
+    <Button fx:id="clientSettingsButton" id="toolsButton" styleClass="tools-button,tile,zone-radius-sm" mnemonicParsing="false" focusTraversable="false">
+        <graphic><Region styleClass="tools-icon"/></graphic>
+    </Button>
+    <Button fx:id="downloadButton" id="playButton" styleClass="play-button,btn-primary,zone-caps,zone-radius-sm" mnemonicParsing="false" text="BUTTON"/>
+</HBox>

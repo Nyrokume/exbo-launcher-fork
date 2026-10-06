@@ -1,65 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 
-<!-- Header strip with Support / Profile / Forum links. -->
-<AnchorPane fx:id="headerPane" maxHeight="27.0" prefHeight="27.0" prefWidth="454.0" stylesheets="@../style/common.css,@../style/main.css"
-            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="dev.launcherfork.ui.screens.main.HeaderController">
-    <ImageView fitHeight="27.0" fitWidth="12.0" pickOnBounds="true" preserveRatio="true"
-               AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0">
-        <Image url="@../style/image/header_left_corner.png"/>
-    </ImageView>
-    <BorderPane id="headerBackground" prefHeight="27.0" prefWidth="200.0" AnchorPane.leftAnchor="12.0" AnchorPane.rightAnchor="27.0">
-        <center>
-            <Pane fx:id="linksContainer" prefHeight="27.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-                <Pane fx:id="support" prefHeight="27" prefWidth="100.0" styleClass="header-link-pane">
-                    <Pane layoutX="3" layoutY="4">
-                        <ImageView fitHeight="15.0" fitWidth="15.0" pickOnBounds="true" preserveRatio="true">
-                            <Image url="@../style/image/support_icon.png"/>
-                        </ImageView>
-                        <Label layoutX="20.0" layoutY="3" styleClass="header-link,font-display" text="%main.link.support"/>
-                        <ImageView fitHeight="8.0" fitWidth="8.0" pickOnBounds="true" preserveRatio="true" x="85.0" y="4.0">
-                            <Image url="@../style/image/link_icon.png"/>
-                        </ImageView>
-                    </Pane>
-                </Pane>
-                <Pane fx:id="profile" prefHeight="27" prefWidth="100.0" styleClass="header-link-pane">
-                    <Pane layoutX="3" layoutY="4">
-                        <ImageView fitHeight="15.0" fitWidth="15.0" pickOnBounds="true" preserveRatio="true">
-                            <Image url="@../style/image/profile_icon.png"/>
-                        </ImageView>
-                        <Label layoutX="20.0" layoutY="3" styleClass="header-link,font-display" text="%main.link.profile"/>
-                        <ImageView fitHeight="8.0" fitWidth="8.0" pickOnBounds="true" preserveRatio="true" x="70.0" y="4.0">
-                            <Image url="@../style/image/link_icon.png"/>
-                        </ImageView>
-                    </Pane>
-                </Pane>
-                <Pane fx:id="forum" prefHeight="27" prefWidth="100.0" styleClass="header-link-pane">
-                    <Pane layoutX="3" layoutY="4">
-                        <ImageView fitHeight="15.0" fitWidth="21.0" pickOnBounds="true" preserveRatio="true">
-                            <Image url="@../style/image/forum_icon.png"/>
-                        </ImageView>
-                        <Label layoutX="26.0" layoutY="3" styleClass="header-link,font-display" text="%main.link.forum"/>
-                        <ImageView fitHeight="8.0" fitWidth="8.0" pickOnBounds="true" preserveRatio="true" x="65.0" y="4.0">
-                            <Image url="@../style/image/link_icon.png"/>
-                        </ImageView>
-                    </Pane>
-                </Pane>
-            </Pane>
-        </center>
-        <left>
-            <Region minWidth="0.0" prefHeight="27.0" prefWidth="5.0" BorderPane.alignment="CENTER"/>
-        </left>
-        <right>
-            <Region minWidth="0.0" prefHeight="27.0" prefWidth="5.0" BorderPane.alignment="CENTER"/>
-        </right>
-    </BorderPane>
-    <ImageView fitHeight="27.0" fitWidth="27.0" pickOnBounds="true" preserveRatio="true"
-               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-        <Image url="@../style/image/header_right_corner.png"/>
-    </ImageView>
-</AnchorPane>
+<!-- Forum / Support links in one row, left of the profile control in main.fxml's top bar (no browser in the
+     fork: hover only). Profile ↗ moved into the profile dropdown (main/profile.fxml). -->
+<HBox fx:id="headerPane" id="headerLinks" styleClass="header-links" alignment="CENTER_RIGHT" pickOnBounds="false"
+      stylesheets="@../style/layout.css"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dev.launcherfork.ui.screens.main.HeaderController">
+    <HBox fx:id="linksContainer" alignment="CENTER_RIGHT" spacing="20">
+        <Label fx:id="forum" id="linkForum" styleClass="header-link,menu-item,zone-caps" text="%main.link.forum" contentDisplay="RIGHT">
+            <graphic><Region styleClass="external-arrow"/></graphic>
+        </Label>
+        <Label fx:id="support" id="linkSupport" styleClass="header-link,menu-item,zone-caps" text="%main.link.support" contentDisplay="RIGHT">
+            <graphic><Region styleClass="external-arrow"/></graphic>
+        </Label>
+    </HBox>
+</HBox>

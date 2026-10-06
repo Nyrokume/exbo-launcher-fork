@@ -1,26 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
 
-<!-- "Delete game files?" confirmation (original deletionPane). Deletes nothing in the fork. -->
-<AnchorPane fx:id="deletionPane" visible="false" stylesheets="@../../style/common.css,@../../style/main.css"
+<!--
+  "Delete game files?" confirmation (original deletionPane). Deletes nothing in the fork.
+  Flow layout like logout_pane.fxml instead of the original absolute coordinates (buttons at layoutY 140 in a
+  146 px card spilled below its edge): content-sized card (title, rule, text, button row at the bottom right),
+  padding/spacing from .modal-box in layout.css. Esc = cancel, initial focus on Cancel; the destructive primary
+  stays red (btn-primary).
+-->
+<AnchorPane fx:id="deletionPane" styleClass="modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.DeletionModalController">
     <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
-    <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
-        <center>
-            <Pane maxHeight="146" maxWidth="487">
-                <Label fx:id="deletionTitle" styleClass="modal-title" text="%main.modal.delete.title"/>
-                <ImageView layoutX="0" layoutY="40"><Image url="@../../style/image/line_settings_main.png"/></ImageView>
-                <Label fx:id="deletionDesc" layoutY="50" prefWidth="480" styleClass="modal-text" text="%main.modal.delete.text"/>
-                <ImageView layoutX="0" layoutY="85"><Image url="@../../style/image/line_settings_group.png"/></ImageView>
-                <Button id="logoutButtonLeft" fx:id="deletionYes" layoutX="60" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.delete.confirm"/>
-                <Button id="logoutButtonRight" fx:id="deletionNo" layoutX="230" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button" text="%main.modal.delete.cancel"/>
-            </Pane>
-        </center>
-    </BorderPane>
+    <StackPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <VBox fx:id="deletionCard" id="modal-deletionCard" styleClass="modal-box,zone-radius-md"
+              maxWidth="-Infinity" maxHeight="-Infinity">
+            <Label fx:id="deletionTitle" styleClass="modal-title,font-display" text="%main.modal.delete.title"/>
+            <Region styleClass="modal-box-rule"/>
+            <Label fx:id="deletionDesc" styleClass="modal-text" text="%main.modal.delete.text" wrapText="true" minHeight="-Infinity"/>
+            <HBox styleClass="modal-actions" alignment="CENTER_RIGHT">
+                <Button id="modal-deletionYes" fx:id="deletionYes" mnemonicParsing="false"
+                        styleClass="modal-action,btn-primary,font-display,zone-radius-sm" text="%main.modal.delete.confirm"/>
+                <Button id="modal-deletionNo" fx:id="deletionNo" mnemonicParsing="false"
+                        styleClass="modal-action,btn-outline,font-display,zone-radius-sm" text="%main.modal.delete.cancel"/>
+            </HBox>
+        </VBox>
+    </StackPane>
 </AnchorPane>

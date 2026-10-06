@@ -1,0 +1,136 @@
+# WINDOWS: два окна, как в оригинальном лаунчере
+
+Запуск → окно обновления → **отдельное окно входа** (и окно кода из письма) → при успешном входе оно закрывается
+и открывается главное окно 1024×640. «Сменить аккаунт» и «Выйти из аккаунта» закрывают главное окно и снова открывают окно
+входа. Оверлей внутри главного окна остался только для внутренних диалогов.
+
+## Окна
+
+| | Окно до входа (pre-main) | Главное окно |
+|---|---|---|
+| Stage | primary stage из `LauncherApp`, `StageStyle.TRANSPARENT` (без рамки ОС, скруглённые углы) | `StageNavigator.mainStage`, `StageStyle.UNDECORATED` |
+| Размер | **460×620**, без ресайза | 1024×640, ресайз за края, минимум 900×580 |
+| Рамка | `auth_window.fxml` (`AuthWindowController`) | `window.fxml` (`WindowController`) |
+| Что показывает | панели update / auth / mail code (по одной) | `main.fxml` в `contentHost`, диалоги в `overlayLayer` |
+
+```
+auth_window.fxml (AuthWindowController)            ← 460×620, clip со скруглением 10 px (= .zone-radius-md)
+└─ StackPane#authWindowRoot .auth-window (фон -background)
+   ├─ BorderPane
+   │  ├─ top:    HBox#authTitleBar 32 px [authLogo (вектор EXBO) | authDragArea | authHideButton | authCloseButton]
+   │  └─ center: PanelHost#panelHost 460×588  ← сюда кладётся корень панели (размер как у Scene root)
+   └─ Region .auth-window-frame               ← рамка 1 px -border ПОВЕРХ панели (mouseTransparent)
+```
+
+- **Почему 460×620.** Это карточка stalzone.com/login (LOGIN.md) в пропорциях окна: полоса заголовка 32 px и
+  область панели 460×588. Это ровно pref-размер панели `auth_panel.fxml` из `redesign/auth-zone`, а её минимум
+  420×560 помещается с запасом. Константы: `Theme.AUTH_WINDOW_WIDTH/HEIGHT`, `AUTH_TITLEBAR_HEIGHT`,
+  `AUTH_PANEL_WIDTH/HEIGHT`.
+- Полоса заголовка: логотип, перетаскивание (без разворачивания), «свернуть», «закрыть». Крестик в покое цвета
+  `-titlebar-foreground`, при наведении фон `-window-close` (красный) и белый глиф.
+- Окно не скруглено средствами CSS: панель заполняет его от края до края, поэтому углы режет `clip`
+  (`Theme.AUTH_WINDOW_RADIUS` = 10, как `.zone-radius-md`). На рабочем столе без композитора прозрачные углы
+  станут чёрными, на тёмном фоне это незаметно.
+- Размытия больше нет: за окном входа ничего не построено, главный экран создаётся только после входа.
+
+## Поток
+
+1. `LauncherApp` создаёт `StageNavigator(stage, …)`: тот грузит обе рамки и вызывает
+   `showLauncherUpdate(afterUpdate = showAuth)`, затем `stage.show()` (по центру экрана).
+2. Панель обновления кладётся в `panelHost`, у её контроллера вызывается `UpdatePanel.start(done)`.
+3. По `done` вызывается `showAuth()`: панель входа заменяет панель обновления в том же окне.
+4. Нужен код из письма → `showMailAuth()`, код приложения-аутентификатора → `showTotpAuth()` (6 ячеек,
+   «Вернуться ко входу» / Esc → `showAuth()`): панель кода в том же окне.
+   Регистрация: «Создать» на панели входа → `showAgeGate()` → «ПРОДОЛЖИТЬ» (возраст ≥ 18) → `showRegister(дата)`
+   → «← Назад» / Esc → `showAgeGate(дата)` (дата сохраняется), успех → `showRegistered(логин)`: панель входа с
+   заполненным логином и уведомлением «Аккаунт … создан».
+5. Успешный вход → `showMain()`: у панели вызывается `dispose()`, строится `main.fxml`, **сначала** показывается
+   главное окно (по центру того экрана, где было окно входа), **потом** окно входа прячется. Порядок важен: у
+   приложения ни в какой момент не бывает ноль окон, иначе JavaFX завершился бы сам (implicit exit).
+6. «Сменить аккаунт» (меню профиля) → `auth.logout()` + `clientStates.shutdown()` → `showAuth()`.
+   «Выйти из аккаунта» → подтверждение «Выход из аккаунта» (`logout_pane`; единственный путь к нему:
+   `ProfileController.logout` → `onLogout` → `logoutPaneController.show()` в `MainController`; Enter — выйти,
+   Esc — отмена, фокус на «Отмена») → то же самое. `StageNavigator` вызывает `MainController.dispose()`
+   **до** показа окна входа (снимает слушатели со сцены и стора), затем окно входа появляется по центру экрана,
+   где было главное окно, а главное окно прячется.
+7. Крестик любого окна (и Alt+F4) → `close()` **без подтверждения выхода из аккаунта**: dispose, обе Stage прячутся, `Platform.exit()`. Скрытых окон не
+   остаётся.
+
+## Какие файлы ищет навигатор
+
+| Метод навигатора | Новый файл (если есть) | Запасной (legacy) |
+|---|---|---|
+| `showLauncherUpdate` | `ui/update_panel.fxml` | `ui/update.fxml` |
+| `showAuth` | `ui/auth_panel.fxml` | `ui/initial_auth.fxml` |
+| `showMailAuth` | `ui/mail_auth_panel.fxml` | `ui/mail_auth.fxml` |
+| `showTotpAuth` | `ui/totp_auth_panel.fxml` | — |
+| `showAgeGate(date?)` | `ui/age_gate_panel.fxml` | — |
+| `showRegister(date)` | `ui/register_panel.fxml` | — |
+| `showRegistered(login)` | `showAuth()` + `InitialAuthController.showRegistered(login)` | |
+
+Навигатор проверяет, лежит ли новый файл в classpath (`Theme.UI_ROOT + имя`), иначе берёт legacy-файл. **Добавив
+новые панели, ни `StageNavigator`, ни `Theme.kt` менять не нужно.** У legacy-панелей (бывшие окна 379×490)
+навигатор прячет собственные `#close`, `#hide`, `#header`, а сами панели центрируются в `panelHost`.
+
+### Контракт панели (как подключается панель Front.end.master)
+
+- Тот же FXML грузится как есть и кладётся в `panelHost` (`AuthWindowController.setPanel`). `panelHost` — это
+  `PanelHost` (ui/components): он задаёт размер корню панели так же, как Scene своему root. Панель, которую можно
+  растянуть (max ≥ 460×588, как `auth_panel.fxml`: min 420×560, pref 460×588), получает **ровно** 460×588, даже
+  если её содержимое просит минимум чуть больше: она не залезает под полосу заголовка. Панель фиксированного
+  размера (legacy, max = pref) встаёт по центру. Хост обрезает содержимое по своим границам и не увеличивает окно.
+  Проверено слиянием `redesign/auth-zone` (ef53456) поверх этой ветки во временном worktree: слияние без
+  конфликтов, 186 тестов зелёные, панель заполняет окно.
+- Скругление окна, рамку 1 px и полосу заголовка с логотипом, «свернуть», «закрыть» даёт окно. Свои кнопки окна
+  у панели можно оставить скрытыми (`visible="false"`), fx:id `closeButton`, `hideButton`, `header` сохраняются
+  для контроллера.
+- Контроллер получает `UiContext` через конструктор `(UiContext)` (`ui/Fxml.kt`).
+- **Панель обновления** реализует `dev.launcherfork.ui.UpdatePanel` (`fun start(done: () -> Unit)`). Если не
+  реализует, навигатор сразу вызывает `afterUpdate`.
+- **Панели входа** по результату вызывают `ctx.navigator.showMain()` (успех), `showMailAuth()` (код из письма),
+  `showTotpAuth()` (код приложения) или показывают ошибку у себя. Готовая логика:
+  `AuthScreenBase.handle(Result<AuthResult>)`. Панель TOTP (`TotpAuthController`) самостоятельна: ячейки
+  `CodeInput` (число ячеек — параметр), стили в `zone-totp.css`; экран кода из письма в этой ветке не меняется. Новые методы `Navigator` (`showTotpAuth`, `showAgeGate`,
+  `showRegister`, `showRegistered`) имеют реализации по умолчанию, тестовым навигаторам их писать не нужно.
+- Таймеры и слушатели → `dev.launcherfork.ui.Disposable`: `dispose()` вызывается при замене панели, входе и закрытии.
+- Фокус при показе уходит в первый фокусируемый узел панели (обычно поле логина).
+- Стили: `layout.css` подключён к корню окна. Цвета берите только из токенов (`-card`, `-card-description`,
+  `-input-border`, `-error` и др., STYLE-ZONE.md), радиусы — классами `.zone-radius-sm/.zone-radius-md`. Узлу с
+  `fx:id`, совпадающим с legacy CSS-id (`enterButton`, `register`, `restore`, `close`, `hide`, `error`…), задайте
+  явный `id` (`FxmlLoadingTest.newFxmlDoNotReuseLegacyCssIds`).
+
+## Диалоги внутри главного окна
+
+`StageNavigator.showOverlay(node, controller)` / `hideOverlay()` кладут узел в `overlayLayer` над главным
+экраном. Модальные слои `main.fxml` (установка, удаление, выход и т. д.) показываются внутри `main.fxml`, но
+блокируются так же. Пока виден диалог:
+
+- контент под ним **отключён** (`InputBlock.set`: `isDisable = true`), поэтому туда не попадает ни мышь, ни
+  клавиатура: Tab и Enter не дотягиваются до кнопок под диалогом, а `requestFocus()` на них ничего не даёт;
+- класс `.input-blocked` отменяет modena-прозрачность 0.4 у отключённых контролов, внешний вид не меняется;
+- контент кэшируется (`isCache = true`, `CacheHint.SPEED`), чтобы размытие не пересчитывалось каждый кадр;
+- фокус переходит в первый фокусируемый узел диалога.
+
+Ресайз главного окна за края (6 px, scene-фильтр) не перехватывает клики по кнопкам «свернуть», «развернуть»,
+«закрыть»: их границы вырезаются из зоны ресайза (`ResizeEdge.at(..., exclusions)`).
+
+## Навигатор
+
+```kotlin
+interface Navigator {
+    fun showLauncherUpdate(afterUpdate: () -> Unit = ::showAuth) // панель в окне до входа
+    fun showAuth()            // окно входа; главное окно (если было) закрывается, MainController.dispose()
+    fun showMailAuth()
+    fun showMain()            // окно входа закрывается, главное окно открывается с новым главным экраном
+    fun switchLanguage(lang: String) // пересобрать главный экран, страница настроек остаётся открытой
+    fun minimize()            // сворачивает активное окно
+    fun toggleMaximize()      // только главное окно
+    fun close()               // выход из приложения
+    val window: Window?       // активное окно
+}
+```
+
+`StageNavigator` дополнительно отдаёт `authStage`, `mainStage`, `activeWindow`, `panelController`,
+`mainController`, `overlayController`, `showOverlay`/`hideOverlay`, `exit` (тесты подменяют `Platform.exit`).
+Тесты: `AuthWindowTest` (поток окон, dispose до показа входа, центрирование, выход по крестику, заполнение
+`panelHost`) и `OverlayNavigatorTest` (блокировка клавиатуры под диалогами, логотип).

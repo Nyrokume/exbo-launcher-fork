@@ -1,11 +1,13 @@
 package dev.launcherfork.app
 
+import dev.launcherfork.ui.screens.auth.AgeGateController
 import dev.launcherfork.ui.screens.auth.InitialAuthController
-import dev.launcherfork.ui.screens.main.MainController
+import dev.launcherfork.ui.screens.auth.RegisterController
+import dev.launcherfork.ui.screens.auth.TotpAuthController
+import dev.launcherfork.theme.Theme
 import javafx.animation.PauseTransition
 import javafx.application.Platform
 import javafx.scene.Scene
-import javafx.stage.Stage
 import javafx.util.Duration
 import java.awt.image.BufferedImage
 import java.io.File
@@ -13,9 +15,9 @@ import javax.imageio.ImageIO
 
 /**
  * Dev tool: walks through the screens automatically and saves Scene snapshots as PNG
- * (`./gradlew run -Dlauncher.screenshots=docs/screenshots`). Not used in normal runs.
+ * (`./gradlew run -Dlauncher.theme=zone -Dlauncher.screenshots=docs/screenshots/zone`). Not used in normal runs.
  */
-class ScreenshotTour(private val stage: Stage, private val nav: StageNavigator, private val dir: File) {
+class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
     private val steps = ArrayDeque<Pair<Double, () -> Unit>>()
 
     fun install() {
@@ -24,7 +26,7 @@ class ScreenshotTour(private val stage: Stage, private val nav: StageNavigator, 
         var mainDone = false
         nav.onScreenChanged = { name ->
             when {
-                name == "update" -> later(0.9) { shot("01_update_progress") }
+                name == "update" -> later(0.5) { shot("01_update_window") }
                 name == "auth" && !authDone -> { authDone = true; authFlow() }
                 name == "main" && !mainDone -> { mainDone = true; mainFlow() }
             }
@@ -32,50 +34,96 @@ class ScreenshotTour(private val stage: Stage, private val nav: StageNavigator, 
     }
 
     private fun authFlow() {
-        step(0.6) { shot("02_auth") }
+        val auth = { nav.panelController as InitialAuthController }
+        step(0.6) { shot("02_auth_window") }
         step(0.1) {
-            val auth = nav.currentController as InitialAuthController
-            auth.loginField.text = ""
-            auth.passwordField.text = ""
-            auth.onEnter() // shows the "empty login" error
+            auth().loginField.text = ""
+            auth().passwordField.text = ""
+            auth().onEnter() // shows the "empty login" error
         }
         step(0.3) { shot("03_auth_error") }
         step(0.1) {
-            val auth = nav.currentController as InitialAuthController
-            auth.loginField.text = "player"
-            auth.passwordField.text = "secret"
-            auth.onEnter()
+            auth().loginField.text = "player"
+            auth().passwordField.text = "secret"
+            auth().onEnter()
         }
         run()
     }
 
     private fun mainFlow() {
-        val main = { nav.currentController as MainController }
-        step(1.0) { shot("04_main_news") }
-        step(0.1) { main().serversListController.select(main().selected!!) }
-        step(0.6) { shot("05_main_server") }
-        step(0.1) { main().setSettingsVisible(true) }
-        step(0.6) { shot("06_settings") }
-        step(0.1) { main().setSettingsVisible(false) }
+        val main = { nav.mainController!! }
+        val stage = nav.mainStage
+        step(1.0) { shot("04_main") }
+        step(0.1) { main().profileBarController.showMenu() }
+        step(0.3) { shot("05_profile_menu") }
+        step(0.1) { main().profileBarController.logout.fire() } // "Выйти из аккаунта" -> the logout confirmation
+        step(0.4) { shot("05b_logout_confirm") }
+        step(0.1) { main().logoutPaneController.logoutButtonLeft.fire(); main().setSettingsVisible(true) } // cancel
+        step(0.6) { shot("06_settings_game") }
+        step(0.1) { main().settingsController.scroll.vvalue = 0.55 }
+        step(0.4) { shot("07_settings_updates") }
+        step(0.1) { main().settingsController.scroll.vvalue = 1.0 }
+        step(0.4) { shot("08_settings_others") }
         step(0.1) {
             val m = main()
-            val bravo = m.servers.first { it.id == "bravo" }
-            m.serversListController.select(bravo)
-            m.defaultStatusPaneController.downloadButton.fire() // Download -> install dialog
-        }
-        step(0.6) { shot("07_install_dialog") }
-        step(0.1) { main().installPaneController.installYes.fire() } // start fake download
-        step(2.6) { shot("08_fake_progress") }
-        step(0.1) {
-            val m = main()
-            m.serversListController.select(m.servers.first())
+            m.settingsController.scroll.vvalue = 0.0
+            m.setSettingsVisible(false)
             m.defaultStatusPaneController.downloadButton.fire() // Play -> Starting -> Running
         }
-        step(1.8) { shot("09_fake_running") }
-        step(0.1) { nav.switchLanguage("en") }
-        step(1.0) { shot("10_settings_en") }
+        step(1.8) { shot("09_running") }
+        step(0.1) { main().clientSettingsPaneController.toggle() }
+        step(0.3) { shot("10_tools_menu") }
+        step(0.1) {
+            main().clientSettingsPaneController.hide()
+            stage.width = 1366.0
+            stage.height = 800.0
+        }
+        step(0.8) { shot("11_resized_1366x800") }
+        step(0.1) {
+            stage.width = Theme.WINDOW_WIDTH
+            stage.height = Theme.WINDOW_HEIGHT
+            nav.switchLanguage("en")
+        }
+        step(1.0) { shot("12_settings_en") }
+        step(0.1) { main().profileBarController.switchAccount.fire() } // back to the separate auth window
+        step(0.6) { shot("13_auth_after_switch_account") }
+        step(0.1) { nav.switchLanguage("ru"); nav.showAgeGate() }
+        registrationAndSecondFactorFlow()
         step(0.3) { Platform.exit() }
         run()
+    }
+
+    /** Pre-main window again (ru): age gate, registration form, back to login, authenticator-code panel with its toast. */
+    private fun registrationAndSecondFactorFlow() {
+        val gate = { nav.panelController as AgeGateController }
+        val form = { nav.panelController as RegisterController }
+        val auth = { nav.panelController as InitialAuthController }
+        val totp = { nav.panelController as TotpAuthController }
+        step(0.6) { shot("14_age_gate") }
+        step(0.1) {
+            gate().dayBox.value = 12; gate().monthBox.value = 3; gate().yearBox.value = gate().today.year - 12
+            gate().onContinue() // too young
+        }
+        step(0.3) { shot("15_age_gate_too_young") }
+        step(0.1) {
+            gate().dayBox.value = 26; gate().monthBox.value = 7; gate().yearBox.value = 2000
+            gate().onContinue()
+        }
+        step(0.6) { shot("16_register") }
+        step(0.1) {
+            form().emailField.text = "stalker@mail"
+            form().usernameField.text = "stalker_1"
+            form().passwordField.text = "zone2026!"
+            form().newsletterCheckBox.isSelected = true
+            form().licenseCheckBox.isSelected = true
+            form().onCreate() // e-mail format error
+        }
+        step(0.3) { shot("17_register_error") }
+        step(0.1) { form().emailField.text = "stalker@mail.ru"; form().onCreate() }
+        step(1.3) { shot("18_registered_login") }
+        step(0.1) { auth().loginField.text = "totp"; auth().passwordField.text = "secret"; auth().onEnter() }
+        step(1.3) { totp().codeInput.setCode("000000"); totp().enter() } // the mock's wrong code
+        step(1.3) { shot("19_totp_error") }
     }
 
     private fun step(delaySec: Double, action: () -> Unit) = steps.addLast(delaySec to action)
@@ -91,7 +139,8 @@ class ScreenshotTour(private val stage: Stage, private val nav: StageNavigator, 
     private fun later(sec: Double, action: () -> Unit) =
         PauseTransition(Duration.seconds(sec)).apply { setOnFinished { action() } }.play()
 
-    private fun shot(name: String) = save(stage.scene, File(dir, "$name.png"))
+    /** Snapshot of the window the user currently sees (pre-main or main). */
+    private fun shot(name: String) = save(nav.window.scene, File(dir, "$name.png"))
 
     companion object {
         fun save(scene: Scene, file: File) {

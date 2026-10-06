@@ -12,7 +12,7 @@
     -background: #242428;            /* main window fill */
     -foreground: #ffffff;            /* titles, primary text */
     -card: #191919;                  /* side panels, frame strips */
-    -card-foreground: #c7c7c7;       /* server name, news text */
+    -card-foreground: #c7c7c7;       /* server name */
     -popover: rgba(25, 25, 25, 0.86);/* client settings popup */
     -popover-foreground: #b4b4b4;
     -primary: #1c4a61;               /* blue accent (window border) */
@@ -36,7 +36,7 @@
     -shadow-inner: rgba(0, 0, 0, 0.5);
 
     /* ---- extra text shades used by the original ---- */
-    -text-strong: #d7d7d7;           /* selected server name, news title */
+    -text-strong: #d7d7d7;           /* selected server name */
     -text-description: #cdcdcd;      /* server description */
     -text-label: #bcbcbc;            /* settings labels */
     -text-status: #b4b4b4;           /* download status */
@@ -67,6 +67,9 @@
     -fill-subtle: rgba(255, 255, 255, 0.04);
     -fill-strong: rgba(255, 255, 255, 0.12);
     -card-alt: #191919;
+    -card-description: #191919;
+    -input-border: #2b2b2b;
+    -error: #ae171c;
 
     /* body font: defined once. Manrope Light (OFL) replaces the original commercial "Circe Light". */
     -fx-font-family: "Manrope Light";
@@ -89,4 +92,10 @@
 .scroll-bar .thumb, .check-box > .box, .context-button {
     -fx-background-radius: 0;
     -fx-border-radius: 0;
+}
+
+/* Password mask: small U+2022 bullets instead of modena's oversized U+25CF discs, every password field, every theme
+   (the eye toggle's plain-text twin is a .text-field, not affected). */
+.password-field {
+    -fx-skin: "dev.launcherfork.ui.components.BulletPasswordFieldSkin";
 }

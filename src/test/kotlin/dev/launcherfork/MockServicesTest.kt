@@ -11,16 +11,20 @@ import dev.launcherfork.data.mock.MockGameLauncher
 import dev.launcherfork.domain.UpdatePhase
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.domain.ProgressListener
-import dev.launcherfork.ui.components.WindowChrome
+import dev.launcherfork.ui.components.ResizeEdge
 import dev.launcherfork.theme.Theme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class MockServicesTest {
+    /** The only mock game is installed; downloads run on a not-installed copy of it. */
+    private val notInstalled = MockData.servers.single().copy(id = "not-installed", installed = false)
+
     @Test
     fun authFlows() {
         val auth = MockAuthService(delayMs = 0)
@@ -29,7 +33,14 @@ class MockServicesTest {
         assertEquals(AuthResult.CodeRequired, auth.login("2fa", "x", false))
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("12"))
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("1234567"))
+        assertEquals(AuthResult.Failure(AuthError.SERVER_ERROR), auth.confirmTotp("123456"))   // not the TOTP step
         assertTrue(auth.confirmCode("123456") is AuthResult.Success)
+
+        assertEquals(AuthResult.TotpRequired, auth.login("totp", "x", false))
+        assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmTotp("000000"))     // the mock's wrong code
+        assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmTotp("12345"))
+        assertEquals(AuthResult.Failure(AuthError.SERVER_ERROR), auth.confirmCode("123456"))   // not the e-mail step
+        assertTrue(auth.confirmTotp("123456") is AuthResult.Success)
     }
 
     @Test
@@ -49,7 +60,7 @@ class MockServicesTest {
     @Test
     fun cancelledDownloadDeliversNoMoreCallbacks() {
         val updates = MockUpdateService(speed = 1.0)
-        val server = MockData.servers.first { !it.installed }
+        val server = notInstalled
         val calls = java.util.concurrent.atomic.AtomicInteger()
         val job: Cancellable = updates.downloadClient(server, object : ProgressListener {
             override fun onProgress(progress: Progress) { calls.incrementAndGet() }
@@ -86,7 +97,7 @@ class MockServicesTest {
 
     @Test
     fun mockImagesAreUrisThatResolve() {
-        (MockData.servers.flatMap { listOf(it.iconUri, it.backgroundUri) } + MockData.news.map { it.imageUri }).forEach { uri ->
+        MockData.servers.flatMap { listOf(it.iconUri, it.backgroundUri) }.forEach { uri ->
             uri.toURL().openStream().use { assertTrue(it.read() >= 0, "$uri is empty") }
         }
     }
@@ -94,7 +105,7 @@ class MockServicesTest {
     @Test
     fun fakeDownloadCompletesAndMarksInstalled() {
         val updates = MockUpdateService(speed = 100.0)
-        val server = MockData.servers.first { !it.installed }
+        val server = notInstalled
         assertFalse(updates.isInstalled(server))
         val done = CountDownLatch(1)
         var last = 0.0
@@ -108,10 +119,43 @@ class MockServicesTest {
     }
 
     @Test
-    fun dragPolygonMatchesOriginalHeader() {
-        val poly = Theme.mainDragPolygon(886.0)
-        assertTrue(WindowChrome.isPointInPolygon(100.0, 10.0, poly))   // left header
-        assertFalse(WindowChrome.isPointInPolygon(400.0, 28.0, poly))  // below the notch
-        assertFalse(WindowChrome.isPointInPolygon(100.0, 100.0, poly)) // content
+    fun resizeEdgesAreDetectedOnlyAtTheBorder() {
+        val w = 1024.0
+        val h = 640.0
+        assertEquals(ResizeEdge.NW, ResizeEdge.at(2.0, 2.0, w, h))
+        assertEquals(ResizeEdge.SE, ResizeEdge.at(w - 1, h - 1, w, h))
+        assertEquals(ResizeEdge.E, ResizeEdge.at(w - 3, 300.0, w, h))
+        assertEquals(ResizeEdge.N, ResizeEdge.at(500.0, 1.0, w, h))
+        assertNull(ResizeEdge.at(500.0, 300.0, w, h)) // content
+        assertNull(ResizeEdge.at(500.0, 14.0, w, h))  // title bar drag area, not an edge
+    }
+
+    @Test
+    fun resizeZoneLeavesWindowButtonsAlone() {
+        val w = Theme.WINDOW_WIDTH
+        val h = Theme.WINDOW_HEIGHT
+        // close button in the top-right corner (40x27), maximize left of it
+        val close = javafx.geometry.BoundingBox(w - 40, 0.0, 40.0, 27.0)
+        val maximize = javafx.geometry.BoundingBox(w - 80, 0.0, 40.0, 27.0)
+        val buttons = listOf(close, maximize)
+        assertEquals(ResizeEdge.NE, ResizeEdge.at(w - 2, 2.0, w, h)) // without exclusions the corner resizes
+        assertNull(ResizeEdge.at(w - 2, 2.0, w, h, exclusions = buttons), "corner click must reach the close button")
+        assertNull(ResizeEdge.at(w - 60, 1.0, w, h, exclusions = buttons), "top edge over maximize is a button click")
+        assertNull(ResizeEdge.at(w - 3, 20.0, w, h, exclusions = buttons), "right edge next to close is a button click")
+        // right edge below the buttons and top edge left of them still resize
+        assertEquals(ResizeEdge.E, ResizeEdge.at(w - 3, 40.0, w, h, exclusions = buttons))
+        assertEquals(ResizeEdge.N, ResizeEdge.at(500.0, 1.0, w, h, exclusions = buttons))
+    }
+
+    @Test
+    fun resizeKeepsMinimumSizeAndOppositeEdge() {
+        val start = javafx.geometry.Rectangle2D(100.0, 100.0, 1024.0, 640.0)
+        val grown = ResizeEdge.SE.resize(start, 50.0, 30.0, 900.0, 580.0)
+        assertEquals(1074.0, grown.width, 1e-9)
+        assertEquals(670.0, grown.height, 1e-9)
+        // dragging the left edge far to the right stops at the min width, the right edge stays put
+        val shrunk = ResizeEdge.W.resize(start, 500.0, 0.0, 900.0, 580.0)
+        assertEquals(900.0, shrunk.width, 1e-9)
+        assertEquals(start.maxX, shrunk.maxX, 1e-9)
     }
 }
