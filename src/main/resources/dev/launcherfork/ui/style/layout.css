@@ -456,9 +456,9 @@
     -fx-padding: 5;
 }
 .switch:hover > .box, .switch:focused > .box { -fx-background-color: -settings-muted, -input; }
-.switch:selected > .box { -fx-background-color: -primary, -primary; -fx-padding: 3 3 3 17; }
+.switch:selected > .box { -fx-background-color: -switch-on, -switch-on; -fx-padding: 3 3 3 17; }
 .switch:selected > .box > .mark { -fx-background-color: -primary-foreground; }
-.switch:selected:hover > .box { -fx-background-color: -primary-hover, -primary-hover; }
+.switch:selected:hover > .box { -fx-background-color: -switch-on-hover, -switch-on-hover; }
 
 /* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb. Three
    states: accent up to the value (:filled), mid grey = available (-ram-free), outline only = system reserve above the

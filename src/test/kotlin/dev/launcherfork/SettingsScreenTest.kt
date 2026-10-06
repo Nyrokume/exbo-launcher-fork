@@ -325,6 +325,21 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun fourGbMachineShowsOneCaption() {
+        listOf(4 * gb, 3 * gb).forEach { total ->
+            val (c, _) = settingsWith(LauncherSettings(), totalMb = total)
+            FxTestSupport.onFx {
+                assertEquals(2, c.ramBar.minGb); assertEquals(2, c.ramBar.maxGb, "$total MB: only 2 GB can be chosen")
+                val scale = c.ramScale
+                assertEquals("2 ГБ", scale.minLabel.text)
+                assertFalse(scale.maxLabel.isVisible, "$total MB: «2 ГБ … 2 ГБ» shown twice")
+                assertEquals(1, scale.childrenUnmodifiable.count { it.isVisible }, "$total MB: one caption")
+                assertEquals(segmentCentre(c, 2), scale.minLabel.sceneBounds().centerX, 1.0, "$total MB: caption not under the 2 GB segment")
+            }
+        }
+    }
+
+    @Test
     fun otherOptionsStillSaveToTheStore() {
         val (c, store) = settingsWith(LauncherSettings())
         FxTestSupport.onFx {

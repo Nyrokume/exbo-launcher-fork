@@ -79,6 +79,8 @@
     -settings-divider: #2e2e2e;       /* row separators inside the cards */
     -ram-filled: #e5e5e5;             /* RAM segment: selected (14.2:1 on -card) */
     -ram-filled-hover: #fafafa;
+    -switch-on: #e5e5e5;              /* switch on: track (14.2:1 on -card) */
+    -switch-on-hover: #fafafa;
     -ram-free: #666666;               /* RAM segment: available, not selected (3.1:1 on -card) */
     -ram-reserve: #3a3a3a;            /* RAM segment: system reserve, outline only */
     -switch-off-knob: #a3a3a3;        /* switch off: knob (7.1:1 on -input) */

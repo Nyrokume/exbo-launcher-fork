@@ -80,6 +80,8 @@ class SettingsContrastTest {
         Triple("speed limit value", "-input-foreground" to "-input", 4.5),
         Triple("RAM segment: selected (non-text)", "-ram-filled" to "-card", 3.0),
         Triple("RAM segment: available (non-text)", "-ram-free" to "-card", 3.0),
+        Triple("switch on: track (non-text)", "-switch-on" to "-card", 3.0),
+        Triple("switch on: knob (non-text)", "-primary-foreground" to "-switch-on", 3.0),
         Triple("switch off: knob (non-text)", "-switch-off-knob" to "-input", 3.0),
         Triple("switch off: track ring (non-text)", "-switch-off-border" to "-card", 3.0),
     )
@@ -129,6 +131,8 @@ class SettingsContrastTest {
         assertTrue(prop(".ram-segment:reserve", "-fx-background-color").startsWith("-ram-reserve"))
         assertEquals("-switch-off-knob", prop(".switch > .box > .mark", "-fx-background-color"))
         assertTrue(prop(".switch > .box", "-fx-background-color").startsWith("-switch-off-border"))
+        assertEquals("-switch-on, -switch-on", prop(".switch:selected > .box", "-fx-background-color"))
+        assertEquals("-primary-foreground", prop(".switch:selected > .box > .mark", "-fx-background-color"))
         assertTrue(prop(".segment:selected, .segment:selected:hover", "-fx-background-color") == "-segment-selected")
         // readable sizes: row labels 14 px, segments 13 px, headings larger than the rows
         assertEquals("14", prop(".settings-label", "-fx-font-size"))
