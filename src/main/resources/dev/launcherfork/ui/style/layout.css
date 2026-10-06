@@ -446,6 +446,40 @@
 .modal-rule { -fx-background-color: linear-gradient(to right, -heading-rule 0%, transparent 100%); }
 .modal-rule-light { -fx-background-color: -divider-light; }
 .modal-button { -fx-font-size: 13; }
+
+/* flow-laid-out confirm card (logout_pane.fxml): sized by its content, real padding, buttons inside */
+.modal-box {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 22 28 28 28;
+    -fx-spacing: 14;
+    -fx-min-width: 440; -fx-pref-width: 440;
+}
+.modal-box .modal-title.font-display { -fx-translate-y: 0; }
+.modal-box-rule {
+    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
+    -fx-background-color: linear-gradient(to right, -heading-rule 0%, transparent 100%);
+}
+.modal-actions { -fx-spacing: 10; -fx-padding: 10 0 0 0; }
+.modal-action {
+    -fx-font-size: 20;
+    -fx-min-height: 44; -fx-pref-height: 44;
+    -fx-min-width: 140;
+    -fx-padding: 0 22;
+}
+.btn-outline {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: -border-hover;
+    -fx-border-width: 1;
+    -fx-text-fill: -foreground;
+    -fx-cursor: hand;
+}
+.btn-outline:hover { -fx-background-color: -tile-hover; -fx-border-color: -foreground; }
+.btn-outline:pressed { -fx-background-color: -fill-strong; }
+.modal-action.btn-outline:focused { -fx-border-color: -foreground; }
+.modal-action.btn-primary:focused { -fx-background-color: -primary-hover; }
 .license-title { -fx-font-size: 15; -fx-text-fill: -foreground; -fx-line-spacing: -13px; }
 .license-text { -fx-fill: -foreground; -fx-font-size: 11; }
 .license-link { -fx-underline: true; -fx-cursor: hand; }
