@@ -22,7 +22,7 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
     /** Stops running fake downloads/launches (logout, app exit) and the mock online-count drift. */
     fun shutdown() {
         clientStates.shutdown()
-        (services.servers as? MockServerRepository)?.shutdown()
+        services.servers.close()
     }
 
     companion object {

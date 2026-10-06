@@ -42,6 +42,11 @@ class ServerEntryController(private val ctx: UiContext) {
     /** Players online, shown under the name; null (or negative) = unknown / offline. Fed by ServerRepository.watchOnline. */
     val onlineCount: ObjectProperty<Int?> = SimpleObjectProperty(this, "onlineCount", null)
     private var onlineWatch: Cancellable? = null
+    /**
+     * Bumped on every bind/unbind (FX thread only). A repository tick may queue `runLater` just before [unbind];
+     * that late update carries the old generation and is dropped, so a re-bound card never shows the previous count.
+     */
+    private var onlineGeneration = 0L
 
     @FXML
     fun initialize() {
@@ -56,7 +61,8 @@ class ServerEntryController(private val ctx: UiContext) {
         name.text = server.caption.uppercase(Locale.forLanguageTag(ctx.lang))
         image.setImageBackground(loadImage(server.iconUri))
         // the count is always visible now, so the old «STALZONE - 1284 онлайн» hover tooltip is gone
-        onlineWatch = ctx.services.servers.watchOnline(server) { n -> fx { onlineCount.set(n) } }
+        val generation = onlineGeneration
+        onlineWatch = ctx.services.servers.watchOnline(server) { n -> fx { if (generation == onlineGeneration) onlineCount.set(n) } }
         renderOnline(onlineCount.get())
         this.state = state
         render(state.value)
@@ -69,6 +75,7 @@ class ServerEntryController(private val ctx: UiContext) {
         state = null
         onlineWatch?.cancel()
         onlineWatch = null
+        onlineGeneration++
     }
 
     fun setSelected(selected: Boolean) {

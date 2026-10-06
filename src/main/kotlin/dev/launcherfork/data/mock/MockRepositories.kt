@@ -48,7 +48,7 @@ class MockServerRepository(
     }
 
     /** Stops the drift timer (app exit). */
-    fun shutdown() = synchronized(lock) {
+    override fun close() = synchronized(lock) {
         ticker?.cancel()
         ticker = null
     }

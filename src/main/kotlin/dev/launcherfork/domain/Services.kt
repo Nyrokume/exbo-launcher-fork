@@ -56,6 +56,9 @@ interface ServerRepository {
         listener(server.onlineCount)
         return Cancellable {}
     }
+
+    /** Stops background work (timers, connections) when the app exits. Nothing to stop by default; safe to call twice. */
+    fun close() {}
 }
 
 interface UpdateService {

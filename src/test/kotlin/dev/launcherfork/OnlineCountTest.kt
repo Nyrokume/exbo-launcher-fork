@@ -175,6 +175,76 @@ class OnlineCountTest {
         withEntry(app = app3) { e3 -> assertEquals("2${nbsp}001 онлайн", e3.onlineText.text) }
     }
 
+    /**
+     * Race from the PR #7 review: a tick may queue `Platform.runLater` just before the card is re-bound. That stale
+     * update must not land on the new binding (the old server's count flashing on the new one).
+     */
+    @Test
+    fun staleUpdateQueuedBeforeRebindIsDropped() {
+        val listeners = java.util.concurrent.ConcurrentHashMap<String, (Int?) -> Unit>()
+        val repo = object : dev.launcherfork.domain.ServerRepository {
+            override fun servers() = MockData.servers
+            override fun watchOnline(server: dev.launcherfork.domain.Server, listener: (Int?) -> Unit): dev.launcherfork.domain.Cancellable {
+                listeners[server.id] = listener
+                listener(server.onlineCount)
+                return dev.launcherfork.domain.Cancellable {}
+            }
+        }
+        val base = AppContext.mock(authDelayMs = 0)
+        val app = AppContext(base.services.copy(servers = repo))
+        val a = stalzone.copy(id = "a", players = 100)
+        val b = stalzone.copy(id = "b", players = 5)
+        val ctx = FxTestSupport.context("ru", app)
+        val e = FxTestSupport.onFx {
+            Fxml.load<ServerEntryController>(ctx, "server_entry.fxml").controller.also { it.bind(a, app.clientStates.state(a)) }
+        }
+        try {
+            assertEquals(100, FxTestSupport.onFx { e.onlineCount.get() })
+            FxTestSupport.onFx {
+                // the tick of server A queues its runLater (FX thread is busy right here) ...
+                Thread { listeners.getValue("a")(999) }.apply { start(); join() }
+                // ... and before it runs, the card is re-bound to server B
+                e.bind(b, app.clientStates.state(b))
+            }
+            Thread.sleep(100)
+            assertEquals(5, FxTestSupport.onFx { e.onlineCount.get() }, "stale count of server A landed on server B")
+            assertEquals("5 онлайн", FxTestSupport.onFx { e.onlineText.text })
+            // the current binding still updates from the background
+            Thread { listeners.getValue("b")(6) }.apply { start(); join() }
+            assertTrue(FxTestSupport.waitFx { e.onlineCount.get() == 6 })
+            // and after unbind nothing queued earlier gets through either
+            FxTestSupport.onFx {
+                Thread { listeners.getValue("b")(77) }.apply { start(); join() }
+                e.unbind()
+            }
+            Thread.sleep(100)
+            assertEquals(6, FxTestSupport.onFx { e.onlineCount.get() })
+        } finally {
+            FxTestSupport.onFx { e.unbind() }
+            app.shutdown(); base.shutdown()
+        }
+    }
+
+    /** NIT from the review: the app stops the repository through the interface, no cast to the mock. */
+    @Test
+    fun appShutdownClosesAnyServerRepository() {
+        var closed = 0
+        val repo = object : dev.launcherfork.domain.ServerRepository {
+            override fun servers() = MockData.servers
+            override fun close() { closed++ }
+        }
+        val base = AppContext.mock(authDelayMs = 0)
+        AppContext(base.services.copy(servers = repo)).shutdown()
+        base.shutdown()
+        assertEquals(1, closed)
+        // the default close() is a no-op, the mock's stops its drift timer and can be called twice
+        object : dev.launcherfork.domain.ServerRepository { override fun servers() = MockData.servers }.close()
+        val ticking = MockServerRepository(tickMs = 10)
+        val h = ticking.watchOnline(stalzone) {}
+        ticking.close(); ticking.close()
+        h.cancel()
+    }
+
     @Test
     fun mockDriftsSlightlyWhenTickingAndStaysFixedOtherwise() {
         val fixed = MockServerRepository()
@@ -194,7 +264,7 @@ class OnlineCountTest {
             values.zipWithNext().forEach { (a, b) -> assertTrue(kotlin.math.abs(b!! - a!!) <= 6, "jump $a -> $b") }
         } finally {
             handle.cancel()
-            ticking.shutdown()
+            ticking.close()
         }
     }
 
