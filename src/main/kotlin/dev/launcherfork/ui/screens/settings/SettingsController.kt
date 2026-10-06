@@ -16,11 +16,12 @@ import javafx.scene.control.TextFormatter
 import javafx.scene.control.Tooltip
 import javafx.scene.control.ToggleGroup
 import javafx.scene.layout.AnchorPane
+import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 
 /**
- * settings.fxml: one-screen layout (sections ИГРА / ОБНОВЛЕНИЕ / ПРОЧЕЕ, grouped like the original launcher) bound to [dev.launcherfork.domain.SettingsStore].
+ * settings.fxml: one-screen layout (blocks ИГРА / ОБНОВЛЕНИЕ / ЯЗЫК / ПОВЕДЕНИЕ) bound to [dev.launcherfork.domain.SettingsStore].
  * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
@@ -30,11 +31,17 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var settingsTitle: Label
     @FXML lateinit var gameSection: VBox
     @FXML lateinit var updatesSection: VBox
-    @FXML lateinit var othersSection: VBox
+    @FXML lateinit var languageSection: VBox
+    @FXML lateinit var behaviourSection: VBox
+    @FXML lateinit var behaviourGrid: GridPane
+    @FXML lateinit var choicesGrid: GridPane
+    @FXML lateinit var exitLabel: Label
+    @FXML lateinit var p2pLabel: Label
     @FXML lateinit var columns: HBox
     @FXML lateinit var gameHeading: Label
     @FXML lateinit var updatesHeading: Label
-    @FXML lateinit var othersHeading: Label
+    @FXML lateinit var languageHeading: Label
+    @FXML lateinit var behaviourHeading: Label
 
     @FXML lateinit var ramBar: RamBar
     @FXML lateinit var ramSummary: Label
@@ -78,6 +85,10 @@ class SettingsController(private val ctx: UiContext) {
         bindRadios(p2pGroup, mapOf(p2pAlways to P2pMode.ALWAYS, p2pNotMobile to P2pMode.EXCEPT_MOBILE, p2pNever to P2pMode.NEVER), s.p2pMode) { v ->
             update { it.copy(p2pMode = v) }
         }
+
+        // the rows of ПОВЕДЕНИЕ carry short captions; the original long wording is the tooltip
+        exitLabel.tooltip = Tooltip(ctx.t("settings.exit"))
+        p2pLabel.tooltip = Tooltip(ctx.t("settings.p2p"))
 
         bindLimit(downloadLimitBox, downloadLimitField, "settings.limit.download", s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } }
         bindLimit(uploadLimitBox, uploadLimitField, "settings.limit.upload", s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } }

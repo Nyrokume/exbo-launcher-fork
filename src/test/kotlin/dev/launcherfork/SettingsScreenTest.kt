@@ -95,10 +95,10 @@ class SettingsScreenTest {
         assertEquals(0.0, s.scroll.vvalue, 1e-9)
         val window = BoundingBox(0.0, 0.0, scene.width, scene.height)
         val area = s.scroll.sceneBounds()
-        val sections = listOf(s.gameSection, s.updatesSection, s.othersSection)
+        val sections = listOf(s.gameSection, s.updatesSection, s.languageSection, s.behaviourSection)
         sections.forEach { c ->
             val b = c.sceneBounds()
-            assertTrue(b.width > 200 && b.height > 80, "$where: section ${c.id} not laid out: $b")
+            assertTrue(b.width > 200 && b.height > 60, "$where: section ${c.id} not laid out: $b")
             assertTrue(contains(area, b), "$where: section ${c.id} $b outside the settings area $area")
             assertTrue(contains(window, b), "$where: section ${c.id} $b outside the window")
             assertTrue(b.height >= c.prefHeight(c.width) - 0.5, "$where: section ${c.id} squeezed (${b.height} < ${c.prefHeight(c.width)})")
@@ -112,12 +112,16 @@ class SettingsScreenTest {
                 }
             }
         }
-        // ИГРА on top, ОБНОВЛЕНИЕ | ПРОЧЕЕ side by side under it, same top, no overlap
-        val game = s.gameSection.sceneBounds(); val upd = s.updatesSection.sceneBounds(); val oth = s.othersSection.sceneBounds()
-        assertTrue(game.maxY <= upd.minY && game.maxY <= oth.minY, "$where: ИГРА overlaps the columns")
-        assertEquals(upd.minY, oth.minY, 0.5, "$where: columns not top-aligned")
-        assertTrue(upd.maxX <= oth.minX, "$where: columns overlap")
-        assertEquals(upd.width, oth.width, 1.0, "$where: columns not equal")
+        // ИГРА on top, ОБНОВЛЕНИЕ | ЯЗЫК side by side under it (same top, equal), ПОВЕДЕНИЕ full width at the bottom
+        val game = s.gameSection.sceneBounds(); val upd = s.updatesSection.sceneBounds(); val lng = s.languageSection.sceneBounds()
+        val beh = s.behaviourSection.sceneBounds()
+        assertTrue(game.maxY <= upd.minY && game.maxY <= lng.minY, "$where: ИГРА overlaps the columns")
+        assertEquals(upd.minY, lng.minY, 0.5, "$where: columns not top-aligned")
+        assertTrue(upd.maxX <= lng.minX, "$where: columns overlap")
+        assertEquals(upd.width, lng.width, 1.0, "$where: columns not equal")
+        assertTrue(beh.minY >= maxOf(upd.maxY, lng.maxY), "$where: ПОВЕДЕНИЕ overlaps the columns")
+        assertEquals(game.minX, beh.minX, 0.5); assertEquals(game.maxX, beh.maxX, 0.5, "$where: ПОВЕДЕНИЕ not full width")
+        checkBehaviourRows(s, where, upd, lng)
         // the title shares the profile row and does not run under PLAYER
         val title = s.settingsTitle.sceneBounds()
         val profile = main.profileBarController.loginButton.sceneBounds()
@@ -126,6 +130,46 @@ class SettingsScreenTest {
         assertTrue(game.maxX <= scene.width, "$where: ИГРА outside")
         if (w == Theme.WINDOW_MIN_WIDTH) preview(scene, "settings-$theme-$lang-min")
         else if (lang == "ru") preview(scene, "settings-$theme")
+    }
+
+    /**
+     * ПОВЕДЕНИЕ is one uniform list: every row "label left, control right", at least 32 px high; the two choices are
+     * single lines of radios whose options line up in columns and end at the right edge; switches end at their
+     * column's right edge, and the grid's columns line up with ОБНОВЛЕНИЕ | ЯЗЫК above.
+     */
+    private fun checkBehaviourRows(s: SettingsController, where: String, upd: Bounds, lang: Bounds) {
+        val grid = s.behaviourGrid.sceneBounds()
+        val exit = listOf(s.exitOnStart, s.exitOnGameExit, s.exitNever).map { it.sceneBounds() }
+        val p2p = listOf(s.p2pAlways, s.p2pNotMobile, s.p2pNever).map { it.sceneBounds() }
+        listOf(s.exitLabel to exit, s.p2pLabel to p2p).forEach { (label, rb) ->
+            val lb = label.sceneBounds()
+            rb.forEach { assertEquals(rb[0].centerY, it.centerY, 0.5, "$where: '${label.text}' choices not on one line") }
+            assertEquals(rb[0].centerY, lb.centerY, 1.0, "$where: '${label.text}' label not on the choices' line")
+            assertEquals(grid.minX, lb.minX, 0.5, "$where: '${label.text}' label not at the left edge")
+            assertTrue(lb.maxX < rb.first().minX, "$where: '${label.text}' label runs into the choices")
+            assertEquals(grid.maxX, rb.last().maxX, 1.0, "$where: '${label.text}' choices not at the right edge")
+        }
+        exit.zip(p2p).forEach { (e, p) -> assertEquals(e.minX, p.minX, 0.5, "$where: choice columns not aligned") }
+        assertTrue(p2p[0].centerY - exit[0].centerY >= 32.0, "$where: choice rows lower than 32")
+
+        val left = listOf(s.startOnDownloadedRow, s.defenderRow)
+        val right = listOf(s.trayRow, s.autostartRow)
+        (left + right).forEach { assertTrue(it.sceneBounds().height >= 31.5, "$where: ${it.id} lower than 32") }
+        // the toggle rows of one grid line have the same height and top
+        left.zip(right).forEach { (l, r) ->
+            assertEquals(l.sceneBounds().minY, r.sceneBounds().minY, 0.5, "$where: grid rows not aligned")
+            assertEquals(l.sceneBounds().height, r.sceneBounds().height, 0.5, "$where: grid rows differ in height")
+        }
+        // order: auto-exit, P2P, then the switches
+        val tops = listOf(exit[0].minY, p2p[0].minY, s.startOnDownloadedRow.sceneBounds().minY, s.defenderRow.sceneBounds().minY)
+        assertEquals(tops.sorted(), tops, "$where: row order")
+        (left + right).forEach { row ->
+            val sw = row.children.last().sceneBounds()
+            val inLeft = row in left
+            assertEquals(if (inLeft) upd.maxX else lang.maxX, sw.maxX, 1.0, "$where: ${row.id} switch not at its column's right edge")
+            assertEquals(if (inLeft) upd.minX else lang.minX, row.sceneBounds().minX, 1.0, "$where: ${row.id} not in the column under ${if (inLeft) "ОБНОВЛЕНИЕ" else "ЯЗЫК"}")
+        }
+        assertEquals(grid.maxX, lang.maxX, 1.0, "$where: grid and columns have different right edges")
     }
 
     private fun settingsWith(settings: LauncherSettings, totalMb: Long = 16 * gb, lang: String = "ru"): Pair<SettingsController, InMemorySettingsStore> {
@@ -295,24 +339,32 @@ class SettingsScreenTest {
             listOf(c.trayToggle, c.autostartToggle, c.defenderToggle, c.startOnDownloadedToggle).forEach { t ->
                 assertTrue("switch" in t.styleClass, "${t.accessibleText} is not a switch")
             }
-            // grouped like the original launcher: Defender and start-after-download under ОБНОВЛЕНИЕ, tray/autostart under ПРОЧЕЕ
+            // blocks: ИГРА = RAM only, ОБНОВЛЕНИЕ = speed limits only, ЯЗЫК, and every behaviour option in ПОВЕДЕНИЕ
             fun under(n: javafx.scene.Node, p: javafx.scene.Node) = generateSequence(n) { it.parent }.any { it === p }
-            assertTrue(under(c.defenderToggle, c.updatesSection) && under(c.startOnDownloadedToggle, c.updatesSection))
-            assertTrue(under(c.trayToggle, c.othersSection) && under(c.autostartToggle, c.othersSection))
-            assertTrue(under(c.ramBar, c.gameSection) && under(c.exitNever, c.gameSection))
+            listOf(c.exitOnStart, c.exitOnGameExit, c.exitNever, c.p2pAlways, c.p2pNotMobile, c.p2pNever,
+                c.startOnDownloadedToggle, c.defenderToggle, c.trayToggle, c.autostartToggle).forEach { n ->
+                assertTrue(under(n, c.behaviourSection), "${n.id ?: n.accessibleText} not in ПОВЕДЕНИЕ")
+            }
+            assertTrue(under(c.ramBar, c.gameSection) && under(c.ramSummary, c.gameSection))
+            assertTrue(c.gameSection.lookupAll(".radio-button").isEmpty() && c.gameSection.lookupAll(".check-box").isEmpty(), "ИГРА holds only the RAM bar")
+            assertTrue(under(c.downloadLimitField, c.updatesSection) && under(c.uploadLimitField, c.updatesSection))
+            assertTrue(c.updatesSection.lookupAll(".radio-button").isEmpty() && c.updatesSection.lookupAll(".check-box").isEmpty(), "ОБНОВЛЕНИЕ holds only the limits")
+            assertTrue(under(c.langRu, c.languageSection) && under(c.langEn, c.languageSection))
+            assertEquals("ПОВЕДЕНИЕ", c.behaviourHeading.text); assertEquals("ЯЗЫК", c.languageHeading.text)
         }
     }
 
     @Test
     fun newStringsInEveryBundle() {
-        val keys = listOf("settings.page.title", "settings.language.short", "settings.ram.summary",
-            "settings.ram.hint", "settings.unit.gb")
+        val keys = listOf("settings.page.title", "settings.ram.summary", "settings.ram.hint", "settings.unit.gb",
+            "settings.heading.behaviour", "settings.heading.language", "settings.language.interface", "settings.exit.short", "settings.p2p.short")
         listOf("messages.properties", "messages_ru.properties", "messages_en.properties").forEach { file ->
             val props = Properties()
             javaClass.getResourceAsStream("/dev/launcherfork/ui/i18n/$file")!!.reader(Charsets.UTF_8).use(props::load)
             keys.forEach { k -> assertTrue(!props.getProperty(k).isNullOrBlank(), "$file misses $k") }
             assertNull(props.getProperty("settings.ram.recommended"), "$file: stale chip caption key")
             assertNull(props.getProperty("settings.ram.recommended_value"), "$file: stale recommended line")
+            assertNull(props.getProperty("settings.heading.others"), "$file: ПРОЧЕЕ is gone")
             assertTrue(props.getProperty("settings.ram.hint").contains("%s"), "$file: the hint names the recommended value")
         }
     }

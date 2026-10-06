@@ -387,6 +387,12 @@
     -fx-background-color: -divider-light;
 }
 .radio-row { -fx-hgap: 18; -fx-vgap: 6; }
+/* ПОВЕДЕНИЕ: one list of equal rows (label left, control right) in a two-column grid; the columns line up with
+   ОБНОВЛЕНИЕ | ЯЗЫК above (same 40 px gap). */
+.behaviour-grid { -fx-hgap: 40; -fx-vgap: 8; }
+.behaviour-grid > .toggle-row { -fx-min-height: 32; }
+.choices-grid { -fx-hgap: 18; -fx-vgap: 8; }
+.choice-group { -fx-spacing: 18; }
 
 /* radio: ring + accent dot (16 px) */
 .settings-radio { -fx-font-size: 13; -fx-text-fill: -text-label; -fx-label-padding: 0 0 0 8; -fx-cursor: hand; }
