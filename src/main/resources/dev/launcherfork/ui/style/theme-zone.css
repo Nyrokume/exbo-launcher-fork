@@ -139,7 +139,7 @@
  * Two-class selectors: they must beat the one-class rules of layout.css, which sits on the FXML parents.
  */
 .settings-title.font-display { -fx-font-size: 40; }
-.settings-card-title.font-display { -fx-font-size: 22; }
+.settings-heading.font-display { -fx-font-size: 21; }
 .modal-title.font-display { -fx-font-size: 30; -fx-translate-y: -4; } /* air above the fixed modal-rule (layoutY 35) */
 /* ИГРАТЬ: like the site's big buttons (.play_free / .login: var(--beb) 24px) */
 .button.play-button {

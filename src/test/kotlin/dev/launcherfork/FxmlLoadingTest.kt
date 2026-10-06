@@ -67,7 +67,7 @@ class FxmlLoadingTest {
             // bottom bar + game-actions button and its dropdown
             "defaultStatusPane", "downloadingStatus", "progressBar", "gameActionsButton", "downloadButton", "gameActions", "gameActionsMenu",
             // settings
-            "settings", "scroll", "ramBar", "ramSummary", "ramRecommended", "exitOnStart", "exitNever", "downloadLimitField", "uploadLimitField", "p2pNotMobile",
+            "settings", "scroll", "ramBar", "ramSummary", "exitOnStart", "exitNever", "downloadLimitField", "uploadLimitField", "p2pNotMobile",
             "defenderToggle", "startOnDownloadedToggle", "trayToggle", "autostartToggle", "langRu", "langEn",
             // modals (original names)
             "logoutPane", "logoutButtonRight", "updatePane", "updateYes", "licensePane", "licenseFirst", "licenseLoading", "offlinePane",

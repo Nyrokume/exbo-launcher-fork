@@ -308,16 +308,24 @@
 .play-progress { -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8; -fx-padding: 0; -fx-indeterminate-bar-length: 0; }
 .play-progress > .track { -fx-background-color: -track; -fx-background-insets: 0; }
 .play-progress > .bar { -fx-background-color: -primary; -fx-background-insets: 0; -fx-padding: 0; }
-/* game-actions button next to ИГРАТЬ: square tile as tall as the CTA, three-dots glyph; .open while its menu shows */
+/* game-actions button next to ИГРАТЬ: quiet ghost square as tall as the CTA (thin border, no fill), small muted
+   ellipsis (three 2.5 px dots, 3 px gaps) that brightens to -foreground on hover / focus / while the menu is open. */
 .game-actions-button {
     -fx-min-width: 44; -fx-pref-width: 44; -fx-max-width: 44;
     -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
     -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
 }
-/* Horizontal ellipsis: three round 3 px dots with 4 px gaps, cream -foreground in every state. */
-.game-actions-glyph { -fx-fill: -foreground; }
-.game-actions-button.open { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
+.game-actions-glyph { -fx-fill: -muted-foreground; }
+.game-actions-button:hover, .game-actions-button.open { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
 .game-actions-button:focused { -fx-border-color: -border-hover; }
+.game-actions-button:pressed { -fx-background-color: -fill-strong; }
+.game-actions-button:disabled { -fx-opacity: 0.45; }
+.game-actions-button:hover .game-actions-glyph, .game-actions-button:focused .game-actions-glyph,
+.game-actions-button.open .game-actions-glyph { -fx-fill: -foreground; }
 .play-button {
     -fx-min-width: 164; -fx-pref-width: 164; -fx-max-width: 164;
     -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
@@ -361,30 +369,24 @@
 .game-action-item:disabled { -fx-opacity: 0.38; }
 
 /* ===================== settings ===================== */
-/* One screen at 900x580 (SettingsLayoutTest): title on the profile row, full-width ИГРА card, ОБНОВЛЕНИЕ | ПРОЧЕЕ in
-   two equal columns. Cards: display-font title + fading rule, then .settings-block's split by thin dividers. */
+/* One screen at 900x580 (SettingsScreenTest). Minimal: no cards and no decorative rules; sections = display-font
+   heading + blocks, ИГРА full width, one hairline, ОБНОВЛЕНИЕ | ПРОЧЕЕ in two equal columns. */
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.settings-content { -fx-padding: 14 24 16 28; -fx-max-width: 820; -fx-spacing: 10; }
+.settings-content { -fx-padding: 14 28 16 28; -fx-max-width: 820; -fx-spacing: 14; }
 .settings-title-row { -fx-min-height: 36; -fx-pref-height: 36; -fx-padding: 0 0 2 0; }
 .settings-title { -fx-font-size: 34; -fx-text-fill: -foreground; }
-.settings-columns { -fx-spacing: 10; }
-.settings-card { -fx-padding: 10 16 12 16; -fx-spacing: 0; }
-.settings-card-title { -fx-font-size: 18; -fx-text-fill: -foreground; }
-.settings-card-rule { -fx-pref-width: 180; -fx-max-width: 180; }
-.settings-card > .settings-card-rule { -fx-translate-y: -1; }
-.settings-block { -fx-spacing: 6; -fx-padding: 9 0 9 0; }
-.settings-block.settings-toggles { -fx-spacing: 7; }
-.settings-block-head { -fx-spacing: 8; }
-.settings-titles { -fx-spacing: 1; }
+.settings-section { -fx-spacing: 12; }
+.settings-heading { -fx-font-size: 17; -fx-text-fill: -foreground; }
+.settings-columns { -fx-spacing: 40; }
+.settings-block { -fx-spacing: 7; }
+.settings-block.settings-toggles { -fx-spacing: 10; }
 .settings-label { -fx-font-size: 13; -fx-text-fill: -text-label; }
-.settings-hint { -fx-font-size: 11; -fx-text-fill: -muted-foreground; }
-.settings-row-divider {
+.settings-divider {
     -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
     -fx-background-color: -divider-light;
 }
 .radio-row { -fx-hgap: 18; -fx-vgap: 6; }
-.language-row { -fx-spacing: 14; }
 
 /* radio: ring + accent dot (16 px) */
 .settings-radio { -fx-font-size: 13; -fx-text-fill: -text-label; -fx-label-padding: 0 0 0 8; -fx-cursor: hand; }
@@ -405,57 +407,42 @@
 .settings-radio:selected > .radio > .dot { -fx-background-color: -primary; }
 .settings-radio:focused > .radio { -fx-background-color: -border-hover, -input; }
 
-/* toggle: same ring + dot, on the right of a compact row (the whole row clicks) */
-.toggle-row { -fx-spacing: 12; -fx-cursor: hand; }
+/* on/off option: a small switch on the right of the row (the whole row clicks), so it never looks like a radio.
+   Off: knob left on the input track; on: accent track, light knob right. 30x16, round ends. */
+.toggle-row { -fx-spacing: 16; -fx-cursor: hand; }
 .toggle-label { -fx-line-spacing: -1; }
-.ring-toggle { -fx-padding: 0; -fx-label-padding: 0; -fx-cursor: hand; }
-.ring-toggle > .box {
+.switch { -fx-padding: 0; -fx-label-padding: 0; -fx-cursor: hand; }
+.switch > .box {
     -fx-background-color: -border, -input;
-    -fx-background-insets: 0, 1.5;
-    -fx-background-radius: 8, 6.5;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 8, 7;
     -fx-border-color: transparent;
-    -fx-padding: 4;
+    -fx-padding: 3 17 3 3;
 }
-.ring-toggle:hover > .box, .ring-toggle:focused > .box { -fx-background-color: -border-hover, -input; }
-.ring-toggle > .box > .mark {
-    -fx-shape: "M0,4 A4,4 0 1,1 8,4 A4,4 0 1,1 0,4 Z";
-    -fx-background-color: transparent;
+.switch > .box > .mark {
+    -fx-shape: "M0,5 A5,5 0 1,1 10,5 A5,5 0 1,1 0,5 Z";
+    -fx-background-color: -muted-foreground;
     -fx-background-insets: 0;
-    -fx-padding: 4;
+    -fx-padding: 5;
 }
-.ring-toggle:selected > .box > .mark { -fx-background-color: -primary; }
+.switch:hover > .box, .switch:focused > .box { -fx-background-color: -border-hover, -input; }
+.switch:selected > .box { -fx-background-color: -primary, -primary; -fx-padding: 3 3 3 17; }
+.switch:selected > .box > .mark { -fx-background-color: -primary-foreground; }
+.switch:selected:hover > .box { -fx-background-color: -primary-hover, -primary-hover; }
 
-/* RAM bar (RamBar): track = the computer's memory, fill = allocation (accent), hatched system reserve, recommended
-   mark, accent thumb with a light core, GB ticks under it */
-.ram-summary { -fx-font-size: 13; -fx-text-fill: -foreground; }
-.ram-recommended { -fx-padding: 0 0 0 2; }
-.ram-bar { -fx-padding: 2 0 0 0; -fx-cursor: hand; }
-.ram-track {
+/* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb, accent up to
+   the value; the system reserve above the max is dimmed. "Выделено: 6 ГБ из 16 ГБ" under it. */
+.ram-block { -fx-spacing: 8; }
+.ram-bar { -fx-cursor: hand; -fx-border-color: transparent; -fx-border-width: 1; -fx-border-insets: -4; }
+.ram-bar:focus-visible { -fx-border-color: -border-hover; }
+.ram-segment {
     -fx-background-color: -track;
-    -fx-min-height: 6; -fx-pref-height: 6; -fx-max-height: 6;
+    -fx-min-height: 12; -fx-pref-height: 12; -fx-max-height: 12;
 }
-.ram-fill { -fx-background-color: -primary; }
-.ram-reserve {
-    -fx-background-color: linear-gradient(from 0px 0px to 5px 5px, repeat, -fill-strong 0%, -fill-strong 45%, transparent 45%, transparent 100%);
-}
-.ram-rec-mark {
-    -fx-background-color: -foreground;
-    -fx-opacity: 0.55;
-    -fx-min-width: 2; -fx-pref-width: 2; -fx-max-width: 2;
-    -fx-min-height: 14; -fx-pref-height: 14; -fx-max-height: 14;
-}
-.ram-thumb {
-    -fx-background-color: -primary, -foreground;
-    -fx-background-insets: 0, 5;
-    -fx-background-radius: 9, 4;
-    -fx-min-width: 18; -fx-pref-width: 18; -fx-max-width: 18;
-    -fx-min-height: 18; -fx-pref-height: 18; -fx-max-height: 18;
-    -fx-effect: dropshadow(gaussian, -shadow, 6, 0.2, 0, 1);
-}
-.ram-bar:hover .ram-thumb { -fx-background-color: -primary-hover, -foreground; }
-.ram-bar:focused .ram-thumb { -fx-background-color: -foreground, -primary, -foreground; -fx-background-insets: -2, 0, 5; -fx-background-radius: 11, 9, 4; }
-.ram-tick { -fx-font-size: 11; -fx-text-fill: -placeholder; }
-.ram-tick.recommended { -fx-text-fill: -foreground; }
+.ram-segment:filled { -fx-background-color: -primary; }
+.ram-bar:hover .ram-segment:filled { -fx-background-color: -primary-hover; }
+.ram-segment:reserve { -fx-opacity: 0.4; }
+.ram-summary { -fx-font-size: 13; -fx-text-fill: -foreground; }
 
 /* inputs (dark tile + border, red on focus) */
 .zone-input {
@@ -468,8 +455,6 @@
 .zone-input:hover { -fx-border-color: -border-hover; }
 .zone-input:focus-within { -fx-border-color: -ring; }
 .limit-row { -fx-spacing: 10; }
-.limit-group { -fx-spacing: 3; }
-.limit-caption { -fx-font-size: 11; -fx-text-fill: -muted-foreground; }
 .limit-field.zone-input { -fx-spacing: 6; -fx-padding: 0 10 0 10; -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32; }
 .limit-input {
     -fx-background-color: transparent;

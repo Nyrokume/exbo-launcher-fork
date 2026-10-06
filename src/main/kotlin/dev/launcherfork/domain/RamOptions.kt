@@ -50,22 +50,6 @@ object RamOptions {
         return if (total <= 0) 0.0 else (gb.toDouble() / total).coerceIn(0.0, 1.0)
     }
 
-    /**
-     * GB values that get a tick label under the bar: every 1, 2, 4 or 8 GB (the smallest step giving at most
-     * [maxLabels] labels), always ending with the total.
-     */
-    fun tickLabels(totalMb: Long, maxLabels: Int = 9): List<Int> {
-        val total = totalGb(totalMb)
-        if (total <= 0) return emptyList()
-        val step = listOf(1, 2, 4, 8, 16, 32).first { total / it <= maxLabels }
-        val ticks = (step..total step step).toMutableList()
-        if (ticks.lastOrNull() != total) {
-            if (ticks.isNotEmpty() && total - ticks.last() < step / 2.0 + 0.01) ticks.removeAt(ticks.lastIndex)
-            ticks += total
-        }
-        return ticks
-    }
-
     /** "4 ГБ" / "4 GB": [unit] is the localized unit. */
     fun format(gb: Int, unit: String): String = "$gb $unit"
 }

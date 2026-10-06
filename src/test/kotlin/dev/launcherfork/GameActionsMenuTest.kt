@@ -84,8 +84,8 @@ class GameActionsMenuTest {
         assertTrue(btn.maxX <= play.minX, "$where: actions button not left of ИГРАТЬ")
         val glyph = status.gameActionsGlyph.sceneBounds()
         assertEquals(btn.centerX, glyph.centerX, 1.0, "$where: glyph off-centre"); assertEquals(btn.centerY, glyph.centerY, 1.0)
-        assertTrue(glyph.width in 14.0..22.0, "$where: glyph $glyph")
-        checkEllipsis(status.gameActionsGlyph, theme, where)
+        assertTrue(glyph.width in 12.0..22.0, "$where: glyph $glyph")
+        checkEllipsis(status.gameActionsButton, status.gameActionsGlyph, theme, where)
 
         main.menu().show()
         relayout(nav)
@@ -114,29 +114,37 @@ class GameActionsMenuTest {
         assertFalse(main.menu().isShown)
     }
 
-    /** The actions glyph is a horizontal ellipsis: three equal 3 px round dots, 4 px apart, in the theme's -foreground. */
-    private fun checkEllipsis(glyph: javafx.scene.shape.SVGPath, theme: String, where: String) {
+    /**
+     * The actions glyph is a small horizontal ellipsis: three equal 2.5 px round dots, 3 px apart, centred; muted at
+     * rest (the theme's -muted-foreground), -foreground on hover / focus / open. The button is a ghost square.
+     */
+    private fun checkEllipsis(button: javafx.scene.control.Button, glyph: javafx.scene.shape.SVGPath, theme: String, where: String) {
         val dots = Regex("""M([\d.]+),([\d.]+) A([\d.]+),([\d.]+) 0 1,1 ([\d.]+),([\d.]+) A[\d.]+,[\d.]+ 0 1,1 [\d.]+,[\d.]+ Z""")
             .findAll(glyph.content).map { m -> m.groupValues.drop(1).map(String::toDouble) }.toList()
         assertEquals(3, dots.size, "$where: expected three dots in '${glyph.content}'")
         dots.forEach { (x, y, rx, ry, x2, y2) ->
-            assertEquals(1.5, rx, 1e-9); assertEquals(1.5, ry, 1e-9)       // round, Ø3
-            assertEquals(x, x2, 1e-9); assertEquals(y + 3.0, y2, 1e-9)      // a full circle
+            assertEquals(1.25, rx, 1e-9); assertEquals(1.25, ry, 1e-9)     // round, Ø2.5
+            assertEquals(x, x2, 1e-9); assertEquals(y + 2.5, y2, 1e-9)      // a full circle
             assertEquals(0.0, y, 1e-9)                                     // all on one horizontal line
         }
-        val gaps = dots.zipWithNext { a, b -> (b[0] - 1.5) - (a[0] + 1.5) }
-        assertEquals(listOf(4.0, 4.0), gaps, "$where: dots not 4 px apart")
+        val gaps = dots.zipWithNext { a, b -> (b[0] - 1.25) - (a[0] + 1.25) }
+        assertEquals(listOf(3.0, 3.0), gaps, "$where: dots not 3 px apart")
         assertNull(glyph.stroke, "$where: dots must be filled, not stroked")
-        assertEquals(17.0, glyph.layoutBounds.width, 0.01); assertEquals(3.0, glyph.layoutBounds.height, 0.01)
-        assertEquals(foreground(theme), glyph.fill, "$where: dots not in the theme foreground colour")
+        assertEquals(13.5, glyph.layoutBounds.width, 0.01); assertEquals(2.5, glyph.layoutBounds.height, 0.01)
+        val quiet = !button.isHover && !button.isFocused && "open" !in button.styleClass
+        assertEquals(token(theme, if (quiet) "-muted-foreground" else "-foreground"), glyph.fill, "$where: dot colour")
+        // ghost: no tile fill at rest, thin border
+        assertTrue("tile" !in button.styleClass, "$where: the actions button should be a ghost square, not a filled tile")
+        if (quiet) assertTrue(button.background == null || button.background.fills.all { it.fill == javafx.scene.paint.Color.TRANSPARENT },
+            "$where: ghost button has a fill ${button.background?.fills?.map { it.fill }}")
     }
 
     private operator fun <T> List<T>.component6() = this[5]
 
-    private fun foreground(theme: String): javafx.scene.paint.Color {
+    private fun token(theme: String, name: String): javafx.scene.paint.Color {
         val file = mapOf("exbo" to "theme.css", "zone" to "theme-zone.css", "shadcn" to "theme-shadcn.css").getValue(theme)
         val css = javaClass.getResource("/dev/launcherfork/ui/style/$file")!!.readText()
-        val hex = Regex("""(?m)^\s*-foreground:\s*([^;]+);""").find(css)!!.groupValues[1].trim()
+        val hex = Regex("""(?m)^\s*${Regex.escape(name)}:\s*([^;]+);""").find(css)!!.groupValues[1].trim()
         return javafx.scene.paint.Color.web(hex)
     }
 

@@ -2,36 +2,32 @@ package dev.launcherfork.ui.components
 
 import javafx.beans.property.ReadOnlyIntegerProperty
 import javafx.beans.property.ReadOnlyIntegerWrapper
+import javafx.css.PseudoClass
 import javafx.scene.AccessibleAttribute
 import javafx.scene.AccessibleRole
-import javafx.scene.control.Label
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Region
-import kotlin.math.roundToInt
+import kotlin.math.ceil
 
 /**
- * Fillable RAM bar of the settings page. The track is the computer's memory (0..[totalGb]); the filled part (accent,
- * red in the zone theme) ends at the thumb and is the allocation, so "6 ГБ из 16 ГБ" fills 6/16 of the track. The part
- * above [maxGb] (the system reserve) is hatched and unreachable, a small mark shows the recommended value, GB tick
- * labels sit under the track (the recommended one highlighted).
+ * RAM bar of the settings page, built like the original EXBO launcher's control (`progression_entry.fxml` +
+ * `ProgressionController`: a 13 px bar of 14 equal segments with 2 px gaps, no thumb, filled with the accent up to the
+ * value, click / drag anywhere sets it, the value as text under the bar). Here every segment is one GB of the
+ * computer's memory (0..[totalGb]), so "6 ГБ из 16 ГБ" fills 6 of 16 segments; the segments above [maxGb] (the system
+ * reserve) are dimmed and cannot be reached.
  *
- * Values are whole GB, steps of exactly 1 GB, always clamped to [minGb]..[maxGb]. Mouse: press / drag anywhere on the
- * control; keyboard (focusable): Left / Down -1, Right / Up +1, Page Down / Page Up -2 / +2, Home / End = min / max.
- * [onChange] fires only for user changes. Styling: .ram-bar, .ram-track, .ram-fill, .ram-reserve, .ram-rec-mark,
- * .ram-thumb, .ram-tick(.recommended) in layout.css; sizes of the track and the thumb come from CSS.
+ * Values are whole GB, steps of exactly 1 GB, always clamped to [minGb]..[maxGb]. Mouse: press / drag on segment N
+ * selects N GB; keyboard (focusable): Left / Down -1, Right / Up +1, Page Down / Page Up -2 / +2, Home / End = min /
+ * max. [onChange] fires only for user changes. Styling: .ram-bar, .ram-segment(:filled, :reserve) in layout.css; the
+ * segment height comes from CSS.
  */
 class RamBar : Region() {
     private val valueWrapper = ReadOnlyIntegerWrapper(this, "value", 0)
 
-    val track = Region().apply { styleClass.setAll("ram-track", "zone-radius-sm") }
-    val reserve = Region().apply { styleClass.setAll("ram-reserve", "zone-radius-sm") }
-    val fill = Region().apply { styleClass.setAll("ram-fill", "zone-radius-sm") }
-    val recommendedMark = Region().apply { styleClass.setAll("ram-rec-mark") }
-    val thumb = Region().apply { styleClass.setAll("ram-thumb") }
-    /** Tick labels left to right; userData = GB value. */
-    var tickLabels: List<Label> = emptyList()
+    /** One region per GB of memory, left to right; segment i (0-based) stands for GB i + 1. */
+    var segments: List<Region> = emptyList()
         private set
 
     var totalGb: Int = 16
@@ -45,7 +41,7 @@ class RamBar : Region() {
 
     /** Called after the user moved the bar (mouse / keyboard), with the new GB value. */
     var onChange: (Int) -> Unit = {}
-    /** Text of a GB value for the last tick label and the accessible text ("16 ГБ"). */
+    /** Text of a GB value for the accessible text ("16 ГБ"). */
     var formatter: (Int) -> String = { "$it GB" }
 
     val valueProperty: ReadOnlyIntegerProperty get() = valueWrapper.readOnlyProperty
@@ -55,38 +51,35 @@ class RamBar : Region() {
         styleClass += "ram-bar"
         isFocusTraversable = true
         accessibleRole = AccessibleRole.SLIDER
-        children.setAll(track, reserve, fill, recommendedMark, thumb)
-        listOf(track, reserve, fill, recommendedMark, thumb).forEach { it.isMouseTransparent = true }
         addEventHandler(MouseEvent.MOUSE_PRESSED) { e -> requestFocus(); setFromX(e.x); e.consume() }
         addEventHandler(MouseEvent.MOUSE_DRAGGED) { e -> setFromX(e.x); e.consume() }
         addEventHandler(KeyEvent.KEY_PRESSED, ::onKey)
-        valueWrapper.addListener { _, _, _ -> requestLayout(); updateAccessibleText() }
+        valueWrapper.addListener { _, _, _ -> paint(); updateAccessibleText() }
     }
 
-    /** Scale, bounds, recommended value and current value (clamped; not a user change). */
-    fun configure(totalGb: Int, minGb: Int, maxGb: Int, recommendedGb: Int, value: Int, ticks: List<Int>) {
+    /** Scale, bounds, recommended value (kept for the hint) and current value (clamped; not a user change). */
+    fun configure(totalGb: Int, minGb: Int, maxGb: Int, recommendedGb: Int, value: Int) {
         require(minGb <= maxGb) { "min $minGb > max $maxGb" }
-        this.totalGb = maxOf(totalGb, maxGb)
+        this.totalGb = maxOf(totalGb, maxGb, 1)
         this.minGb = minGb
         this.maxGb = maxGb
         this.recommendedGb = recommendedGb.coerceIn(minGb, maxGb)
-        val values = (ticks + this.recommendedGb).distinct().sorted()
-        tickLabels = values.map { gb ->
-            Label(if (gb == values.last()) formatter(gb) else gb.toString()).apply {
-                styleClass.setAll("ram-tick")
-                if (gb == this@RamBar.recommendedGb) styleClass += "recommended"
+        segments = (1..this.totalGb).map { gb ->
+            Region().apply {
+                styleClass.setAll("ram-segment")
                 userData = gb
                 isMouseTransparent = true
-                minWidth = USE_PREF_SIZE
+                pseudoClassStateChanged(RESERVE, gb > maxGb)
             }
         }
-        children.setAll(listOf(track, reserve, fill, recommendedMark, thumb) + tickLabels)
+        children.setAll(segments)
         valueWrapper.set(value.coerceIn(minGb, maxGb))
+        paint()
         updateAccessibleText()
         requestLayout()
     }
 
-    /** Programmatic or user change; the value is clamped and snapped to whole GB. Returns the stored value. */
+    /** Programmatic or user change; the value is clamped to whole GB in the bounds. Returns the stored value. */
     fun setValue(gb: Int, user: Boolean = false): Int {
         val v = gb.coerceIn(minGb, maxGb)
         if (v == value) return v
@@ -95,26 +88,23 @@ class RamBar : Region() {
         return v
     }
 
-    /** Filled share of the track (allocation / total), what the fill's width shows. */
+    /** Filled share of the bar (allocation / total memory) = filled segments / all segments. */
     val fillFraction: Double get() = if (totalGb <= 0) 0.0 else value.toDouble() / totalGb
 
-    private fun fractionOf(gb: Int) = if (totalGb <= 0) 0.0 else gb.toDouble() / totalGb
+    /** Segments that are painted filled (always [value] of them). */
+    val filledSegments: List<Region> get() = segments.filter { it.pseudoClassStates.contains(FILLED) }
 
-    private val thumbSize: Double get() = snapSizeX(thumb.prefWidth(-1.0)).takeIf { it > 0 } ?: 16.0
-    private val trackHeight: Double get() = snapSizeY(track.prefHeight(-1.0)).takeIf { it > 0 } ?: 6.0
-    private val labelGap = 5.0
+    private fun paint() = segments.forEach { s -> s.pseudoClassStateChanged(FILLED, (s.userData as Int) <= value) }
 
-    /** Track geometry: left x and width (the thumb's centre can reach both ends). */
-    private fun trackX(): Pair<Double, Double> {
-        val ts = thumbSize
-        val x0 = snappedLeftInset() + ts / 2
-        return x0 to maxOf(0.0, width - snappedLeftInset() - snappedRightInset() - ts)
-    }
+    /** Gap between segments: 2 px like the original, 1 px when memory is so large that segments get thin. */
+    private fun gap(contentWidth: Double): Double = if (contentWidth / totalGb >= 10.0) 2.0 else 1.0
 
     private fun setFromX(x: Double) {
-        val (x0, tw) = trackX()
-        if (tw <= 0) return
-        setValue(((x - x0) / tw * totalGb).roundToInt(), user = true)
+        val w = width - snappedLeftInset() - snappedRightInset()
+        if (w <= 0) return
+        // the press lands on segment N (1-based) -> N GB; the gap belongs to the segment on its left
+        val n = ceil((x - snappedLeftInset()) / w * totalGb).toInt()
+        setValue(n, user = true)
     }
 
     private fun onKey(e: KeyEvent) {
@@ -143,56 +133,32 @@ class RamBar : Region() {
         else -> super.queryAccessibleAttribute(attribute, *parameters)
     }
 
-    private fun labelHeight(): Double = tickLabels.maxOfOrNull { it.prefHeight(-1.0) } ?: 0.0
+    private val segmentHeight: Double
+        get() = snapSizeY(segments.firstOrNull()?.prefHeight(-1.0)?.takeIf { it > 0 } ?: 12.0)
 
-    override fun computePrefHeight(width: Double): Double =
-        snappedTopInset() + thumbSize + labelGap + labelHeight() + snappedBottomInset()
-
+    override fun computePrefHeight(width: Double): Double = snappedTopInset() + segmentHeight + snappedBottomInset()
     override fun computeMinHeight(width: Double): Double = computePrefHeight(width)
     override fun computeMaxHeight(width: Double): Double = computePrefHeight(width)
     override fun computePrefWidth(height: Double): Double = 360.0
     override fun computeMinWidth(height: Double): Double = 160.0
 
     override fun layoutChildren() {
-        val (x0, tw) = trackX()
-        val ts = thumbSize
-        val th = trackHeight
-        val cy = snappedTopInset() + ts / 2
-        val ty = snapPositionY(cy - th / 2)
-        fun xOf(gb: Int) = x0 + tw * fractionOf(gb)
-
-        track.resizeRelocate(snapPositionX(x0), ty, snapSizeX(tw), th)
-        val fillEnd = xOf(value)
-        fill.resizeRelocate(snapPositionX(x0), ty, snapSizeX(fillEnd - x0), th)
-        val reserveStart = xOf(maxGb)
-        reserve.isVisible = maxGb < totalGb
-        reserve.resizeRelocate(snapPositionX(reserveStart), ty, snapSizeX(x0 + tw - reserveStart), th)
-        val markW = snapSizeX(recommendedMark.prefWidth(-1.0).takeIf { it > 0 } ?: 2.0)
-        val markH = snapSizeY(recommendedMark.prefHeight(-1.0).takeIf { it > 0 } ?: (th + 8))
-        recommendedMark.resizeRelocate(snapPositionX(xOf(recommendedGb) - markW / 2), snapPositionY(cy - markH / 2), markW, markH)
-        thumb.resizeRelocate(snapPositionX(fillEnd - ts / 2), snappedTopInset(), ts, ts)
-
-        // tick labels centred under their value, kept inside the control; a label that would touch the recommended
-        // one (always shown) is hidden
-        val ly = snapPositionY(snappedTopInset() + ts + labelGap)
-        val left = snappedLeftInset()
-        val right = width - snappedRightInset()
-        val placed = tickLabels.map { l ->
-            val w = snapSizeX(l.prefWidth(-1.0))
-            val cx = xOf(l.userData as Int)
-            val x = (cx - w / 2).coerceIn(left, maxOf(left, right - w))
-            Triple(l, x, w)
-        }
-        val rec = placed.firstOrNull { it.first.userData == recommendedGb }
-        placed.forEach { (l, x, w) ->
-            l.resizeRelocate(snapPositionX(x), ly, w, snapSizeY(l.prefHeight(-1.0)))
-            l.isVisible = rec == null || l === rec.first ||
-                (x + w + MIN_LABEL_GAP <= rec.second || x >= rec.second + rec.third + MIN_LABEL_GAP)
+        val x0 = snappedLeftInset()
+        val w = width - x0 - snappedRightInset()
+        val y = snappedTopInset()
+        val h = segmentHeight
+        val gap = gap(w)
+        val pitch = w / totalGb
+        segments.forEachIndexed { i, s ->
+            // segment i spans [i·pitch, (i+1)·pitch - gap]; the last one ends flush with the bar
+            val left = snapPositionX(x0 + i * pitch)
+            val right = if (i == segments.lastIndex) x0 + w else snapPositionX(x0 + (i + 1) * pitch) - gap
+            s.resizeRelocate(left, y, maxOf(1.0, right - left), h)
         }
     }
 
-    private companion object {
-        const val MIN_LABEL_GAP = 6.0
+    companion object {
+        val FILLED: PseudoClass = PseudoClass.getPseudoClass("filled")
+        val RESERVE: PseudoClass = PseudoClass.getPseudoClass("reserve")
     }
-
 }

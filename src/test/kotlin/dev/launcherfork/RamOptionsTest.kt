@@ -72,16 +72,6 @@ class RamOptionsTest {
     }
 
     @Test
-    fun tickLabelsEndWithTheTotal() {
-        assertEquals(listOf(2, 4, 6, 8, 10, 12, 14, 16), RamOptions.tickLabels(16 * gb))
-        assertEquals(listOf(1, 2, 3, 4, 5, 6, 7, 8), RamOptions.tickLabels(8 * gb))
-        assertEquals(listOf(4, 8, 12, 16, 20, 24, 28, 32), RamOptions.tickLabels(32 * gb))
-        assertEquals(listOf(2, 4, 6, 8, 10, 12), RamOptions.tickLabels(12 * gb))
-        assertEquals(listOf(2, 4, 6, 8, 10, 12, 14, 16, 18), RamOptions.tickLabels(18 * gb))
-        assertTrue(RamOptions.tickLabels(24 * gb).last() == 24)
-    }
-
-    @Test
     fun formatsWithLocalizedUnit() {
         assertEquals("4 ГБ", RamOptions.format(4, "ГБ"))
         assertEquals("12 GB", RamOptions.format(12, "GB"))

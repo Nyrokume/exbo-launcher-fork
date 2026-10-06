@@ -35,9 +35,10 @@ import java.util.Properties
 
 /**
  * The rebuilt settings page: everything on ONE screen at the minimum window size (900x580) in every theme and both
- * languages (localToScene bounds: no scrolling, nothing clipped, no truncated text, cards side by side), the
- * fillable RAM bar (fill = value / total memory, label follows the bar, 1 GB steps, both bounds) and that mouse /
- * keyboard changes land in the SettingsStore.
+ * languages (localToScene bounds: no scrolling, nothing clipped, no truncated text, columns side by side), the
+ * minimal look (no cards, no helper lines), the RAM bar like the original launcher's (equal segments, one per GB,
+ * filled up to the value, no thumb; label follows the bar, 1 GB steps, both bounds) and that mouse / keyboard changes
+ * land in the SettingsStore.
  */
 class SettingsScreenTest {
     private val gb = 1024L
@@ -94,17 +95,17 @@ class SettingsScreenTest {
         assertEquals(0.0, s.scroll.vvalue, 1e-9)
         val window = BoundingBox(0.0, 0.0, scene.width, scene.height)
         val area = s.scroll.sceneBounds()
-        val cards = listOf(s.gameCard, s.updatesCard, s.othersCard)
-        cards.forEach { c ->
+        val sections = listOf(s.gameSection, s.updatesSection, s.othersSection)
+        sections.forEach { c ->
             val b = c.sceneBounds()
-            assertTrue(b.width > 200 && b.height > 80, "$where: card ${c.id} not laid out: $b")
-            assertTrue(contains(area, b), "$where: card ${c.id} $b outside the settings area $area")
-            assertTrue(contains(window, b), "$where: card ${c.id} $b outside the window")
-            assertTrue(b.height >= c.prefHeight(c.width) - 0.5, "$where: card ${c.id} squeezed (${b.height} < ${c.prefHeight(c.width)})")
-            // every visible node of the card stays inside it, text is not cut
+            assertTrue(b.width > 200 && b.height > 80, "$where: section ${c.id} not laid out: $b")
+            assertTrue(contains(area, b), "$where: section ${c.id} $b outside the settings area $area")
+            assertTrue(contains(window, b), "$where: section ${c.id} $b outside the window")
+            assertTrue(b.height >= c.prefHeight(c.width) - 0.5, "$where: section ${c.id} squeezed (${b.height} < ${c.prefHeight(c.width)})")
+            // every visible node of the section stays inside it, text is not cut
             visibleDescendants(c).forEach { n ->
                 val nb = n.sceneBounds()
-                assertTrue(contains(b, nb), "$where: ${n.id ?: n.styleClass} $nb sticks out of card ${c.id} $b")
+                assertTrue(contains(b, nb), "$where: ${n.id ?: n.styleClass} $nb sticks out of section ${c.id} $b")
                 if (n is Labeled && n.text.isNotEmpty()) {
                     if (n.isWrapText) assertTrue(n.height >= n.prefHeight(n.width) - 0.5, "$where: '${n.text}' cut (wrapped)")
                     else assertTrue(n.width >= n.prefWidth(-1.0) - 0.5, "$where: '${n.text}' truncated (${n.width} < ${n.prefWidth(-1.0)})")
@@ -112,7 +113,7 @@ class SettingsScreenTest {
             }
         }
         // ИГРА on top, ОБНОВЛЕНИЕ | ПРОЧЕЕ side by side under it, same top, no overlap
-        val game = s.gameCard.sceneBounds(); val upd = s.updatesCard.sceneBounds(); val oth = s.othersCard.sceneBounds()
+        val game = s.gameSection.sceneBounds(); val upd = s.updatesSection.sceneBounds(); val oth = s.othersSection.sceneBounds()
         assertTrue(game.maxY <= upd.minY && game.maxY <= oth.minY, "$where: ИГРА overlaps the columns")
         assertEquals(upd.minY, oth.minY, 0.5, "$where: columns not top-aligned")
         assertTrue(upd.maxX <= oth.minX, "$where: columns overlap")
@@ -121,8 +122,8 @@ class SettingsScreenTest {
         val title = s.settingsTitle.sceneBounds()
         val profile = main.profileBarController.loginButton.sceneBounds()
         assertTrue(title.maxX < profile.minX, "$where: title under the profile button")
-        assertTrue(game.minY >= profile.maxY - 0.5, "$where: ИГРА card $game under the profile button $profile")
-        assertTrue(game.maxX <= scene.width, "$where: ИГРА card outside")
+        assertTrue(game.minY >= profile.maxY - 0.5, "$where: ИГРА $game under the profile button $profile")
+        assertTrue(game.maxX <= scene.width, "$where: ИГРА outside")
         if (w == Theme.WINDOW_MIN_WIDTH) preview(scene, "settings-$theme-$lang-min")
         else if (lang == "ru") preview(scene, "settings-$theme")
     }
@@ -142,44 +143,47 @@ class SettingsScreenTest {
         return c to store
     }
 
+    /** [gbValue] of [totalGb] segments are filled, from the left, and they cover gbValue/totalGb of the bar. */
     private fun assertFill(c: SettingsController, gbValue: Int, totalGb: Int, why: String) {
         val bar = c.ramBar
         bar.applyCss(); bar.layout()
         assertEquals(gbValue, bar.value, why)
         assertEquals(gbValue.toDouble() / totalGb, bar.fillFraction, 1e-9, "$why: fill fraction")
-        val track = bar.track.sceneBounds(); val fill = bar.fill.sceneBounds(); val thumb = bar.thumb.sceneBounds()
-        assertTrue(track.width > 200, "$why: track ${track.width}")
-        assertEquals(gbValue.toDouble() / totalGb, fill.width / track.width, 1.5 / track.width, "$why: fill width ${fill.width} of ${track.width}")
-        assertEquals(track.minX, fill.minX, 0.5, "$why: fill starts at the track's left edge")
-        assertEquals(fill.maxX, thumb.centerX, 1.0, "$why: thumb not at the end of the fill")
+        assertEquals(totalGb, bar.segments.size, "$why: one segment per GB")
+        assertEquals(bar.segments.take(gbValue), bar.filledSegments, "$why: filled segments")
+        val barB = bar.sceneBounds()
+        assertTrue(barB.width > 200, "$why: bar ${barB.width}")
+        val filledEnd = bar.segments[gbValue - 1].sceneBounds().maxX
+        assertEquals(gbValue.toDouble() / totalGb, (filledEnd - barB.minX) / barB.width, 3.0 / barB.width, "$why: filled part")
+        assertEquals(barB.minX, bar.segments.first().sceneBounds().minX, 0.5, "$why: fill starts at the left edge")
+        assertEquals(barB.maxX, bar.segments.last().sceneBounds().maxX, 0.5, "$why: last segment ends at the right edge")
     }
 
     @Test
-    fun ramBarFillAndLabelFollowTheValue() {
+    fun ramBarLooksLikeTheOriginalSegmentedBar() {
         val (c, _) = settingsWith(LauncherSettings(ramFraction = 0.5))
         FxTestSupport.onFx {
             val bar = c.ramBar
             assertEquals(16, bar.totalGb); assertEquals(2, bar.minGb); assertEquals(14, bar.maxGb); assertEquals(6, bar.recommendedGb)
             assertFill(c, 2, 16, "legacy 0.5 = 2304 MB -> 2 GB")
             assertEquals("Выделено: 2 ГБ из 16 ГБ", c.ramSummary.text)
-            assertEquals("· рекомендуем 6 ГБ", c.ramRecommended.text)
             for (v in listOf(6, 9, 14)) {
                 bar.setValue(v)
                 assertFill(c, v, 16, "value $v")
                 assertEquals("Выделено: $v ГБ из 16 ГБ", c.ramSummary.text)
             }
-            // recommended mark and its highlighted tick sit at 6 GB
-            val track = bar.track.sceneBounds()
-            assertEquals(track.minX + track.width * 6 / 16, bar.recommendedMark.sceneBounds().centerX, 1.0)
-            val ticks = bar.tickLabels.map { it.userData as Int }
-            assertEquals(listOf(2, 4, 6, 8, 10, 12, 14, 16), ticks)
-            assertEquals(listOf(6), bar.tickLabels.filter { "recommended" in it.styleClass }.map { it.userData })
-            assertEquals("16 ГБ", bar.tickLabels.last().text)
-            // the reserve above the max is hatched from 14 to 16 GB
-            val reserve = bar.reserve.sceneBounds()
-            assertTrue(bar.reserve.isVisible)
-            assertEquals(track.minX + track.width * 14 / 16, reserve.minX, 1.0)
-            assertEquals(track.maxX, reserve.maxX, 1.0)
+            // equal segments with a small gap, a bar (not a slider): no thumb, no tick labels
+            val seg = bar.segments.map { it.sceneBounds() }
+            seg.zipWithNext { a, b -> assertTrue(b.minX - a.maxX in 1.0..3.0, "gap ${b.minX - a.maxX}") }
+            seg.dropLast(1).forEach { assertEquals(seg[0].width, it.width, 1.0, "segments not equal") }
+            assertTrue(seg.all { it.height in 10.0..14.0 }, "segment height ${seg[0].height}")
+            assertTrue(bar.childrenUnmodifiable.all { "ram-segment" in it.styleClass }, "only segments inside the bar")
+            // the label sits under the bar, like the original's "2304 MB"
+            assertTrue(c.ramSummary.sceneBounds().minY >= bar.sceneBounds().maxY, "value label not under the bar")
+            // the system reserve (15, 16 GB) is marked and cannot be reached
+            assertEquals(listOf(15, 16), bar.segments.filter { it.pseudoClassStates.any { p -> p.pseudoClassName == "reserve" } }.map { it.userData })
+            // the recommended value is explained in the tooltip / accessible help, not in an extra line
+            assertTrue(bar.accessibleHelp.contains("6 ГБ"), bar.accessibleHelp)
         }
     }
 
@@ -216,20 +220,26 @@ class SettingsScreenTest {
         FxTestSupport.onFx {
             val bar = c.ramBar
             assertEquals(6, bar.value, "nothing stored -> recommended")
-            val track = bar.track.sceneBounds()
-            val y = track.centerY
-            fun xOf(v: Double) = track.minX + track.width * v / 16
-            mouse(bar, MouseEvent.MOUSE_PRESSED, xOf(10.2), y)
-            assertEquals(10, bar.value, "snaps to whole GB")
+            val b = bar.sceneBounds()
+            val y = b.centerY
+            fun segment(gb: Int) = bar.segments[gb - 1].sceneBounds()
+            mouse(bar, MouseEvent.MOUSE_PRESSED, segment(10).centerX, y)
+            assertEquals(10, bar.value, "press on the 10th segment = 10 GB")
             assertEquals(10 * 1024, store.load().ramMb)
             assertFill(c, 10, 16, "after click")
-            mouse(bar, MouseEvent.MOUSE_DRAGGED, xOf(8.6), y)
-            assertEquals(9, bar.value)
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(9).minX + 1, y)
+            assertEquals(9, bar.value, "left edge of a segment still selects it")
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(9).maxX - 1, y)
+            assertEquals(9, bar.value, "right edge of a segment still selects it")
             assertEquals(9 * 1024, store.load().ramMb)
             assertEquals("Выделено: 9 ГБ из 16 ГБ", c.ramSummary.text)
-            mouse(bar, MouseEvent.MOUSE_DRAGGED, track.maxX + 100, y)
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(16).centerX, y)
+            assertEquals(14, bar.value, "reserve segment: clamped to the max")
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, b.maxX + 100, y)
             assertEquals(14, bar.value, "dragged past the end: max")
-            mouse(bar, MouseEvent.MOUSE_DRAGGED, track.minX - 100, y)
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(1).centerX, y)
+            assertEquals(2, bar.value, "first segment: clamped to the min")
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, b.minX - 100, y)
             assertEquals(2, bar.value, "dragged past the start: min")
             assertEquals(2 * 1024, store.load().ramMb)
         }
@@ -254,7 +264,7 @@ class SettingsScreenTest {
             assertEquals(8, c.ramBar.totalGb); assertEquals(6, c.ramBar.maxGb)
             assertEquals(4, c.ramBar.value, "nothing stored -> recommended")
             assertEquals("Allocated: 4 GB of 8 GB", c.ramSummary.text)
-            assertEquals("8 GB", c.ramBar.tickLabels.last().text)
+            assertTrue(c.ramBar.accessibleHelp.contains("4 GB"), c.ramBar.accessibleHelp)
             assertFill(c, 4, 8, "8 GB machine")
         }
     }
@@ -275,21 +285,35 @@ class SettingsScreenTest {
             c.autostartToggle.isSelected = true; c.defenderToggle.isSelected = false; c.startOnDownloadedToggle.isSelected = false
             val s = store.load()
             assertTrue(s.runOnStartUp); assertFalse(s.defenderHint); assertFalse(s.startOnDownloaded)
-            // the old preset-button RAM row is gone
+            // the old preset-button RAM row is gone; minimal: no cards, no helper lines
             assertTrue(c.settingsRoot.lookupAll(".ram-chip").isEmpty())
             assertTrue(c.settingsRoot.lookupAll(".ram-selector").isEmpty())
+            assertTrue(c.settingsRoot.lookupAll(".card").isEmpty(), "settings should not use cards")
+            assertTrue(c.settingsRoot.lookupAll(".settings-hint").isEmpty(), "no helper lines")
+            assertTrue(c.settingsRoot.lookupAll(".heading-rule").isEmpty(), "no decorative rules")
+            // on/off options are switches, distinct from the radios
+            listOf(c.trayToggle, c.autostartToggle, c.defenderToggle, c.startOnDownloadedToggle).forEach { t ->
+                assertTrue("switch" in t.styleClass, "${t.accessibleText} is not a switch")
+            }
+            // grouped like the original launcher: Defender and start-after-download under ОБНОВЛЕНИЕ, tray/autostart under ПРОЧЕЕ
+            fun under(n: javafx.scene.Node, p: javafx.scene.Node) = generateSequence(n) { it.parent }.any { it === p }
+            assertTrue(under(c.defenderToggle, c.updatesSection) && under(c.startOnDownloadedToggle, c.updatesSection))
+            assertTrue(under(c.trayToggle, c.othersSection) && under(c.autostartToggle, c.othersSection))
+            assertTrue(under(c.ramBar, c.gameSection) && under(c.exitNever, c.gameSection))
         }
     }
 
     @Test
     fun newStringsInEveryBundle() {
-        val keys = listOf("settings.page.title", "settings.language.short", "settings.ram.recommended_value", "settings.ram.summary",
+        val keys = listOf("settings.page.title", "settings.language.short", "settings.ram.summary",
             "settings.ram.hint", "settings.unit.gb")
         listOf("messages.properties", "messages_ru.properties", "messages_en.properties").forEach { file ->
             val props = Properties()
             javaClass.getResourceAsStream("/dev/launcherfork/ui/i18n/$file")!!.reader(Charsets.UTF_8).use(props::load)
             keys.forEach { k -> assertTrue(!props.getProperty(k).isNullOrBlank(), "$file misses $k") }
             assertNull(props.getProperty("settings.ram.recommended"), "$file: stale chip caption key")
+            assertNull(props.getProperty("settings.ram.recommended_value"), "$file: stale recommended line")
+            assertTrue(props.getProperty("settings.ram.hint").contains("%s"), "$file: the hint names the recommended value")
         }
     }
 }

@@ -18,12 +18,12 @@
         <Text fx:id="downloadingStatus" id="playStatus" styleClass="play-status" text="status"/>
         <ProgressBar fx:id="progressBar" id="playProgress" styleClass="play-progress,zone-radius-sm" maxWidth="Infinity" progress="0.0"/>
     </VBox>
-    <Button fx:id="gameActionsButton" id="gameActionsButton" styleClass="game-actions-button,tile,zone-radius-sm" mnemonicParsing="false"
+    <Button fx:id="gameActionsButton" id="gameActionsButton" styleClass="game-actions-button,zone-radius-sm" mnemonicParsing="false"
             accessibleText="%main.actions.button">
         <graphic>
-            <!-- three dots ("more"), 18x4 in a 44x44 tile -->
+            <!-- horizontal ellipsis ("more"): three 2.5 px dots, 3 px gaps, 13.5x2.5 centred in the 44x44 ghost square -->
             <SVGPath fx:id="gameActionsGlyph" styleClass="game-actions-glyph"
-                     content="M1.5,0 A1.5,1.5 0 1,1 1.5,3 A1.5,1.5 0 1,1 1.5,0 Z M8.5,0 A1.5,1.5 0 1,1 8.5,3 A1.5,1.5 0 1,1 8.5,0 Z M15.5,0 A1.5,1.5 0 1,1 15.5,3 A1.5,1.5 0 1,1 15.5,0 Z"/>
+                     content="M1.25,0 A1.25,1.25 0 1,1 1.25,2.5 A1.25,1.25 0 1,1 1.25,0 Z M6.75,0 A1.25,1.25 0 1,1 6.75,2.5 A1.25,1.25 0 1,1 6.75,0 Z M12.25,0 A1.25,1.25 0 1,1 12.25,2.5 A1.25,1.25 0 1,1 12.25,0 Z"/>
         </graphic>
     </Button>
     <Button fx:id="downloadButton" id="playButton" styleClass="play-button,btn-primary,zone-caps,zone-radius-sm" mnemonicParsing="false" text="BUTTON"/>
