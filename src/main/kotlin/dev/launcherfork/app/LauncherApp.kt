@@ -1,5 +1,6 @@
 package dev.launcherfork.app
 
+import dev.launcherfork.data.mock.MockSecondFactor
 import dev.launcherfork.domain.FolderOpener
 import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.LinkPolicy
@@ -52,7 +53,15 @@ class LauncherApp : Application() {
         val shotsDir = System.getProperty("launcher.screenshots")
         // the games list shows the online count: the mock drifts a little in normal runs, the tour keeps it fixed
         val onlineTickMs = if (shotsDir != null) 0L else System.getProperty("launcher.onlineTickMs")?.toLongOrNull() ?: 10_000L
-        val app = AppContext.mock(language = lang, speed = speed, devMode = devMode, links = links, folders = folders, onlineTickMs = onlineTickMs)
+        // second factor after the password: random e-mail code / authenticator app per login unless -Dlauncher.mock2fa
+        // says otherwise; the tour signs in without one (it shows the panels through the "2fa" / "totp" logins)
+        val mock2fa = if (shotsDir != null && System.getProperty(MockSecondFactor.PROPERTY) == null) MockSecondFactor.NONE
+            else MockSecondFactor.fromSystemProperties()
+        System.err.println("[launcher-fork] mock 2FA: ${mock2fa.name.lowercase()}")
+        val app = AppContext.mock(
+            language = lang, speed = speed, devMode = devMode, links = links, folders = folders, onlineTickMs = onlineTickMs,
+            mock2fa = mock2fa,
+        )
         this.app = app
 
         // pre-main window: no OS frame, transparent outside its rounded corners, fixed size
