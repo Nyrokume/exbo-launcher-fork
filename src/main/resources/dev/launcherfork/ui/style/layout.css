@@ -297,9 +297,6 @@
 .game-banner { -fx-padding: 4 0 8 9; -fx-spacing: 10; }
 .game-banner-title { -fx-font-size: 40; -fx-text-fill: -foreground; }
 .game-banner-lead { -fx-font-size: 16; -fx-text-fill: -foreground; -fx-line-spacing: 3; }
-.game-banner-online-text { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
-.game-banner-online-dot { -fx-background-color: -status-online; -fx-background-radius: 4; }
-.game-banner-online.offline .game-banner-online-dot { -fx-background-color: -status-offline; }
 .game-banner-subheading { -fx-font-size: 16; -fx-text-fill: -foreground; -fx-padding: 6 0 0 0; }
 .game-banner-body { -fx-font-size: 14; -fx-text-fill: -secondary-foreground; -fx-line-spacing: 4; }
 .game-banner-closing { -fx-font-size: 14; -fx-text-fill: -foreground; }

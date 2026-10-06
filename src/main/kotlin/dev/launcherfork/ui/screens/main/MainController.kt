@@ -166,7 +166,6 @@ class MainController(private val ctx: UiContext) : Disposable {
         root.scene?.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
         serversListController.dispose()
         defaultStatusPaneController.dispose()
-        gameBannerController.dispose()
         profileBarController.dispose()
         headerController.dispose()
     }

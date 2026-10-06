@@ -10,26 +10,28 @@ import dev.launcherfork.app.AppContext
 import dev.launcherfork.data.mock.MockData
 import dev.launcherfork.data.mock.MockServerRepository
 import dev.launcherfork.domain.GameDescription
-import dev.launcherfork.i18n.PluralForm
 import dev.launcherfork.i18n.Strings
-import dev.launcherfork.i18n.plural
-import dev.launcherfork.i18n.pluralForm
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.screens.main.GameBannerController
 import javafx.geometry.BoundingBox
 import javafx.geometry.Bounds
+import javafx.scene.Node
+import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.Label
+import javafx.scene.control.Labeled
+import javafx.scene.text.Text
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.Properties
 
 /**
- * The STALZONE banner on the main screen: text from the game model (Server.description -> i18n keys, ru + en), the
- * online line with the games list's value and the right plural form, the layout (left column <= 560 px inside the
+ * The STALZONE banner on the main screen: text from the game model (Server.description -> i18n keys, ru + en), no
+ * second online count (it is shown once, in the games list), the layout (left column <= 560 px inside the
  * centre slot, never over the nav row, the status row or ИГРАТЬ; long text scrolls inside the slot) at the minimum and
  * the default window size in every theme. Colors: SettingsContrastTest.gameBannerTextIsReadable.
  */
@@ -44,36 +46,14 @@ class GameBannerTest {
     private fun overlaps(a: Bounds, b: Bounds) = a.minX < b.maxX - 0.5 && b.minX < a.maxX - 0.5 && a.minY < b.maxY - 0.5 && b.minY < a.maxY - 0.5
 
     @Test
-    fun russianAndEnglishPluralForms() {
-        val ru = mapOf(
-            PluralForm.ONE to listOf(1L, 21, 31, 101, 1001, 1_000_001),
-            PluralForm.FEW to listOf(2L, 3, 4, 22, 23, 24, 102, 1284, 1_002),
-            PluralForm.MANY to listOf(0L, 5, 9, 10, 11, 12, 13, 14, 15, 19, 20, 25, 100, 111, 112, 114, 1000, 1285),
-        )
-        ru.forEach { (form, ns) -> ns.forEach { assertEquals(form, pluralForm(it, "ru"), "ru $it") } }
-        assertEquals(PluralForm.ONE, pluralForm(1, "en"))
-        listOf(0L, 2, 11, 21, 1284).forEach { assertEquals(PluralForm.MANY, pluralForm(it, "en"), "en $it") }
-
-        val ruB = Strings.bundle("ru"); val enB = Strings.bundle("en")
-        assertEquals("1 игрок онлайн", ruB.plural("main.game.players", 1, "ru", "1"))
-        assertEquals("21 игрок онлайн", ruB.plural("main.game.players", 21, "ru", "21"))
-        assertEquals("3 игрока онлайн", ruB.plural("main.game.players", 3, "ru", "3"))
-        assertEquals("1${nbsp}284 игрока онлайн", ruB.plural("main.game.players", 1284, "ru", "1${nbsp}284"))
-        assertEquals("11 игроков онлайн", ruB.plural("main.game.players", 11, "ru", "11"))
-        assertEquals("1${nbsp}285 игроков онлайн", ruB.plural("main.game.players", 1285, "ru", "1${nbsp}285"))
-        assertEquals("1 player online", enB.plural("main.game.players", 1, "en", "1"))
-        assertEquals("1,284 players online", enB.plural("main.game.players", 1284, "en", "1,284"))
-    }
-
-    @Test
     fun stringsAreInEveryBundle() {
-        val keys = listOf("title", "lead", "subheading", "body", "closing").map { "game.stalzone.$it" } +
-            listOf("one", "few", "many").map { "main.game.players.$it" }
+        val keys = listOf("title", "lead", "subheading", "body", "closing").map { "game.stalzone.$it" }
         listOf("messages.properties", "messages_ru.properties", "messages_en.properties").forEach { file ->
             val props = Properties()
             javaClass.getResourceAsStream("/dev/launcherfork/ui/i18n/$file")!!.reader(Charsets.UTF_8).use(props::load)
             keys.forEach { k -> assertTrue(!props.getProperty(k).isNullOrBlank(), "$file misses $k") }
-            listOf("one", "few", "many").forEach { assertTrue(props.getProperty("main.game.players.$it").contains("%s"), "$file: $it has no number") }
+            // the banner's own online line is gone, and so are its plural strings
+            assertTrue(props.stringPropertyNames().none { it.startsWith("main.game.players") }, "$file: leftover main.game.players.*")
             assertEquals("STALZONE", props.getProperty("game.stalzone.title"))
             assertFalse(props.values.any { "Starcraft" in it.toString() }, "$file: STALZONE, not Starcraft")
         }
@@ -100,33 +80,40 @@ class GameBannerTest {
                 c.show(stalzone)
                 assertEquals("STALZONE", c.title.text)
                 assertEquals("Сможете ли Вы выжить в этом мире?", c.subheading.text)
-                c.dispose()
             }
         } finally {
             app.shutdown()
         }
     }
 
+    /** Visible text nodes of the scene that show [count] (with the locale's grouping, e.g. «1 284»). */
+    private fun visibleTextsWith(root: Parent, count: String): List<String> {
+        fun visible(n: Node): Boolean = generateSequence(n) { it.parent }.all { it.isVisible }
+        fun walk(n: Node): Sequence<Node> = sequenceOf(n) + ((n as? Parent)?.childrenUnmodifiable?.asSequence()?.flatMap(::walk) ?: emptySequence())
+        return walk(root).filter(::visible).mapNotNull { (it as? Labeled)?.text ?: (it as? Text)?.text }.filter { count in it }.toList()
+    }
+
     @Test
-    fun onlineLineFollowsTheGamesListValue() {
+    fun onlineCountIsShownOnlyOnceInTheGamesList() {
         val app = AppContext.mock(authDelayMs = 0)
         val nav = mainOnScreen(app, "ru")
         try {
             val repo = app.services.servers as MockServerRepository
             FxTestSupport.onFx {
                 val banner = nav.mainController!!.gameBannerController
-                assertEquals("1${nbsp}284 игрока онлайн", banner.onlineText.text)
-                val sidebar = nav.mainStage.scene.root.lookup("#entryOnlineText") as javafx.scene.text.Text
-                assertTrue(sidebar.text.startsWith("1${nbsp}284"), "same value as the games list: ${sidebar.text}")
-                assertFalse("offline" in banner.onlineRow.styleClass)
+                assertTrue(banner.scroll.isVisible)
+                assertNull(banner.scroll.lookup("#gameOnline")); assertNull(banner.scroll.lookup("#gameOnlineText"))
+                assertTrue(banner.scroll.lookupAll(".game-banner-online").isEmpty(), "banner still has an online line")
+                val bannerTexts = listOf(banner.title, banner.lead, banner.subheading, banner.body, banner.closing).map { it.text }
+                assertTrue(bannerTexts.none { "1${nbsp}284" in it || Regex("""\d\s+игрок\S* онлайн""").containsMatchIn(it) }, "online count in the banner: $bannerTexts")
+                val sidebar = nav.mainStage.scene.root.lookup("#entryOnlineText") as Text
+                assertEquals("1${nbsp}284 онлайн", sidebar.text)
+                assertEquals(listOf("1${nbsp}284 онлайн"), visibleTextsWith(nav.mainStage.scene.root, "1${nbsp}284"), "count shown more than once")
             }
+            // a live change still reaches the games list, and still only there
             repo.setOnline(stalzone.id, 1301)
-            check(FxTestSupport.waitFx { nav.mainController!!.gameBannerController.onlineText.text == "1${nbsp}301 игрок онлайн" })
-            repo.setOnline(stalzone.id, 1305)
-            check(FxTestSupport.waitFx { nav.mainController!!.gameBannerController.onlineText.text == "1${nbsp}305 игроков онлайн" })
-            repo.setOnline(stalzone.id, null)
-            check(FxTestSupport.waitFx { nav.mainController!!.gameBannerController.onlineText.text == "не в сети" })
-            FxTestSupport.onFx { assertTrue("offline" in nav.mainController!!.gameBannerController.onlineRow.styleClass) }
+            check(FxTestSupport.waitFx { (nav.mainStage.scene.root.lookup("#entryOnlineText") as Text).text == "1${nbsp}301 онлайн" })
+            FxTestSupport.onFx { assertEquals(1, visibleTextsWith(nav.mainStage.scene.root, "1${nbsp}301").size) }
         } finally {
             FxTestSupport.onFx { nav.close() }
             app.shutdown()
@@ -167,10 +154,10 @@ class GameBannerTest {
                             val content = b.content.sceneBounds()
                             assertTrue(content.width <= 560.5, "$where: text column ${content.width} px")
                             assertEquals(slot.minX + 9, b.title.sceneBounds().minX, 1.0, "$where: title not at the left edge")
-                            val labels = listOf(b.title, b.lead, b.subheading, b.body, b.closing, b.onlineText)
+                            val labels = listOf(b.title, b.lead, b.subheading, b.body, b.closing)
                             labels.forEach { l: Label ->
                                 assertTrue(l.text.isNotBlank(), "$where: ${l.id} empty")
-                                assertEquals(b.title.sceneBounds().minX, if (l === b.onlineText) b.onlineRow.sceneBounds().minX else l.sceneBounds().minX, 1.0, "$where: ${l.id} not left-aligned")
+                                assertEquals(b.title.sceneBounds().minX, l.sceneBounds().minX, 1.0, "$where: ${l.id} not left-aligned")
                                 if (l.isWrapText) assertTrue(l.height >= l.prefHeight(l.width) - 0.5, "$where: '${l.id}' cut")
                                 else assertTrue(l.width >= l.prefWidth(-1.0) - 0.5, "$where: '${l.id}' truncated")
                                 assertTrue(l.sceneBounds().maxX <= banner.maxX + 0.5, "$where: ${l.id} wider than the banner")

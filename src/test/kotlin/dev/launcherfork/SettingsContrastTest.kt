@@ -2,6 +2,7 @@ package dev.launcherfork
 
 import dev.launcherfork.theme.Theme
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -112,12 +113,12 @@ class SettingsContrastTest {
     /**
      * Game banner on the main screen (main/game_banner.fxml): text selector of layout.css -> (token it must paint with,
      * minimum ratio on the content background it sits on, -background; the centre slot and the banner are transparent).
-     * Normal text >= 4.5:1, the large display title >= 3:1. The online dot is a non-text state mark (>= 3:1).
+     * Normal text >= 4.5:1, the large display title >= 3:1. The banner has no online line (the count lives in the games
+     * list, see OnlineCountTest).
      */
     private val bannerText = listOf(
         Triple(".game-banner-title", "-foreground", 3.0),
         Triple(".game-banner-lead", "-foreground", 4.5),
-        Triple(".game-banner-online-text", "-muted-foreground", 4.5),
         Triple(".game-banner-subheading", "-foreground", 4.5),
         Triple(".game-banner-body", "-secondary-foreground", 4.5),
         Triple(".game-banner-closing", "-foreground", 4.5),
@@ -137,8 +138,7 @@ class SettingsContrastTest {
         }
         val selectors = DynamicTest.dynamicTest("layout.css: banner selectors use the measured tokens") {
             bannerText.forEach { (selector, token, _) -> assertEquals(token, prop(selector, "-fx-text-fill"), "$selector text fill") }
-            assertEquals("-status-online", prop(".game-banner-online-dot", "-fx-background-color"))
-            assertEquals("-status-offline", prop(".game-banner-online.offline .game-banner-online-dot", "-fx-background-color"))
+            assertFalse(css.contains(".game-banner-online"), "layout.css: leftover rules of the removed banner online line")
             // the banner itself is transparent: the text really sits on -background
             assertTrue(prop(".game-banner-scroll, .game-banner-scroll > .viewport, .game-banner-scroll:focused", "-fx-background-color") == "transparent")
         }
@@ -151,10 +151,6 @@ class SettingsContrastTest {
                     println("banner $theme $selector $token on -background = ${"%.2f".format(r)}:1")
                     assertTrue(r >= minRatio, "$theme: banner $selector $token on -background = ${"%.2f".format(r)}:1 < $minRatio:1")
                 }
-            } + DynamicTest.dynamicTest("$theme: banner online dot (non-text)") {
-                val r = ratio(color(t, "-status-online", bg), bg)
-                println("banner $theme online dot -status-online on -background = ${"%.2f".format(r)}:1")
-                assertTrue(r >= 3.0, "$theme: online dot ${"%.2f".format(r)}:1 < 3:1")
             }
         }
     }

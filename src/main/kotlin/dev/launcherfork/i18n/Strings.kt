@@ -20,22 +20,3 @@ fun ResourceBundle.text(key: String, vararg args: Any): String {
     val raw = if (containsKey(key)) getString(key) else key
     return if (args.isEmpty()) raw else raw.format(*args)
 }
-
-/** CLDR plural categories used by the bundles: Russian has one / few / many, English one / many (= "other"). */
-enum class PluralForm { ONE, FEW, MANY }
-
-/** Russian: 1, 21, 101 игрок; 2-4, 22-24 игрока; 0, 5-20, 25-30, 11-14, 111-114 игроков. English: 1 player, else players. */
-fun pluralForm(n: Long, lang: String): PluralForm {
-    val a = kotlin.math.abs(n)
-    if (lang != "ru") return if (a == 1L) PluralForm.ONE else PluralForm.MANY
-    val d = a % 10; val h = a % 100
-    return when {
-        d == 1L && h != 11L -> PluralForm.ONE
-        d in 2L..4L && h !in 12L..14L -> PluralForm.FEW
-        else -> PluralForm.MANY
-    }
-}
-
-/** `<baseKey>.one|few|many` for [n] in [lang], formatted with [args] (e.g. the localized number). */
-fun ResourceBundle.plural(baseKey: String, n: Long, lang: String, vararg args: Any): String =
-    text("$baseKey.${pluralForm(n, lang).name.lowercase()}", *args)

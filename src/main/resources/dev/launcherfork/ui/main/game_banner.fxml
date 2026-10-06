@@ -5,9 +5,9 @@
 
 <!--
   Game banner in the centre slot of the main screen (GameBannerController): the selected game's title (display font),
-  lead, online line (green dot + «1 284 игрока онлайн»), subheading, body and closing line, left-aligned, text at most
-  560 px wide. No text here: it comes with the game (Server.description) and the i18n bundles. No card, no box: plain
-  text on the content background. The ScrollPane (transparent, no visible frame) fills the anchored centre slot, so
+  lead, subheading, body and closing line, left-aligned, text at most 560 px wide. No online line: the count is shown
+  once, in the games list. No text here: it comes with the game (Server.description) and the i18n bundles. No card,
+  no box: plain text on the content background. The ScrollPane (transparent, no visible frame) fills the anchored centre slot, so
   the text wraps and, in a small window, scrolls inside the slot instead of pushing the status row / ИГРАТЬ.
 -->
 <ScrollPane fx:id="scroll" id="gameBanner" styleClass="game-banner-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
@@ -18,11 +18,6 @@
         <VBox fx:id="content" id="gameBannerContent" styleClass="game-banner" maxWidth="560">
             <Label fx:id="title" id="gameTitle" styleClass="game-banner-title,font-display" minHeight="-Infinity"/>
             <Label fx:id="lead" id="gameLead" styleClass="game-banner-lead,font-meta" wrapText="true" minHeight="-Infinity"/>
-            <HBox fx:id="onlineRow" id="gameOnline" styleClass="game-banner-online" alignment="CENTER_LEFT" spacing="8">
-                <Region fx:id="onlineDot" styleClass="game-banner-online-dot"
-                        minWidth="8" prefWidth="8" maxWidth="8" minHeight="8" prefHeight="8" maxHeight="8"/>
-                <Label fx:id="onlineText" id="gameOnlineText" styleClass="game-banner-online-text,font-meta" minWidth="-Infinity"/>
-            </HBox>
             <Label fx:id="subheading" id="gameSubheading" styleClass="game-banner-subheading,font-meta" wrapText="true" minHeight="-Infinity"/>
             <Label fx:id="body" id="gameBody" styleClass="game-banner-body,font-meta" wrapText="true" minHeight="-Infinity"/>
             <Label fx:id="closing" id="gameClosing" styleClass="game-banner-closing,font-meta" wrapText="true" minHeight="-Infinity"/>
