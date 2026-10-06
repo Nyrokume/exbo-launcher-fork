@@ -190,6 +190,14 @@ class ZonePanelsTest {
                 val btnBg = c.enterButton.background.fills.first().fill as javafx.scene.paint.Color
                 c.enterButton.pseudoClassStateChanged(off, c.enterButton.isDisabled); c.enterButton.applyCss()
                 assertTrue(contrast(txt, btnBg) >= 3.0, "disabled ВОЙТИ label contrast ${contrast(txt, btnBg)}")
+                // red links («Восстановить пароль», «Создать») are AA text on the form black
+                val formBg = (scene.root.lookup(".zone-bottom") as javafx.scene.layout.Region).background.fills.first().fill as javafx.scene.paint.Color
+                val links = scene.root.lookupAll(".zone-link-accent") + scene.root.lookupAll(".zone-link-underline")
+                assertTrue(links.isNotEmpty(), "no red links on the login card")
+                for (l in links.filterIsInstance<javafx.scene.control.Labeled>()) {
+                    val k = contrast(l.textFill as javafx.scene.paint.Color, formBg)
+                    assertTrue(k >= 4.5, "red link «${l.text}» contrast $k")
+                }
                 // centred, on the same black as the form (no grey card behind the logo)
                 val lb = logo.localToScene(logo.layoutBounds)
                 assertEquals(scene.width / 2, (lb.minX + lb.maxX) / 2, 1.0, "logo not centred")

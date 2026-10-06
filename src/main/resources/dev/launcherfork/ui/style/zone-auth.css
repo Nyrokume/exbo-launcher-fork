@@ -138,11 +138,14 @@
 .zone-link-accent, .zone-link-underline {
     -fx-background-color: transparent;
     -fx-padding: 0;
-    -fx-text-fill: -primary;
+    /* red TEXT takes -destructive-text (AA on the form black); -primary is the red of fills and is 4.2:1 here */
+    -fx-text-fill: -destructive-text;
     -fx-cursor: hand;
 }
 .zone-link-accent { -fx-font-family: "Roboto Medium"; -fx-font-size: 14; }
 .zone-link-accent:hover, .zone-link-underline:hover { -fx-text-fill: -primary-hover; }
+/* in the dark zone the hover red equals the text red: the accent link also underlines on hover */
+.zone-link-accent:hover { -fx-underline: true; }
 .zone-link-accent:focused, .zone-link-underline:focused { -fx-underline: true; }
 .zone-spacer { -fx-min-height: 10; }
 
