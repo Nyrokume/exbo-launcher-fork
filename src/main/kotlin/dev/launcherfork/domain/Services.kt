@@ -46,6 +46,16 @@ fun interface SystemInfo {
 
 interface ServerRepository {
     fun servers(): List<Server>
+
+    /**
+     * Live player count of [server] (games list, under the name). [listener] gets the current value at once, on the
+     * calling thread, and then every change, possibly from a background thread; null = unknown / offline.
+     * Cancel the handle when the card goes away. The default has no live source: just [Server.onlineCount].
+     */
+    fun watchOnline(server: Server, listener: (Int?) -> Unit): Cancellable {
+        listener(server.onlineCount)
+        return Cancellable {}
+    }
 }
 
 interface UpdateService {

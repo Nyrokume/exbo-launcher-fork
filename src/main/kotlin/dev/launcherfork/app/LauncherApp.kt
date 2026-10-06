@@ -12,7 +12,8 @@ import java.io.File
  * Entry point of the visual fork. Two windows (docs/design/WINDOWS.md): the pre-main window (primary stage:
  * update, then auth / mail code) and, after login, the main window.
  * System properties: launcher.lang=ru|en, launcher.mockSpeed=<factor>, launcher.screenshots=<dir> (auto tour),
- * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=exbo|shadcn|zone.
+ * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=exbo|shadcn|zone,
+ * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour).
  */
 class LauncherApp : Application() {
     private var app: AppContext? = null
@@ -29,7 +30,10 @@ class LauncherApp : Application() {
             System.err.println("[launcher-fork] open link: $url")
             browser.showDocument(url)
         }
-        val app = AppContext.mock(language = lang, speed = speed, devMode = devMode, links = links)
+        val shotsDir = System.getProperty("launcher.screenshots")
+        // the games list shows the online count: the mock drifts a little in normal runs, the tour keeps it fixed
+        val onlineTickMs = if (shotsDir != null) 0L else System.getProperty("launcher.onlineTickMs")?.toLongOrNull() ?: 10_000L
+        val app = AppContext.mock(language = lang, speed = speed, devMode = devMode, links = links, onlineTickMs = onlineTickMs)
         this.app = app
 
         // pre-main window: no OS frame, transparent outside its rounded corners, fixed size
@@ -39,7 +43,6 @@ class LauncherApp : Application() {
         stage.icons += Theme.appIconResources().map { loadImage(it) }
 
         val navigator = StageNavigator(stage, app, lang)
-        val shotsDir = System.getProperty("launcher.screenshots")
         if (shotsDir != null) ScreenshotTour(navigator, File(shotsDir)).install()
 
         navigator.showLauncherUpdate(afterUpdate = navigator::showAuth)

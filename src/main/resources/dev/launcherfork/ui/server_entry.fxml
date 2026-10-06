@@ -5,18 +5,26 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Text?>
 
-<!-- One game in the sidebar: red indicator when selected, icon, name, download progress. -->
+<!--
+  One game in the sidebar: red indicator when selected, icon, name, online line (status dot + «1 284 онлайн»),
+  download progress. The icon stays centred against the two text lines (HBox CENTER_LEFT, text block CENTER_LEFT; the
+  block's spacing / padding live in theme.css and theme-zone.css because they depend on the name font).
+-->
 <HBox fx:id="root" id="serverEntry" styleClass="server-entry" alignment="CENTER_LEFT" spacing="0"
-      minHeight="40" prefHeight="40" maxHeight="40"
+      minHeight="50" prefHeight="50" maxHeight="50"
       stylesheets="@style/layout.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.components.ServerEntryController">
     <Region fx:id="cursor" id="entryIndicator" styleClass="entry-indicator" minWidth="4" prefWidth="4" maxWidth="4" maxHeight="Infinity"/>
     <Pane fx:id="image" id="entryIcon" styleClass="entry-icon" minWidth="24" prefWidth="24" maxWidth="24" minHeight="24" prefHeight="24" maxHeight="24">
         <HBox.margin><Insets left="34" right="16"/></HBox.margin>
     </Pane>
-    <VBox styleClass="entry-text" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" spacing="3" maxWidth="Infinity">
+    <VBox styleClass="entry-text" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" maxWidth="Infinity">
         <Text fx:id="name" id="entryName" styleClass="entry-name,zone-caps" text="SERVER NAME"/>
-        <Text fx:id="status" id="entryStatus" styleClass="entry-status" text="online"/>
+        <HBox fx:id="onlineRow" id="entryOnline" styleClass="entry-online" alignment="CENTER_LEFT" spacing="6">
+            <Region fx:id="onlineDot" id="entryOnlineDot" styleClass="entry-online-dot"
+                    minWidth="6" prefWidth="6" maxWidth="6" minHeight="6" prefHeight="6" maxHeight="6"/>
+            <Text fx:id="onlineText" id="entryOnlineText" styleClass="entry-online-text,font-meta" text="0 online"/>
+        </HBox>
         <ProgressBar fx:id="progress" id="entryProgress" styleClass="entry-progress" maxWidth="Infinity" progress="0.0" visible="false"/>
     </VBox>
     <Region fx:id="liveDot" styleClass="live-dot" minWidth="8" prefWidth="8" maxWidth="8" minHeight="8" prefHeight="8" maxHeight="8" visible="false">

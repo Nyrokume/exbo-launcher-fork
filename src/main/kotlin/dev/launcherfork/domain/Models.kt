@@ -21,7 +21,10 @@ data class Server(
     val installed: Boolean,
     /** Fake client size for the progress text, bytes. */
     val clientSizeBytes: Long,
-)
+) {
+    /** Players online for the games list; null = unknown or offline ([online] is false or [players] is negative). */
+    val onlineCount: Int? get() = players.takeIf { online && it >= 0 }
+}
 
 data class UserSession(val login: String)
 
