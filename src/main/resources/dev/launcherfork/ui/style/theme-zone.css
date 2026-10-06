@@ -77,14 +77,15 @@
 }
 
 /*
- * Headings / wordmark: Oswald (SIL OFL 1.1, Cyrillic) is the free stand-in for the site's Bebas Neue Cyrillic
- * (whose license is not clearly OFL). Regular weight keeps the tall, light Bebas look.
+ * Headings / big buttons: Bebas Neue Regular (Dharma Type 001.003, Cyrillic, SIL OFL 1.1), the font of the site's
+ * h1-h5 and ВОЙТИ / ИГРАТЬ БЕСПЛАТНО (stalzone.com CSS: font-family: var(--beb) = "Bebas Neue").
+ * JavaFX names the family "Bebas Neue Regular" (name ID 1). Only one weight is bundled.
  */
 .font-display {
-    -fx-font-family: "Oswald";
+    -fx-font-family: "Bebas Neue Regular";
 }
 .font-display-strong {
-    -fx-font-family: "Oswald SemiBold";
+    -fx-font-family: "Bebas Neue Regular";
 }
 .font-bold {
     -fx-font-family: "Roboto Medium";
@@ -122,3 +123,27 @@
 .zone-caps {
     -fx-font-family: "Roboto Medium";
 }
+
+/*
+ * Bebas Neue sizes. layout.css (shared by all themes) sizes these nodes for Europe (exbo theme) and the old zone
+ * heading font Oswald; Bebas has a lower cap height (0.70 em vs 0.81 em), so the zone theme scales them by ~1.15.
+ * Two-class selectors: they must beat the one-class rules of layout.css, which sits on the FXML parents.
+ */
+.hero-title.font-display { -fx-font-size: 53; }
+.hero-tagline.font-display { -fx-font-size: 46; -fx-padding: 2 9 -2 8; }
+.news-heading.font-display { -fx-font-size: 51; }
+.settings-heading.font-display { -fx-font-size: 48; }
+.article-caption.font-display { -fx-font-size: 35; }
+.modal-title.font-display { -fx-font-size: 30; -fx-translate-y: -4; } /* air above the fixed modal-rule (layoutY 35) */
+/* ИГРАТЬ: like the site's big buttons (.play_free / .login: var(--beb) 24px) */
+.button.play-button {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 24;
+}
+
+/*
+ * Main window: no game artwork behind hero / news in the zone theme, the content area stays plain -background
+ * (.main-content in layout.css). News cards keep their own images. The art regions stay in main.fxml for the
+ * other themes; CSS visibility only hides them here.
+ */
+.main-content > .game-art, .main-content > .game-art-shade { visibility: hidden; }

@@ -3,9 +3,11 @@
  * Colors come only from theme tokens; corners from .zone-radius-sm in the FXML (children use `inherit`).
  * Login tokens (theme-zone.css): -card top block and inputs, -card-description form block, -input-border, -error.
  */
+/* Bebas Neue Regular (SIL OFL 1.1): the site's --beb font of the card title and ВОЙТИ. Self-contained like the rest
+   of this sheet, so the panel looks the same in every theme. */
 @font-face {
-    font-family: "Oswald Medium";
-    src: url("font/Oswald-Medium.ttf");
+    font-family: "Bebas Neue Regular";
+    src: url("font/BebasNeue-Regular.ttf");
 }
 
 .zone-panel { -fx-background-color: -background; }
@@ -18,8 +20,8 @@
     -fx-spacing: 12;
 }
 .zone-title {
-    -fx-font-family: "Oswald Medium";
-    -fx-font-size: 30;
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 35;
     -fx-text-fill: -foreground;
     -fx-line-spacing: -4;
 }
@@ -144,8 +146,8 @@
 
 /* ---------- ВОЙТИ: full width, grey while the fields are empty ---------- */
 .zone-primary {
-    -fx-font-family: "Oswald Medium";
-    -fx-font-size: 22;
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 24;
     -fx-text-fill: -primary-foreground;
     -fx-background-color: -primary;
     -fx-background-insets: 0;

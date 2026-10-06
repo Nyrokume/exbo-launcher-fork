@@ -66,16 +66,55 @@
 
 | Роль | Семейство (имя для JavaFX) | Кегль | Где |
 |---|---|---|---|
-| Вордмарк EXBO | `Oswald SemiBold` (`.font-display-strong`) | 64 | логотип в колонке (текстом) |
-| Hero, заголовки разделов | `Oswald` (`.font-display`), UPPERCASE | 44–46 | «ДОБРО ПОЖАЛОВАТЬ», «ИГРА», «НОВОСТИ» |
+| Вордмарк EXBO (текстом, сейчас логотип векторный) | `Bebas Neue Regular` (`.font-display-strong`) | 64 | — |
+| Hero, заголовки разделов, заголовки модалок | `Bebas Neue Regular` (`.font-display`), UPPERCASE | 30–53 | «ДОБРО ПОЖАЛОВАТЬ» 53, «НОВОСТИ» 51, «ИГРА» 48 |
+| Большие кнопки | `Bebas Neue Regular` | 24 | «ИГРАТЬ» (`.play-button`), «ВОЙТИ» (`.zone-primary`) |
+| Заголовок окна входа | `Bebas Neue Regular` (`.zone-title`) | 35 | «ЗАХОДИ СКОРЕЕ, МЫ ЗАЖДАЛИСЬ» |
 | CAPS-подписи и пункты меню | `Roboto Medium` (`.zone-caps`), UPPERCASE | 11–15 | пункты колонки, ссылки ↗, «— РАЗДЕЛ —», кнопки-плитки |
 | Подпись настройки, вариант | `Roboto` | 15 | «Оперативная память», «При старте игры» |
 | Описание | `Roboto` | 13 | описание игры |
 | Статус, единицы | `Roboto` | 11–13, `-placeholder` | «Готово к запуску», «KB/s» |
 
-На сайте заголовки набраны Bebas Neue Cyrillic, но его лицензия не очевидно OFL. Поэтому вместо него взят
-Oswald (SIL OFL 1.1) обычного начертания: у него такой же высокий узкий силуэт. Шрифты лежат в
-`ui/style/font/` (лицензии `OFL-Oswald.txt`, `OFL-Roboto.txt`), регистрирует их `Theme.zoneFonts`.
+Откуда что взято (CSS сайта `app-BADgqdUN.css`, копия в `site-ref/sz.css`):
+
+- `:root { --font-body: "Roboto"; --beb: "Bebas Neue"; --bebcyrill: "Bebas Neue Cyrillic"; --roboto-cond: "Roboto Condensed" }`.
+- `html,body { font-family: var(--font-body); letter-spacing: .05em }`. Пункты мобильного меню
+  (`.dropdown-nav__menu__link`: `font-weight: 500; text-transform: uppercase`) наследуют Roboto, то есть
+  **Roboto Medium** обычной ширины (wdth 100), с разрядкой .05em. Roboto Condensed сайт не подгружает
+  (`@font-face` для него нет) и использует только в `.media-cabinet .b16-caps`.
+- `h1,h2,h3,h4,h5 { font-family: var(--beb), sans-serif; letter-spacing: .1em }`, кнопки меню
+  `.login` («ВОЙТИ», `var(--beb)`, 24px, `letter-spacing: .1em`) и `.play_free` («ИГРАТЬ БЕСПЛАТНО», `var(--beb)`,
+  24px) набраны **Bebas Neue** (файл `BebasNeueRegular-*.woff2`, weight 400; кириллица в нём есть).
+  `--bebcyrill` (Bebas Neue Cyrillic, более жирный рисунок 2010 года) сайт берёт только для промо-страниц
+  (`.korabli__*`, `.blitz__*`) и заголовка cookie-окна.
+
+Поэтому в лаунчере: заголовки, hero и большие кнопки — `Bebas Neue Regular` (так JavaFX называет семейство,
+name ID 1), текст — Roboto, CAPS-пункты — Roboto Medium. Bebas ниже по высоте прописных (0.70 em против 0.81 em у
+Oswald), поэтому кегли заголовков в `theme-zone.css` увеличены примерно в 1.15 раза. Шрифты лежат в
+`ui/style/font/`, регистрирует их `Theme.zoneFonts`; Oswald удалён.
+
+**Лицензии шрифтов (важно).**
+
+- `BebasNeue-Regular.ttf` — Bebas Neue Regular 001.003 (Ryoichi Tsunekawa / Dharma Type), **взят с
+  stalzone.com** (WOFF2 из ассетов сайта, распакован в TTF без изменения глифов). В метаданных шрифта (name ID 13)
+  указано «licensed under the SIL Open Font License, Version 1.1», текст лицензии — `OFL-BebasNeue.txt`. Сверки с
+  официальным дистрибутивом не было, поэтому **лицензия не подтверждена**: репозиторий должен оставаться
+  приватным, а перед любым публичным релизом шрифт нужно заменить или подтвердить его лицензию (например, взять
+  Bebas Neue из официального источника под OFL).
+- **Bebas Neue Cyrillic** (`BebasNeueCyrillic-*.woff2` с stalzone.com, «Cyrillic by AA») **в репозиторий не
+  положен**: его встроенная лицензия Dharma Type разрешает использование, но прямо запрещает распространение
+  («You may not redistribute this font without permission») и изменение, в том числе конвертацию. Если всё же
+  понадобится его более жирный рисунок, это допустимо только локально, в приватной сборке, и шрифт должен быть
+  убран или очищен по лицензии до любого публичного релиза.
+- Roboto (`Roboto-*.ttf`) — SIL OFL 1.1 (`OFL-Roboto.txt`); ширины глифов совпадают с вариативным Roboto сайта
+  при wght 500 / wdth 100.
+
+**Ассеты проекта с stalzone.com.** Это ассеты проекта (STALZONE / EXBO), взятые с сайта:
+
+- Иконка игры STALZONE в колонке — `src/main/resources/dev/launcherfork/mock/servers/game-stalzone.png`: фавикон
+  https://stalzone.com/stalzone/favicon/favicon-master.svg (на https://stalzone.com/start это
+  `<link rel="icon" type="image/svg+xml">`), скачан 2026-10-06, отрисован ImageMagick в PNG 48×48 (2× от 24 px
+  иконки), рисунок не менялся.
 
 **Разрядка (letter-spacing .05–.1em).** В JavaFX CSS свойства letter-spacing нет. Пока что узлы, где нужна
 разрядка, — это обычные Label/Text с UPPERCASE-текстом и классом `.zone-caps`. После слияния с веткой
@@ -101,7 +140,7 @@ Oswald (SIL OFL 1.1) обычного начертания: у него тако
 - **Радио / тумблер**: кольцо Ø22, обводка 1.5 px `-border`, заливка `-input`. Выбранное — красная точка Ø12.
 - **Сегментная полоса RAM** (`SegmentedBar`): 9 сегментов с `.zone-radius-sm`, активные `-primary`,
   неактивные `-segment-off`, значение мелким кеглем в последнем активном сегменте.
-- **Заголовок раздела**: Oswald UPPERCASE, под ним линия 1 px с градиентом от `-heading-rule` в прозрачность.
+- **Заголовок раздела**: Bebas Neue UPPERCASE, под ним линия 1 px с градиентом от `-heading-rule` в прозрачность.
 - **Полоса заголовка окна**: высота 28, `-titlebar`, снизу рамка `-border`. Справа «свернуть», «развернуть»
   и «закрыть»; крестик красный.
 - **Окно входа**: фон `-background`, рамка 1 px `-border`, углы 10 px (как `.zone-radius-md`), полоса 32 px с

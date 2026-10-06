@@ -31,7 +31,7 @@
 |---|---|
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
-| `-Dlauncher.theme=exbo\|shadcn\|zone` | тема: исходные цвета EXBO (по умолчанию), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE (`theme-zone.css`, Oswald + Roboto) |
+| `-Dlauncher.theme=exbo\|shadcn\|zone` | тема: исходные цвета EXBO (по умолчанию), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE (`theme-zone.css`, Bebas Neue + Roboto) |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 
 На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.theme=zone -Dlauncher.screenshots=$PWD/docs/screenshots/zone`.
@@ -66,7 +66,7 @@ src/main/kotlin/dev/launcherfork/
 │  └─ Services.kt         AuthService, ServerRepository, NewsRepository, UpdateService, GameLauncher,
 │                         SettingsStore, Services
 ├─ data/mock/           фейковые реализации (без сети, файлов и реестра)
-│  ├─ MockData.kt         3 игры (STALCRAFT: X, Placeholder Game, Test Realm) и 4 новости-заглушки
+│  ├─ MockData.kt         3 игры (STALZONE, Placeholder Game, Test Realm) и 4 новости-заглушки
 │  ├─ MockAuthService.kt, MockRepositories.kt (серверы, новости, InMemorySettingsStore)
 │  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
 │  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
@@ -96,7 +96,7 @@ src/main/resources/dev/launcherfork/
 ├─ ui/style/theme.css, theme-shadcn.css, theme-zone.css   токены цветов + шрифты + радиусы (литералы только тут)
 ├─ ui/style/layout.css   стили новой раскладки (окно, главный экран, настройки, модалки; только токены)
 ├─ ui/style/{common,auth,lang_ru,lang_en}.css   стили legacy-панелей авторизации/обновления
-├─ ui/style/image/, ui/style/font/   PNG и Europe из оригинала; Manrope, Oswald, Roboto (OFL) (см. «Права на ассеты»)
+├─ ui/style/image/, ui/style/font/   PNG и Europe из оригинала; Manrope, Roboto (OFL), Bebas Neue (с stalzone.com) (см. «Права на ассеты»)
 ├─ ui/i18n/messages*.properties      строки ru/en
 └─ mock/                             сгенерированные картинки-заглушки (tools/GenerateZoneArt.java)
 ```
@@ -140,8 +140,9 @@ src/main/resources/dev/launcherfork/
    (SIL OFL 1.1, есть кириллица, лицензия в `ui/style/font/OFL-Manrope.txt`) заменил коммерческий Circe из оригинала.
    Чтобы сменить шрифт ещё раз, достаточно положить файлы в `ui/style/font/`,
    поправить список в `Theme.loadFonts()` и имена семейств в `theme.css`.
-   В теме `zone` шрифты другие: заголовки Oswald (свободная замена Bebas Neue Cyrillic с сайта STALZONE), текст
-   Roboto, оба SIL OFL 1.1 (`OFL-Oswald.txt`, `OFL-Roboto.txt`). Их регистрирует `Theme.zoneFonts`, а семейства
+   В теме `zone` шрифты другие, как на stalzone.com: заголовки и большие кнопки Bebas Neue Regular (взят с сайта,
+   в метаданных SIL OFL 1.1, лицензия не подтверждена — см. docs/design/STYLE-ZONE.md), текст Roboto (SIL OFL 1.1,
+   `OFL-BebasNeue.txt`, `OFL-Roboto.txt`). Их регистрирует `Theme.zoneFonts`, а семейства
    задаёт `theme-zone.css`. Разрядки (letter-spacing) в JavaFX CSS нет. CAPS-узлы с классом `.zone-caps` после
    слияния с `redesign/auth` перейдут на `SpacedLabel`.
 6. **Тесты** (`./gradlew test`, JUnit 5 + headless Monocle):
@@ -191,7 +192,7 @@ src/main/resources/dev/launcherfork/
 
 ## Что заглушка
 
-- `MockData`: 3 игры (STALCRAFT: X — установлена; Placeholder Game — не установлена; Test Realm — офлайн) и
+- `MockData`: 3 игры (STALZONE — установлена, иконка — фавикон stalzone.com; Placeholder Game — не установлена; Test Realm — офлайн) и
   4 новости. Тёмный процедурный арт (силуэт, лес, вышка) и иконки сгенерированы скриптом
   `java tools/GenerateZoneArt.java src/main/resources/dev/launcherfork` и к EXBO не относятся: из эталонных
   скриншотов ничего не скопировано. Логотип EXBO — вектор из `ui/style/image/exbo-logo.svg` (логотип владельца
@@ -271,7 +272,8 @@ Feature-версия JDK (21) у jmods для Windows должна совпад�
 
 PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/image/` (логотипы EXBO и STALCRAFT, кнопки,
 рамки, иконки) и шрифт `ui/style/font/europe.ttf` скопированы из оригинального лаунчера и **принадлежат EXBO**.
-Акцидентный шрифт `Europe` **не свободный**. Circe из оригинала уже заменён на свободный Manrope (OFL), но
+Акцидентный шрифт `Europe` **не свободный**. Шрифт темы zone `ui/style/font/BebasNeue-Regular.ttf` взят с
+stalzone.com; его лицензия (OFL 1.1 по метаданным) не подтверждена, до публикации его нужно заменить или проверить. Circe из оригинала уже заменён на свободный Manrope (OFL), но
 файлы Circe остались в истории git (коммит `14149a8`). Строки интерфейса взяты из оригинала.
 Это допустимо только для внутренней работы над редизайном. **Перед любым публичным распространением
 (релиз, публичный репозиторий, сборки) все эти ассеты и шрифты нужно заменить** на собственные или свободно

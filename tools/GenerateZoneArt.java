@@ -11,12 +11,12 @@ import java.io.File;
 import java.util.Random;
 
 public class GenerateZoneArt {
-    static Font oswald;
+    static Font display; // Bebas Neue Regular, the zone theme heading font
 
     public static void main(String[] args) throws Exception {
         System.setProperty("java.awt.headless", "true");
         File res = new File(args.length > 0 ? args[0] : "src/main/resources/dev/launcherfork");
-        oswald = Font.createFont(Font.TRUETYPE_FONT, new File(res, "ui/style/font/Oswald-Medium.ttf"));
+        display = Font.createFont(Font.TRUETYPE_FONT, new File(res, "ui/style/font/BebasNeue-Regular.ttf"));
         File servers = new File(res, "mock/servers");
         File news = new File(res, "mock/news");
         servers.mkdirs();
@@ -25,8 +25,7 @@ public class GenerateZoneArt {
         write(scene(1600, 1000, 11, true, true), new File(servers, "stalcraft_x_bg.jpg"));
         write(scene(1600, 1000, 23, false, true), new File(servers, "bravo_bg.jpg"));
         write(scene(1600, 1000, 37, true, false), new File(servers, "charlie_bg.jpg"));
-        // sidebar icons 64x64 (shown at 26)
-        write(crossIcon(64), new File(servers, "stalcraft_x_icon.png"));
+        // sidebar icons 64x64 (shown at 24); the STALZONE entry uses the site favicon (mock/servers/game-stalzone.png)
         write(letterIcon(64, "B"), new File(servers, "bravo_icon.png"));
         write(letterIcon(64, "T"), new File(servers, "charlie_icon.png"));
         // news cards 590x330 (shown at 295x165)
@@ -64,7 +63,7 @@ public class GenerateZoneArt {
         BufferedImage img = scene(w, h, seed, r.nextBoolean(), false);
         Graphics2D g = img.createGraphics();
         hints(g);
-        g.setFont(oswald.deriveFont(Font.PLAIN, h * 0.20f));
+        g.setFont(display.deriveFont(Font.PLAIN, h * 0.23f));
         FontMetrics fm = g.getFontMetrics();
         int tx = (w - fm.stringWidth(title)) / 2, ty = (int) (h * 0.58);
         g.setColor(new Color(0, 0, 0, 120));
@@ -180,23 +179,6 @@ public class GenerateZoneArt {
         g.fillRect(0, 0, w, h);
     }
 
-    static BufferedImage crossIcon(int s) {
-        BufferedImage img = new BufferedImage(s, s, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = img.createGraphics();
-        hints(g);
-        g.setColor(Color.WHITE);
-        g.setStroke(new BasicStroke(s * 0.16f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
-        double m = s * 0.18;
-        g.draw(new Line2D.Double(m, m, s - m, s - m));
-        g.draw(new Line2D.Double(s - m, m, m, s - m));
-        // notched ends
-        g.setComposite(AlphaComposite.Clear);
-        g.fill(new Rectangle2D.Double(s * 0.44, 0, s * 0.12, s * 0.2));
-        g.fill(new Rectangle2D.Double(s * 0.44, s * 0.8, s * 0.12, s * 0.2));
-        g.dispose();
-        return img;
-    }
-
     static BufferedImage letterIcon(int s, String letter) {
         BufferedImage img = new BufferedImage(s, s, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
@@ -204,9 +186,10 @@ public class GenerateZoneArt {
         g.setColor(Color.WHITE);
         g.setStroke(new BasicStroke(s * 0.06f));
         g.draw(new Rectangle2D.Double(s * 0.1, s * 0.1, s * 0.8, s * 0.8));
-        g.setFont(oswald.deriveFont(Font.PLAIN, s * 0.6f));
-        FontMetrics fm = g.getFontMetrics();
-        g.drawString(letter, (s - fm.stringWidth(letter)) / 2f, s * 0.5f + fm.getAscent() * 0.36f);
+        g.setFont(display.deriveFont(Font.PLAIN, s * 0.69f));
+        // centre the glyph's visual bounds in the frame (font-independent, unlike ascent-based offsets)
+        Rectangle2D b = g.getFont().createGlyphVector(g.getFontRenderContext(), letter).getVisualBounds();
+        g.drawString(letter, (float) ((s - b.getWidth()) / 2 - b.getX()), (float) ((s - b.getHeight()) / 2 - b.getY()));
         g.dispose();
         return img;
     }
