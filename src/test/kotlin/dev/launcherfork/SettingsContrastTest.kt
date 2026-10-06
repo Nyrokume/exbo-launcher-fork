@@ -12,14 +12,17 @@ import kotlin.math.pow
 
 /**
  * Readability of the settings page, from the stylesheets alone (no FX): the text and background tokens of every theme
- * (theme.css + theme-shadcn.css / theme-zone.css; all themes are dark, there is no light variant) must meet WCAG 2.1 AA:
+ * (theme.css + theme-shadcn.css / theme-zone.css, and the white scheme theme-zone-light.css on top of the zone theme;
+ * the ratio is symmetric, so dark-on-light is measured the same way) must meet WCAG 2.1 AA:
  * 4.5:1 for normal text (row labels, RAM summary and captions, inactive segment labels, KB/s), 3:1 for the large group
  * headings and for non-text parts that carry state (RAM segments, switch off-state; WCAG 1.4.11). layout.css is checked
  * too, so the settings selectors really paint with the tokens measured here.
  */
 class SettingsContrastTest {
     private val themes = mapOf("exbo" to listOf("theme.css"), "shadcn" to listOf("theme.css", "theme-shadcn.css"),
-        "zone" to listOf("theme.css", "theme-zone.css"))
+        "zone" to listOf("theme.css", "theme-zone.css"),
+        // the white scheme (settings «Тема: Белая»): same stack as Theme.stylesheets("zone", LIGHT, ...)
+        "zone-light" to listOf("theme.css", "theme-zone.css", "theme-zone-light.css"))
 
     private data class Rgba(val r: Double, val g: Double, val b: Double, val a: Double = 1.0) {
         fun over(bg: Rgba) = Rgba(r * a + bg.r * (1 - a), g * a + bg.g * (1 - a), b * a + bg.b * (1 - a))
@@ -107,6 +110,75 @@ class SettingsContrastTest {
         assertTrue(free != reserve && free != filled && reserve != filled, "$theme: RAM states share a color")
         // the reserve is quieter than the available segments (and drawn as an outline, see layout.css)
         assertTrue(ratio(reserve, card) < ratio(free, card), "$theme: reserve not darker than the available segments")
+        // the selected amount is the loudest part of the bar: more contrast than the available (grey) segments
+        assertTrue(ratio(filled, card) > ratio(free, card),
+            "$theme: selected ${"%.2f".format(ratio(filled, card))}:1 not above available ${"%.2f".format(ratio(free, card))}:1")
+    }
+
+    /** (what, foreground token, background token, minimum ratio): main window and pre-main (login / code) window. */
+    private val windowPairs = listOf(
+        Triple("main: headings, game name", "-foreground" to "-background", 4.5),
+        Triple("main: text on cards / menus", "-foreground" to "-card", 4.5),
+        Triple("main: card text", "-card-foreground" to "-card", 4.5),
+        Triple("main: sidebar text and logo", "-foreground" to "-sidebar", 4.5),
+        Triple("main: muted labels, hints", "-muted-foreground" to "-background", 4.5),
+        Triple("main: muted text on cards", "-muted-foreground" to "-card", 4.5),
+        Triple("main: header links", "-text-nav" to "-background", 4.5),
+        Triple("main: status text in the pill", "-text-status" to "-input", 4.5),
+        Triple("main: red menu rows", "-destructive-text" to "-card", 4.5),
+        Triple("main / login: ИГРАТЬ, ВОЙТИ (white on red, large Bebas 24 px)", "-primary-foreground" to "-primary", 3.0),
+        Triple("main: hovered tile text", "-foreground" to "-tile-hover", 4.5),
+        Triple("window glyphs (non-text)", "-titlebar-foreground" to "-titlebar", 3.0),
+        Triple("icons (non-text)", "-icon" to "-background", 3.0),
+        Triple("login: form text", "-foreground" to "-card-description", 4.5),
+        Triple("login: hints, labels", "-muted-foreground" to "-card-description", 4.5),
+        Triple("login: input text", "-input-foreground" to "-input", 4.5),
+        Triple("login: red links", "-primary" to "-card-description", 4.5),
+        Triple("registration: selected combo row (red text on card)", "-primary" to "-card", 4.5),
+        Triple("login: error text", "-error" to "-card-description", 4.5),
+    )
+
+    /**
+     * Gaps of the DARK zone theme that predate the white scheme (not touched here: the status pill and the login error
+     * belong to other branches): -text-status on -input 2.98:1, -error on -card-description 4.41:1.
+     */
+    private val knownDarkZoneGaps = setOf("-text-status" to "-input", "-error" to "-card-description")
+
+    /**
+     * Main and login window text in the zone look, dark and white. The exbo / shadcn dev themes keep the original
+     * colours (some original greys, e.g. exbo -text-link, are below AA) and are not part of this check.
+     */
+    @TestFactory
+    fun mainAndLoginTextMeetWcagAaInTheZoneSchemes(): List<DynamicTest> = listOf("zone", "zone-light").flatMap { theme ->
+        val t = tokens(theme)
+        windowPairs.filterNot { theme == "zone" && it.second in knownDarkZoneGaps }.map { (what, tokens, minRatio) ->
+            DynamicTest.dynamicTest("$theme: $what") {
+                val bg = color(t, tokens.second, color(t, "-background"))
+                val fg = color(t, tokens.first, bg)
+                val r = ratio(fg, bg)
+                assertTrue(r >= minRatio, "$theme: $what ${tokens.first} on ${tokens.second} = ${"%.2f".format(r)}:1 < $minRatio:1")
+            }
+        }
+    }
+
+    /** The white scheme really is light: light surfaces, dark text, no translucent white left over from the dark tokens. */
+    @Test
+    fun whiteSchemeIsLight() {
+        val t = tokens("zone-light")
+        val white = color(t, "-background")
+        assertTrue(white.luminance() > 0.95, "background not white")
+        for (surface in listOf("-card", "-sidebar", "-input", "-card-description", "-titlebar", "-tile"))
+            assertTrue(color(t, surface).luminance() > 0.85, "$surface is not light")
+        for (text in listOf("-foreground", "-settings-heading", "-settings-label", "-input-foreground"))
+            assertTrue(color(t, text).luminance() < 0.02, "$text is not dark")
+        // hover / fill / overlay tokens are black-with-alpha here (white-with-alpha would vanish on white)
+        for (tok in listOf("-accent", "-fill-subtle", "-fill-strong", "-divider-light", "-scrim", "-overlay", "-shadow")) {
+            val c = parseColor(t.getValue(tok))
+            assertTrue(c.a < 1.0 && c.luminance() < 0.01, "$tok should be translucent black, is ${t[tok]}")
+        }
+        // the switch knob (white, -primary-foreground) on the red ON track, the off knob on the white track
+        assertTrue(ratio(color(t, "-primary-foreground"), color(t, "-switch-on")) >= 4.5)
+        assertTrue(ratio(color(t, "-switch-off-knob"), color(t, "-input")) >= 3.0)
     }
 
     /** layout.css paints the settings page with exactly the tokens measured above. */

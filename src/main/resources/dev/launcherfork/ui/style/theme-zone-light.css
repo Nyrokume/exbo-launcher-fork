@@ -1,0 +1,98 @@
+/*
+ * theme-zone-light.css - the WHITE scheme («Тема: Белая» in Settings, or -Dlauncher.theme=zone-light), loaded AFTER
+ * theme.css + theme-zone.css (Theme.stylesheets). Tokens only: fonts, radii and every component rule stay those of
+ * the zone theme, so the layout is identical and only colours change (also on the login / registration / code panels,
+ * whose stylesheets use the same tokens). White window, #f4f4f5 cards, near-black text, zinc greys, light borders;
+ * the STALZONE red stays the accent. It is #dc2239 darkened a hair to #d62037 so red TEXT (links, selected combo row)
+ * is >= 4.5:1 on the #f4f4f5 cards too (#dc2239 there: 4.41:1). SettingsContrastTest checks the ratios below.
+ */
+
+.root {
+    /* ---- shared token names (same as theme.css) ---- */
+    -background: #ffffff;                     /* window / content */
+    -foreground: #0a0a0a;                     /* headings, primary text: 19.8:1 on white */
+    -card: #f4f4f5;                           /* cards, panels, modals, dropdown */
+    -card-foreground: #0a0a0a;
+    -popover: rgba(255, 255, 255, 0.98);      /* context menu, tooltip */
+    -popover-foreground: #0a0a0a;
+    -primary: #d62037;                        /* red accent: CTA, selected segment, links: 5.1:1 on white, 4.6:1 on cards */
+    -primary-foreground: #ffffff;             /* white text on red: 5.1:1 */
+    -secondary: #f4f4f5;
+    -secondary-foreground: #0a0a0a;
+    -muted: #f4f4f5;
+    -muted-foreground: #52525b;               /* labels, hints: 7.7:1 on white, 7.0:1 on cards */
+    -accent: rgba(10, 10, 10, 0.04);          /* hover fill */
+    -accent-foreground: #0a0a0a;
+    -border: #e4e4e7;                         /* 1px borders of tiles, inputs, cards */
+    -ring: #d62037;                           /* focus border of inputs */
+    -destructive: #d62037;
+    -destructive-border: rgba(214, 32, 55, 0.40);
+    -destructive-soft: rgba(214, 32, 55, 0.08);
+    -destructive-text: #c81e33;               /* red menu rows: 5.7:1 on white, 5.2:1 on cards */
+    -primary-tint: rgba(214, 32, 55, 0.12);   /* progress fill behind the status text */
+    -input-foreground: #0a0a0a;
+    -placeholder: #71717a;                    /* 4.8:1 on white */
+    -overlay: rgba(10, 10, 10, 0.45);
+    -overlay-light: rgba(10, 10, 10, 0.20);
+    -overlay-solid: #ffffff;
+    -shadow: rgba(10, 10, 10, 0.14);
+    -shadow-inner: rgba(10, 10, 10, 0.08);
+
+    -text-strong: #0a0a0a;
+    -text-description: #27272a;
+    -text-label: #18181b;
+    -text-status: #52525b;
+    -text-nav: #18181b;
+    -text-dim: #63636b;                       /* online count, status: 5.9:1 on white */
+    -text-dim-active: #52525b;
+    -text-link: #52525b;
+
+    /* ---- extra tokens (also defined in theme.css / theme-zone.css) ---- */
+    -titlebar: #ffffff;                       /* window title bar strip (bottom border -border) */
+    -titlebar-foreground: #3f3f46;            /* minimize / maximize glyphs */
+    -window-close: #d62037;
+    -window-close-hover: #b91c30;
+    -sidebar: #fafafa;                        /* left column, a shade off the white content */
+    -divider: #e4e4e7;
+    -divider-light: rgba(10, 10, 10, 0.08);
+    -heading-rule: #0a0a0a;                   /* section heading underline (fades to transparent) */
+    -segment-off: #e4e4e7;
+    -track: #e4e4e7;                          /* progress track */
+    -icon: #52525b;                           /* small icon buttons, menu arrows */
+    -primary-hover: #b91c30;                  /* hover = deeper red on white */
+    -input: #ffffff;                          /* inputs and segmented controls: white inside the grey cards */
+    -scrim: rgba(10, 10, 10, 0.30);           /* dim behind overlay panels */
+    -tile: #f4f4f5;
+    -tile-hover: #e9e9ec;
+    -border-hover: #a1a1aa;
+    -fill-subtle: rgba(10, 10, 10, 0.03);
+    -fill-strong: rgba(10, 10, 10, 0.08);
+    -card-alt: #fafafa;
+    -card-description: #ffffff;               /* lower part of the login card, dropdown rows */
+    -input-border: #d4d4d8;
+    -error: #c81e1e;                          /* error text and input border: 5.7:1 on white */
+    -status-online: #15803d;                  /* online dot: 5.0:1 on white */
+    -status-offline: #a1a1aa;
+
+    /* ---- settings page (SettingsContrastTest) ---- */
+    -settings-heading: #0a0a0a;               /* group headings on -background: 19.8:1 */
+    -settings-label: #18181b;                 /* row labels, RAM summary on -card: 16.1:1 */
+    -settings-muted: #52525b;                 /* inactive segments, KB/s, RAM scale: 7.7:1 on -input, 7.0:1 on -card */
+    -settings-divider: #e4e4e7;               /* row separators inside the cards */
+    -ram-filled: #d62037;                     /* RAM: selected, red, the loudest part of the bar (4.6:1 on -card) */
+    -ram-filled-hover: #b91c30;
+    -switch-on: #d62037;                      /* switch on: red track (4.6:1 on -card) with the white knob (5.1:1) */
+    -switch-on-hover: #b91c30;
+    -ram-free: #85858d;                       /* RAM: available, quiet grey (3.3:1 on -card, below the red's 4.6:1) */
+    -ram-reserve: #d4d4d8;                    /* RAM: system reserve, outline only */
+    -switch-off-knob: #71717a;                /* switch off: knob (4.8:1 on -input) */
+    -switch-off-border: #85858d;              /* switch off: track ring (3.3:1 on -card) */
+    -segment-selected: #d62037;               /* selected segment: white text 5.1:1 */
+}
+
+/*
+ * Sidebar game icons are white glyphs on transparency (mock/servers/*.png, set from code as the background image):
+ * on white they would vanish, so the white scheme recolours the glyph to -foreground (an inner shadow that fills
+ * the whole shape). Effects are not colours, but this one only exists for the white scheme, hence it lives here.
+ */
+.entry-icon { -fx-effect: innershadow(one-pass-box, -foreground, 48, 1.0, 0, 0); }

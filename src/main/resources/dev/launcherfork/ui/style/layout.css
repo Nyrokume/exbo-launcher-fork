@@ -399,17 +399,17 @@
 
 /* ===================== settings ===================== */
 /* One screen at 900x580 (SettingsScreenTest), below the nav row. One tidy list: small Bebas group labels over subtle
-   cards; every row of a card is "label left, control right", 36 px, a thin separator under all but the last. */
+   cards; every row of a card is "label left, control right", 32 px (7 rows in ПОВЕДЕНИЕ since «Тема»), a thin separator under all but the last. */
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.settings-content { -fx-padding: 4 24 16 24; -fx-max-width: 820; -fx-spacing: 14; }
+.settings-content { -fx-padding: 4 24 12 24; -fx-max-width: 820; -fx-spacing: 14; }
 .settings-group { -fx-spacing: 6; }
 .settings-group-label { -fx-font-size: 17; -fx-text-fill: -settings-heading; }
 .settings-columns { -fx-spacing: 14; }
 .settings-card { -fx-padding: 0 14 0 14; }
 .settings-card.ram-card { -fx-padding: 10 14 8 14; -fx-spacing: 8; }
 .settings-row {
-    -fx-min-height: 36; -fx-pref-height: 36; -fx-max-height: 36;
+    -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32;
     -fx-border-color: transparent transparent -settings-divider transparent;
     -fx-border-width: 0 0 1 0;
 }
@@ -421,14 +421,14 @@
     -fx-background-color: -input;
     -fx-border-color: -border;
     -fx-border-width: 1;
-    -fx-padding: 2;
+    -fx-padding: 1;
     -fx-spacing: 2;
 }
 .segment {
     -fx-font-size: 13;
     -fx-text-fill: -settings-muted;
     -fx-background-color: transparent;
-    -fx-padding: 2 10 2 10;
+    -fx-padding: 1 10 1 10;
     -fx-label-padding: 0;
     -fx-graphic-text-gap: 0;
     -fx-cursor: hand;

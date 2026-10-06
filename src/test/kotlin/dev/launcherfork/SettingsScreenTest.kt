@@ -133,17 +133,17 @@ class SettingsScreenTest {
     }
 
     /**
-     * Every card is a list of uniform rows: 36 px, label at the card's left padding, control ending at its right
+     * Every card is a list of uniform rows: 32 px (36 before the «Тема» row; 7 rows must fit 900x580), label at the card's left padding, control ending at its right
      * padding, one line (no wrapped or cut labels); auto-exit, P2P and language are segmented controls whose parts sit
      * edge to edge on one line.
      */
     private fun checkRows(s: SettingsController, where: String) {
-        val behaviourRows = listOf(s.exitRow, s.p2pRow, s.startOnDownloadedRow, s.defenderRow, s.trayRow, s.autostartRow)
+        val behaviourRows = listOf(s.exitRow, s.p2pRow, s.themeRow, s.startOnDownloadedRow, s.defenderRow, s.trayRow, s.autostartRow)
         assertEquals(behaviourRows, s.behaviourCard.children.toList(), "$where: ПОВЕДЕНИЕ is one column of rows in this order")
         val rows = behaviourRows + listOf(s.limitsRow, s.languageRow)
         rows.forEach { row ->
             val rb = row.sceneBounds()
-            assertEquals(36.0, rb.height, 0.5, "$where: ${row.id} height")
+            assertEquals(32.0, rb.height, 0.5, "$where: ${row.id} height")
             val card = row.parent as javafx.scene.layout.Region
             val cb = card.sceneBounds()
             val inner = cb.minX + card.snappedLeftInset() to cb.maxX - card.snappedRightInset()
