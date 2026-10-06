@@ -13,7 +13,10 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** Main window, zone theme: plain content background, Forum / Support next to the profile, the STALZONE entry. */
+/**
+ * Main window, zone theme: plain content background, Forum / Support next to the profile, STALZONE as the only game,
+ * an empty centre slot (no hero / news) waiting for the centre redesign.
+ */
 class MainZoneLayoutTest {
     private fun Node.sceneBounds(): Bounds = localToScene(layoutBounds)
 
@@ -43,8 +46,22 @@ class MainZoneLayoutTest {
         val main = nav.mainController!!
         assertFalse(main.background.isVisible, "game art must be hidden in the zone theme")
         assertFalse(main.backgroundShade.isVisible)
-        // news cards keep their own images
-        assertTrue(main.advancedNewsPaneController.cards.isNotEmpty())
+    }
+
+    @Test
+    fun centreIsAnEmptySlotAndStalzoneIsTheOnlyGame() = withZoneMain { nav ->
+        val main = nav.mainController!!
+        assertTrue(main.centerPane.children.isEmpty(), "centre slot must stay empty: ${main.centerPane.children}")
+        assertTrue(main.centerPane.isVisible)
+        // home layer: centre slot, status bar and the (hidden) tools popup; no hero / news / article
+        assertEquals(3, main.homePane.children.size, "${main.homePane.children}")
+        listOf("#hero", "#news", "#article").forEach { assertTrue(main.root.lookup(it) == null, "$it is still in the main window") }
+        // centre slot sits between the top bar and the status bar
+        val centre = main.centerPane.sceneBounds()
+        val status = main.defaultStatusPaneController.downloadButton.sceneBounds()
+        val profile = main.profileBarController.loginButton.sceneBounds()
+        assertTrue(centre.minY >= profile.maxY && centre.maxY <= status.minY, "centre $centre, profile $profile, status $status")
+        assertEquals(listOf("STALZONE"), main.servers.map { it.caption })
     }
 
     @Test
@@ -73,11 +90,11 @@ class MainZoneLayoutTest {
     }
 
     @Test
-    fun firstGameIsStalzoneWithTheSiteFavicon() {
-        val game = MockData.servers.first()
+    fun onlyGameIsStalzoneWithTheSiteFavicon() {
+        val game = MockData.servers.single()
         assertEquals("STALZONE", game.caption)
         assertTrue(game.description.first().startsWith("STALZONE — "))
         assertTrue(game.iconUri.toString().endsWith("/servers/game-stalzone.png"))
-        assertTrue(MockData.servers.none { s -> "STALCRAFT" in s.caption || s.description.any { "STALCRAFT" in it } })
+        assertTrue("STALCRAFT" !in game.caption && game.description.none { "STALCRAFT" in it })
     }
 }

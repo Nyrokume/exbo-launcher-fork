@@ -1,5 +1,5 @@
 // Generates free, procedural placeholder art for the "zone" redesign (dark, desaturated, no third-party assets):
-// game backgrounds (forest + fog + lattice tower + figure silhouette), news card images, sidebar game icons.
+// the game background (forest + fog + lattice tower + figure silhouette).
 // Run: java tools/GenerateZoneArt.java src/main/resources/dev/launcherfork
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -11,26 +11,14 @@ import java.io.File;
 import java.util.Random;
 
 public class GenerateZoneArt {
-    static Font display; // Bebas Neue Regular, the zone theme heading font
-
     public static void main(String[] args) throws Exception {
         System.setProperty("java.awt.headless", "true");
         File res = new File(args.length > 0 ? args[0] : "src/main/resources/dev/launcherfork");
-        display = Font.createFont(Font.TRUETYPE_FONT, new File(res, "ui/style/font/BebasNeue-Regular.ttf"));
         File servers = new File(res, "mock/servers");
-        File news = new File(res, "mock/news");
         servers.mkdirs();
-        news.mkdirs();
-        // game backgrounds: 1600x1000, cover-scaled behind the content area
+        // game background: 1600x1000, cover-scaled behind the content area (exbo / shadcn themes); the STALZONE
+        // sidebar icon is the site favicon (mock/servers/game-stalzone.png), not generated here
         write(scene(1600, 1000, 11, true, true), new File(servers, "stalcraft_x_bg.jpg"));
-        write(scene(1600, 1000, 23, false, true), new File(servers, "bravo_bg.jpg"));
-        write(scene(1600, 1000, 37, true, false), new File(servers, "charlie_bg.jpg"));
-        // sidebar icons 64x64 (shown at 24); the STALZONE entry uses the site favicon (mock/servers/game-stalzone.png)
-        write(letterIcon(64, "B"), new File(servers, "bravo_icon.png"));
-        write(letterIcon(64, "T"), new File(servers, "charlie_icon.png"));
-        // news cards 590x330 (shown at 295x165)
-        String[] titles = {"ОБНОВЛЕНИЕ 1.2", "ИВЕНТ", "ДНЕВНИК", "ПАТЧ 0.9"};
-        for (int i = 0; i < titles.length; i++) write(newsCard(590, 330, 100 + i * 17, titles[i]), new File(news, "news_" + (i + 1) + ".jpg"));
     }
 
     static BufferedImage scene(int w, int h, long seed, boolean tower, boolean figure) {
@@ -55,22 +43,6 @@ public class GenerateZoneArt {
         vignette(g2, w, h);
         g2.dispose();
         grain(img, r, 10);
-        return img;
-    }
-
-    static BufferedImage newsCard(int w, int h, long seed, String title) {
-        Random r = new Random(seed);
-        BufferedImage img = scene(w, h, seed, r.nextBoolean(), false);
-        Graphics2D g = img.createGraphics();
-        hints(g);
-        g.setFont(display.deriveFont(Font.PLAIN, h * 0.23f));
-        FontMetrics fm = g.getFontMetrics();
-        int tx = (w - fm.stringWidth(title)) / 2, ty = (int) (h * 0.58);
-        g.setColor(new Color(0, 0, 0, 120));
-        g.drawString(title, tx + 3, ty + 3);
-        g.setColor(gray(225));
-        g.drawString(title, tx, ty);
-        g.dispose();
         return img;
     }
 
@@ -177,21 +149,6 @@ public class GenerateZoneArt {
         g.setPaint(new RadialGradientPaint(new Point2D.Double(w * 0.5, h * 0.45), (float) (w * 0.75), new float[]{0.45f, 1f},
             new Color[]{new Color(0, 0, 0, 0), new Color(0, 0, 0, 200)}));
         g.fillRect(0, 0, w, h);
-    }
-
-    static BufferedImage letterIcon(int s, String letter) {
-        BufferedImage img = new BufferedImage(s, s, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = img.createGraphics();
-        hints(g);
-        g.setColor(Color.WHITE);
-        g.setStroke(new BasicStroke(s * 0.06f));
-        g.draw(new Rectangle2D.Double(s * 0.1, s * 0.1, s * 0.8, s * 0.8));
-        g.setFont(display.deriveFont(Font.PLAIN, s * 0.69f));
-        // centre the glyph's visual bounds in the frame (font-independent, unlike ascent-based offsets)
-        Rectangle2D b = g.getFont().createGlyphVector(g.getFontRenderContext(), letter).getVisualBounds();
-        g.drawString(letter, (float) ((s - b.getWidth()) / 2 - b.getX()), (float) ((s - b.getHeight()) / 2 - b.getY()));
-        g.dispose();
-        return img;
     }
 
     static BufferedImage blur(BufferedImage src, int r) {

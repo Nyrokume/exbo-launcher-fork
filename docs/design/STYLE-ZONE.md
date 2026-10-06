@@ -7,8 +7,9 @@
 Источники:
 - **Визуальный стиль** взят с сайта [stalzone.com/start](https://stalzone.com/start): CSS-переменные сайта и
   мобильные скриншоты `start.jpg` и `menu.jpg`. Отсюда палитра, рамки, радиусы, CAPS-подписи и плитки.
-- **Концепция и раскладка** взяты с эталонных скриншотов лаунчера STALCRAFT: колонка слева, hero, новости,
-  разделы настроек, авторизация в оверлее.
+- **Концепция и раскладка** взяты с эталонных скриншотов лаунчера STALCRAFT: колонка слева, разделы настроек,
+  авторизация в оверлее. Hero («ДОБРО ПОЖАЛОВАТЬ» / «В ЧЕРНОБЫЛЬ» / описание) и колонка новостей из центра
+  главного окна убраны: центр — пустой слот `centerPane` (`main.fxml`) под новый дизайн.
 
 ## Палитра (токены)
 
@@ -26,7 +27,7 @@
 | `-fill-strong`, `-divider-light` | `rgba(202,185,166,.12)` | заливка .12 | разделители внутри панелей |
 | `-secondary`, `-muted`, `-input`, `-tile` | `#121212` | `--black-btn-color` | плитки, вторичные кнопки, поля ввода |
 | `-tile-hover` | `#1a1a1a` | | hover плитки |
-| `-card` | `#181818` | `--card` (stalzone.com/login) | карточка входа, карточки новостей, группы настроек, модалки, выпадающее меню профиля |
+| `-card` | `#181818` | `--card` (stalzone.com/login) | карточка входа, группы настроек, модалки, выпадающее меню профиля |
 | `-card-description` | `#0f0f0f` | `--card-description` | нижняя часть карточки входа, строки выпадающего меню |
 | `-input-border` | `#2e2d2d` | рамка `.form__wrapper__input` | рамка 1px полей ввода (фокус: `-foreground`) |
 | `-error` | `#e63030` | `--error-color` | текст ошибки и рамка поля с ошибкой |
@@ -67,12 +68,11 @@
 | Роль | Семейство (имя для JavaFX) | Кегль | Где |
 |---|---|---|---|
 | Вордмарк EXBO (текстом, сейчас логотип векторный) | `Bebas Neue Regular` (`.font-display-strong`) | 64 | — |
-| Hero, заголовки разделов, заголовки модалок | `Bebas Neue Regular` (`.font-display`), UPPERCASE | 30–53 | «ДОБРО ПОЖАЛОВАТЬ» 53, «НОВОСТИ» 51, «ИГРА» 48 |
+| Заголовки разделов, заголовки модалок | `Bebas Neue Regular` (`.font-display`), UPPERCASE | 30–48 | «ИГРА» 48, заголовки модалок 30 |
 | Большие кнопки | `Bebas Neue Regular` | 24 | «ИГРАТЬ» (`.play-button`), «ВОЙТИ» (`.zone-primary`) |
 | Заголовок окна входа | `Bebas Neue Regular` (`.zone-title`) | 35 | «ЗАХОДИ СКОРЕЕ, МЫ ЗАЖДАЛИСЬ» |
 | CAPS-подписи и пункты меню | `Roboto Medium` (`.zone-caps`), UPPERCASE | 11–15 | пункты колонки, ссылки ↗, «— РАЗДЕЛ —», кнопки-плитки |
 | Подпись настройки, вариант | `Roboto` | 15 | «Оперативная память», «При старте игры» |
-| Описание | `Roboto` | 13 | описание игры |
 | Статус, единицы | `Roboto` | 11–13, `-placeholder` | «Готово к запуску», «KB/s» |
 
 Откуда что взято (CSS сайта `app-BADgqdUN.css`, копия в `site-ref/sz.css`):
@@ -88,26 +88,29 @@
   `--bebcyrill` (Bebas Neue Cyrillic, более жирный рисунок 2010 года) сайт берёт только для промо-страниц
   (`.korabli__*`, `.blitz__*`) и заголовка cookie-окна.
 
-Поэтому в лаунчере: заголовки, hero и большие кнопки — `Bebas Neue Regular` (так JavaFX называет семейство,
+Поэтому в лаунчере: заголовки и большие кнопки — `Bebas Neue Regular` (так JavaFX называет семейство,
 name ID 1), текст — Roboto, CAPS-пункты — Roboto Medium. Bebas ниже по высоте прописных (0.70 em против 0.81 em у
 Oswald), поэтому кегли заголовков в `theme-zone.css` увеличены примерно в 1.15 раза. Шрифты лежат в
 `ui/style/font/`, регистрирует их `Theme.zoneFonts`; Oswald удалён.
 
-**Лицензии шрифтов (важно).**
+**Источники шрифтов.**
 
-- `BebasNeue-Regular.ttf` — Bebas Neue Regular 001.003 (Ryoichi Tsunekawa / Dharma Type), **взят с
-  stalzone.com** (WOFF2 из ассетов сайта, распакован в TTF без изменения глифов). В метаданных шрифта (name ID 13)
-  указано «licensed under the SIL Open Font License, Version 1.1», текст лицензии — `OFL-BebasNeue.txt`. Сверки с
-  официальным дистрибутивом не было, поэтому **лицензия не подтверждена**: репозиторий должен оставаться
-  приватным, а перед любым публичным релизом шрифт нужно заменить или подтвердить его лицензию (например, взять
-  Bebas Neue из официального источника под OFL).
-- **Bebas Neue Cyrillic** (`BebasNeueCyrillic-*.woff2` с stalzone.com, «Cyrillic by AA») **в репозиторий не
-  положен**: его встроенная лицензия Dharma Type разрешает использование, но прямо запрещает распространение
-  («You may not redistribute this font without permission») и изменение, в том числе конвертацию. Если всё же
-  понадобится его более жирный рисунок, это допустимо только локально, в приватной сборке, и шрифт должен быть
-  убран или очищен по лицензии до любого публичного релиза.
-- Roboto (`Roboto-*.ttf`) — SIL OFL 1.1 (`OFL-Roboto.txt`); ширины глифов совпадают с вариативным Roboto сайта
-  при wght 500 / wdth 100.
+- `BebasNeue-Regular.ttf` (семейство `Bebas Neue Regular`) — шрифт сайта, ассет проекта:
+  https://stalzone.com/front_stalzone/build/assets/BebasNeueRegular-D00apsXq.woff2 (на сайте `@font-face`
+  `Bebas Neue`, weight 400; это `--beb`). Скачан 2026-10-06, WOFF2 распакован в TTF fontTools (`flavor=None`), глифы и
+  имена не менялись. Bebas Neue Regular 001.003 (Ryoichi Tsunekawa / Dharma Type); в таблице name указана
+  SIL OFL 1.1, её текст — `OFL-BebasNeue.txt`.
+- Bebas Neue Cyrillic (https://stalzone.com/front_stalzone/build/assets/BebasNeueCyrillic-B2yc5-l0.woff2, `--bebcyrill`)
+  в лаунчер не включён: на референсе (заголовки h1–h5, «ВОЙТИ», «ИГРАТЬ БЕСПЛАТНО», пункты меню) он не участвует,
+  сайт берёт его только для промо-страниц, а его рисунок заметно жирнее тонкого Bebas Neue с референса.
+- `Roboto-Light/Regular/Medium.ttf` — Roboto 3.015 (roboto-classic, https://github.com/googlefonts/roboto-classic),
+  SIL OFL 1.1, `OFL-Roboto.txt`. Это тот же Roboto, что и вариативный шрифт сайта
+  (https://stalzone.com/front_stalzone/build/assets/Roboto-VariableFont_wdth_wght-746kZxMU.woff2): при wght 500 /
+  wdth 100 ширины глифов совпадают с `Roboto-Medium.ttf`, поэтому статические файлы оставлены.
+
+`ZoneFontsTest` проверяет, что каждое семейство из `theme-zone.css` / `zone-auth.css` грузится из TTF в
+`ui/style/font/`, внутреннее имя семейства совпадает с CSS (иначе JavaFX молча подставил бы системный шрифт) и
+кириллица U+0410–U+044F, Ё, ё есть.
 
 **Ассеты проекта с stalzone.com.** Это ассеты проекта (STALZONE / EXBO), взятые с сайта:
 
@@ -133,8 +136,7 @@ Oswald), поэтому кегли заголовков в `theme-zone.css` ув
 - **Пункт меню** (`.menu-item`): CAPS `-foreground` с разрядкой, справа стрелка ↗ (`-icon`) или красная
   live-точка (`-primary`). Так сделаны пункты колонки и ссылки Профиль / Форум / Поддержка.
 - **Карточка** (`.card` + `.zone-radius-md`): заливка `-card`, рамка 1 px `-border`, может быть слабый водяной
-  знак (`-fill-subtle`). Пример на сайте — «БАЛАНС: 0»; в лаунчере — карточки новостей, группы настроек,
-  модалки.
+  знак (`-fill-subtle`). Пример на сайте — «БАЛАНС: 0»; в лаунчере — группы настроек, модалки.
 - **Поле ввода** (`.text-field` / `.zone-input` + `.zone-radius-sm`): заливка `-input`, рамка 1 px `-border`,
   при фокусе `-ring` (красная), текст `-input-foreground`, подсказка `-placeholder`.
 - **Радио / тумблер**: кольцо Ø22, обводка 1.5 px `-border`, заливка `-input`. Выбранное — красная точка Ø12.

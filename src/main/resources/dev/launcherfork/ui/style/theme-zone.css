@@ -11,7 +11,7 @@
     /* ---- shared token names (same as theme.css) ---- */
     -background: #0a0a0a;                     /* --black-bg-color: window / content */
     -foreground: #ece7e1;                     /* warm off-white: headings, primary text */
-    -card: #181818;                           /* --card: cards (login card, news, panels, modals, dropdown) */
+    -card: #181818;                           /* --card: cards (login card, panels, modals, dropdown) */
     -card-foreground: #ece7e1;
     -popover: rgba(15, 15, 15, 0.97);         /* #0f0f0f: context menu, tooltip */
     -popover-foreground: #ece7e1;
@@ -129,11 +129,7 @@
  * heading font Oswald; Bebas has a lower cap height (0.70 em vs 0.81 em), so the zone theme scales them by ~1.15.
  * Two-class selectors: they must beat the one-class rules of layout.css, which sits on the FXML parents.
  */
-.hero-title.font-display { -fx-font-size: 53; }
-.hero-tagline.font-display { -fx-font-size: 46; -fx-padding: 2 9 -2 8; }
-.news-heading.font-display { -fx-font-size: 51; }
 .settings-heading.font-display { -fx-font-size: 48; }
-.article-caption.font-display { -fx-font-size: 35; }
 .modal-title.font-display { -fx-font-size: 30; -fx-translate-y: -4; } /* air above the fixed modal-rule (layoutY 35) */
 /* ИГРАТЬ: like the site's big buttons (.play_free / .login: var(--beb) 24px) */
 .button.play-button {
@@ -142,8 +138,7 @@
 }
 
 /*
- * Main window: no game artwork behind hero / news in the zone theme, the content area stays plain -background
- * (.main-content in layout.css). News cards keep their own images. The art regions stay in main.fxml for the
- * other themes; CSS visibility only hides them here.
+ * Main window: no game artwork in the zone theme, the content area stays plain -background (.main-content in
+ * layout.css). The art regions stay in main.fxml for the other themes; CSS visibility only hides them here.
  */
 .main-content > .game-art, .main-content > .game-art-shade { visibility: hidden; }
