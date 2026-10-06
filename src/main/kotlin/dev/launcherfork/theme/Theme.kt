@@ -38,6 +38,14 @@ object Theme {
     /** Corner radius of the pre-main window clip; equals .zone-radius-md (CSS classes cannot clip). */
     const val AUTH_WINDOW_RADIUS = 10.0
 
+    /**
+     * Window / taskbar icon sizes: ui/style/image/icon-<size>.png (docs/design/icon/). All of them go into
+     * Stage.icons so the OS picks a crisp one (16 title bar, 32/48 taskbar, 256 Alt-Tab / HiDPI).
+     */
+    val APP_ICON_SIZES = listOf(16, 32, 48, 64, 128, 256)
+
+    fun appIconResources(): List<String> = APP_ICON_SIZES.map { IMAGE_ROOT + "icon-$it.png" }
+
     // ---- overlay (in-window dialogs over the main screen) ----
     const val OVERLAY_BLUR_RADIUS = 16.0
     const val OVERLAY_BRIGHTNESS = -0.3

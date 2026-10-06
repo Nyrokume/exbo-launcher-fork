@@ -285,7 +285,8 @@ WIN_JDK=.../jdk-21.0.x WIN_JFX=.../javafx-jmods-win LINUX_JFX=.../javafx-jmods-l
 Папки, включая саму папку установки, он удаляет только если они пустые. Без маркера деинсталлятор ничего не делает.
 
 Feature-версия JDK (21) у jmods для Windows должна совпадать с `jlink` хоста. Иконка `.ico` собирается из
-`icon.png` скриптом `packaging/MakeIco.java`.
+`icon.png` скриптом `packaging/MakeIco.java`. Иконка окна и панели задач: `ui/style/image/icon-16..256.png` (все размеры в
+`Stage.icons`, `Theme.APP_ICON_SIZES`); исходники (SVG, ICO, генератор) и пометка о правах в `docs/design/icon/`.
 
 **Только для внутреннего использования.** Инсталлятор, portable-архив и Linux-образ содержат PNG EXBO и
 коммерческий шрифт `Europe` (см. ниже). Распространять их наружу нельзя, пока эти ассеты не заменены.
