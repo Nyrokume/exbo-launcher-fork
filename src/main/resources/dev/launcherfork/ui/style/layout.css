@@ -229,7 +229,14 @@
 .settings-mode .server-entry.selected .entry-indicator { -fx-background-color: transparent; }
 .entry-name { -fx-font-size: 15; -fx-fill: -text-dim-active; }
 .server-entry.selected .entry-name, .server-entry:hover .entry-name { -fx-fill: -foreground; }
-.entry-status { -fx-font-size: 10; -fx-fill: -text-dim; }
+/* online line under the name: 6 px status dot + «1 284 онлайн»; grey dot + «не в сети» when unknown / offline */
+.entry-online-dot {
+    -fx-background-color: -status-online;
+    -fx-background-radius: 3;
+    -fx-translate-y: -1; /* centred on the digits (cap height) rather than on the lowercase x-height of Roboto 11 */
+}
+.entry-online.offline .entry-online-dot { -fx-background-color: -status-offline; }
+.entry-online-text { -fx-font-size: 11; -fx-fill: -muted-foreground; }
 .entry-percent { -fx-font-size: 11; -fx-fill: -muted-foreground; }
 .entry-progress { -fx-pref-height: 3; -fx-max-height: 3; -fx-min-height: 3; -fx-padding: 0; }
 .entry-progress > .track { -fx-background-color: -track; -fx-background-insets: 0; }

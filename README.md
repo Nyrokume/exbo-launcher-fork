@@ -33,6 +33,7 @@
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
 | `-Dlauncher.theme=exbo\|shadcn\|zone` | тема: исходные цвета EXBO (по умолчанию), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE (`theme-zone.css`, Bebas Neue + Roboto) |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
+| `-Dlauncher.onlineTickMs=10000` | как часто фейковый онлайн в списке игр немного меняется (по умолчанию 10 с, `0` — всегда 1284; в автотуре всегда 0) |
 
 На машине без дисплея: `xvfb-run -a ./gradlew run -Dlauncher.theme=zone -Dlauncher.screenshots=$PWD/docs/screenshots/zone`.
 
@@ -184,6 +185,9 @@ src/main/resources/dev/launcherfork/
    - `MainZoneLayoutTest` (тема zone): нет арта игры, ссылки Форум / Поддержка в ряду профиля, STALZONE —
      единственная игра (иконка — фавикон сайта), центр `centerPane` пустой и стоит между шапкой и строкой статуса,
      hero / новостей / статьи в окне нет.
+   - `OnlineCountTest`: строка онлайна под названием игры («1 284 онлайн» / «1,284 online», серая точка и
+     «не в сети» / «offline» при неизвестном онлайне), обновление по свойству и из `ServerRepository.watchOnline`,
+     раскладка во всех темах при минимальном размере окна (иконка по центру двух строк, ничего не обрезано).
 
 ## Что перенесено
 

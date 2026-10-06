@@ -19,8 +19,11 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
     /** Download/launch state of every client. Lives as long as the app, not as long as a scene. */
     val clientStates: ClientStateStore by lazy { ClientStateStore(services.updates, services.launcher) }
 
-    /** Stops running fake downloads/launches (logout, app exit). */
-    fun shutdown() = clientStates.shutdown()
+    /** Stops running fake downloads/launches (logout, app exit) and the mock online-count drift. */
+    fun shutdown() {
+        clientStates.shutdown()
+        services.servers.close()
+    }
 
     companion object {
         fun mock(
@@ -30,10 +33,12 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
             devMode: Boolean = false,
             /** LauncherApp passes the real browser opener (HostServices); tests pass a recording fake. */
             links: LinkOpener = LinkOpener { url -> System.err.println("[launcher-fork] open link (no browser here): $url") },
+            /** > 0: the mock online count drifts every [onlineTickMs] ms (live app); 0 = fixed 1284 (tests, tour). */
+            onlineTickMs: Long = 0,
         ): AppContext = AppContext(
             Services(
                 auth = MockAuthService(authDelayMs),
-                servers = MockServerRepository(),
+                servers = MockServerRepository(tickMs = onlineTickMs),
                 updates = MockUpdateService(speed),
                 launcher = MockGameLauncher(),
                 settings = InMemorySettingsStore(LauncherSettings(language = language)),

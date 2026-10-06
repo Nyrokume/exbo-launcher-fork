@@ -66,6 +66,8 @@
     -card-description: #0a0a0a;
     -input-border: #262626;          /* oklch(1 0 0 / 15%) on black */
     -error: #ff6467;
+    -status-online: #10b981;          /* emerald-500 */
+    -status-offline: #525252;         /* neutral-600 */
 }
 
 /* shadcn radius-md (0.625rem - 2px = 8px). JavaFX has no size variables, so it is a selector group. */
