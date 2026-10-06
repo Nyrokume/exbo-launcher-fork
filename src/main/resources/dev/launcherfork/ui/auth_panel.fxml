@@ -8,7 +8,7 @@
 
 <!--
   Login panel for the separate login window, after stalzone.com/login (docs: /workspace/stalzone/site-ref/LOGIN.md).
-  Top block (card): EXBO logo only, takes the spare height. Bottom block (card description): fields, remember / restore, a row of other services (Steam, Epic Games; no Google: not supported by the auth backend), ВОЙТИ, sign up.
+  Top block: centred EXBO logo on the form colour (no separate card), takes the spare height. Bottom block (card description): fields, remember / restore, a row of other services (Steam, Epic Games; no Google: not supported by the auth backend), ВОЙТИ, sign up.
   Self-contained: own stylesheet, flow layout, same fx:ids and controller as initial_auth.fxml.
   The panel fills the window (pref 460x588 under a 32 px title bar), so the blocks have no rounded corners of their own.
   Explicit ids where the fx:id matches a legacy CSS id (lang_*.css / auth.css paint old PNGs on those).
@@ -26,8 +26,9 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
-            <!-- EXBO logo instead of the "come on in" heading (user, 2026-10-06); the title strip hides its small one -->
+        <VBox styleClass="zone-top, zone-top-plain" VBox.vgrow="ALWAYS" alignment="CENTER">
+            <!-- EXBO logo instead of the "come on in" heading (user, 2026-10-06), centred on the same black as the form
+                 (no grey card behind it, user 2026-10-07); the title strip hides its small one -->
             <LogoMark id="zoneLoginLogo" styleClass="zone-logo, zone-login-logo" logoWidth="150" accessibleText="EXBO" />
         </VBox>
 

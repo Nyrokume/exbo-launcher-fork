@@ -189,6 +189,8 @@
 .zone-logo .logo-path { -fx-fill: -foreground; }
 /* login card: the logo stands alone, no gap under it */
 .zone-login-logo { -fx-padding: 0; }
+/* login: one monotone black, the logo block takes the form colour instead of the grey card */
+.zone-top.zone-top-plain { -fx-background-color: -card-description; }
 .zone-bottom-status { -fx-spacing: 12; -fx-padding: 26 28 30 28; }
 .zone-status { -fx-font-size: 15; -fx-text-fill: -foreground; }
 .zone-progress { -fx-pref-height: 6; -fx-min-height: 6; -fx-max-height: 6; }

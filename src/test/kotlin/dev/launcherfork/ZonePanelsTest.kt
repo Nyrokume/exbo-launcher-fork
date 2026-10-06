@@ -7,7 +7,6 @@ import javafx.scene.Scene
 import javafx.scene.paint.Color
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.awt.image.BufferedImage
@@ -184,6 +183,12 @@ class ZonePanelsTest {
                 assertTrue(logo is dev.launcherfork.ui.components.LogoMark && logo.isVisible, "no EXBO logo in the top card")
                 assertTrue(scene.root.lookupAll(".zone-top .zone-title").isEmpty(), "heading left in the top card")
                 assertFalse(scene.root.lookup("#authLogo").isVisible, "second logo in the title strip")
+                // centred, on the same black as the form (no grey card behind the logo)
+                val lb = logo.localToScene(logo.layoutBounds)
+                assertEquals(scene.width / 2, (lb.minX + lb.maxX) / 2, 1.0, "logo not centred")
+                val top = scene.root.lookup(".zone-top") as javafx.scene.layout.Region
+                val form = scene.root.lookup(".zone-bottom") as javafx.scene.layout.Region
+                assertEquals(form.background.fills.first().fill, top.background.fills.first().fill, "logo block differs from the form colour")
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
                 for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))
@@ -277,7 +282,8 @@ class ZonePanelsTest {
         val out = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
         val reader = img.pixelReader
         for (y in 0 until h) for (x in 0 until w) out.setRGB(x, y, reader.getArgb(x, y))
-        assertNotEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "top and bottom blocks should differ")
+        // one monotone black: the logo block and the form share a colour (user, 2026-10-07)
+        assertEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "logo block and form should be the same black")
         previewDir.mkdirs()
         ImageIO.write(out, "png", File(previewDir, file))
     }
