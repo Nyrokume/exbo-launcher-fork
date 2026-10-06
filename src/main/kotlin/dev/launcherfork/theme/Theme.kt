@@ -31,7 +31,10 @@ object Theme {
      * panel host; the zone login panel stretches to the host (its min is 420x560), legacy 379x490 panels are centered.
      */
     const val AUTH_WINDOW_WIDTH = 460.0
+    /** Tallest pre-main window (fixed-size legacy panels and update panel); compact panels fit their content. */
     const val AUTH_WINDOW_HEIGHT = 620.0
+    /** Shortest pre-main window: a compact (content-sized) panel never makes the window lower than this. */
+    const val AUTH_WINDOW_MIN_HEIGHT = 360.0
     const val AUTH_TITLEBAR_HEIGHT = 32.0
     const val AUTH_PANEL_WIDTH = AUTH_WINDOW_WIDTH
     const val AUTH_PANEL_HEIGHT = AUTH_WINDOW_HEIGHT - AUTH_TITLEBAR_HEIGHT

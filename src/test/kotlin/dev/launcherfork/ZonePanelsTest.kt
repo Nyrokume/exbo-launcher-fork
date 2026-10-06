@@ -166,14 +166,64 @@ class ZonePanelsTest {
                 val scene = nav.authStage.scene
                 val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
                 if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+            }
+            Thread.sleep(500) // the compact window refits to the zone-styled content on the next layout pulse
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
                 scene.root.applyCss(); scene.root.layout()
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
-                // no hole above ВОЙТИ: the spare height of the fixed window goes to the top card, not between the form rows
+                // no hole above ВОЙТИ, no empty strip under the footer: the compact window fits its content
                 val socialsBottom = c.enterSteamButton.localToScene(c.enterSteamButton.layoutBounds).maxY
                 val enterTop = c.enterButton.localToScene(c.enterButton.layoutBounds).minY
                 assertTrue(enterTop - socialsBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - socialsBottom}")
                 assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
+                assertTrue(nav.authStage.height < dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "login window not compact: ${nav.authStage.height}")
+                val img = scene.snapshot(null)
+                val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
+                for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))
+                previewDir.mkdirs()
+                ImageIO.write(out, "png", File(previewDir, file))
+            }
+        }
+        FxTestSupport.onFx { nav.close() }
+        app.shutdown()
+    }
+
+    @Test
+    fun renderMailCodeWindow() {
+        val app = dev.launcherfork.app.AppContext.mock(speed = 50.0, authDelayMs = 0, mock2fa = dev.launcherfork.data.mock.MockSecondFactor.EMAIL)
+        val nav = FxTestSupport.onFx {
+            val stage = javafx.stage.Stage(javafx.stage.StageStyle.TRANSPARENT)
+            dev.launcherfork.app.StageNavigator(stage, app, "ru").also { it.exit = {}; it.showAuth(); stage.show() }
+        }
+        assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
+        val loginHeight = FxTestSupport.onFx {
+            val c = nav.panelController as InitialAuthController
+            c.loginField.text = "player"; c.passwordField.text = "secret"; c.onEnter()
+            nav.authStage.height
+        }
+        assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is dev.launcherfork.ui.screens.auth.MailAuthController }, "mail code never shown")
+        listOf("auth_window_mail.png" to false, "auth_window_mail_error.png" to true).forEach { (file, error) ->
+            val c = nav.panelController as dev.launcherfork.ui.screens.auth.MailAuthController
+            if (error) {
+                FxTestSupport.onFx { c.errorFirst.text = "Неверный код" }
+            }
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
+                val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+                if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+            }
+            Thread.sleep(500) // the compact window refits to the zone-styled content on the next layout pulse
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
+                scene.root.applyCss(); scene.root.layout()
+                val h = nav.authStage.height
+                assertTrue(h < loginHeight, "code window ($h) should be lower than the login window ($loginHeight)")
+                assertTrue(h <= 460.0, "code window too tall: $h")
+                val bottom = c.backButton!!.let { it.localToScene(it.layoutBounds) }.maxY
+                assertTrue(bottom <= scene.height - 16 && bottom >= scene.height - 44, "footer at $bottom of ${scene.height}")
+                if (error) assertTrue(c.errorFirst.localToScene(c.errorFirst.layoutBounds).maxY < c.enterButton.localToScene(c.enterButton.layoutBounds).minY)
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
                 for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))

@@ -115,6 +115,8 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         // closing the main window by the OS (Alt+F4) ends the app like the close button
         mainStage.setOnCloseRequest { close() }
         stage.setOnCloseRequest { close() }
+        // compact panels: the window follows the panel's content height (an error line appearing grows it downwards)
+        authScene.addPostLayoutPulseListener { fitAuthHeight(recenter = false) }
     }
 
     private fun newContext() = UiContext(app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode)
@@ -246,6 +248,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         authWindow.setPanel(loaded.root)
         stage.title = ctx.strings.text(titleKey)
         switchTo(ActiveWindow.PRE_MAIN)
+        fitAuthHeight(recenter = true)
         onScreenChanged(name)
         return loaded
     }
@@ -277,7 +280,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
      */
     private fun place(slot: WindowSlot, from: Rectangle2D) {
         val (w, h) = when {
-            slot === authSlot -> Theme.AUTH_WINDOW_WIDTH to Theme.AUTH_WINDOW_HEIGHT
+            slot === authSlot -> Theme.AUTH_WINDOW_WIDTH to authWindow.fittedWindowHeight()
             !mainShownOnce -> Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT
             slot.frame.isMaximized -> return
             else -> slot.stage.width to slot.stage.height
@@ -285,6 +288,19 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         slot.stage.width = w
         slot.stage.height = h
         slot.frame.centerOnScreenOf(from, w, h)
+    }
+
+    /**
+     * Resizes the shown pre-main window to [AuthWindowController.fittedWindowHeight]: a new panel keeps the window's
+     * vertical center ([recenter]), a change inside the same panel (error line) keeps its top edge.
+     */
+    private fun fitAuthHeight(recenter: Boolean) {
+        if (activeWindow != ActiveWindow.PRE_MAIN || !authSlot.isShowing) return
+        val h = authWindow.fittedWindowHeight()
+        val old = stage.height
+        if (kotlin.math.abs(h - old) < 0.5) return
+        stage.height = h
+        if (recenter) stage.y += (old - h) / 2
     }
 
     /** The legacy auth/update FXMLs were whole windows: their own close/minimize buttons and top strip go away. */
