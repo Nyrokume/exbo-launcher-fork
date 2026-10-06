@@ -121,6 +121,23 @@ class MockServicesTest {
     }
 
     @Test
+    fun resizeZoneLeavesWindowButtonsAlone() {
+        val w = Theme.WINDOW_WIDTH
+        val h = Theme.WINDOW_HEIGHT
+        // close button in the top-right corner (40x27), maximize left of it
+        val close = javafx.geometry.BoundingBox(w - 40, 0.0, 40.0, 27.0)
+        val maximize = javafx.geometry.BoundingBox(w - 80, 0.0, 40.0, 27.0)
+        val buttons = listOf(close, maximize)
+        assertEquals(ResizeEdge.NE, ResizeEdge.at(w - 2, 2.0, w, h)) // without exclusions the corner resizes
+        assertNull(ResizeEdge.at(w - 2, 2.0, w, h, exclusions = buttons), "corner click must reach the close button")
+        assertNull(ResizeEdge.at(w - 60, 1.0, w, h, exclusions = buttons), "top edge over maximize is a button click")
+        assertNull(ResizeEdge.at(w - 3, 20.0, w, h, exclusions = buttons), "right edge next to close is a button click")
+        // right edge below the buttons and top edge left of them still resize
+        assertEquals(ResizeEdge.E, ResizeEdge.at(w - 3, 40.0, w, h, exclusions = buttons))
+        assertEquals(ResizeEdge.N, ResizeEdge.at(500.0, 1.0, w, h, exclusions = buttons))
+    }
+
+    @Test
     fun resizeKeepsMinimumSizeAndOppositeEdge() {
         val start = javafx.geometry.Rectangle2D(100.0, 100.0, 1024.0, 640.0)
         val grown = ResizeEdge.SE.resize(start, 50.0, 30.0, 900.0, 580.0)

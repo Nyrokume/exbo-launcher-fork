@@ -25,7 +25,7 @@
                     <fx:include fx:id="hero" source="main/hero.fxml"
                                 AnchorPane.leftAnchor="15" AnchorPane.topAnchor="0" AnchorPane.rightAnchor="250"/>
                     <fx:include fx:id="header" source="main/header.fxml"
-                                AnchorPane.rightAnchor="19" AnchorPane.topAnchor="48"/>
+                                AnchorPane.rightAnchor="19" AnchorPane.topAnchor="62"/>
                     <fx:include fx:id="advancedNewsPane" source="main/news.fxml"
                                 AnchorPane.rightAnchor="8" AnchorPane.topAnchor="157" AnchorPane.bottomAnchor="82"/>
                     <fx:include fx:id="articleBg" source="main/article.fxml"
@@ -39,6 +39,12 @@
                 <AnchorPane fx:id="settingsPane" visible="false">
                     <fx:include fx:id="settings" source="settings.fxml"
                                 AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+                </AnchorPane>
+
+                <!-- profile (nickname ▾ + dropdown) in the top-right corner, above home and settings -->
+                <AnchorPane fx:id="profileLayer" pickOnBounds="false">
+                    <fx:include fx:id="profileBar" source="main/profile.fxml"
+                                AnchorPane.rightAnchor="19" AnchorPane.topAnchor="14"/>
                 </AnchorPane>
             </StackPane>
         </center>

@@ -48,6 +48,74 @@
 
 .content-host { -fx-background-color: -background; }
 .overlay-layer { -fx-background-color: -scrim; }
+/* content under a dialog is disabled (no mouse, no keyboard focus) but must not fade like disabled controls */
+.input-blocked *:disabled { -fx-opacity: 1; }
+
+/* ===================== pre-main window (update / auth / mail code) ===================== */
+.auth-window { -fx-background-color: -background; }
+/* 1px frame drawn ABOVE the panel (mouse transparent), so the panel can fill the host edge to edge */
+.auth-window-frame {
+    -fx-background-color: transparent;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+}
+.auth-title-bar {
+    -fx-background-color: -titlebar;
+    -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32;
+    -fx-padding: 0 0 0 16;
+}
+.auth-title-bar .window-button { -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32; -fx-min-width: 44; -fx-pref-width: 44; -fx-max-width: 44; }
+.auth-close .window-glyph { -fx-background-color: -titlebar-foreground; }
+.auth-close:hover { -fx-background-color: -window-close; }
+.auth-close:hover .window-glyph { -fx-background-color: -primary-foreground; }
+.auth-panel-host { -fx-background-color: -background; }
+
+/* ===================== profile (top-right of the main window) ===================== */
+.profile-button {
+    -fx-background-color: -tile;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 8 14 8 16;
+    -fx-cursor: hand;
+}
+.profile-button:hover, .profile-button.open { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
+.profile-name { -fx-font-size: 13; -fx-text-fill: -foreground; }
+.profile-caret {
+    -fx-shape: "M0,0 H9 L4.5,5 Z";
+    -fx-background-color: -icon;
+    -fx-min-width: 9; -fx-pref-width: 9; -fx-max-width: 9;
+    -fx-min-height: 5; -fx-pref-height: 5; -fx-max-height: 5;
+}
+.profile-button.open .profile-caret { -fx-rotate: 180; -fx-background-color: -foreground; }
+.profile-menu {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 6;
+    -fx-spacing: 2;
+    -fx-min-width: 210; -fx-pref-width: 210; -fx-max-width: 210;
+    -fx-translate-y: 6;
+    -fx-effect: dropshadow(gaussian, -shadow, 18, 0.2, 0, 4);
+}
+.profile-menu-item {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-text-fill: -foreground;
+    -fx-font-size: 13;
+    -fx-alignment: center-left;
+    -fx-padding: 9 12;
+    -fx-graphic-text-gap: 8;
+    -fx-cursor: hand;
+}
+.profile-menu-item:hover, .profile-menu-item:focused { -fx-background-color: -card-description; }
+.profile-menu-item:hover .external-arrow { -fx-background-color: -foreground; }
+.profile-menu-item.danger { -fx-text-fill: -destructive; }
+.profile-menu-rule {
+    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
+    -fx-background-color: -divider;
+}
 
 /* ===================== shared bits ===================== */
 .tile {
@@ -135,11 +203,8 @@
     -fx-border-width: 0 1 0 0;
     -fx-padding: 0 0 20 0;
 }
-.wordmark {
-    -fx-font-size: 64;
-    -fx-text-fill: -foreground;
-    -fx-padding: 12 0 0 40;
-}
+.sidebar-logo { -fx-padding: 34 0 8 40; }
+.logo-path { -fx-fill: -foreground; }
 .sidebar .section-label { -fx-padding: 26 24 14 24; }
 .servers-scroll, .servers-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
 
@@ -159,25 +224,6 @@
 .entry-state.icon-download {
     -fx-background-color: -icon;
     -fx-shape: "M7,0 H9 V8 L11.6,5.4 L13,6.8 L8,11.8 L3,6.8 L4.4,5.4 L7,8 Z M1,10 H3 V13 H13 V10 H15 V15 H1 Z";
-}
-
-.account-card {
-    -fx-background-color: -card-alt;
-    -fx-background-insets: 0;
-    -fx-border-color: -border;
-    -fx-border-width: 1;
-    -fx-padding: 12 14 12 16;
-    -fx-cursor: hand;
-}
-.sidebar .account-card { -fx-translate-x: 20; -fx-max-width: 213; }
-.account-card:hover { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
-.account-name { -fx-font-size: 15; -fx-text-fill: -foreground; }
-.account-action { -fx-font-size: 12; -fx-text-fill: -muted-foreground; -fx-graphic-text-gap: 6; }
-.account-watermark {
-    -fx-shape: "M0,4 L4,0 L20,16 L36,0 L40,4 L24,20 L40,36 L36,40 L20,24 L4,40 L0,36 L16,20 Z";
-    -fx-background-color: -fill-strong;
-    -fx-min-width: 36; -fx-pref-width: 36; -fx-max-width: 36;
-    -fx-min-height: 36; -fx-pref-height: 36; -fx-max-height: 36;
 }
 
 .sidebar-settings {

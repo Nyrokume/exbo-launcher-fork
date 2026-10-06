@@ -63,6 +63,9 @@
     -fill-subtle: rgba(255, 255, 255, 0.04);
     -fill-strong: rgba(255, 255, 255, 0.10);
     -card-alt: #0a0a0a;
+    -card-description: #0a0a0a;
+    -input-border: #262626;          /* oklch(1 0 0 / 15%) on black */
+    -error: #ff6467;
 }
 
 /* shadcn radius-md (0.625rem - 2px = 8px). JavaFX has no size variables, so it is a selector group. */

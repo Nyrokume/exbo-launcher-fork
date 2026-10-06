@@ -16,7 +16,8 @@ import javafx.util.Duration
 
 /** Base for the full-window modal layers of main.fxml (each one has its own FXML in main/modals/). */
 abstract class ModalController(protected val ctx: UiContext) {
-    protected abstract val layer: Node
+    /** The full-window layer of this modal (MainController blocks the screen under it while it is visible). */
+    abstract val layer: Node
     var onConfirm: () -> Unit = {}
     var onCancel: () -> Unit = {}
 

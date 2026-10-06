@@ -3,15 +3,13 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<!-- Profile / Forum / Support links, right-aligned (no browser in the fork: hover only). -->
+<!-- Forum / Support links, right-aligned under the profile control (no browser in the fork: hover only).
+     Profile ↗ moved into the profile dropdown (main/profile.fxml). -->
 <VBox fx:id="headerPane" id="headerLinks" styleClass="header-links" alignment="TOP_RIGHT" pickOnBounds="false"
       stylesheets="@../style/layout.css"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.screens.main.HeaderController">
     <VBox fx:id="linksContainer" alignment="TOP_RIGHT" spacing="6">
-        <Label fx:id="profile" id="linkProfile" styleClass="header-link,menu-item,zone-caps" text="%main.link.profile" contentDisplay="RIGHT">
-            <graphic><Region styleClass="external-arrow"/></graphic>
-        </Label>
         <Label fx:id="forum" id="linkForum" styleClass="header-link,menu-item,zone-caps" text="%main.link.forum" contentDisplay="RIGHT">
             <graphic><Region styleClass="external-arrow"/></graphic>
         </Label>

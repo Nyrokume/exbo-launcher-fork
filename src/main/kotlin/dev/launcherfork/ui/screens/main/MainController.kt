@@ -4,6 +4,7 @@ import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.formatBytes
 import dev.launcherfork.ui.components.loadImage
 import dev.launcherfork.ui.components.setImageBackground
@@ -16,6 +17,7 @@ import dev.launcherfork.ui.screens.main.modals.InstallModalController
 import dev.launcherfork.ui.screens.main.modals.LicenseModalController
 import dev.launcherfork.ui.screens.main.modals.LoadingModalController
 import dev.launcherfork.ui.screens.main.modals.LogoutModalController
+import dev.launcherfork.ui.screens.main.modals.ModalController
 import dev.launcherfork.ui.screens.main.modals.OfflineModalController
 import dev.launcherfork.ui.screens.main.modals.UpdateModalController
 import dev.launcherfork.ui.screens.settings.SettingsController
@@ -41,9 +43,11 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var backgroundShade: Region
     @FXML lateinit var homePane: AnchorPane
     @FXML lateinit var settingsPane: AnchorPane
+    @FXML lateinit var profileLayer: AnchorPane
 
     // included areas: FXMLLoader injects <fx:id>Controller
     @FXML lateinit var serversListController: ServersListController
+    @FXML lateinit var profileBarController: ProfileController
     @FXML lateinit var heroController: HeroController
     @FXML lateinit var headerController: HeaderController
     @FXML lateinit var advancedNewsPaneController: NewsController
@@ -73,12 +77,12 @@ class MainController(private val ctx: UiContext) : Disposable {
     fun initialize() {
         background.effect = Theme.gameArtEffect()
 
-        serversListController.onAccountClicked = { logoutPaneController.show() }
-        logoutPaneController.onConfirm = {
-            ctx.services.auth.logout()
-            store.shutdown()
-            ctx.navigator.showAuth()
-        }
+        // profile menu (top-right): both ways back lead to the separate auth window; the navigator disposes
+        // this controller before the auth window shows up
+        profileBarController.onProfile = { notAvailable() }
+        profileBarController.onSwitchAccount = ::leaveToAuth
+        profileBarController.onLogout = { logoutPaneController.show() }
+        logoutPaneController.onConfirm = ::leaveToAuth
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
 
         serversListController.onServerSelected = { server -> selectServer(server, showHome = true) }
@@ -103,13 +107,53 @@ class MainController(private val ctx: UiContext) : Disposable {
             selectServer(it, showHome = false)
         }
 
-        root.sceneProperty().addListener { _, _, scene -> scene?.addEventFilter(KeyEvent.KEY_PRESSED, ::onKey) }
+        // a modal layer blocks mouse AND keyboard of the screen under it (disabled + cached), focus goes into it
+        modals.forEach { m -> m.layer.visibleProperty().addListener { _, _, _ -> onModalVisibility(m) } }
+
+        root.sceneProperty().addListener { _, old, scene ->
+            old?.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
+            scene?.addEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
+        }
     }
 
-    /** Leaving the scene: detach from the session-scoped store, but keep downloads running. */
+    private val keyFilter = javafx.event.EventHandler<KeyEvent> { onKey(it) }
+
+    private val modals: List<ModalController> by lazy {
+        listOf(
+            updatePaneController, licensePaneController, offlinePaneController, defenderPaneController,
+            downloadWarnPaneController, exceptionPaneController, loadingPaneController, logoutPaneController,
+            deletionPaneController, installPaneController,
+        )
+    }
+
+    val isModalShown: Boolean get() = modals.any { it.isShowing }
+
+    private fun onModalVisibility(changed: ModalController) {
+        val blocked = isModalShown
+        InputBlock.set(layout, blocked)
+        if (blocked) profileBarController.hideMenu()
+        if (changed.isShowing) InputBlock.focusInto(changed.layer)
+    }
+
+    /** Switch account / confirmed logout: end the session and go back to the separate auth window. */
+    private fun leaveToAuth() {
+        ctx.services.auth.logout()
+        store.shutdown()
+        ctx.navigator.showAuth()
+    }
+
+    /** True once [dispose] ran (the navigator disposes the screen before it leaves the main window). */
+    var isDisposed = false
+        private set
+
+    /** Leaving the scene: detach from the session-scoped store and the scene, but keep downloads running. */
     override fun dispose() {
+        if (isDisposed) return
+        isDisposed = true
+        root.scene?.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
         serversListController.dispose()
         defaultStatusPaneController.dispose()
+        profileBarController.dispose()
     }
 
     fun selectServer(server: Server, showHome: Boolean) {
@@ -173,11 +217,10 @@ class MainController(private val ctx: UiContext) : Disposable {
             KeyCode.F5 -> downloadWarnPaneController.show()
             KeyCode.F6 -> exceptionPaneController.show("Exception title", "Exception description placeholder")
             KeyCode.F7 -> loadingPaneController.apply { if (isShowing) hide() else show() }
-            KeyCode.ESCAPE -> listOf(
-                updatePaneController, licensePaneController, offlinePaneController, defenderPaneController,
-                downloadWarnPaneController, exceptionPaneController, loadingPaneController, logoutPaneController,
-                deletionPaneController, installPaneController,
-            ).forEach { it.hide() }
+            KeyCode.ESCAPE -> {
+                profileBarController.hideMenu()
+                modals.forEach { it.hide() }
+            }
             else -> return
         }
         e.consume()

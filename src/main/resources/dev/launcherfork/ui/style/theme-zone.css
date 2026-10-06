@@ -11,7 +11,7 @@
     /* ---- shared token names (same as theme.css) ---- */
     -background: #0a0a0a;                     /* --black-bg-color: window / content */
     -foreground: #ece7e1;                     /* warm off-white: headings, primary text */
-    -card: rgba(26, 26, 26, 0.92);            /* #1a1a1a cards (news, panels, modals), slightly translucent */
+    -card: #181818;                           /* --card: cards (login card, news, panels, modals, dropdown) */
     -card-foreground: #ece7e1;
     -popover: rgba(15, 15, 15, 0.97);         /* #0f0f0f: context menu, tooltip */
     -popover-foreground: #ece7e1;
@@ -66,6 +66,10 @@
     -fill-subtle: rgba(202, 185, 166, 0.04);  /* faint fills, watermarks */
     -fill-strong: rgba(202, 185, 166, 0.12);
     -card-alt: #0f0f0f;                       /* second card shade (nested cards, sidebar items) */
+    /* stalzone.com/login card (site-ref/LOGIN.md) */
+    -card-description: #0f0f0f;               /* --card-description: lower part of the login card, dropdown rows */
+    -input-border: #2e2d2d;                   /* 1px input border (focus: -foreground) */
+    -error: #e63030;                          /* --error-color: error text and error input border */
 
     /* body font: Roboto (SIL OFL 1.1) */
     -fx-font-family: "Roboto";

@@ -4,8 +4,9 @@
 <?import javafx.scene.layout.*?>
 
 <!--
-  Frame of the ONE launcher window (undecorated, resizable): title bar + content host + overlay layer.
-  main.fxml is put into contentHost; update/auth panels go into overlayLayer (docs/design/OVERLAY.md).
+  Frame of the MAIN launcher window (undecorated, resizable): title bar + content host + overlay layer.
+  main.fxml is put into contentHost; overlayLayer is for in-window dialogs. Update / auth / mail code live in
+  the separate pre-main window (auth_window.fxml, docs/design/WINDOWS.md).
   Explicit ids (window*) keep legacy #close/#hide rules of common.css away from these buttons.
 -->
 <StackPane fx:id="windowRoot" id="appWindow" styleClass="app-window" stylesheets="@style/layout.css"

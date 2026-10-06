@@ -59,7 +59,9 @@ class FxmlLoadingTest {
         val ids = listOf(
             "root", "layout", "main", "background", "backgroundShade", "homePane", "settingsPane",
             // sidebar + game entries
-            "serversList", "sidebar", "logo", "gamesLabel", "serversPane", "loginButton", "accountName", "settingsButton",
+            "serversList", "sidebar", "logo", "gamesLabel", "serversPane", "settingsButton",
+            // profile control (top-right) + dropdown
+            "profileLayer", "profileBar", "profileRoot", "loginButton", "accountName", "profileMenu", "switchAccount", "logout",
             // hero / links / news / article
             "hero", "heroTitle", "heroTagline", "heroDescription", "header", "linksContainer", "profile", "forum", "support",
             "advancedNewsPane", "mainLink", "newsScroll", "newsList", "scrollThumb", "articleBg", "articleCaption", "articleCloseButton",
@@ -82,6 +84,23 @@ class FxmlLoadingTest {
         val present = fxIdsReachableFrom("window.fxml")
         listOf("windowRoot", "titleBar", "dragArea", "hideButton", "maximizeButton", "closeButton", "contentHost", "overlayLayer")
             .forEach { assertTrue(it in present, "window.fxml misses fx:id '$it'") }
+    }
+
+    @org.junit.jupiter.api.Test
+    fun authWindowFxmlHasFrameAndPanelHost() {
+        val present = fxIdsReachableFrom("auth_window.fxml")
+        listOf("authWindowRoot", "authTitleBar", "authLogo", "authDragArea", "authHideButton", "authCloseButton", "panelHost")
+            .forEach { assertTrue(it in present, "auth_window.fxml misses fx:id '$it'") }
+    }
+
+    /** The account card left the sidebar, the Profile link left the header (both are in the profile menu now). */
+    @org.junit.jupiter.api.Test
+    fun accountLivesOnlyInProfileMenu() {
+        val sidebar = fxIdsReachableFrom("main/servers_list.fxml")
+        assertTrue("loginButton" !in sidebar && "accountName" !in sidebar, "sidebar still has the account card")
+        assertTrue("profile" !in fxIdsReachableFrom("main/header.fxml"), "header still has the Profile link")
+        val menu = fxIdsReachableFrom("main/profile.fxml")
+        assertTrue(menu.containsAll(listOf("loginButton", "accountName", "profile", "switchAccount", "logout")), "$menu")
     }
 
     /** fx:id without an explicit id becomes the CSS id; legacy #rules (lang_*.css, auth.css, common.css) must not hit new nodes. */
@@ -141,5 +160,18 @@ class FxmlLoadingTest {
         val ru = dev.launcherfork.i18n.Strings.bundle("ru").keySet()
         val en = dev.launcherfork.i18n.Strings.bundle("en").keySet()
         assertEquals(ru, en)
+    }
+
+    /** No word mixes Latin and Cyrillic letters (the old "Aвторизация" had a Latin A). */
+    @org.junit.jupiter.api.Test
+    fun noMixedScriptWords() {
+        val bundle = dev.launcherfork.i18n.Strings.bundle("ru")
+        val mixed = bundle.keySet().flatMap { key ->
+            Regex("""[\p{L}]+""").findAll(bundle.getString(key)).map { it.value }
+                .filter { w -> w.any { it in 'A'..'Z' || it in 'a'..'z' } && w.any { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.CYRILLIC } }
+                .map { "$key: $it" }.toList()
+        }
+        assertTrue(mixed.isEmpty(), "mixed Latin/Cyrillic words: $mixed")
+        assertEquals("EXBO Launcher: Авторизация", bundle.getString("title.auth"))
     }
 }

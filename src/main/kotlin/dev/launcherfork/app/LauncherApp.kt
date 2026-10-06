@@ -8,7 +8,8 @@ import javafx.stage.StageStyle
 import java.io.File
 
 /**
- * Entry point of the visual fork. One window: the main screen with the update overlay, then the auth overlay.
+ * Entry point of the visual fork. Two windows (docs/design/WINDOWS.md): the pre-main window (primary stage:
+ * update, then auth / mail code) and, after login, the main window.
  * System properties: launcher.lang=ru|en, launcher.mockSpeed=<factor>, launcher.screenshots=<dir> (auto tour),
  * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=exbo|shadcn|zone.
  */
@@ -24,13 +25,14 @@ class LauncherApp : Application() {
         val app = AppContext.mock(language = lang, speed = speed, devMode = devMode)
         this.app = app
 
-        stage.initStyle(StageStyle.UNDECORATED)
-        stage.isResizable = true
+        // pre-main window: no OS frame, transparent outside its rounded corners, fixed size
+        stage.initStyle(StageStyle.TRANSPARENT)
+        stage.isResizable = false
         stage.icons += loadImage(Theme.IMAGE_ROOT + "icon.png")
 
         val navigator = StageNavigator(stage, app, lang)
         val shotsDir = System.getProperty("launcher.screenshots")
-        if (shotsDir != null) ScreenshotTour(stage, navigator, File(shotsDir)).install()
+        if (shotsDir != null) ScreenshotTour(navigator, File(shotsDir)).install()
 
         navigator.showLauncherUpdate(afterUpdate = navigator::showAuth)
         stage.show()
