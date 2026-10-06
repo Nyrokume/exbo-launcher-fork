@@ -287,6 +287,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         }
         slot.stage.width = w
         slot.stage.height = h
+        if (slot === authSlot) requestedAuthHeight = h
         slot.frame.centerOnScreenOf(from, w, h)
     }
 
@@ -294,11 +295,19 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
      * Resizes the shown pre-main window to [AuthWindowController.fittedWindowHeight]: a new panel keeps the window's
      * vertical center ([recenter]), a change inside the same panel (error line) keeps its top edge.
      */
+    /** Last height asked of the pre-main window (see [fitAuthHeight]). */
+    private var requestedAuthHeight = Double.NaN
+
     private fun fitAuthHeight(recenter: Boolean) {
         if (activeWindow != ActiveWindow.PRE_MAIN || !authSlot.isShowing) return
         val h = authWindow.fittedWindowHeight()
         val old = stage.height
-        if (kotlin.math.abs(h - old) < 0.5) return
+        // asked for this height already: don't re-request it on every pulse if the window system lags or refuses
+        if (kotlin.math.abs(h - old) < 0.5 || kotlin.math.abs(h - requestedAuthHeight) < 0.5) return
+        requestedAuthHeight = h
+        // width and height together: a height-only change reaches GTK with width 0 (gtk_window_resize fails,
+        // the window keeps its old size and the stale bottom stays on screen)
+        stage.width = Theme.AUTH_WINDOW_WIDTH
         stage.height = h
         if (recenter) stage.y += (old - h) / 2
         // never past the screen edge (small monitors, a growing error line near the bottom)
