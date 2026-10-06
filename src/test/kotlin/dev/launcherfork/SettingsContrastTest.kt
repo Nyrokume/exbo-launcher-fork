@@ -1,5 +1,6 @@
 package dev.launcherfork
 
+import dev.launcherfork.ContrastKit.Rgba
 import dev.launcherfork.theme.Theme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -7,9 +8,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.pow
 
 /**
  * Readability of the settings page, from the stylesheets alone (no FX): the text and background tokens of every theme
@@ -20,56 +18,12 @@ import kotlin.math.pow
  * too, so the settings selectors really paint with the tokens measured here.
  */
 class SettingsContrastTest {
-    private val themes = mapOf("exbo" to listOf("theme.css"), "shadcn" to listOf("theme.css", "theme-shadcn.css"),
-        "zone" to listOf("theme.css", "theme-zone.css"),
-        // the white scheme (settings «Тема: Белая»): same stack as Theme.stylesheets("zone", LIGHT, ...)
-        "zone-light" to listOf("theme.css", "theme-zone.css", "theme-zone-light.css"))
+    private val themes = ContrastKit.themes
 
-    private data class Rgba(val r: Double, val g: Double, val b: Double, val a: Double = 1.0) {
-        fun over(bg: Rgba) = Rgba(r * a + bg.r * (1 - a), g * a + bg.g * (1 - a), b * a + bg.b * (1 - a))
-        fun luminance(): Double {
-            fun ch(c: Double) = if (c <= 0.03928) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
-            return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
-        }
-    }
-
-    private fun parseColor(v: String): Rgba {
-        val s = v.trim()
-        Regex("""#([0-9a-fA-F]{6})""").matchEntire(s)?.let { m ->
-            val h = m.groupValues[1]
-            return Rgba(h.substring(0, 2).toInt(16) / 255.0, h.substring(2, 4).toInt(16) / 255.0, h.substring(4, 6).toInt(16) / 255.0)
-        }
-        Regex("""#([0-9a-fA-F]{3})""").matchEntire(s)?.let { m ->
-            val h = m.groupValues[1].map { "$it$it".toInt(16) / 255.0 }
-            return Rgba(h[0], h[1], h[2])
-        }
-        Regex("""rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)""").matchEntire(s)?.let { m ->
-            val (r, g, b) = m.groupValues.drop(1).take(3).map { it.toInt() / 255.0 }
-            return Rgba(r, g, b, m.groupValues[4].ifEmpty { "1" }.toDouble())
-        }
-        error("unsupported color '$v'")
-    }
-
-    /** Looked-up tokens of a theme: theme.css first, the theme file overrides it (same order as Theme.apply). */
-    private fun tokens(theme: String): Map<String, String> = themes.getValue(theme).fold(mutableMapOf()) { acc, file ->
-        val css = Theme.resource("style/$file").readText().replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
-        val root = Regex("""\.root\s*\{(.*?)}""", RegexOption.DOT_MATCHES_ALL).find(css)!!.groupValues[1]
-        Regex("""^\s*(-[a-z][a-z0-9-]*)\s*:\s*([^;]+);""", RegexOption.MULTILINE).findAll(root)
-            .filterNot { it.groupValues[1].startsWith("-fx-") }
-            .forEach { acc[it.groupValues[1]] = it.groupValues[2].trim() }
-        acc
-    }
-
-    /** Opaque color of [token]; a translucent one is composed over [bg] (itself opaque). */
-    private fun color(t: Map<String, String>, token: String, bg: Rgba? = null): Rgba {
-        val c = parseColor(t[token] ?: error("token $token missing"))
-        return if (c.a < 1.0) c.over(bg ?: error("$token is translucent, needs a background")) else c
-    }
-
-    private fun ratio(a: Rgba, b: Rgba): Double {
-        val la = a.luminance(); val lb = b.luminance()
-        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
-    }
+    private fun parseColor(v: String): Rgba = ContrastKit.parseColor(v)
+    private fun tokens(theme: String): Map<String, String> = ContrastKit.tokens(theme)
+    private fun color(t: Map<String, String>, token: String, bg: Rgba? = null): Rgba = ContrastKit.color(t, token, bg)
+    private fun ratio(a: Rgba, b: Rgba): Double = ContrastKit.ratio(a, b)
 
     /** (what, foreground token, background token, minimum ratio) */
     private val pairs = listOf(
@@ -328,5 +282,29 @@ class SettingsContrastTest {
         assertEquals("14", prop(".settings-label", "-fx-font-size"))
         assertEquals("14", prop(".segment", "-fx-font-size"))
         assertTrue(prop(".settings-group-label", "-fx-font-size").toDouble() >= 17.0)
+    }
+
+    /**
+     * Wallpaper scrims (WallpaperContrastTest measures them over the real pictures): every theme defines them as
+     * translucent colours, so the picture shows through; the dark themes dim with near-black scrims, the white scheme
+     * lightens with white ones (the theme stays white, dark text stays readable). layout.css paints with them.
+     */
+    @Test
+    fun wallpaperScrimsAreTranslucentThemeTokens() {
+        for (theme in themes.keys) {
+            val t = tokens(theme)
+            for (tok in listOf("-wallpaper-scrim", "-wallpaper-scrim-bright", "-wallpaper-shade", "-wallpaper-sidebar", "-wallpaper-titlebar")) {
+                val c = parseColor(t[tok] ?: error("$theme: $tok missing"))
+                assertTrue(c.a in 0.05..0.95, "$theme: $tok alpha ${c.a} (must let the picture through)")
+                if (theme == "zone-light") assertTrue(c.luminance() > 0.85, "$theme: $tok is not a light scrim: ${t[tok]}")
+                else assertTrue(c.luminance() < 0.02, "$theme: $tok is not a dark scrim: ${t[tok]}")
+            }
+            assertEquals(1.0, parseColor(t.getValue("-wallpaper-text-muted")).a, "$theme: -wallpaper-text-muted must be opaque")
+        }
+        assertEquals("-wallpaper-scrim", ContrastKit.layoutProp(".wallpaper-scrim", "-fx-background-color"))
+        assertEquals("-wallpaper-scrim-bright", ContrastKit.layoutProp(".wallpaper-scrim.wallpaper-bright", "-fx-background-color"))
+        assertEquals("-wallpaper-sidebar", ContrastKit.layoutProp(".wallpaper-on .sidebar", "-fx-background-color"))
+        assertEquals("-wallpaper-titlebar", ContrastKit.layoutProp(".wallpaper-on .title-bar", "-fx-background-color"))
+        assertTrue(ContrastKit.layoutProp(".wallpaper-on .main-content", "-fx-background-color").contains("-wallpaper-shade"))
     }
 }
