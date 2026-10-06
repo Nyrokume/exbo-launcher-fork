@@ -12,11 +12,16 @@
     -fx-effect: dropshadow(gaussian, -shadow, 24, 0.2, 0, 6);
 }
 
-.zone-frame { -fx-background-color: -popover; }
+/* card like the site's tiles: #1a1a1a + 1px border; corners from .zone-radius-md in the FXML */
+.zone-frame {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+}
 
 /* ---------- title bar ---------- */
 .zone-titlebar {
-    -fx-background-color: -titlebar;
+    -fx-background-color: transparent;
     -fx-min-height: 28; -fx-pref-height: 28;
     -fx-padding: 0 8 0 8;
     -fx-spacing: 6;
@@ -24,7 +29,6 @@
 .zone-window-button {
     -fx-background-color: -titlebar-foreground;
     -fx-background-insets: 0;
-    -fx-background-radius: 0;
     -fx-padding: 0;
     -fx-scale-shape: false;
     -fx-position-shape: true;
@@ -41,7 +45,7 @@
 .zone-close:hover { -fx-background-color: -window-close-hover; }
 
 /* ---------- body ---------- */
-.zone-body { -fx-padding: 22 46 0 46; }
+.zone-body { -fx-padding: 40 46 0 46; }
 
 .zone-logo, .zone-logo-sub, .zone-primary { -fx-font-family: "Oswald Medium"; }
 .zone-logo {
@@ -58,24 +62,24 @@
 .zone-errors { -fx-min-height: 40; -fx-pref-height: 40; -fx-padding: 4 0 4 0; }
 .zone-error { -fx-font-size: 13; -fx-text-fill: -primary; }
 
-/* flat dark field, no border (reference 3) */
+/* dark field with a 1px border, red border on focus (stalzone.com) */
 .zone-input {
     -fx-font-size: 18;
     -fx-min-height: 38; -fx-pref-height: 38; -fx-max-height: 38;
     -fx-pref-width: 410; -fx-max-width: 410;
     -fx-padding: 0 12 0 12;
     -fx-alignment: center-left;
-    -fx-background-color: -input;
+    -fx-background-color: -muted;
     -fx-background-insets: 0;
-    -fx-background-radius: 0;
-    -fx-border-color: transparent;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
     -fx-border-image-source: null;
     -fx-text-fill: -foreground;
     -fx-prompt-text-fill: -placeholder;
     -fx-highlight-fill: -primary;
     -fx-highlight-text-fill: -foreground;
 }
-.zone-input:focused { -fx-background-color: -input, -ring; -fx-background-insets: 0, 36 0 0 0; }
+.zone-input:focused { -fx-border-color: -ring; }
 .zone-password { -fx-max-width: 410; -fx-padding: 12 0 0 0; }
 .zone-password .zone-input { -fx-padding: 0 44 0 12; }
 
@@ -133,7 +137,6 @@
     -fx-text-fill: -foreground;
     -fx-background-color: -primary;
     -fx-background-insets: 0;
-    -fx-background-radius: 0;
     -fx-padding: 0;
     -fx-min-width: 190; -fx-pref-width: 190; -fx-max-width: 190;
     -fx-min-height: 58; -fx-pref-height: 58; -fx-max-height: 58;

@@ -11,8 +11,9 @@
   so navigation and tests keep working. The host centers it in overlayLayer and blurs the content below.
 -->
 <StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css" minWidth="502.0" prefWidth="502.0" maxWidth="502.0" minHeight="540.0" prefHeight="540.0" maxHeight="540.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.InitialAuthController">
-    <VBox styleClass="zone-frame">
-        <HBox styleClass="zone-titlebar" alignment="CENTER_RIGHT">
+    <VBox styleClass="zone-frame, zone-radius-md">
+        <!-- the single window has its own title bar (OVERLAY.md); kept for the controller fx:ids, hidden -->
+        <HBox styleClass="zone-titlebar" alignment="CENTER_RIGHT" visible="false" managed="false">
             <ImageView fx:id="header" managed="false" visible="false" />
             <Button fx:id="hideButton" styleClass="zone-window-button, zone-hide" mnemonicParsing="false" />
             <Button fx:id="closeButton" styleClass="zone-window-button, zone-close" mnemonicParsing="false" />
@@ -24,10 +25,10 @@
                 <Label fx:id="errorFirst" styleClass="zone-error" />
                 <Label fx:id="errorSecond" styleClass="zone-error" />
             </VBox>
-            <TextField fx:id="loginField" styleClass="zone-input" onAction="#onEnter" promptText="%auth.login" />
+            <TextField fx:id="loginField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.login" />
             <StackPane styleClass="zone-password">
-                <PasswordField fx:id="passwordField" styleClass="zone-input" onAction="#onEnter" promptText="%auth.password" />
-                <TextField fx:id="passwordVisibleField" styleClass="zone-input" onAction="#onEnter" promptText="%auth.password" visible="false" />
+                <PasswordField fx:id="passwordField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.password" />
+                <TextField fx:id="passwordVisibleField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.password" visible="false" />
                 <ToggleButton fx:id="passwordToggle" styleClass="zone-eye" mnemonicParsing="false" focusTraversable="false" StackPane.alignment="CENTER_RIGHT">
                     <graphic><Region styleClass="zone-icon, icon-eye" /></graphic>
                 </ToggleButton>
@@ -37,7 +38,7 @@
                 <Label styleClass="zone-check-label" onMouseClicked="#onLabelAutoAuth" text="%auth.auto_auth" />
             </HBox>
             <!-- explicit id: otherwise fx:id becomes the id and lang_*.css #enterButton paints the old PNG -->
-            <Button id="zoneEnter" fx:id="enterButton" styleClass="zone-primary" mnemonicParsing="false" onAction="#onEnter" text="%fork.zone.enter" />
+            <Button id="zoneEnter" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#onEnter" text="%fork.zone.enter" />
             <VBox styleClass="zone-links" alignment="CENTER">
                 <Button fx:id="enterSteamButton" styleClass="zone-link" mnemonicParsing="false" onAction="#onEnterSteam" text="%fork.auth.steam">
                     <graphic><Region styleClass="zone-icon, icon-steam" /></graphic>
