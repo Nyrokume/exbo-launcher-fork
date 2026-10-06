@@ -155,6 +155,7 @@
  * Two-class selectors: they must beat the one-class rules of layout.css, which sits on the FXML parents.
  */
 .settings-group-label.font-display { -fx-font-size: 21; }
+.game-banner-title.font-display { -fx-font-size: 52; } /* game banner title: Bebas Neue, like the site's h1 */
 .modal-title.font-display { -fx-font-size: 30; -fx-translate-y: -4; } /* air above the fixed modal-rule (layoutY 35) */
 /* ИГРАТЬ: like the site's big buttons (.play_free / .login: var(--beb) 24px) */
 .button.play-button {

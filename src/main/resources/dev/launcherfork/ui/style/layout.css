@@ -285,6 +285,25 @@
         linear-gradient(to top, -background 0%, transparent 35%);
 }
 
+/* Game banner (main/game_banner.fxml) in the centre slot: plain text on the content background, no card / box / image.
+   Left edge 24 px from the sidebar (like the settings page), text column at most 560 px; title in the display font,
+   lead and subheading 16 px, body and closing 14 px (Roboto, .font-meta, in every theme). Colors: theme tokens only
+   (SettingsContrastTest.gameBannerTextIsReadable). The ScrollPane is invisible: no frame, no fill, slim bar only
+   when the window is too small for the text. */
+.game-banner-scroll, .game-banner-scroll > .viewport, .game-banner-scroll:focused {
+    -fx-background-color: transparent; -fx-background: transparent; -fx-background-insets: 0; -fx-padding: 0;
+    -fx-border-color: transparent;
+}
+.game-banner { -fx-padding: 4 0 8 9; -fx-spacing: 10; }
+.game-banner-title { -fx-font-size: 40; -fx-text-fill: -foreground; }
+.game-banner-lead { -fx-font-size: 16; -fx-text-fill: -foreground; -fx-line-spacing: 3; }
+.game-banner-online-text { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
+.game-banner-online-dot { -fx-background-color: -status-online; -fx-background-radius: 4; }
+.game-banner-online.offline .game-banner-online-dot { -fx-background-color: -status-offline; }
+.game-banner-subheading { -fx-font-size: 16; -fx-text-fill: -foreground; -fx-padding: 6 0 0 0; }
+.game-banner-body { -fx-font-size: 14; -fx-text-fill: -secondary-foreground; -fx-line-spacing: 4; }
+.game-banner-closing { -fx-font-size: 14; -fx-text-fill: -foreground; }
+
 .header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
 .header-link:hover { -fx-text-fill: -foreground; }
 .header-link:hover .external-arrow { -fx-background-color: -foreground; }
