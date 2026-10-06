@@ -169,3 +169,31 @@
 .zone-link-underline { -fx-font-family: "Roboto Medium"; -fx-font-size: 15; -fx-underline: true; }
 
 .zone-spinner { -fx-progress-color: -primary; -fx-max-width: 64; -fx-max-height: 64; }
+
+/* ---------- e-mail code panel (mail_auth_panel.fxml) ---------- */
+.zone-field-label { -fx-font-size: 14; -fx-text-fill: -text-description; }
+.zone-code {
+    -fx-font-family: "Oswald Medium";
+    -fx-font-size: 26;
+    -fx-alignment: center;
+    -fx-padding: 0 20 0 20;
+}
+
+/* ---------- update panel (update_panel.fxml) ---------- */
+.zone-top-hero { -fx-alignment: center-left; -fx-spacing: 14; }
+.zone-logo { -fx-padding: 0 0 18 0; }
+.zone-logo .logo-path { -fx-fill: -foreground; }
+.zone-bottom-status { -fx-spacing: 12; -fx-padding: 26 28 30 28; }
+.zone-status { -fx-font-size: 15; -fx-text-fill: -foreground; }
+.zone-progress { -fx-pref-height: 6; -fx-min-height: 6; -fx-max-height: 6; }
+.zone-progress > .track {
+    -fx-background-color: -input-border;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+}
+.zone-progress > .bar {
+    -fx-background-color: -primary;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 3;
+}
