@@ -42,6 +42,24 @@ class AppearanceTest {
     }
 
     @Test
+    fun overwriteIsAtomicAndLeavesNoTempFile(@TempDir dir: Path) {
+        val file = dir.resolve("settings.properties")
+        Files.writeString(file, "appearance=dark\n# an old, longer comment line that must not survive the overwrite\n")
+        AppearanceFileStore.write(file, Appearance.LIGHT)
+        AppearanceFileStore.write(file, Appearance.DARK)
+        AppearanceFileStore.write(file, Appearance.LIGHT)
+        assertEquals(listOf("settings.properties"), Files.list(dir).use { s -> s.map { it.fileName.toString() }.toList() }, "leftover files")
+        val text = Files.readString(file)
+        assertTrue(text.contains("appearance=light") && !text.contains("appearance=dark") && !text.contains("longer comment"), text)
+        assertEquals(Appearance.LIGHT, AppearanceFileStore.read(file))
+        // an unwritable target (a directory in its place) is logged, not thrown, and leaves no temp file behind
+        val blocked = dir.resolve("blocked").also { Files.createDirectories(it.resolve("child")) }
+        AppearanceFileStore.write(blocked, Appearance.LIGHT)
+        assertTrue(Files.isDirectory(blocked))
+        assertEquals(setOf("blocked", "settings.properties"), Files.list(dir).use { s -> s.map { it.fileName.toString() }.toList() }.toSet(), "temp file left after a failed write")
+    }
+
+    @Test
     fun brokenOrUnknownFileMeansDark(@TempDir dir: Path) {
         val file = dir.resolve("settings.properties")
         Files.writeString(file, "appearance=sepia\n")

@@ -97,7 +97,10 @@ object Theme {
     var themeName: String = if (requestedTheme == ZONE_LIGHT) "zone" else requestedTheme
         internal set // fixed per JVM; tests switch it to check the zone-only white scheme
 
-    /** Set by -Dlauncher.theme=zone-light: wins over the saved setting at start (Settings can still switch). */
+    /**
+     * Set by -Dlauncher.theme=zone-light: wins over the saved setting at start (Settings can still switch).
+     * Settings then show «Белая» while the persisted choice stays whatever was saved: the property overrides at startup only and is never written.
+     */
     val forcedAppearance: Appearance? = if (requestedTheme == ZONE_LIGHT) Appearance.LIGHT else null
 
     /**

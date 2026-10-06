@@ -4,14 +4,16 @@ import dev.launcherfork.domain.Appearance
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.SettingsStore
 import java.io.IOException
+import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.Properties
 
 /**
  * Settings store that keeps ONE field on disk: [LauncherSettings.appearance] («Тема: Тёмная / Белая»), so the chosen
  * scheme survives a restart. Everything else stays in [delegate] (the fork's session-only in-memory store). The file is
- * a tiny properties file (`appearance=light`), written only when the appearance changes; a missing, unreadable or
+ * a tiny properties file (`appearance=light`), written (atomically) only when the appearance changes; a missing, unreadable or
  * unknown value means [Appearance.DARK]. I/O errors are logged, never thrown (the theme is cosmetic).
  * LauncherApp uses `~/.launcher-fork/settings.properties` (-Dlauncher.settingsFile=<path> to move it).
  */
@@ -43,14 +45,32 @@ class AppearanceFileStore(private val delegate: SettingsStore, private val file:
             null
         }
 
+        /**
+         * Writes a temp file next to [file], then moves it over [file] atomically (plain replace where the file system
+         * has no atomic move), so a crash mid-write never leaves a truncated file. Errors are logged, the temp removed.
+         */
         fun write(file: Path, appearance: Appearance) {
+            var tmp: Path? = null
             try {
-                file.toAbsolutePath().parent?.let { Files.createDirectories(it) }
+                val target = file.toAbsolutePath()
+                val dir = requireNotNull(target.parent) { "no parent directory for $target" }
+                Files.createDirectories(dir)
                 val props = Properties()
                 props.setProperty(KEY, appearance.name.lowercase())
-                Files.newBufferedWriter(file).use { props.store(it, "launcher-fork: colour scheme (dark | light)") }
+                tmp = Files.createTempFile(dir, "${target.fileName}.", ".tmp")
+                Files.newBufferedWriter(tmp).use { props.store(it, "launcher-fork: colour scheme (dark | light)") }
+                try {
+                    Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+                } catch (_: AtomicMoveNotSupportedException) {
+                    Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING)
+                }
+                tmp = null
             } catch (e: IOException) {
                 System.err.println("[launcher-fork] WARNING: cannot save the theme to $file: ${e.message}")
+            } catch (e: IllegalArgumentException) {
+                System.err.println("[launcher-fork] WARNING: cannot save the theme to $file: ${e.message}")
+            } finally {
+                tmp?.let { runCatching { Files.deleteIfExists(it) } }
             }
         }
     }
