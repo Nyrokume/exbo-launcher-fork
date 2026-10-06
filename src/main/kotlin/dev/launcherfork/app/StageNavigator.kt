@@ -116,7 +116,13 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         mainStage.setOnCloseRequest { close() }
         stage.setOnCloseRequest { close() }
         // compact panels: the window follows the panel's content height (an error line appearing grows it downwards)
-        authScene.addPostLayoutPulseListener { fitAuthHeight(recenter = false) }
+        authScene.addPostLayoutPulseListener {
+            // resize after the pulse, not inside it (a resize relayouts the scene); one pending refit at a time
+            if (!authRefitPending) {
+                authRefitPending = true
+                Platform.runLater { authRefitPending = false; fitAuthHeight(recenter = false) }
+            }
+        }
     }
 
     private fun newContext() = UiContext(app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode)
@@ -297,10 +303,13 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
      */
     /** Last height asked of the pre-main window (see [fitAuthHeight]). */
     private var requestedAuthHeight = Double.NaN
+    /** A refit is queued by the post-layout listener and not run yet. */
+    private var authRefitPending = false
 
     private fun fitAuthHeight(recenter: Boolean) {
         if (activeWindow != ActiveWindow.PRE_MAIN || !authSlot.isShowing) return
         val h = authWindow.fittedWindowHeight()
+        if (!h.isFinite() || h <= 0.0) return
         val old = stage.height
         // asked for this height already: don't re-request it on every pulse if the window system lags or refuses
         if (kotlin.math.abs(h - old) < 0.5 || kotlin.math.abs(h - requestedAuthHeight) < 0.5) return
