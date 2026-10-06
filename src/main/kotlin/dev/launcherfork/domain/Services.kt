@@ -71,7 +71,10 @@ interface SettingsStore {
     fun save(settings: LauncherSettings)
 }
 
-/** Opens an external web page (community links) in the user's default browser. Returns at once. */
+/**
+ * Opens an external web page (community links) in the user's default browser.
+ * Hands the URL to the OS (browser launch); may block briefly on some platforms.
+ */
 fun interface LinkOpener {
     fun open(url: String)
 }
