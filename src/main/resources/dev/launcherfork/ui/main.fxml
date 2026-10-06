@@ -22,9 +22,12 @@
                 <Region fx:id="backgroundShade" styleClass="game-art-shade" mouseTransparent="true"/>
 
                 <AnchorPane fx:id="homePane" pickOnBounds="false">
-                    <!-- empty centre slot (between the top bar and the status bar) for the upcoming centre redesign -->
+                    <!-- centre slot (between the top bar and the status bar): the selected game's banner text (main/game_banner.fxml);
+                         anchored on both ends, so the banner scrolls inside it and never moves the status bar -->
                     <StackPane fx:id="centerPane" id="centerPane" styleClass="center-pane" pickOnBounds="false"
-                               AnchorPane.leftAnchor="15" AnchorPane.topAnchor="70" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="82"/>
+                               AnchorPane.leftAnchor="15" AnchorPane.topAnchor="70" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="82">
+                        <fx:include fx:id="gameBanner" source="main/game_banner.fxml"/>
+                    </StackPane>
                     <fx:include fx:id="defaultStatusPane" source="main/status_pane.fxml"
                                 AnchorPane.leftAnchor="11" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="20"/>
                 </AnchorPane>
