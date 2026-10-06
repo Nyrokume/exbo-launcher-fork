@@ -8,9 +8,10 @@
 Исходник оригинала: JavaFX 9.0.3, прозрачное окно без рамки, главное окно 886×550, окна авторизации и
 обновления 379×490. Разбор оригинала лежит в `/workspace/stalzone/REPORT.md`.
 
-**Раскладка (ветка `redesign/zone`).** Теперь окно одно: без рамки, с ресайзом, 1024×640 (минимум 900×580).
-Слева колонка фиксированной ширины, контент справа тянется вместе с окном. Обновление и авторизация показываются
-панелями-оверлеями поверх размытого главного экрана (`docs/design/OVERLAY.md`). Эта адаптивная раскладка
+**Раскладка (ветка `redesign/zone`).** Два окна, как в оригинале (`docs/design/WINDOWS.md`). Обновление, вход
+и код из письма показываются в отдельном окне без рамки 460×620. После входа оно закрывается и открывается
+главное окно: без рамки, с ресайзом, 1024×640 (минимум 900×580). Слева колонка фиксированной ширины с векторным
+логотипом EXBO, профиль (ник ▾ и меню) в правом верхнем углу, контент тянется вместе с окном. Эта адаптивная раскладка
 **заменила старую 886×550 для всех тем**. Темы `exbo` и `shadcn` работают на ней через общие токены, пусть и
 скромнее. Тема по умолчанию осталась `exbo`. Стиль `zone` (сайт STALZONE + раскладка лаунчера STALCRAFT)
 включается так: `-Dlauncher.theme=zone`, описание в `docs/design/STYLE-ZONE.md`.
@@ -38,10 +39,11 @@
 **Демо-логин** (всё фейковое): подходит любой логин и пароль. Логин `2fa` открывает экран ввода кода из e-mail
 (подходит любой 6-значный код). Пароль `wrong` показывает ошибку «неверный логин или пароль».
 
-Сценарий: главный экран под оверлеем фейкового самообновления → оверлей авторизации → главный экран
-(Настройки / Скачать → прогресс → Играть → «Игра запущена»). Карточка аккаунта внизу колонки открывает
-«Смену пользователя» и снова показывает оверлей авторизации. Окно перетаскивается за полосу заголовка, двойной клик
-разворачивает его, края окна тянутся.
+Сценарий: окно фейкового самообновления → в том же окне вход → окно входа закрывается, открывается главное окно
+(Настройки / Скачать → прогресс → Играть → «Игра запущена»). Меню профиля в правом верхнем углу: «Профиль ↗»
+(заглушка), «Сменить аккаунт» (сразу назад в окно входа), «Выйти» (подтверждение, затем окно входа). Главное
+окно перетаскивается за полосу заголовка, двойной клик разворачивает его, края окна тянутся. Окно входа только
+перетаскивается и сворачивается, крестик любого окна завершает приложение.
 
 Dev-хоткеи главного окна для модальных слоёв, которые форк сам не показывает. Они работают **только с
 `-Dlauncher.dev=true`** (`./gradlew run -Dlauncher.dev=true`): **F1** обновление лаунчера,
@@ -54,9 +56,9 @@ Dev-хоткеи главного окна для модальных слоёв,
 src/main/kotlin/dev/launcherfork/
 ├─ app/                 точка входа и сборка приложения
 │  ├─ Main.kt             main() -> Application.launch
-│  ├─ LauncherApp.kt      Stage: UNDECORATED, с ресайзом, 1024×640, иконка
+│  ├─ LauncherApp.kt      primary stage = окно до входа (TRANSPARENT, 460×620, без ресайза), иконка
 │  ├─ AppContext.kt       ЕДИНСТВЕННОЕ место, где выбираются реализации сервисов (ручной DI)
-│  ├─ StageNavigator.kt   одно окно: window.fxml + main.fxml в contentHost, оверлеи update/auth/mail (OVERLAY.md)
+│  ├─ StageNavigator.kt   два окна: auth_window.fxml (update/auth/mail) и window.fxml + main.fxml (WINDOWS.md)
 │  └─ ScreenshotTour.kt   автотур для скриншотов (dev)
 ├─ domain/              модели и интерфейсы, от которых зависит UI
 │  ├─ Models.kt           Server, NewsItem, UserSession, AuthResult/AuthError, UpdatePhase, Progress,
@@ -76,14 +78,16 @@ src/main/kotlin/dev/launcherfork/
    ├─ Messages.kt       AuthError / UpdatePhase -> ключи строк (домен ключей не знает)
    ├─ Disposable.kt     контроллер экрана освобождает таймеры/слушатели при уходе с экрана
    ├─ state/            ClientStateStore: состояния клиента Download/Pause/Continue/Play/Exit (на сессию)
-   ├─ components/       WindowChrome (WindowFrame: drag/maximize/resize, ResizeEdge), SegmentedBar (RAM),
+   ├─ components/       WindowChrome (WindowFrame: drag/maximize/resize/центрирование, ResizeEdge), SegmentedBar (RAM),
+   │                    LogoMark (вектор EXBO из exbo-logo.svg), InputBlock (блок мыши/клавиатуры под диалогом),
    │                    Effects, ServerEntryController (пункт игры в колонке)
    └─ screens/
-      ├─ window/        WindowController (window.fxml: полоса заголовка, contentHost, overlayLayer)
+      ├─ window/        WindowController (window.fxml: полоса заголовка, contentHost, overlayLayer),
+      │                 AuthWindowController (auth_window.fxml: полоса с логотипом, panelHost)
       ├─ update/        LauncherUpdateController     (update.fxml)
       ├─ auth/          InitialAuthController, MailAuthController (initial_auth.fxml, mail_auth.fxml)
       ├─ main/          MainController (main.fxml) + по контроллеру на каждую fx:include-область:
-      │                 ServersList, Hero, Header, News, Article, StatusPane, ClientSettings,
+      │                 ServersList, Profile, Hero, Header, News, Article, StatusPane, ClientSettings,
       │                 modals/ (10 модальных слоёв)
       └─ settings/      SettingsController (статичный settings.fxml, привязан к SettingsStore)
 
@@ -144,11 +148,17 @@ src/main/resources/dev/launcherfork/
    - `FxmlLoadingTest` загружает **каждый** FXML с настоящим контроллером на ru и en. Он падает на ошибках
      FXMLLoader (класс, свойство, include, обработчик) и на **любом неинжектированном `@FXML`-поле**
      (переименованный или удалённый `fx:id`), включая контроллеры из `fx:include`. Затем применяет CSS и layout.
-   - Проверка, что ~70 ключевых `fx:id` новой раскладки достижимы через `main.fxml` и его include, у
-     `window.fxml` есть рамка и `overlayLayer`, а новые FXML не используют legacy CSS-id.
-   - Совпадение ключей ru/en, фейковые сервисы, края ресайза и минимальный размер окна, токены всех тем.
-   - `OverlayNavigatorTest`: главный экран строится под оверлеем обновления, затем идут авторизация и код, а
-     `showMain()` снимает размытие и блокировку ввода. У legacy-панелей скрыты свои кнопки окна.
+   - Проверка, что ~75 ключевых `fx:id` новой раскладки достижимы через `main.fxml` и его include, у
+     `window.fxml` и `auth_window.fxml` есть рамка, аккаунт живёт только в меню профиля, новые FXML не используют
+     legacy CSS-id.
+   - Совпадение ключей ru/en, нет слов со смесью латиницы и кириллицы, фейковые сервисы, края ресайза (кнопки окна
+     вырезаны из зоны ресайза) и минимальный размер окна, токены всех тем.
+   - `AuthWindowTest`: update → вход (→ код) в отдельном окне, вход закрывает его и открывает главное окно;
+     «Сменить аккаунт» и «Выйти» вызывают `MainController.dispose()` до показа окна входа; окно входа центрируется
+     на экране главного окна; крестик любого окна завершает приложение без скрытых окон; панель без
+     фиксированного размера заполняет `panelHost` 460×588.
+   - `OverlayNavigatorTest`: под диалогом (overlay и модальные слои) ничто не получает фокус, контент отключён и
+     закэширован, фокус в диалоге; логотип — 4 `SVGPath` с even-odd, равномерный масштаб, заливка из токена.
      `SegmentedBar` прилипает к сегментам.
    - `ClientStateStore` (скачивание, пауза, продолжение, готово, запуск, «выйти», поздние колбэки после паузы
      и рестарта, shutdown) на ручных фейках, без таймеров.
@@ -158,8 +168,9 @@ src/main/resources/dev/launcherfork/
 
 ## Что перенесено
 
-- Окно (в редизайне): одно, `UNDECORATED`, с ресайзом за края, разворачиванием и перетаскиванием за полосу
-  заголовка. Размеры оригинала (379×490 / 886×550) и многоугольники перетаскивания убраны.
+- Окна (в редизайне): окно до входа 460×620 (без ресайза) и главное окно 1024×640 (`UNDECORATED`, ресайз за края,
+  разворачивание и перетаскивание за полосу заголовка). Размеры оригинала (379×490 / 886×550) и многоугольники
+  перетаскивания убраны.
 - Экраны: самообновление (`update.fxml`), авторизация (`initial_auth.fxml`), код из e-mail (`mail_auth.fxml`),
   главное окно (новости, описание сервера, список серверов, шапка со ссылками, статус и кнопка
   Скачать/Пауза/Продолжить/Играть/Выйти, меню клиента), настройки (категории, линии и отступы как в оригинале),
@@ -183,7 +194,8 @@ src/main/resources/dev/launcherfork/
 - `MockData`: 3 игры (STALCRAFT: X — установлена; Placeholder Game — не установлена; Test Realm — офлайн) и
   4 новости. Тёмный процедурный арт (силуэт, лес, вышка) и иконки сгенерированы скриптом
   `java tools/GenerateZoneArt.java src/main/resources/dev/launcherfork` и к EXBO не относятся: из эталонных
-  скриншотов ничего не скопировано, логотип — текстовый вордмарк «EXBO».
+  скриншотов ничего не скопировано. Логотип EXBO — вектор из `ui/style/image/exbo-logo.svg` (логотип владельца
+  форка), рисуется `SVGPath`-ами (`LogoMark`), цвет из токена `-foreground`.
 - Авторизация, коды, «скачивание», «запуск игры», самообновление: таймеры в `MockAuthService`,
   `MockUpdateService` и `MockGameLauncher`.
 - Папка игр по умолчанию `~/Games/EXBO` (в оригинале был путь Windows). Путь установки строится через `Path.resolve`.
@@ -209,10 +221,11 @@ src/main/resources/dev/launcherfork/
 
 ## Скриншоты
 
-Снимки Scene, сделанные автотуром под Xvfb (`ScreenshotTour`), одинаковые для всех тем:
-`01_update_overlay`, `02_auth_overlay`, `03_auth_error`, `04_main`, `05_main_news_scrolled`, `06_news_article`,
-`07_settings_game`, `08_settings_updates`, `09_settings_others`, `10_install_dialog`, `11_download_progress`,
-`12_running`, `13_tools_menu`, `14_resized_1366x800`, `15_settings_en`.
+Снимки Scene активного окна, сделанные автотуром под Xvfb (`ScreenshotTour`), одинаковые для всех тем:
+`01_update_window`, `02_auth_window`, `03_auth_error` (окно до входа, 460×620), `04_main`, `05_profile_menu`,
+`06_main_news_scrolled`, `07_news_article`, `08_settings_game`, `09_settings_updates`, `10_settings_others`,
+`11_install_dialog`, `12_download_progress`, `13_running`, `14_tools_menu`, `15_resized_1366x800`,
+`16_settings_en`, `17_auth_after_switch_account`.
 
 - `docs/screenshots/zone/` — тема `zone` (основная цель редизайна);
 - `docs/screenshots/` — тема по умолчанию `exbo` на новой раскладке;

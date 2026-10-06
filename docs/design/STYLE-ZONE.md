@@ -104,4 +104,9 @@ Oswald (SIL OFL 1.1) обычного начертания: у него тако
 - **Заголовок раздела**: Oswald UPPERCASE, под ним линия 1 px с градиентом от `-heading-rule` в прозрачность.
 - **Полоса заголовка окна**: высота 28, `-titlebar`, снизу рамка `-border`. Справа «свернуть», «развернуть»
   и «закрыть»; крестик красный.
-- **Оверлей**: `-scrim` и размытие контента. Панель — карточка `.zone-radius-md` (docs/design/OVERLAY.md).
+- **Окно входа**: фон `-background`, рамка 1 px `-border`, углы 10 px (как `.zone-radius-md`), полоса 32 px с
+  логотипом; крестик краснеет при наведении (docs/design/WINDOWS.md).
+- **Оверлей** (диалоги главного окна): `-scrim` и размытие контента, контент под ним отключён.
+- **Профиль**: ник CAPS + ▾ в плитке `.zone-radius-sm`, меню — карточка `-card` `.zone-radius-md`, пункты
+  с hover `-card-description`, «Выйти» цветом `-destructive`.
+- **Логотип**: `LogoMark`, 4 `SVGPath` (even-odd), заливка `.logo-path { -fx-fill: -foreground; }`.

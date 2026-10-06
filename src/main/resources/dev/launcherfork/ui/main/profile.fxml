@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Profile control in the top-right corner of the main window (stalzone.com menu account row): UPPERCASE nickname
+  + caret; a click opens a small dropdown card (in the scene, not a popup window) with Profile ↗, Switch account
+  (back to the separate auth window) and Log out (confirmation modal, then the auth window).
+  loginButton / accountName keep the fx:ids of the former sidebar account card.
+-->
+<VBox fx:id="profileRoot" id="profileRoot" styleClass="profile-root" alignment="TOP_RIGHT" pickOnBounds="false"
+      stylesheets="@../style/layout.css"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dev.launcherfork.ui.screens.main.ProfileController">
+    <Button fx:id="loginButton" id="profileButton" styleClass="profile-button,zone-radius-sm" mnemonicParsing="false"
+            contentDisplay="RIGHT">
+        <graphic>
+            <HBox alignment="CENTER_RIGHT" spacing="10">
+                <Label fx:id="accountName" id="profileName" styleClass="profile-name,zone-caps" text="PLAYER"/>
+                <Region fx:id="profileCaret" styleClass="profile-caret"/>
+            </HBox>
+        </graphic>
+    </Button>
+    <VBox fx:id="profileMenu" id="profileMenu" styleClass="profile-menu,zone-radius-md" visible="false" managed="false">
+        <Button fx:id="profile" id="profileMenuProfile" styleClass="profile-menu-item,zone-radius-sm" text="%main.account.profile"
+                mnemonicParsing="false" contentDisplay="RIGHT" maxWidth="Infinity">
+            <graphic><Region styleClass="external-arrow"/></graphic>
+        </Button>
+        <Button fx:id="switchAccount" id="profileMenuSwitch" styleClass="profile-menu-item,zone-radius-sm" text="%main.account.switch"
+                mnemonicParsing="false" maxWidth="Infinity"/>
+        <Region styleClass="profile-menu-rule"/>
+        <Button fx:id="logout" id="profileMenuLogout" styleClass="profile-menu-item,danger,zone-radius-sm" text="%main.account.logout"
+                mnemonicParsing="false" maxWidth="Infinity"/>
+    </VBox>
+</VBox>

@@ -43,9 +43,11 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var backgroundShade: Region
     @FXML lateinit var homePane: AnchorPane
     @FXML lateinit var settingsPane: AnchorPane
+    @FXML lateinit var profileLayer: AnchorPane
 
     // included areas: FXMLLoader injects <fx:id>Controller
     @FXML lateinit var serversListController: ServersListController
+    @FXML lateinit var profileBarController: ProfileController
     @FXML lateinit var heroController: HeroController
     @FXML lateinit var headerController: HeaderController
     @FXML lateinit var advancedNewsPaneController: NewsController
@@ -75,9 +77,11 @@ class MainController(private val ctx: UiContext) : Disposable {
     fun initialize() {
         background.effect = Theme.gameArtEffect()
 
-        // account card -> confirmation -> back to the separate auth window (the navigator disposes this
-        // controller before the auth window shows up)
-        serversListController.onAccountClicked = { logoutPaneController.show() }
+        // profile menu (top-right): both ways back lead to the separate auth window; the navigator disposes
+        // this controller before the auth window shows up
+        profileBarController.onProfile = { notAvailable() }
+        profileBarController.onSwitchAccount = ::leaveToAuth
+        profileBarController.onLogout = { logoutPaneController.show() }
         logoutPaneController.onConfirm = ::leaveToAuth
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
 
@@ -127,10 +131,11 @@ class MainController(private val ctx: UiContext) : Disposable {
     private fun onModalVisibility(changed: ModalController) {
         val blocked = isModalShown
         InputBlock.set(layout, blocked)
+        if (blocked) profileBarController.hideMenu()
         if (changed.isShowing) InputBlock.focusInto(changed.layer)
     }
 
-    /** Confirmed logout: end the session and go back to the separate auth window. */
+    /** Switch account / confirmed logout: end the session and go back to the separate auth window. */
     private fun leaveToAuth() {
         ctx.services.auth.logout()
         store.shutdown()
@@ -148,6 +153,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         root.scene?.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
         serversListController.dispose()
         defaultStatusPaneController.dispose()
+        profileBarController.dispose()
     }
 
     fun selectServer(server: Server, showHome: Boolean) {
@@ -211,7 +217,10 @@ class MainController(private val ctx: UiContext) : Disposable {
             KeyCode.F5 -> downloadWarnPaneController.show()
             KeyCode.F6 -> exceptionPaneController.show("Exception title", "Exception description placeholder")
             KeyCode.F7 -> loadingPaneController.apply { if (isShowing) hide() else show() }
-            KeyCode.ESCAPE -> modals.forEach { it.hide() }
+            KeyCode.ESCAPE -> {
+                profileBarController.hideMenu()
+                modals.forEach { it.hide() }
+            }
             else -> return
         }
         e.consume()

@@ -59,7 +59,9 @@ class FxmlLoadingTest {
         val ids = listOf(
             "root", "layout", "main", "background", "backgroundShade", "homePane", "settingsPane",
             // sidebar + game entries
-            "serversList", "sidebar", "logo", "gamesLabel", "serversPane", "loginButton", "accountName", "settingsButton",
+            "serversList", "sidebar", "logo", "gamesLabel", "serversPane", "settingsButton",
+            // profile control (top-right) + dropdown
+            "profileLayer", "profileBar", "profileRoot", "loginButton", "accountName", "profileMenu", "switchAccount", "logout",
             // hero / links / news / article
             "hero", "heroTitle", "heroTagline", "heroDescription", "header", "linksContainer", "profile", "forum", "support",
             "advancedNewsPane", "mainLink", "newsScroll", "newsList", "scrollThumb", "articleBg", "articleCaption", "articleCloseButton",
@@ -87,8 +89,18 @@ class FxmlLoadingTest {
     @org.junit.jupiter.api.Test
     fun authWindowFxmlHasFrameAndPanelHost() {
         val present = fxIdsReachableFrom("auth_window.fxml")
-        listOf("authWindowRoot", "authTitleBar", "authDragArea", "authHideButton", "authCloseButton", "panelHost")
+        listOf("authWindowRoot", "authTitleBar", "authLogo", "authDragArea", "authHideButton", "authCloseButton", "panelHost")
             .forEach { assertTrue(it in present, "auth_window.fxml misses fx:id '$it'") }
+    }
+
+    /** The account card left the sidebar, the Profile link left the header (both are in the profile menu now). */
+    @org.junit.jupiter.api.Test
+    fun accountLivesOnlyInProfileMenu() {
+        val sidebar = fxIdsReachableFrom("main/servers_list.fxml")
+        assertTrue("loginButton" !in sidebar && "accountName" !in sidebar, "sidebar still has the account card")
+        assertTrue("profile" !in fxIdsReachableFrom("main/header.fxml"), "header still has the Profile link")
+        val menu = fxIdsReachableFrom("main/profile.fxml")
+        assertTrue(menu.containsAll(listOf("loginButton", "accountName", "profile", "switchAccount", "logout")), "$menu")
     }
 
     /** fx:id without an explicit id becomes the CSS id; legacy #rules (lang_*.css, auth.css, common.css) must not hit new nodes. */

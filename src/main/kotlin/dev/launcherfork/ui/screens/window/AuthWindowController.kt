@@ -3,6 +3,7 @@ package dev.launcherfork.ui.screens.window
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.InputBlock
+import dev.launcherfork.ui.components.LogoMark
 import javafx.fxml.FXML
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -19,6 +20,7 @@ import javafx.scene.shape.Rectangle
 class AuthWindowController(private val ctx: UiContext) {
     @FXML lateinit var authWindowRoot: StackPane
     @FXML lateinit var authTitleBar: HBox
+    @FXML lateinit var authLogo: LogoMark
     @FXML lateinit var authDragArea: Region
     @FXML lateinit var authHideButton: Button
     @FXML lateinit var authCloseButton: Button

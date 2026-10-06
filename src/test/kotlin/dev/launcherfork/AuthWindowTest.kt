@@ -133,7 +133,7 @@ class AuthWindowTest {
             assertFalse(nav.authStage.isShowing, "auth window must be closed")
             assertNull(nav.panelController)
             assertNotNull(nav.mainController)
-            assertEquals("PLAYER", nav.mainController!!.serversListController.accountName.text)
+            assertEquals("PLAYER", nav.mainController!!.profileBarController.accountName.text)
             assertSame(nav.mainStage, nav.window)
             nav.close()
         }
@@ -176,8 +176,16 @@ class AuthWindowTest {
     }
 
     @Test
+    fun switchAccountDisposesMainAndOpensAuthWindow() = assertBackToAuth { main ->
+        main.profileBarController.loginButton.fire()
+        assertTrue(main.profileBarController.isMenuShown)
+        main.profileBarController.switchAccount.fire()
+    }
+
+    @Test
     fun logoutDisposesMainAndOpensAuthWindow() = assertBackToAuth { main ->
-        main.serversListController.loginButton.fire()
+        main.profileBarController.loginButton.fire()
+        main.profileBarController.logout.fire()
         assertTrue(main.logoutPaneController.isShowing, "log out asks for confirmation")
         main.logoutPaneController.logoutButtonRight.fire()
     }
@@ -190,8 +198,7 @@ class AuthWindowTest {
             nav.mainStage.x = 40.0
             nav.mainStage.y = 30.0
             val mainBounds = Rectangle2D(nav.mainStage.x, nav.mainStage.y, nav.mainStage.width, nav.mainStage.height)
-            nav.mainController!!.serversListController.loginButton.fire()
-            nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
+            nav.mainController!!.profileBarController.switchAccount.fire()
             val (x, y) = WindowFrame.centeredIn(WindowFrame.screenBoundsOf(mainBounds), Theme.AUTH_WINDOW_WIDTH, Theme.AUTH_WINDOW_HEIGHT)
             assertEquals(x, nav.authStage.x, 0.5)
             assertEquals(y, nav.authStage.y, 0.5)

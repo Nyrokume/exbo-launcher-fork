@@ -4,6 +4,7 @@ import dev.launcherfork.domain.Server
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.components.LogoMark
 import dev.launcherfork.ui.components.ServerEntryController
 import dev.launcherfork.ui.components.toggleClass
 import dev.launcherfork.ui.state.ClientStateStore
@@ -15,21 +16,17 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import java.util.Locale
 
-/** main/servers_list.fxml: fixed-width sidebar with the EXBO wordmark, game list, account card and Settings. */
+/** main/servers_list.fxml: fixed-width sidebar with the EXBO logo, game list and Settings. */
 class ServersListController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var sidebar: VBox
-    @FXML lateinit var logo: Label
+    @FXML lateinit var logo: LogoMark
     @FXML lateinit var gamesLabel: HBox
     @FXML lateinit var gamesLabelText: Label
     @FXML lateinit var serversPane: ScrollPane
-    @FXML lateinit var loginButton: Button
-    @FXML lateinit var accountName: Label
-    @FXML lateinit var accountAction: Label
     @FXML lateinit var settingsButton: Button
 
     var onServerSelected: (Server) -> Unit = {}
     var onSettingsClicked: () -> Unit = {}
-    var onAccountClicked: () -> Unit = {}
 
     private val entries = mutableListOf<ServerEntryController>()
     private val list = VBox(6.0)
@@ -41,15 +38,9 @@ class ServersListController(private val ctx: UiContext) : Disposable {
         settingsButton.text = settingsButton.text.uppercase(locale())
         gamesLabelText.text = gamesLabelText.text.uppercase(locale())
         settingsButton.setOnAction { onSettingsClicked() }
-        loginButton.setOnAction { onAccountClicked() }
-        setLogin(ctx.services.auth.currentSession?.login)
     }
 
     private fun locale(): Locale = Locale.forLanguageTag(ctx.lang)
-
-    fun setLogin(login: String?) {
-        accountName.text = (login ?: "player").uppercase(locale())
-    }
 
     fun setServers(servers: List<Server>, store: ClientStateStore) {
         dispose()

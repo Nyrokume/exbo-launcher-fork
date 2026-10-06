@@ -51,7 +51,9 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         val main = { nav.mainController!! }
         val stage = nav.mainStage
         step(1.0) { shot("04_main") }
-        step(0.1) { main().advancedNewsPaneController.newsScroll.vvalue = 1.0 }
+        step(0.1) { main().profileBarController.showMenu() }
+        step(0.3) { shot("05_profile_menu") }
+        step(0.1) { main().profileBarController.hideMenu(); main().advancedNewsPaneController.newsScroll.vvalue = 1.0 }
         step(0.4) { shot("06_main_news_scrolled") }
         step(0.1) { main().advancedNewsPaneController.cards.first().onMouseClicked.handle(null) }
         step(0.4) { shot("07_news_article") }
@@ -92,9 +94,8 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
             nav.switchLanguage("en")
         }
         step(1.0) { shot("16_settings_en") }
-        step(0.1) { main().serversListController.loginButton.fire() } // logout confirmation
-        step(0.3) { main().logoutPaneController.logoutButtonRight.fire() } // back to the separate auth window
-        step(0.6) { shot("17_auth_after_logout") }
+        step(0.1) { main().profileBarController.switchAccount.fire() } // back to the separate auth window
+        step(0.6) { shot("17_auth_after_switch_account") }
         step(0.3) { Platform.exit() }
         run()
     }

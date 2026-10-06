@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import dev.launcherfork.ui.components.LogoMark?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <!--
   Frame of the separate PRE-MAIN window (update / auth / mail code), docs/design/WINDOWS.md.
   Transparent corners, not resizable, 460x620, rounded like the stalzone.com/login card (.zone-radius-md):
-  a 32 px title strip (drag area, minimize, close) and panelHost below it. The panel FXML
+  a 32 px title strip (logo, drag area, minimize, close) and panelHost below it. The panel FXML
   (auth_panel.fxml / initial_auth.fxml / ...) is put into panelHost unchanged and sized by it (460x588).
   Explicit ids (auth*) keep legacy #close/#hide rules of common.css away from these buttons.
 -->
@@ -17,6 +18,7 @@
     <BorderPane>
         <top>
             <HBox fx:id="authTitleBar" id="authTitleBar" styleClass="auth-title-bar" alignment="CENTER_LEFT">
+                <LogoMark fx:id="authLogo" id="authLogo" logoWidth="44" mouseTransparent="true"/>
                 <Region fx:id="authDragArea" id="authDragArea" styleClass="title-drag-area" HBox.hgrow="ALWAYS" maxWidth="Infinity" maxHeight="Infinity"/>
                 <Button fx:id="authHideButton" id="authHide" styleClass="window-button,window-hide" focusTraversable="false" mnemonicParsing="false">
                     <graphic><Region styleClass="window-glyph"/></graphic>
