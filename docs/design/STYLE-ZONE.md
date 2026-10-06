@@ -93,21 +93,24 @@ name ID 1), текст — Roboto, CAPS-пункты — Roboto Medium. Bebas н
 Oswald), поэтому кегли заголовков в `theme-zone.css` увеличены примерно в 1.15 раза. Шрифты лежат в
 `ui/style/font/`, регистрирует их `Theme.zoneFonts`; Oswald удалён.
 
-**Лицензии шрифтов (важно).**
+**Источники шрифтов.**
 
-- `BebasNeue-Regular.ttf` — Bebas Neue Regular 001.003 (Ryoichi Tsunekawa / Dharma Type), **взят с
-  stalzone.com** (WOFF2 из ассетов сайта, распакован в TTF без изменения глифов). В метаданных шрифта (name ID 13)
-  указано «licensed under the SIL Open Font License, Version 1.1», текст лицензии — `OFL-BebasNeue.txt`. Сверки с
-  официальным дистрибутивом не было, поэтому **лицензия не подтверждена**: репозиторий должен оставаться
-  приватным, а перед любым публичным релизом шрифт нужно заменить или подтвердить его лицензию (например, взять
-  Bebas Neue из официального источника под OFL).
-- **Bebas Neue Cyrillic** (`BebasNeueCyrillic-*.woff2` с stalzone.com, «Cyrillic by AA») **в репозиторий не
-  положен**: его встроенная лицензия Dharma Type разрешает использование, но прямо запрещает распространение
-  («You may not redistribute this font without permission») и изменение, в том числе конвертацию. Если всё же
-  понадобится его более жирный рисунок, это допустимо только локально, в приватной сборке, и шрифт должен быть
-  убран или очищен по лицензии до любого публичного релиза.
-- Roboto (`Roboto-*.ttf`) — SIL OFL 1.1 (`OFL-Roboto.txt`); ширины глифов совпадают с вариативным Roboto сайта
-  при wght 500 / wdth 100.
+- `BebasNeue-Regular.ttf` (семейство `Bebas Neue Regular`) — шрифт сайта, ассет проекта:
+  https://stalzone.com/front_stalzone/build/assets/BebasNeueRegular-D00apsXq.woff2 (на сайте `@font-face`
+  `Bebas Neue`, weight 400; это `--beb`). Скачан 2026-10-06, WOFF2 распакован в TTF fontTools (`flavor=None`), глифы и
+  имена не менялись. Bebas Neue Regular 001.003 (Ryoichi Tsunekawa / Dharma Type); в таблице name указана
+  SIL OFL 1.1, её текст — `OFL-BebasNeue.txt`.
+- Bebas Neue Cyrillic (https://stalzone.com/front_stalzone/build/assets/BebasNeueCyrillic-B2yc5-l0.woff2, `--bebcyrill`)
+  в лаунчер не включён: на референсе (заголовки h1–h5, «ВОЙТИ», «ИГРАТЬ БЕСПЛАТНО», пункты меню) он не участвует,
+  сайт берёт его только для промо-страниц, а его рисунок заметно жирнее тонкого Bebas Neue с референса.
+- `Roboto-Light/Regular/Medium.ttf` — Roboto 3.015 (roboto-classic, https://github.com/googlefonts/roboto-classic),
+  SIL OFL 1.1, `OFL-Roboto.txt`. Это тот же Roboto, что и вариативный шрифт сайта
+  (https://stalzone.com/front_stalzone/build/assets/Roboto-VariableFont_wdth_wght-746kZxMU.woff2): при wght 500 /
+  wdth 100 ширины глифов совпадают с `Roboto-Medium.ttf`, поэтому статические файлы оставлены.
+
+`ZoneFontsTest` проверяет, что каждое семейство из `theme-zone.css` / `zone-auth.css` грузится из TTF в
+`ui/style/font/`, внутреннее имя семейства совпадает с CSS (иначе JavaFX молча подставил бы системный шрифт) и
+кириллица U+0410–U+044F, Ё, ё есть.
 
 **Ассеты проекта с stalzone.com.** Это ассеты проекта (STALZONE / EXBO), взятые с сайта:
 
