@@ -52,6 +52,7 @@ class SettingsController(private val ctx: UiContext) {
 
     @FXML lateinit var ramBar: RamBar
     @FXML lateinit var ramSummary: Label
+    @FXML lateinit var ramWarning: Label
     @FXML lateinit var ramScale: RamScale
     @FXML lateinit var exitGroup: ToggleGroup
     @FXML lateinit var exitOnStart: RadioButton
@@ -149,16 +150,22 @@ class SettingsController(private val ctx: UiContext) {
             recommendedGb = RamOptions.recommended(total),
             value = RamOptions.selectedGb(s, total),
         )
-        // the selectable range under the bar: «2 ГБ» under the first, «14 ГБ» under the last reachable segment
+        // the selectable range under the bar: «2 ГБ» under the first, «16 ГБ» under the last segment (the whole memory)
         ramScale.setCaptions(fmt(ramBar.minGb), fmt(ramBar.maxGb))
         ramScale.bar = ramBar
         val hint = ctx.t("settings.ram.hint", fmt(ramBar.recommendedGb))
         ramBar.accessibleHelp = hint
         Tooltip.install(ramBar, Tooltip(hint))
         fun summary(gb: Int) = ctx.t("settings.ram.summary", fmt(gb), fmt(RamOptions.totalGb(total)))
-        ramSummary.text = summary(ramBar.value)
-        // the label always follows the bar (user moves and programmatic changes alike)
-        ramBar.valueProperty.addListener { _, _, gb -> ramSummary.text = summary(gb.toInt()) }
+        // soft note next to the summary when the OS keeps less than 2 GB; always managed (only hidden), so no layout shift
+        ramWarning.text = ctx.t("settings.ram.low_system")
+        fun show(gb: Int) {
+            ramSummary.text = summary(gb)
+            ramWarning.isVisible = RamOptions.leavesLittleForSystem(gb, total)
+        }
+        show(ramBar.value)
+        // the labels always follow the bar (user moves and programmatic changes alike)
+        ramBar.valueProperty.addListener { _, _, gb -> show(gb.toInt()) }
         ramBar.onChange = { gb -> update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) } }
     }
 

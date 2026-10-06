@@ -87,10 +87,11 @@
     -switch-on: #e91932;                      /* switch on: site red track (3.9:1 on -card), white knob 4.5:1 */
     -switch-on-hover: #ff3b52;
     -ram-free: #6a645e;                       /* RAM segment: available, not selected (3.0:1 on -card) */
-    -ram-reserve: #3d3936;                    /* RAM segment: system reserve, outline only */
     -switch-off-knob: #a8a097;                /* switch off: knob (7.3:1 on -input) */
     -switch-off-border: #6a645e;              /* switch off: track ring (3.0:1 on -card) */
     -segment-selected: #e91932;               /* selected segment: site red, white text 4.5:1 */
+    -segment-text: #d9d2ca;                   /* inactive segment text (warm light grey): 12.5:1 on -input */
+    -settings-warning: #e8b04a;               /* RAM «little memory left» note (amber): 9.1:1 on -card */
 
     /* body font: Roboto (SIL OFL 1.1) */
     -fx-font-family: "Roboto";
@@ -135,6 +136,16 @@
 .zone-radius-md {
     -fx-background-radius: 10;
     -fx-border-radius: 10;
+}
+/* parts of a segmented control sit inside its 1 px border: 1 px smaller radius, so the selected fill follows the corner */
+.segment.zone-radius-sm {
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+/* segmented controls (settings): Roboto Medium 14 px, as the site's buttons; same weight for every part (no jumps) */
+.segment {
+    -fx-font-family: "Roboto Medium";
+    -fx-font-weight: normal;
 }
 
 /*

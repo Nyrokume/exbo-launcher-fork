@@ -86,10 +86,11 @@
     -switch-on: #e91932;                      /* switch on: site red track (4.1:1 on -card) with the white knob (4.5:1) */
     -switch-on-hover: #b91c30;
     -ram-free: #85858d;                       /* RAM: available, quiet grey (3.3:1 on -card, below the red's 4.1:1) */
-    -ram-reserve: #d4d4d8;                    /* RAM: system reserve, outline only */
     -switch-off-knob: #71717a;                /* switch off: knob (4.8:1 on -input) */
     -switch-off-border: #85858d;              /* switch off: track ring (3.3:1 on -card) */
     -segment-selected: #e91932;               /* selected segment: site red, white text 4.5:1 */
+    -segment-text: #3f3f46;                   /* inactive segment text (dark): 10.4:1 on -input */
+    -settings-warning: #9a5800;               /* RAM «little memory left» note (dark amber): 5.1:1 on -card */
 }
 
 /*

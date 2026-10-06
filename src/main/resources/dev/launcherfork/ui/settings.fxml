@@ -11,10 +11,11 @@
 
   The page starts BELOW the nav row (main.fxml anchors it under the top bar; no page title: the sidebar already marks
   НАСТРОЙКИ as active). One tidy list: small Bebas group labels, each over a subtle card (.card) whose rows all look
-  the same: label left, control right, 32 px, thin separators between rows; no wrapping labels (long wording in
+  the same: label left, control right, 34 px, thin separators between rows; no wrapping labels (long wording in
   tooltips).
-    ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" + the segmented RAM bar (like the original launcher) + min / max
-                        captions under the selectable range (RamScale).
+    ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" (+ «Мало памяти останется системе» for the last 2 GB) + the
+                        segmented RAM bar (like the original launcher, 2 GB .. the whole memory) + min / max captions
+                        under the selectable range (RamScale).
     ПОВЕДЕНИЕ           auto-exit, P2P and the theme (Тёмная / Белая) as segmented controls (accent on the selected
                         part), four switches.
     ОБНОВЛЕНИЕ | ЯЗЫК   one row each, side by side: speed limits (download / upload fields) | Русский / English.
@@ -37,6 +38,7 @@
                 <VBox fx:id="ramCard" styleClass="settings-card,card,zone-radius-md,ram-card">
                     <HBox styleClass="ram-head" alignment="CENTER_LEFT">
                         <Label fx:id="ramSummary" id="ramSummary" styleClass="ram-summary" minWidth="-Infinity"/>
+                        <Label fx:id="ramWarning" id="ramWarning" styleClass="ram-warning" minWidth="-Infinity" visible="false"/>
                     </HBox>
                     <RamBar fx:id="ramBar" id="ramBar" maxWidth="Infinity" accessibleText="%settings.ram"/>
                     <RamScale fx:id="ramScale" id="ramScale" maxWidth="Infinity"/>

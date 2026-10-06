@@ -3,26 +3,43 @@ package dev.launcherfork
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.RamOptions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** RAM of the settings bar: 1 GB steps, bounds (minimum .. total minus reserve, never above the total), recommendation. */
+/** RAM of the settings bar: 1 GB steps, bounds (minimum .. the whole memory, «от 2 до 16 ГБ»), recommendation. */
 class RamOptionsTest {
     private val gb = 1024L
 
     @Test
-    fun boundsAreMinimumAndTotalMinusReserve() {
+    fun boundsAreMinimumAndTheWholeMemory() {
         assertEquals(2, RamOptions.MIN_GB)
         assertEquals(1, RamOptions.STEP_GB)
-        assertEquals(14, RamOptions.maxGb(16 * gb))
-        assertEquals(6, RamOptions.maxGb(8 * gb))
-        assertEquals(30, RamOptions.maxGb(32 * gb))
-        assertEquals(2, RamOptions.maxGb(4 * gb))
-        assertEquals(2, RamOptions.maxGb(2 * gb), "the minimum is always allowed")
+        assertEquals(16, RamOptions.maxGb(16 * gb))
+        assertEquals(8, RamOptions.maxGb(8 * gb))
+        assertEquals(32, RamOptions.maxGb(32 * gb))
+        assertEquals(4, RamOptions.maxGb(4 * gb))
+        assertEquals(2, RamOptions.maxGb(2 * gb))
+        assertEquals(2, RamOptions.maxGb(1 * gb), "the minimum is always allowed")
         // a "16 GB" machine reports a bit less than 16384 MB
         assertEquals(16, RamOptions.totalGb(16_250))
-        assertEquals(14, RamOptions.maxGb(16_250))
-        for (total in 2..128) assertTrue(RamOptions.maxGb(total * gb) <= total, "max above the total for $total GB")
+        assertEquals(16, RamOptions.maxGb(16_250))
+        for (total in 2..128) assertEquals(total, RamOptions.maxGb(total * gb), "max is the whole memory for $total GB")
+    }
+
+    @Test
+    fun lastTwoGbLeaveLittleForTheSystem() {
+        assertEquals(2, RamOptions.LOW_SYSTEM_MEMORY_GB)
+        val t16 = 16 * gb
+        assertFalse(RamOptions.leavesLittleForSystem(6, t16))
+        assertFalse(RamOptions.leavesLittleForSystem(14, t16), "14 of 16 GB leaves 2 GB: no note")
+        assertTrue(RamOptions.leavesLittleForSystem(15, t16), "15 of 16 GB: note")
+        assertTrue(RamOptions.leavesLittleForSystem(16, t16), "16 of 16 GB: note")
+        assertTrue(RamOptions.leavesLittleForSystem(16, 16_250), "a 16 GB machine reporting a bit less")
+        assertFalse(RamOptions.leavesLittleForSystem(6, 8 * gb)); assertTrue(RamOptions.leavesLittleForSystem(7, 8 * gb))
+        assertTrue(RamOptions.leavesLittleForSystem(2, 2 * gb), "2 of 2 GB leaves nothing")
+        for (total in 2..64) assertEquals((RamOptions.MIN_GB..total).count { RamOptions.leavesLittleForSystem(it, total * gb) },
+            minOf(2, total - 1), "$total GB: only the last two values carry the note")
     }
 
     @Test
@@ -32,9 +49,9 @@ class RamOptionsTest {
         assertEquals(2, RamOptions.clamp(-5, total))
         assertEquals(2, RamOptions.clamp(1, total))
         assertEquals(7, RamOptions.clamp(7, total))
-        assertEquals(14, RamOptions.clamp(15, total))
-        assertEquals(14, RamOptions.clamp(16, total))
-        assertEquals(14, RamOptions.clamp(999, total))
+        assertEquals(15, RamOptions.clamp(15, total))
+        assertEquals(16, RamOptions.clamp(16, total))
+        assertEquals(16, RamOptions.clamp(999, total))
     }
 
     @Test
@@ -53,7 +70,8 @@ class RamOptionsTest {
         assertEquals(6, RamOptions.selectedGb(LauncherSettings(), total), "nothing stored -> recommended")
         assertEquals(8, RamOptions.selectedGb(LauncherSettings(ramMb = 8192), total))
         assertEquals(7, RamOptions.selectedGb(LauncherSettings(ramMb = 7 * 1024), total), "any whole GB, not a ladder")
-        assertEquals(14, RamOptions.selectedGb(LauncherSettings(ramMb = 16384), total), "above the max -> max")
+        assertEquals(16, RamOptions.selectedGb(LauncherSettings(ramMb = 16384), total), "the whole memory is allowed")
+        assertEquals(16, RamOptions.selectedGb(LauncherSettings(ramMb = 64 * 1024), total), "above the max -> max")
         assertEquals(2, RamOptions.selectedGb(LauncherSettings(ramMb = 512), total), "below the min -> min")
         assertEquals(4, RamOptions.selectedGb(LauncherSettings(ramMb = 4500), total))
         // legacy segmented bar: 512 + 3584 * f MB

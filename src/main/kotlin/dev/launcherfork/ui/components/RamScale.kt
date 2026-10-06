@@ -4,10 +4,9 @@ import javafx.scene.control.Label
 import javafx.scene.layout.Region
 
 /**
- * One caption line under the [RamBar]: the lowest and the highest value that can be chosen («2 ГБ» … «14 ГБ»), each
- * centred under its segment (kept inside the line at the edges). When both are the same (a 4 GB computer: 2..2 GB)
- * only the min caption is shown. The reserve segments to the right of the max caption
- * thus read as "not available" without an extra legend. Must share the bar's x origin and width (both fill the RAM card).
+ * One caption line under the [RamBar]: the lowest and the highest value that can be chosen («2 ГБ» … «16 ГБ»), each
+ * centred under its segment and kept inside the line, so the max caption ends with the bar. When both are the same (a
+ * 2 GB computer: 2..2 GB) only the min caption is shown. Must share the bar's x origin and width (both fill the RAM card).
  * Styling: .ram-scale-label in layout.css.
  */
 class RamScale : Region() {
