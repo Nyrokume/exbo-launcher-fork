@@ -162,6 +162,8 @@ class ZonePrePanelsTest {
             val c = nav.panelController as MailAuthController
             c.codeInput!!.setCode("268419249")
             val scene = nav.authStage.scene
+            val zoneSheet = Theme.stylesheet("theme-zone.css")
+            if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
             scene.root.applyCss(); scene.root.layout()
             // all nine cells inside the 460 px window, with the form's side padding
             val first = c.codeInput!!.cells.first().let { it.localToScene(it.layoutBounds) }

@@ -49,11 +49,9 @@ class MailAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     }
 
     private fun wireCells(cells: CodeInput) {
+        cells.strings = ctx.strings // "Цифра N из 9" for screen readers (fork.code.cell)
         cells.cellCount = CODE_LENGTH
-        cells.cells.forEachIndexed { i, cell ->
-            cell.accessibleText = ctx.t("fork.zone.code_cell").format(i + 1, CODE_LENGTH)
-            cell.setOnAction { enter() }
-        }
+        cells.cells.forEach { it.setOnAction { enter() } }
         enterButton.disableProperty().bind(cells.completeProperty.not())
         errorFirst.textProperty().addListener { _, _, text -> cells.error = !text.isNullOrEmpty() }
         cells.codeProperty.addListener { _, _, _ -> if (!errorFirst.text.isNullOrEmpty()) showError(null) }
