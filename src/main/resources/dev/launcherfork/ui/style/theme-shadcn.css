@@ -26,6 +26,9 @@
     -ring: #737373;                  /* oklch(0.556 0 0) */
     -destructive: #ff6467;           /* oklch(0.704 0.191 22.216) */
     -destructive-border: rgba(255, 100, 103, 0.40);
+    -destructive-soft: rgba(255, 100, 103, 0.10);  /* hover fill of red menu rows (game actions) */
+    -destructive-text: #ff6467;  /* red text / icons of destructive menu rows, readable on -card */
+    -primary-tint: rgba(229, 229, 229, 0.14);  /* translucent accent: progress fill behind the status text */
     -input-foreground: #fafafa;
     -placeholder: #737373;
     -overlay: rgba(0, 0, 0, 0.80);

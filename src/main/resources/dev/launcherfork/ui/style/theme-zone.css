@@ -27,6 +27,9 @@
     -ring: #ff3b52;                           /* focus border of inputs */
     -destructive: #ff3b52;
     -destructive-border: rgba(255, 59, 82, 0.40);
+    -destructive-soft: rgba(255, 59, 82, 0.08);  /* hover fill of red menu rows (game actions) */
+    -destructive-text: #ff3b52;  /* red text / icons of destructive menu rows, readable on -card */
+    -primary-tint: rgba(255, 59, 82, 0.20);  /* translucent accent: progress fill behind the status text */
     -input-foreground: #ece7e1;
     -placeholder: rgba(202, 185, 166, 0.46);  /* --accent-400 */
     -overlay: rgba(0, 0, 0, 0.80);
@@ -136,7 +139,7 @@
  * heading font Oswald; Bebas has a lower cap height (0.70 em vs 0.81 em), so the zone theme scales them by ~1.15.
  * Two-class selectors: they must beat the one-class rules of layout.css, which sits on the FXML parents.
  */
-.settings-heading.font-display { -fx-font-size: 48; }
+.settings-group-label.font-display { -fx-font-size: 18; }
 .modal-title.font-display { -fx-font-size: 30; -fx-translate-y: -4; } /* air above the fixed modal-rule (layoutY 35) */
 /* ИГРАТЬ: like the site's big buttons (.play_free / .login: var(--beb) 24px) */
 .button.play-button {

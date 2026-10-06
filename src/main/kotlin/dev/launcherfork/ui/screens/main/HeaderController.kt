@@ -84,7 +84,7 @@ class HeaderController(private val ctx: UiContext) : Disposable {
             new?.addEventFilter(MouseEvent.MOUSE_PRESSED, outsideClick)
             scene = new
         }
-        // the links hide on the settings screen: the menu goes with them
+        // if the links are ever hidden, the menu goes with them
         headerPane.visibleProperty().addListener { _, _, shown -> if (!shown) hideCommunityMenu() }
         // follow the link (row width, language / theme switch, window resize) and the card's own size
         communities.boundsInParentProperty().addListener { _, _, _ -> placeMenu() }

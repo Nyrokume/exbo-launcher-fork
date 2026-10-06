@@ -91,6 +91,16 @@ data class Progress(
     val bytesPerSecond: Long,
 )
 
+/** Long-running maintenance of an installed client, started from the game-actions menu next to ИГРАТЬ. */
+enum class ClientOperation {
+    /** «Проверить файлы»: re-check the installed files (client stays installed). */
+    VERIFY,
+    /** «Переустановить»: wipe and download the client again (installed at the end). */
+    REINSTALL,
+    /** «Удалить игру»: remove the client files (not installed at the end). */
+    DELETE,
+}
+
 /** Peer-to-peer download policy (settings). */
 enum class P2pMode { ALWAYS, EXCEPT_MOBILE, NEVER }
 

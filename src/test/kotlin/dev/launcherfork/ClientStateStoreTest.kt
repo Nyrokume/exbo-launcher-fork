@@ -2,6 +2,7 @@ package dev.launcherfork
 
 import dev.launcherfork.data.mock.MockData
 import dev.launcherfork.domain.Cancellable
+import dev.launcherfork.domain.ClientOperation
 import dev.launcherfork.domain.GameLauncher
 import dev.launcherfork.domain.GameListener
 import dev.launcherfork.domain.Progress
@@ -33,6 +34,12 @@ class ClientStateStoreTest {
         }
         override fun isInstalled(server: Server) = server.id in installed
         override fun pausedProgress(server: Server) = paused
+        val operations = mutableListOf<Pair<ClientOperation, Job>>()
+        override fun runOperation(server: Server, operation: ClientOperation, listener: ProgressListener): Cancellable {
+            val job = Job(listener)
+            operations += operation to job
+            return Cancellable { job.cancelled = true }
+        }
     }
 
     private class Launch(val listener: GameListener) {
@@ -167,5 +174,59 @@ class ClientStateStoreTest {
         assertEquals(ClientState.Paused(0.25, server.clientSizeBytes), state())
         updates.jobs[0].listener.onFinished() // late
         assertTrue(state() is ClientState.Paused)
+    }
+
+    @Test
+    fun verifyRunsAsBusyAndEndsReady() {
+        updates.installed += server.id
+        assertTrue(store.runOperation(server, ClientOperation.VERIFY))
+        assertEquals(ClientState.Busy(ClientOperation.VERIFY, 0.0), state())
+        updates.operations[0].second.listener.onProgress(progress(0.5))
+        assertEquals(ClientState.Busy(ClientOperation.VERIFY, 0.5), state())
+        store.primaryAction(server) // the CTA does nothing while busy
+        assertEquals(ClientState.Busy(ClientOperation.VERIFY, 0.5), state())
+        assertTrue(launcher.launches.isEmpty())
+        updates.operations[0].second.listener.onFinished()
+        assertEquals(ClientState.Ready, state())
+    }
+
+    @Test
+    fun deleteEndsNotInstalledReinstallEndsReady() {
+        updates.installed += server.id
+        assertTrue(store.runOperation(server, ClientOperation.DELETE))
+        updates.operations[0].second.listener.onFinished()
+        assertEquals(ClientState.NotInstalled, state())
+        assertFalse(store.runOperation(server, ClientOperation.REINSTALL), "nothing to reinstall")
+        assertFalse(store.runOperation(server, ClientOperation.VERIFY), "nothing to verify")
+        assertEquals(1, updates.operations.size)
+
+        store.state(server).set(ClientState.Ready)
+        assertTrue(store.runOperation(server, ClientOperation.REINSTALL))
+        updates.operations[1].second.listener.onFinished()
+        assertEquals(ClientState.Ready, state())
+    }
+
+    @Test
+    fun verifyOfARunningGameStopsItFirst() {
+        updates.installed += server.id
+        store.primaryAction(server)
+        launcher.launches[0].listener.onStarted()
+        assertEquals(ClientState.Running, state())
+        assertTrue(store.runOperation(server, ClientOperation.VERIFY))
+        assertTrue(launcher.launches[0].cancelled, "the game is stopped before the check")
+        launcher.launches[0].listener.onExited() // stale
+        assertTrue(state() is ClientState.Busy)
+        assertFalse(store.runOperation(server, ClientOperation.DELETE), "no second operation while busy")
+    }
+
+    @Test
+    fun shutdownCancelsAnOperation() {
+        updates.installed += server.id
+        store.runOperation(server, ClientOperation.VERIFY)
+        store.shutdown()
+        assertTrue(updates.operations[0].second.cancelled)
+        assertEquals(ClientState.Ready, state())
+        updates.operations[0].second.listener.onFinished() // late
+        assertEquals(ClientState.Ready, state())
     }
 }

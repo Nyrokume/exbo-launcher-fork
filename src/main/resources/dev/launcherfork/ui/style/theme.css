@@ -27,6 +27,9 @@
     -ring: #1c4a61;
     -destructive: #ae171c;           /* error text */
     -destructive-border: #672629;    /* red accent border */
+    -destructive-soft: rgba(174, 23, 28, 0.18);  /* hover fill of red menu rows (game actions) */
+    -destructive-text: #e0454a;  /* red text / icons of destructive menu rows, readable on -card */
+    -primary-tint: rgba(37, 96, 125, 0.55);  /* translucent accent: progress fill behind the status text */
     -input-foreground: #8d8d8d;
     -placeholder: #6d6d6d;
     -overlay: rgba(0, 0, 0, 0.9);    /* modal dim */

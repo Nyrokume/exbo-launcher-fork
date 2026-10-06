@@ -64,10 +64,10 @@ class FxmlLoadingTest {
             "profileLayer", "profileBar", "profileRoot", "loginButton", "accountName", "profileMenu", "switchAccount", "logout",
             // header links
             "header", "linksContainer", "profile", "forum", "support",
-            // bottom bar + tools popup
-            "defaultStatusPane", "downloadingStatus", "progressBar", "clientSettingsButton", "downloadButton", "clientSettingsPane",
+            // bottom bar + game-actions button and its dropdown
+            "defaultStatusPane", "downloadingStatus", "progressBar", "gameActionsButton", "downloadButton", "gameActions", "gameActionsMenu",
             // settings
-            "settings", "scroll", "ramSelector", "ramSummary", "exitOnStart", "exitNever", "downloadLimitField", "uploadLimitField", "p2pNotMobile",
+            "settings", "scroll", "ramBar", "ramSummary", "exitOnStart", "exitNever", "downloadLimitField", "uploadLimitField", "p2pNotMobile",
             "defenderToggle", "startOnDownloadedToggle", "trayToggle", "autostartToggle", "langRu", "langEn",
             // modals (original names)
             "logoutPane", "logoutButtonRight", "updatePane", "updateYes", "licensePane", "licenseFirst", "licenseLoading", "offlinePane",

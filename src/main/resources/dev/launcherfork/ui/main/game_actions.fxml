@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Game-actions dropdown of the button next to ИГРАТЬ: the profile / communities dropdown card (.profile-menu), always
+  managed="false" (floats above the button, placed by StatusPaneController). Caption = game name, then one row per
+  GameAction (icon + text; reinstall / delete red, under a rule). Rows are built by GameActionsController.
+-->
+<VBox fx:id="gameActionsMenu" id="gameActionsMenu" styleClass="profile-menu,game-actions-menu,zone-radius-md"
+      visible="false" managed="false" accessibleText="%main.actions.menu.a11y"
+      stylesheets="@../style/layout.css"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dev.launcherfork.ui.screens.main.GameActionsController">
+    <Label fx:id="gameActionsCaption" id="gameActionsCaption" styleClass="game-actions-caption,zone-caps"/>
+</VBox>

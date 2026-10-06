@@ -1,6 +1,7 @@
 package dev.launcherfork.data.mock
 
 import dev.launcherfork.domain.Cancellable
+import dev.launcherfork.domain.ClientOperation
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.domain.ProgressListener
 import dev.launcherfork.domain.Server
@@ -59,6 +60,30 @@ class MockUpdateService(private val speed: Double = 1.0) : UpdateService {
             if (f >= 1.0) {
                 installed[server.id] = true
                 partial.remove(server.id)
+                listener.onFinished()
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    /** Fake verify / reinstall / delete: a timer from 0 to 1, then the installed flag flips as the operation says. */
+    override fun runOperation(server: Server, operation: ClientOperation, listener: ProgressListener): Cancellable {
+        val durationMs = when (operation) {
+            ClientOperation.VERIFY -> 3_000
+            ClientOperation.REINSTALL -> 6_000
+            ClientOperation.DELETE -> 1_200
+        } / speed
+        val delta = TICK_MS / durationMs
+        val total = server.clientSizeBytes
+        var f = 0.0
+        return MockScheduler.repeatUntilDone(TICK_MS, TICK_MS) {
+            f = (f + delta).coerceAtMost(1.0)
+            listener.onProgress(Progress(f, (total * f).toLong(), total, 0))
+            if (f >= 1.0) {
+                partial.remove(server.id)
+                installed[server.id] = operation != ClientOperation.DELETE
                 listener.onFinished()
                 true
             } else {

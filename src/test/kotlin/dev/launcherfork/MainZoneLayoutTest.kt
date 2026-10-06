@@ -53,8 +53,8 @@ class MainZoneLayoutTest {
         val main = nav.mainController!!
         assertTrue(main.centerPane.children.isEmpty(), "centre slot must stay empty: ${main.centerPane.children}")
         assertTrue(main.centerPane.isVisible)
-        // home layer: centre slot, status bar and the (hidden) tools popup; no hero / news / article
-        assertEquals(3, main.homePane.children.size, "${main.homePane.children}")
+        // home layer: centre slot and status bar (the game-actions dropdown floats inside the status bar); no hero / news / article
+        assertEquals(2, main.homePane.children.size, "${main.homePane.children}")
         listOf("#hero", "#news", "#article").forEach { assertTrue(main.root.lookup(it) == null, "$it is still in the main window") }
         // centre slot sits between the top bar and the status bar
         val centre = main.centerPane.sceneBounds()
@@ -81,9 +81,9 @@ class MainZoneLayoutTest {
         assertEquals(forum.centerY, main.headerController.forum.sceneBounds().centerY, 0.5,
             "links moved with the open dropdown: ${main.headerController.headerPane.sceneBounds()}")
         main.profileBarController.hideMenu()
-        // the links stay a home-screen thing, the profile stays everywhere
+        // the nav row (links + profile) is the same on every screen
         main.setSettingsVisible(true)
-        assertFalse(main.headerController.headerPane.isVisible)
+        assertTrue(main.headerController.headerPane.isVisible)
         assertTrue(main.profileBarController.loginButton.isVisible)
         main.setSettingsVisible(false)
         assertTrue(main.headerController.headerPane.isVisible)
