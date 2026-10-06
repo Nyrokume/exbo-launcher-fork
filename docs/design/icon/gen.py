@@ -1,5 +1,17 @@
-import cairosvg, io, re
+import cairosvg, io, re, subprocess
+from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+
+# All paths are relative to this script, so it can be run from anywhere inside the repo checkout.
+HERE = Path(__file__).resolve().parent                 # docs/design/icon: icon.svg, icon.ico, preview.png
+ROOT = HERE.parents[2]                                 # repo root
+RES_REL = "src/main/resources/dev/launcherfork/ui/style/image"
+RES = ROOT / RES_REL                                   # runtime copies: icon.png, icon-<size>.png
+FONTS = ROOT / "src/main/resources/dev/launcherfork/ui/style/font"
+SCRATCH = ROOT / "build/icon"                          # git-ignored extras (zoom-small.png)
+RUNTIME_SIZES = (16, 32, 48, 64, 128, 256)             # = Theme.APP_ICON_SIZES; 24 only goes into the .ico
+# The old (pre-zone) 54px icon.png for the preview, taken from git history: the commit before the new icon.
+OLD_REV = "ef84a4fc79a0df5910291f5ccc4d82f575fea9da"
 
 # palette (theme-zone.css / exbo-logo.svg)
 BG_TOP, BG_BOT = "#1c1c1c", "#101010"   # around -card #181818 / -sidebar #0f0f0f
@@ -65,7 +77,7 @@ def svg(border_w=2.0, rx=40, size=256):
 </svg>
 '''
 
-open("icon.svg","w").write(svg())
+(HERE / "icon.svg").write_text(svg())
 
 def render(size):
     bw = 256/size * (2 if size >= 128 else 1)   # exactly 1 (2) device px border
@@ -75,17 +87,18 @@ def render(size):
 sizes = [16,24,32,48,64,128,256]
 imgs = {}
 for s in sizes:
-    imgs[s] = render(s); imgs[s].save(f"icon-{s}.png")
-OLD = "/workspace/exbo-launcher-fork-zone/src/main/resources/dev/launcherfork/ui/style/image/icon.png"
-old = Image.open(OLD).convert("RGBA")
-render(old.width).save("icon.png")
-imgs[256].save("icon.ico", sizes=[(s,s) for s in sizes], append_images=[imgs[s] for s in sizes[:-1]])
+    imgs[s] = render(s)
+    if s in RUNTIME_SIZES: imgs[s].save(RES / f"icon-{s}.png")
+old_png = subprocess.run(["git", "-C", str(ROOT), "show", f"{OLD_REV}:{RES_REL}/icon.png"],
+                         check=True, capture_output=True).stdout
+old = Image.open(io.BytesIO(old_png)).convert("RGBA")
+render(old.width).save(RES / "icon.png")
+imgs[256].save(HERE / "icon.ico", sizes=[(s,s) for s in sizes], append_images=[imgs[s] for s in sizes[:-1]])
 
 W, H = 1180, 440
 pv = Image.new("RGBA", (W,H), "#d9d9d9")
 d = ImageDraw.Draw(pv)
-fdir = "/workspace/exbo-launcher-fork-zone/src/main/resources/dev/launcherfork/ui/style/font/"
-f = ImageFont.truetype(fdir+"Roboto-Medium.ttf", 18); fs = ImageFont.truetype(fdir+"Roboto-Regular.ttf", 14)
+f = ImageFont.truetype(str(FONTS / "Roboto-Medium.ttf"), 18); fs = ImageFont.truetype(str(FONTS / "Roboto-Regular.ttf"), 14)
 d.rectangle([0,H-70,W,H], fill="#c6c6c6")
 pv.alpha_composite(old.resize((256,256), Image.NEAREST), (40,50))
 d.text((40,20),"OLD icon.png (54px, upscaled)",fill="#222",font=f)
@@ -100,10 +113,10 @@ xx=240
 for s in (16,24,32,48):
     pv.alpha_composite(imgs[s], (xx, H-35-s//2)); xx += s+20
 d.text((xx,H-45),"new 16/24/32/48",fill="#444",font=fs)
-pv.save("preview.png")
+pv.save(HERE / "preview.png")
 
 zs = Image.new("RGBA",(16*12+24*8+32*6+48*4+5*20, 212),"#d9d9d9"); x=10
 for s,k in ((16,12),(24,8),(32,6),(48,4)):
     zs.alpha_composite(imgs[s].resize((s*k,s*k),Image.NEAREST),(x,10)); x+=s*k+20
-zs.save("zoom-small.png")
+SCRATCH.mkdir(parents=True, exist_ok=True); zs.save(SCRATCH / "zoom-small.png")
 print("done")
