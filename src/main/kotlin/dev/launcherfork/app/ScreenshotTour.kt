@@ -58,7 +58,10 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         step(0.3) { shot("05_profile_menu") }
         step(0.1) { main().profileBarController.logout.fire() } // "Выйти из аккаунта" -> the logout confirmation
         step(0.4) { shot("05b_logout_confirm") }
-        step(0.1) { main().logoutPaneController.logoutButtonLeft.fire(); main().setSettingsVisible(true) } // cancel
+        step(0.1) { main().logoutPaneController.logoutButtonLeft.fire() } // cancel
+        step(0.1) { main().headerController.showCommunityMenu() } // «СООБЩЕСТВА ▾»: social links dropdown
+        step(0.3) { shot("05c_community_menu") }
+        step(0.1) { main().hideMenus(); main().setSettingsVisible(true) }
         step(0.6) { shot("06_settings_game") }
         step(0.1) { main().settingsController.scroll.vvalue = 0.55 }
         step(0.4) { shot("07_settings_updates") }

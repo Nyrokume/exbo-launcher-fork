@@ -247,7 +247,7 @@ src/main/resources/dev/launcherfork/
 `06_settings_game`, `07_settings_updates`, `08_settings_others`, `09_running`, `10_tools_menu`,
 `11_resized_1366x800`, `12_settings_en`, `13_auth_after_switch_account`, затем снова окно входа (ru):
 `14_age_gate`, `15_age_gate_too_young`, `16_register`, `17_register_error`, `18_registered_login`,
-`19_totp_error`. После `05_profile_menu` есть `05b_logout_confirm` (подтверждение «Выход из аккаунта»). Единственная игра STALZONE установлена,
+`19_totp_error`. После `05_profile_menu` есть `05b_logout_confirm` (подтверждение «Выход из аккаунта»). После него `05c_community_menu` (выпадающее меню «Сообщества» со ссылками на соцсети). Единственная игра STALZONE установлена,
 поэтому диалога установки и прогресса скачивания в туре нет.
 
 - `docs/screenshots/zone/` — тема `zone` (основная цель редизайна);
@@ -299,7 +299,8 @@ PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/imag
 файлы Circe остались в истории git (коммит `14149a8`). Строки интерфейса взяты из оригинала.
 Это допустимо только для внутренней работы над редизайном. **Перед любым публичным распространением
 (релиз, публичный репозиторий, сборки) все эти ассеты и шрифты нужно заменить** на собственные или свободно
-лицензированные. Картинки в `mock/` сгенерированы скриптом и свободны, кроме `mock/servers/game-stalzone.png` — это фавикон
+лицензированные. Глифы соцсетей в меню «Сообщества» (`ui/components/BrandGlyphs.kt`) — Simple Icons, CC0 1.0
+(источник в docs/design/STYLE-ZONE.md). Картинки в `mock/` сгенерированы скриптом и свободны, кроме `mock/servers/game-stalzone.png` — это фавикон
 stalzone.com (ассет проекта, источник в docs/design/STYLE-ZONE.md).
 
 ### Ассеты EXBO уже есть в истории git

@@ -7,6 +7,7 @@ import dev.launcherfork.data.mock.MockServerRepository
 import dev.launcherfork.data.mock.MockSystemInfo
 import dev.launcherfork.data.mock.MockUpdateService
 import dev.launcherfork.domain.LauncherSettings
+import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.Services
 import dev.launcherfork.ui.state.ClientStateStore
 
@@ -27,6 +28,8 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
             speed: Double = 1.0,
             authDelayMs: Long = 500,
             devMode: Boolean = false,
+            /** LauncherApp passes the real browser opener (HostServices); tests pass a recording fake. */
+            links: LinkOpener = LinkOpener { url -> System.err.println("[launcher-fork] open link (no browser here): $url") },
         ): AppContext = AppContext(
             Services(
                 auth = MockAuthService(authDelayMs),
@@ -35,6 +38,7 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
                 launcher = MockGameLauncher(),
                 settings = InMemorySettingsStore(LauncherSettings(language = language)),
                 system = MockSystemInfo(),
+                links = links,
             ),
             devMode,
         )

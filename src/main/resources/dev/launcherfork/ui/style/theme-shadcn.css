@@ -78,3 +78,8 @@
     -fx-background-radius: 4;
     -fx-border-radius: 4;
 }
+/* small squares (communities menu icon tiles): shadcn radius-sm */
+.community-icon-tile {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}

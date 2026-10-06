@@ -71,6 +71,14 @@ interface SettingsStore {
     fun save(settings: LauncherSettings)
 }
 
+/**
+ * Opens an external web page (community links) in the user's default browser.
+ * Hands the URL to the OS (browser launch); may block briefly on some platforms.
+ */
+fun interface LinkOpener {
+    fun open(url: String)
+}
+
 /** Everything the UI is allowed to depend on. Built once in app/AppContext. */
 data class Services(
     val auth: AuthService,
@@ -79,4 +87,5 @@ data class Services(
     val launcher: GameLauncher,
     val settings: SettingsStore,
     val system: SystemInfo,
+    val links: LinkOpener,
 )
