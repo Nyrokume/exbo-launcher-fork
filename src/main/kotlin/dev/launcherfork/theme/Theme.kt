@@ -86,9 +86,13 @@ object Theme {
 
     fun stylesheet(name: String): String = resource("style/$name").toExternalForm()
 
-    /** Oswald (headings) + Roboto (body) for the "zone" theme, SIL OFL 1.1. Registered once, on first use. */
+    /**
+     * "zone" theme fonts, as on stalzone.com (site CSS: h1-h5 and the ВОЙТИ / ИГРАТЬ buttons use --beb "Bebas Neue",
+     * body and caps menu items use --font-body "Roboto"): Bebas Neue Regular (Dharma Type, Cyrillic, SIL OFL 1.1)
+     * for headings and big buttons, Roboto (SIL OFL 1.1) for text. Registered once, on first use.
+     */
     private val ZONE_FONT_FILES = listOf(
-        "Oswald-Regular.ttf", "Oswald-Medium.ttf", "Oswald-SemiBold.ttf",
+        "BebasNeue-Regular.ttf",
         "Roboto-Light.ttf", "Roboto-Regular.ttf", "Roboto-Medium.ttf",
     )
     val zoneFonts: List<String> by lazy {

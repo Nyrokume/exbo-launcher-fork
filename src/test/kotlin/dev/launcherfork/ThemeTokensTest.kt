@@ -30,6 +30,6 @@ class ThemeTokensTest {
     fun zoneFontsRegister() {
         FxTestSupport.start()
         val families = FxTestSupport.onFx { Theme.zoneFonts }
-        assertTrue(families.containsAll(listOf("Oswald", "Oswald SemiBold", "Roboto", "Roboto Medium")), "$families")
+        assertTrue(families.containsAll(listOf("Bebas Neue Regular", "Roboto", "Roboto Medium")), "$families")
     }
 }

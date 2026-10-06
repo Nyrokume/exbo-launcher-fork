@@ -11,12 +11,12 @@ import java.io.File;
 import java.util.Random;
 
 public class GenerateZoneArt {
-    static Font oswald;
+    static Font display; // Bebas Neue Regular, the zone theme heading font
 
     public static void main(String[] args) throws Exception {
         System.setProperty("java.awt.headless", "true");
         File res = new File(args.length > 0 ? args[0] : "src/main/resources/dev/launcherfork");
-        oswald = Font.createFont(Font.TRUETYPE_FONT, new File(res, "ui/style/font/Oswald-Medium.ttf"));
+        display = Font.createFont(Font.TRUETYPE_FONT, new File(res, "ui/style/font/BebasNeue-Regular.ttf"));
         File servers = new File(res, "mock/servers");
         File news = new File(res, "mock/news");
         servers.mkdirs();
@@ -64,7 +64,7 @@ public class GenerateZoneArt {
         BufferedImage img = scene(w, h, seed, r.nextBoolean(), false);
         Graphics2D g = img.createGraphics();
         hints(g);
-        g.setFont(oswald.deriveFont(Font.PLAIN, h * 0.20f));
+        g.setFont(display.deriveFont(Font.PLAIN, h * 0.23f));
         FontMetrics fm = g.getFontMetrics();
         int tx = (w - fm.stringWidth(title)) / 2, ty = (int) (h * 0.58);
         g.setColor(new Color(0, 0, 0, 120));
@@ -204,9 +204,10 @@ public class GenerateZoneArt {
         g.setColor(Color.WHITE);
         g.setStroke(new BasicStroke(s * 0.06f));
         g.draw(new Rectangle2D.Double(s * 0.1, s * 0.1, s * 0.8, s * 0.8));
-        g.setFont(oswald.deriveFont(Font.PLAIN, s * 0.6f));
-        FontMetrics fm = g.getFontMetrics();
-        g.drawString(letter, (s - fm.stringWidth(letter)) / 2f, s * 0.5f + fm.getAscent() * 0.36f);
+        g.setFont(display.deriveFont(Font.PLAIN, s * 0.69f));
+        // centre the glyph's visual bounds in the frame (font-independent, unlike ascent-based offsets)
+        Rectangle2D b = g.getFont().createGlyphVector(g.getFontRenderContext(), letter).getVisualBounds();
+        g.drawString(letter, (float) ((s - b.getWidth()) / 2 - b.getX()), (float) ((s - b.getHeight()) / 2 - b.getY()));
         g.dispose();
         return img;
     }

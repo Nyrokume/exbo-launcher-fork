@@ -8,7 +8,7 @@
 
 <!--
   Settings page (static FXML, bound to SettingsStore by SettingsController). Sections ИГРА / ОБНОВЛЕНИЕ / ПРОЧЕЕ:
-  Oswald heading + fading rule, rows inside a bordered card. Scrolls with the wheel (no visible bar, as in the reference).
+  Display-font (zone: Bebas Neue) heading + fading rule, rows inside a bordered card. Scrolls with the wheel (no visible bar, as in the reference).
 -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
