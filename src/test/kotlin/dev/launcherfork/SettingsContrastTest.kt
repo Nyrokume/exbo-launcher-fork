@@ -109,6 +109,56 @@ class SettingsContrastTest {
         assertTrue(ratio(reserve, card) < ratio(free, card), "$theme: reserve not darker than the available segments")
     }
 
+    /**
+     * Game banner on the main screen (main/game_banner.fxml): text selector of layout.css -> (token it must paint with,
+     * minimum ratio on the content background it sits on, -background; the centre slot and the banner are transparent).
+     * Normal text >= 4.5:1, the large display title >= 3:1. The online dot is a non-text state mark (>= 3:1).
+     */
+    private val bannerText = listOf(
+        Triple(".game-banner-title", "-foreground", 3.0),
+        Triple(".game-banner-lead", "-foreground", 4.5),
+        Triple(".game-banner-online-text", "-muted-foreground", 4.5),
+        Triple(".game-banner-subheading", "-foreground", 4.5),
+        Triple(".game-banner-body", "-secondary-foreground", 4.5),
+        Triple(".game-banner-closing", "-foreground", 4.5),
+    )
+
+    /**
+     * Banner text in EVERY theme of [themes] (exbo, shadcn, zone here): a theme added to that map (e.g. zone-light when
+     * the white scheme is merged) is checked by this test without further changes. exbo / shadcn draw the game art
+     * behind the content; its left / bottom fade is -background, so -background is the reference there too.
+     */
+    @TestFactory
+    fun gameBannerTextIsReadable(): List<DynamicTest> {
+        val css = Theme.resource("style/layout.css").readText().replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
+        fun prop(selector: String, p: String): String {
+            val rule = Regex("""(?m)^\Q$selector\E\s*\{([^}]*)}""").find(css)?.groupValues?.get(1) ?: error("no rule '$selector' in layout.css")
+            return Regex("""(?:^|;|\s)\Q$p\E\s*:\s*([^;]+);""").find(rule)?.groupValues?.get(1)?.trim() ?: error("$selector has no $p")
+        }
+        val selectors = DynamicTest.dynamicTest("layout.css: banner selectors use the measured tokens") {
+            bannerText.forEach { (selector, token, _) -> assertEquals(token, prop(selector, "-fx-text-fill"), "$selector text fill") }
+            assertEquals("-status-online", prop(".game-banner-online-dot", "-fx-background-color"))
+            assertEquals("-status-offline", prop(".game-banner-online.offline .game-banner-online-dot", "-fx-background-color"))
+            // the banner itself is transparent: the text really sits on -background
+            assertTrue(prop(".game-banner-scroll, .game-banner-scroll > .viewport, .game-banner-scroll:focused", "-fx-background-color") == "transparent")
+        }
+        return listOf(selectors) + themes.keys.flatMap { theme ->
+            val t = tokens(theme)
+            val bg = color(t, "-background")
+            bannerText.map { (selector, token, minRatio) ->
+                DynamicTest.dynamicTest("$theme: banner $selector") {
+                    val r = ratio(color(t, token, bg), bg)
+                    println("banner $theme $selector $token on -background = ${"%.2f".format(r)}:1")
+                    assertTrue(r >= minRatio, "$theme: banner $selector $token on -background = ${"%.2f".format(r)}:1 < $minRatio:1")
+                }
+            } + DynamicTest.dynamicTest("$theme: banner online dot (non-text)") {
+                val r = ratio(color(t, "-status-online", bg), bg)
+                println("banner $theme online dot -status-online on -background = ${"%.2f".format(r)}:1")
+                assertTrue(r >= 3.0, "$theme: online dot ${"%.2f".format(r)}:1 < 3:1")
+            }
+        }
+    }
+
     /** layout.css paints the settings page with exactly the tokens measured above. */
     @Test
     fun settingsSelectorsUseTheMeasuredTokens() {

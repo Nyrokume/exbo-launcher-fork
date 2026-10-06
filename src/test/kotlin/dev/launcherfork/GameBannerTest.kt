@@ -24,19 +24,14 @@ import javafx.scene.control.Label
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestFactory
 import java.util.Properties
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.pow
 
 /**
  * The STALZONE banner on the main screen: text from the game model (Server.description -> i18n keys, ru + en), the
  * online line with the games list's value and the right plural form, the layout (left column <= 560 px inside the
  * centre slot, never over the nav row, the status row or ИГРАТЬ; long text scrolls inside the slot) at the minimum and
- * the default window size in every theme, and readable theme colors.
+ * the default window size in every theme. Colors: SettingsContrastTest.gameBannerTextIsReadable.
  */
 class GameBannerTest {
     private val nbsp = '\u00A0'
@@ -189,64 +184,6 @@ class GameBannerTest {
             } finally {
                 FxTestSupport.onFx { nav.close() }
                 app.shutdown()
-            }
-        }
-    }
-
-    // ---- colors: theme tokens of the banner text on the content background (WCAG AA) ----
-    private val sheets = mapOf("exbo" to listOf("theme.css"), "shadcn" to listOf("theme.css", "theme-shadcn.css"), "zone" to listOf("theme.css", "theme-zone.css"))
-
-    private data class Rgba(val r: Double, val g: Double, val b: Double, val a: Double = 1.0) {
-        fun over(bg: Rgba) = Rgba(r * a + bg.r * (1 - a), g * a + bg.g * (1 - a), b * a + bg.b * (1 - a))
-        fun lum(): Double {
-            fun ch(c: Double) = if (c <= 0.03928) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
-            return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
-        }
-    }
-
-    private fun parse(v: String): Rgba {
-        Regex("""#([0-9a-fA-F]{6})""").matchEntire(v.trim())?.let { m ->
-            val h = m.groupValues[1]
-            return Rgba(h.substring(0, 2).toInt(16) / 255.0, h.substring(2, 4).toInt(16) / 255.0, h.substring(4, 6).toInt(16) / 255.0)
-        }
-        Regex("""rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)""").matchEntire(v.trim())?.let { m ->
-            val (r, g, b) = m.groupValues.drop(1).take(3).map { it.toInt() / 255.0 }
-            return Rgba(r, g, b, m.groupValues[4].ifEmpty { "1" }.toDouble())
-        }
-        error("unsupported color '$v'")
-    }
-
-    private fun tokens(theme: String): Map<String, String> = sheets.getValue(theme).fold(mutableMapOf()) { acc, file ->
-        val css = Theme.resource("style/$file").readText().replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL), "")
-        val root = Regex("""\.root\s*\{(.*?)}""", RegexOption.DOT_MATCHES_ALL).find(css)!!.groupValues[1]
-        Regex("""^\s*(-[a-z][a-z0-9-]*)\s*:\s*([^;]+);""", RegexOption.MULTILINE).findAll(root)
-            .filterNot { it.groupValues[1].startsWith("-fx-") }.forEach { acc[it.groupValues[1]] = it.groupValues[2].trim() }
-        acc
-    }
-
-    /** layout.css selector -> (text token, minimum ratio on -background): normal text 4.5:1, the big title 3:1. */
-    private val bannerText = listOf(
-        ".game-banner-title" to 3.0, ".game-banner-lead" to 4.5, ".game-banner-online-text" to 4.5,
-        ".game-banner-subheading" to 4.5, ".game-banner-body" to 4.5, ".game-banner-closing" to 4.5,
-    )
-
-    @TestFactory
-    fun bannerTextIsReadableInEveryTheme(): List<DynamicTest> {
-        val css = Theme.resource("style/layout.css").readText()
-        fun fill(selector: String) = Regex("""(?m)^\Q$selector\E\s*\{[^}]*-fx-text-fill:\s*([^;]+);""").find(css)?.groupValues?.get(1)?.trim()
-            ?: error("no text fill for $selector")
-        return sheets.keys.flatMap { theme ->
-            val t = tokens(theme)
-            val bg = parse(t.getValue("-background"))
-            bannerText.map { (selector, minRatio) ->
-                DynamicTest.dynamicTest("$theme: $selector") {
-                    val token = fill(selector)
-                    assertTrue(token.startsWith("-") && token in t, "$selector must use a theme token, not '$token'")
-                    val fg = parse(t.getValue(token)).let { if (it.a < 1) it.over(bg) else it }
-                    val r = (max(fg.lum(), bg.lum()) + 0.05) / (min(fg.lum(), bg.lum()) + 0.05)
-                    println("banner $theme $selector $token on -background = ${"%.2f".format(r)}:1")
-                    assertTrue(r >= minRatio, "$theme: $selector $token = ${"%.2f".format(r)}:1 < $minRatio:1")
-                }
             }
         }
     }
