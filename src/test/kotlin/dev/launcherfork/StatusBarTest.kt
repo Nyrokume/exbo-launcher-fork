@@ -9,19 +9,21 @@ import dev.launcherfork.UiTestKit.resize
 import dev.launcherfork.UiTestKit.sceneBounds
 import dev.launcherfork.app.AppContext
 import dev.launcherfork.app.StageNavigator
+import dev.launcherfork.domain.ClientOperation
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.screens.main.MainController
 import dev.launcherfork.ui.state.ClientState
 import javafx.geometry.Bounds
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
  * Bottom bar of the main screen: the status pill (status text + progress fill) is one control on the level of the
  * «⋯» and ИГРАТЬ buttons: same height, same vertical centre (within 1 px), text and fill inside the pill; the
- * percentage shows while downloading / paused. Every theme, both window sizes, ready / downloading / paused / running.
+ * percentage shows while downloading / paused. Every theme, both window sizes, ready / downloading / paused / verifying / reinstalling / deleting / running.
  */
 class StatusBarTest {
     private fun withMain(check: (StageNavigator, MainController) -> Unit) {
@@ -43,6 +45,9 @@ class StatusBarTest {
         "ready" to ClientState.Ready,
         "downloading" to ClientState.Downloading(Progress(0.42, (4.2 * gb).toLong(), 10 * gb, 24L * 1024 * 1024)),
         "paused" to ClientState.Paused(0.42, 10 * gb),
+        "verifying" to ClientState.Busy(ClientOperation.VERIFY, 0.42),
+        "reinstalling" to ClientState.Busy(ClientOperation.REINSTALL, 0.42),
+        "deleting" to ClientState.Busy(ClientOperation.DELETE, 0.42),
         "running" to ClientState.Running,
     )
 
@@ -75,7 +80,7 @@ class StatusBarTest {
                         assertTrue(s.downloadingStatus.text.isNotBlank(), "$where: no status text")
                         val percent = s.progressPercent
                         when (state) {
-                            is ClientState.Downloading, is ClientState.Paused -> {
+                            is ClientState.Downloading, is ClientState.Paused, is ClientState.Busy -> {
                                 assertEquals("42%", percent.text, "$where: percentage")
                                 val pb = percent.sceneBounds()
                                 assertTrue(pb.inside(pill) && pb.minX > text.maxX, "$where: percentage not inside, right of the text")
@@ -83,6 +88,8 @@ class StatusBarTest {
                             }
                             else -> assertEquals("", percent.text, "$where: no percentage when idle")
                         }
+                        // the number shows once: in the percentage slot, not repeated in the status text
+                        assertFalse(s.downloadingStatus.text.contains("%"), "$where: percentage repeated in '${s.downloadingStatus.text}'")
                         if (theme == "zone" && w == Theme.WINDOW_WIDTH) preview(nav.mainStage.scene, "main-$name-zone")
                     }
                 }

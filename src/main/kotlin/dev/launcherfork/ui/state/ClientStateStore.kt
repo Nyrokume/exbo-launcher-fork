@@ -149,6 +149,8 @@ class ClientStateStore(
             when (val s = p.get()) {
                 is ClientState.Downloading -> p.set(ClientState.Paused(s.progress.fraction, s.progress.totalBytes))
                 ClientState.Starting, ClientState.Running -> p.set(ClientState.Ready)
+                // TODO(real update service): an interrupted verify / reinstall / delete is shown as Ready here (the mock
+                //  has nothing half-done); the real service must report the client's actual state (Agent.Master, PR #8)
                 is ClientState.Busy -> p.set(ClientState.Ready)
                 else -> Unit
             }

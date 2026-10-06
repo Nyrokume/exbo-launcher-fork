@@ -2,6 +2,9 @@ package dev.launcherfork.app
 
 import dev.launcherfork.data.mock.MockSecondFactor
 import dev.launcherfork.domain.FolderOpener
+import dev.launcherfork.domain.FolderTarget
+import dev.launcherfork.domain.GameFolders
+import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.LinkPolicy
 import dev.launcherfork.theme.Theme
@@ -40,14 +43,18 @@ class LauncherApp : Application() {
         }
         // game-actions menu «Открыть папку игры»: the game folder (GameFolders) in the OS file manager, NOT through
         // LinkOpener (that one only takes allowlisted https URLs). The folder may not exist in the fork: open the
-        // nearest existing parent instead.
+        // nearest existing parent, but never above settings.gameRoot; without the root, open nothing.
         val folders = FolderOpener { dir ->
-            val target = generateSequence(dir.toAbsolutePath().normalize()) { it.parent }.firstOrNull { Files.isDirectory(it) }
-            if (target == null) {
-                System.err.println("[launcher-fork] WARNING: no existing folder for $dir")
-            } else {
-                System.err.println("[launcher-fork] open folder: $target")
-                browser.showDocument(target.toUri().toString())
+            val gameRoot = this.app?.services?.settings?.load()?.gameRoot ?: LauncherSettings().gameRoot
+            when (val target = GameFolders.folderToOpen(dir, gameRoot)) {
+                is FolderTarget.Open -> {
+                    System.err.println("[launcher-fork] open folder: ${target.dir}")
+                    browser.showDocument(target.dir.toUri().toString())
+                }
+                is FolderTarget.Missing ->
+                    System.err.println("[launcher-fork] WARNING: game root ${target.root} does not exist, nothing to open for $dir")
+                is FolderTarget.OutsideRoot ->
+                    System.err.println("[launcher-fork] WARNING: refused to open ${target.dir}: outside the game root ${target.root}")
             }
         }
         val shotsDir = System.getProperty("launcher.screenshots")

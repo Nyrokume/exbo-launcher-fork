@@ -1,6 +1,17 @@
 package dev.launcherfork.domain
 
+import java.nio.file.Files
 import java.nio.file.Path
+
+/** What «Открыть папку игры» may hand to the file manager ([GameFolders.folderToOpen]). */
+sealed interface FolderTarget {
+    /** Open this existing folder (the requested one or its nearest existing parent, never above the game root). */
+    data class Open(val dir: Path) : FolderTarget
+    /** Neither the folder nor anything up to the game root exists: open nothing. */
+    data class Missing(val root: Path) : FolderTarget
+    /** The requested path is not under the game root (e.g. through ".."): refused. */
+    data class OutsideRoot(val dir: Path, val root: Path) : FolderTarget
+}
 
 /**
  * Where a game client lives: `<LauncherSettings.gameRoot>/<server id>`. The ONE way the UI gets a folder to hand to
@@ -19,4 +30,17 @@ object GameFolders {
     }
 
     fun dirOf(settings: LauncherSettings, server: Server): Path = dirOf(settings.gameRoot, server)
+
+    /**
+     * The folder to open for [dir]: [dir] itself if it exists, else its nearest existing parent, but the walk never
+     * goes above [gameRoot] (both compared absolute + normalized, `Path.startsWith`, so `EXBO-evil` is not inside
+     * `EXBO`). A [dir] outside the root is refused; without an existing root nothing is opened.
+     */
+    fun folderToOpen(dir: Path, gameRoot: Path, isDirectory: (Path) -> Boolean = { Files.isDirectory(it) }): FolderTarget {
+        val root = gameRoot.toAbsolutePath().normalize()
+        val target = dir.toAbsolutePath().normalize()
+        if (!target.startsWith(root)) return FolderTarget.OutsideRoot(target, root)
+        val existing = generateSequence(target) { p -> p.parent?.takeIf { it.startsWith(root) } }.firstOrNull(isDirectory)
+        return if (existing != null) FolderTarget.Open(existing) else FolderTarget.Missing(root)
+    }
 }
