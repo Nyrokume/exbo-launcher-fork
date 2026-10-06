@@ -1,30 +1,40 @@
 package dev.launcherfork
 
-import dev.launcherfork.app.AppContext
-import dev.launcherfork.data.mock.InMemorySettingsStore
-import dev.launcherfork.data.mock.MockSystemInfo
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.RamOptions
-import dev.launcherfork.ui.Fxml
-import dev.launcherfork.ui.screens.settings.SettingsController
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/** RAM choices of the settings page: option ladder, capping by the computer's memory, recommendation, storage. */
+/** RAM of the settings bar: 1 GB steps, bounds (minimum .. total minus reserve, never above the total), recommendation. */
 class RamOptionsTest {
     private val gb = 1024L
 
     @Test
-    fun optionsAreCappedByTotalMemoryMinusReserve() {
-        assertEquals(listOf(2, 3, 4, 6, 8, 12), RamOptions.options(16 * gb))
-        assertEquals(listOf(2, 3, 4, 6), RamOptions.options(8 * gb))
-        assertEquals(listOf(2, 3, 4, 6, 8, 12, 16), RamOptions.options(32 * gb))
-        assertEquals(listOf(2), RamOptions.options(4 * gb))
-        assertEquals(listOf(2), RamOptions.options(2 * gb), "the smallest option is always offered")
+    fun boundsAreMinimumAndTotalMinusReserve() {
+        assertEquals(2, RamOptions.MIN_GB)
+        assertEquals(1, RamOptions.STEP_GB)
+        assertEquals(14, RamOptions.maxGb(16 * gb))
+        assertEquals(6, RamOptions.maxGb(8 * gb))
+        assertEquals(30, RamOptions.maxGb(32 * gb))
+        assertEquals(2, RamOptions.maxGb(4 * gb))
+        assertEquals(2, RamOptions.maxGb(2 * gb), "the minimum is always allowed")
         // a "16 GB" machine reports a bit less than 16384 MB
         assertEquals(16, RamOptions.totalGb(16_250))
-        assertEquals(listOf(2, 3, 4, 6, 8, 12), RamOptions.options(16_250))
+        assertEquals(14, RamOptions.maxGb(16_250))
+        for (total in 2..128) assertTrue(RamOptions.maxGb(total * gb) <= total, "max above the total for $total GB")
+    }
+
+    @Test
+    fun valuesAreClampedToBothBounds() {
+        val total = 16 * gb
+        assertEquals(2, RamOptions.clamp(0, total))
+        assertEquals(2, RamOptions.clamp(-5, total))
+        assertEquals(2, RamOptions.clamp(1, total))
+        assertEquals(7, RamOptions.clamp(7, total))
+        assertEquals(14, RamOptions.clamp(15, total))
+        assertEquals(14, RamOptions.clamp(16, total))
+        assertEquals(14, RamOptions.clamp(999, total))
     }
 
     @Test
@@ -38,13 +48,14 @@ class RamOptionsTest {
     }
 
     @Test
-    fun storedValuesSnapToOptions() {
+    fun storedValuesRoundToWholeGbAndClamp() {
         val total = 16 * gb
         assertEquals(6, RamOptions.selectedGb(LauncherSettings(), total), "nothing stored -> recommended")
         assertEquals(8, RamOptions.selectedGb(LauncherSettings(ramMb = 8192), total))
-        assertEquals(12, RamOptions.selectedGb(LauncherSettings(ramMb = 16384), total), "above the cap -> largest option")
+        assertEquals(7, RamOptions.selectedGb(LauncherSettings(ramMb = 7 * 1024), total), "any whole GB, not a ladder")
+        assertEquals(14, RamOptions.selectedGb(LauncherSettings(ramMb = 16384), total), "above the max -> max")
+        assertEquals(2, RamOptions.selectedGb(LauncherSettings(ramMb = 512), total), "below the min -> min")
         assertEquals(4, RamOptions.selectedGb(LauncherSettings(ramMb = 4500), total))
-        assertEquals(2, RamOptions.nearest(2560, total), "tie between 2 and 3 GB goes to the smaller")
         // legacy segmented bar: 512 + 3584 * f MB
         assertEquals(2304, RamOptions.legacyFractionToMb(0.5))
         assertEquals(4096, RamOptions.legacyFractionToMb(1.0))
@@ -54,42 +65,15 @@ class RamOptionsTest {
     }
 
     @Test
+    fun fillFractionIsAllocationOverTotal() {
+        assertEquals(6.0 / 16, RamOptions.fraction(6, 16 * gb), 1e-9)
+        assertEquals(1.0, RamOptions.fraction(40, 16 * gb), 1e-9)
+        assertEquals(0.25, RamOptions.fraction(2, 8 * gb), 1e-9)
+    }
+
+    @Test
     fun formatsWithLocalizedUnit() {
         assertEquals("4 ГБ", RamOptions.format(4, "ГБ"))
         assertEquals("12 GB", RamOptions.format(12, "GB"))
-    }
-
-    private fun settingsWith(settings: LauncherSettings, totalMb: Long = 16 * gb, lang: String = "ru"): Pair<SettingsController, InMemorySettingsStore> {
-        val store = InMemorySettingsStore(settings)
-        val base = AppContext.mock(speed = 50.0, authDelayMs = 0)
-        val app = AppContext(base.services.copy(settings = store, system = MockSystemInfo(totalMb)))
-        val c = FxTestSupport.onFx { Fxml.load<SettingsController>(FxTestSupport.context(lang, app), "settings.fxml").controller }
-        return c to store
-    }
-
-    @Test
-    fun settingsPageShowsGbChipsAndSavesMb() {
-        val (c, store) = settingsWith(LauncherSettings(ramFraction = 0.5))
-        FxTestSupport.onFx {
-            val sel = c.ramSelector
-            assertEquals(listOf("2 ГБ", "3 ГБ", "4 ГБ", "6 ГБ", "8 ГБ", "12 ГБ"), sel.buttons.map { it.text })
-            assertEquals(2, sel.selected, "legacy 0.5 = 2304 MB -> 2 GB")
-            assertEquals("Выделено: 2 ГБ из 16 ГБ", c.ramSummary.text)
-            assertEquals(6, sel.recommended)
-            sel.select(4)
-            assertEquals("Выделено: 4 ГБ из 16 ГБ", c.ramSummary.text)
-            assertEquals(4096, store.load().ramMb)
-            assertNull(store.load().ramFraction, "the legacy value is dropped after a change")
-        }
-    }
-
-    @Test
-    fun smallMachineGetsFewerChipsInEnglish() {
-        val (c, _) = settingsWith(LauncherSettings(), totalMb = 8 * gb, lang = "en")
-        FxTestSupport.onFx {
-            assertEquals(listOf("2 GB", "3 GB", "4 GB", "6 GB"), c.ramSelector.buttons.map { it.text })
-            assertEquals(4, c.ramSelector.selected, "nothing stored -> recommended")
-            assertEquals("Allocated: 4 GB of 8 GB", c.ramSummary.text)
-        }
     }
 }

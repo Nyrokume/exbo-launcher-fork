@@ -119,6 +119,24 @@
     -fx-background-color: -divider;
 }
 
+/* communities dropdown (header «СООБЩЕСТВА ▾»): the profile card (.profile-menu) and rows (.profile-menu-item),
+   narrower, rows = icon tile + brand name + ↗. Tile like the stalzone.com footer: dark square, 1px border, cream glyph. */
+.profile-menu.community-menu { -fx-min-width: 164; -fx-pref-width: 164; -fx-max-width: 164; }
+.profile-menu-item.community-menu-item { -fx-padding: 5 10; }
+.community-item-row { -fx-spacing: 10; }
+.community-item-name { -fx-text-fill: -foreground; -fx-font-size: 13; }
+.community-icon-tile {
+    -fx-background-color: -tile;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-min-width: 28; -fx-pref-width: 28; -fx-max-width: 28;
+    -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28;
+}
+.community-glyph { -fx-fill: -foreground; }
+.community-menu-item:hover .community-icon-tile, .community-menu-item:focused .community-icon-tile { -fx-border-color: -border-hover; }
+.community-menu-item:hover .external-arrow, .community-menu-item:focused .external-arrow { -fx-background-color: -foreground; }
+
 /* ===================== shared bits ===================== */
 .tile {
     -fx-background-color: -tile;
@@ -211,7 +229,14 @@
 .settings-mode .server-entry.selected .entry-indicator { -fx-background-color: transparent; }
 .entry-name { -fx-font-size: 15; -fx-fill: -text-dim-active; }
 .server-entry.selected .entry-name, .server-entry:hover .entry-name { -fx-fill: -foreground; }
-.entry-status { -fx-font-size: 10; -fx-fill: -text-dim; }
+/* online line under the name: 6 px status dot + «1 284 онлайн»; grey dot + «не в сети» when unknown / offline */
+.entry-online-dot {
+    -fx-background-color: -status-online;
+    -fx-background-radius: 3;
+    -fx-translate-y: -1; /* centred on the digits (cap height) rather than on the lowercase x-height of Roboto 11 */
+}
+.entry-online.offline .entry-online-dot { -fx-background-color: -status-offline; }
+.entry-online-text { -fx-font-size: 11; -fx-fill: -muted-foreground; }
 .entry-percent { -fx-font-size: 11; -fx-fill: -muted-foreground; }
 .entry-progress { -fx-pref-height: 3; -fx-max-height: 3; -fx-min-height: 3; -fx-padding: 0; }
 .entry-progress > .track { -fx-background-color: -track; -fx-background-insets: 0; }
@@ -259,24 +284,73 @@
 .header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
 .header-link:hover { -fx-text-fill: -foreground; }
 .header-link:hover .external-arrow { -fx-background-color: -foreground; }
+/* «СООБЩЕСТВА ▾»: a focusable Button that looks exactly like the Label links next to it, caret instead of ↗ */
+.header-menu-toggle {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+.header-menu-toggle:hover, .header-menu-toggle.open, .header-menu-toggle:focus-visible { -fx-text-fill: -foreground; }
+.header-menu-toggle:focus-visible { -fx-underline: true; }
+.header-caret {
+    -fx-shape: "M0,0 H9 L4.5,5 Z";
+    -fx-background-color: -icon;
+    -fx-min-width: 8; -fx-pref-width: 8; -fx-max-width: 8;
+    -fx-min-height: 5; -fx-pref-height: 5; -fx-max-height: 5;
+}
+.header-menu-toggle:hover .header-caret, .header-menu-toggle:focus-visible .header-caret { -fx-background-color: -foreground; }
+.header-menu-toggle.open .header-caret { -fx-rotate: 180; -fx-background-color: -foreground; }
 
 /* bottom bar */
-.play-status { -fx-font-size: 11; -fx-fill: -text-status; }
-.play-progress { -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8; -fx-padding: 0; -fx-indeterminate-bar-length: 0; }
-.play-progress > .track { -fx-background-color: -track; -fx-background-insets: 0; }
-.play-progress > .bar { -fx-background-color: -primary; -fx-background-insets: 0; -fx-padding: 0; }
-.tools-button {
+/* status pill: same height as ИГРАТЬ, input-coloured with a thin border; the progress bar fills it from the left
+   (translucent accent, a solid accent line along the bottom), status text left, percentage right */
+.status-pill {
+    -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 1;
+}
+.status-pill-content { -fx-padding: 0 14 0 14; }
+.play-status { -fx-font-size: 13; -fx-fill: -text-status; }
+.status-pill.in-progress .play-status, .status-pill.paused .play-status, .status-pill.running .play-status { -fx-fill: -foreground; }
+.play-percent { -fx-font-size: 13; -fx-fill: -foreground; }
+.play-progress { -fx-min-height: 0; -fx-pref-height: 42; -fx-max-height: 42; -fx-padding: 0; -fx-indeterminate-bar-length: 0; }
+.play-progress > .track { -fx-background-color: transparent; -fx-background-insets: 0; -fx-border-color: transparent; }
+/* the fill: a tint over the pill with an accent edge at the bottom (muted while paused) */
+.play-progress > .bar {
+    -fx-background-color: -primary-tint;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent transparent -primary transparent;
+    -fx-border-width: 0 0 2 0;
+    -fx-padding: 0;
+}
+.status-pill.paused .play-progress > .bar { -fx-background-color: -tile-hover; -fx-border-color: transparent transparent -muted-foreground transparent; }
+.play-progress > .bar {
+    -fx-background-color: -primary, -primary-tint;
+    -fx-background-insets: 40 0 0 0, 0 0 2 0;
+    -fx-padding: 0;
+}
+/* game-actions button next to ИГРАТЬ: quiet ghost square as tall as the CTA (thin border, no fill), small muted
+   ellipsis (three 2.5 px dots, 3 px gaps) that brightens to -foreground on hover / focus / while the menu is open. */
+.game-actions-button {
     -fx-min-width: 44; -fx-pref-width: 44; -fx-max-width: 44;
     -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
     -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
 }
-.tools-icon {
-    -fx-shape: "M0,0 H4.5 V4.5 H0 Z M1,2.4 L2.4,1 L13,11.6 L11.6,13 Z M11.6,1 L13,2.4 L2.4,13 L1,11.6 Z M10,10 H14 V14 H10 Z";
-    -fx-background-color: -icon;
-    -fx-min-width: 15; -fx-pref-width: 15; -fx-max-width: 15;
-    -fx-min-height: 15; -fx-pref-height: 15; -fx-max-height: 15;
-}
-.tools-button:hover .tools-icon { -fx-background-color: -foreground; }
+.game-actions-glyph { -fx-fill: -muted-foreground; }
+.game-actions-button:hover, .game-actions-button.open { -fx-background-color: -tile-hover; -fx-border-color: -border-hover; }
+.game-actions-button:focused { -fx-border-color: -border-hover; }
+.game-actions-button:pressed { -fx-background-color: -fill-strong; }
+.game-actions-button:disabled { -fx-opacity: 0.45; }
+.game-actions-button:hover .game-actions-glyph, .game-actions-button:focused .game-actions-glyph,
+.game-actions-button.open .game-actions-glyph { -fx-fill: -foreground; }
 .play-button {
     -fx-min-width: 164; -fx-pref-width: 164; -fx-max-width: 164;
     -fx-min-height: 44; -fx-pref-height: 44; -fx-max-height: 44;
@@ -289,113 +363,115 @@
     -fx-text-fill: -foreground;
 }
 .play-button.state-pause:hover, .play-button.state-kill:hover { -fx-background-color: -tile-hover; }
-
-/* tools popup */
-.client-settings-popup {
-    -fx-background-color: -popover;
+/* verify / reinstall / delete running: disabled CTA naming the operation */
+.play-button.state-busy, .play-button.state-busy:disabled {
+    -fx-background-color: -tile;
     -fx-border-color: -border;
     -fx-border-width: 1;
-    -fx-padding: 6;
-    -fx-effect: dropshadow(gaussian, -shadow, 18, 0.2, 0, 4);
+    -fx-text-fill: -muted-foreground;
+    -fx-opacity: 1;
 }
-.context-button {
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-text-fill: -popover-foreground;
-    -fx-font-size: 13;
-    -fx-alignment: center-left;
-    -fx-padding: 8 12;
-    -fx-cursor: hand;
+
+/* game-actions dropdown: the profile card (.profile-menu) and rows (.profile-menu-item) + 16 px line icons */
+.profile-menu.game-actions-menu { -fx-min-width: 232; -fx-pref-width: 232; -fx-max-width: 232; -fx-translate-y: 0; }
+.game-actions-caption {
+    -fx-font-size: 11;
+    -fx-text-fill: -placeholder;
+    -fx-padding: 4 12 6 12;
 }
-.context-button:hover { -fx-background-color: -accent; }
+.game-action-item { -fx-graphic-text-gap: 11; -fx-padding: 8 12; }
+.ga-glyph {
+    -fx-fill: transparent;
+    -fx-stroke: -icon;
+    -fx-stroke-width: 2;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+.game-action-item:hover .ga-glyph, .game-action-item:focused .ga-glyph { -fx-stroke: -foreground; }
+.game-action-item.danger { -fx-text-fill: -destructive-text; }
+.game-action-item.danger .ga-glyph, .game-action-item.danger:hover .ga-glyph, .game-action-item.danger:focused .ga-glyph { -fx-stroke: -destructive-text; }
+.game-action-item.danger:hover, .game-action-item.danger:focused { -fx-background-color: -destructive-soft; }
+.game-action-item:disabled { -fx-opacity: 0.38; }
 
 /* ===================== settings ===================== */
-/* sections: heading (display font) + fading rule + card; inside a card .settings-block = title/hint + control */
+/* One screen at 900x580 (SettingsScreenTest), below the nav row. One tidy list: small Bebas group labels over subtle
+   cards; every row of a card is "label left, control right", 36 px, a thin separator under all but the last. */
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.settings-content { -fx-padding: 14 40 40 37; -fx-max-width: 660; -fx-spacing: 30; }
-.settings-section { -fx-spacing: 0; }
-.settings-heading { -fx-font-size: 42; -fx-text-fill: -foreground; }
-.settings-section .heading-rule { -fx-translate-y: -2; }
-.settings-card { -fx-padding: 6 24 6 24; -fx-max-width: 620; -fx-spacing: 0; }
-.settings-section > .settings-card { -fx-translate-y: 12; }
-.settings-block { -fx-spacing: 12; -fx-padding: 16 0 16 0; }
-.settings-block.settings-toggles { -fx-spacing: 14; }
-.settings-block-head { -fx-spacing: 16; }
-.settings-titles { -fx-spacing: 3; }
-.settings-label { -fx-font-size: 15; -fx-text-fill: -text-label; }
-.settings-hint { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
-.settings-row-divider {
-    -fx-min-height: 1; -fx-pref-height: 1; -fx-max-height: 1;
-    -fx-background-color: -divider-light;
+.settings-content { -fx-padding: 4 24 16 24; -fx-max-width: 820; -fx-spacing: 14; }
+.settings-group { -fx-spacing: 6; }
+.settings-group-label { -fx-font-size: 15; -fx-text-fill: -foreground; }
+.settings-columns { -fx-spacing: 14; }
+.settings-card { -fx-padding: 0 14 0 14; }
+.settings-card.ram-card { -fx-padding: 10 14 14 14; -fx-spacing: 10; }
+.settings-row {
+    -fx-min-height: 36; -fx-pref-height: 36; -fx-max-height: 36;
+    -fx-border-color: transparent transparent -divider-light transparent;
+    -fx-border-width: 0 0 1 0;
 }
-.radio-row { -fx-hgap: 30; -fx-vgap: 10; }
+.settings-row.last { -fx-border-color: transparent; }
+.settings-label { -fx-font-size: 13; -fx-text-fill: -text-label; }
 
-/* radio: ring + red dot */
-.settings-radio { -fx-font-size: 15; -fx-text-fill: -text-label; -fx-label-padding: 0 0 0 12; -fx-cursor: hand; }
-.settings-radio > .radio {
-    -fx-background-color: -border, -input;
-    -fx-background-insets: 0, 1.5;
-    -fx-background-radius: 11, 9.5;
-    -fx-border-color: transparent;
-    -fx-padding: 5;
-}
-.settings-radio:hover > .radio { -fx-background-color: -border-hover, -input; }
-.settings-radio > .radio > .dot {
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-background-radius: 6;
-    -fx-padding: 6;
-}
-.settings-radio:selected > .radio > .dot { -fx-background-color: -primary; }
-.settings-radio:focused > .radio { -fx-background-color: -border-hover, -input; }
-
-/* toggle: same ring + dot, on the right of a row */
-.toggle-row { -fx-spacing: 16; -fx-cursor: hand; }
-.ring-toggle { -fx-padding: 0; -fx-label-padding: 0; -fx-cursor: hand; }
-.ring-toggle > .box {
-    -fx-background-color: -border, -input;
-    -fx-background-insets: 0, 1.5;
-    -fx-background-radius: 11, 9.5;
-    -fx-border-color: transparent;
-    -fx-padding: 5;
-}
-.ring-toggle:hover > .box { -fx-background-color: -border-hover, -input; }
-.ring-toggle > .box > .mark {
-    -fx-shape: "M0,6 A6,6 0 1,1 12,6 A6,6 0 1,1 0,6 Z";
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-padding: 6;
-}
-.ring-toggle:selected > .box > .mark { -fx-background-color: -primary; }
-
-/* RAM selector (RamSelector): labelled chips in GB, selected = accent fill, recommended = caption under the chip */
-.ram-summary { -fx-font-size: 14; -fx-text-fill: -text-description; }
-.ram-selector { -fx-spacing: 8; }
-.ram-option { -fx-spacing: 6; }
-.ram-chip {
-    -fx-font-size: 14;
-    -fx-text-fill: -text-label;
+/* segmented control (auto-exit, P2P, language): RadioButtons drawn as parts of one pill, accent on the selected */
+.segmented {
     -fx-background-color: -input;
-    -fx-background-insets: 0;
     -fx-border-color: -border;
     -fx-border-width: 1;
-    -fx-padding: 0 4 0 4;
-    -fx-min-height: 40; -fx-pref-height: 40; -fx-max-height: 40;
-    -fx-min-width: 0;
+    -fx-padding: 2;
+    -fx-spacing: 2;
+}
+.segment {
+    -fx-font-size: 12;
+    -fx-text-fill: -muted-foreground;
+    -fx-background-color: transparent;
+    -fx-padding: 2 10 2 10;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
     -fx-cursor: hand;
 }
-.ram-chip:hover { -fx-border-color: -border-hover; }
-.ram-chip:focused { -fx-border-color: -foreground; }
-.ram-chip.recommended { -fx-border-color: -muted-foreground; }
-.ram-chip:selected {
-    -fx-background-color: -primary;
-    -fx-border-color: -primary;
-    -fx-text-fill: -primary-foreground;
+.segment > .radio, .segment > .radio > .dot {
+    -fx-padding: 0; -fx-background-color: transparent; -fx-background-insets: 0; -fx-border-color: transparent;
+    -fx-min-width: 0; -fx-pref-width: 0; -fx-max-width: 0; -fx-min-height: 0; -fx-pref-height: 0; -fx-max-height: 0;
 }
-.ram-chip:selected:hover { -fx-background-color: -primary-hover; -fx-border-color: -primary-hover; }
-.ram-chip:selected:focused { -fx-border-color: -foreground; }
-.ram-caption { -fx-font-size: 11; -fx-text-fill: -muted-foreground; }
+.segment:hover { -fx-text-fill: -foreground; -fx-background-color: -tile-hover; }
+.segment:selected, .segment:selected:hover { -fx-background-color: -primary; -fx-text-fill: -primary-foreground; }
+.segment:focused { -fx-text-fill: -foreground; }
+.segment:selected:focused { -fx-text-fill: -primary-foreground; }
+
+/* on/off option: a small switch on the right of the row (the whole row clicks), so it never looks like a radio.
+   Off: knob left on the input track; on: accent track, light knob right. 30x16, round ends. */
+.toggle-row { -fx-cursor: hand; }
+.switch { -fx-padding: 0; -fx-label-padding: 0; -fx-cursor: hand; }
+.switch > .box {
+    -fx-background-color: -border, -input;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 8, 7;
+    -fx-border-color: transparent;
+    -fx-padding: 3 17 3 3;
+}
+.switch > .box > .mark {
+    -fx-shape: "M0,5 A5,5 0 1,1 10,5 A5,5 0 1,1 0,5 Z";
+    -fx-background-color: -muted-foreground;
+    -fx-background-insets: 0;
+    -fx-padding: 5;
+}
+.switch:hover > .box, .switch:focused > .box { -fx-background-color: -border-hover, -input; }
+.switch:selected > .box { -fx-background-color: -primary, -primary; -fx-padding: 3 3 3 17; }
+.switch:selected > .box > .mark { -fx-background-color: -primary-foreground; }
+.switch:selected:hover > .box { -fx-background-color: -primary-hover, -primary-hover; }
+
+/* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb, accent up to
+   the value; the system reserve above the max is dimmed. "Выделено: 6 ГБ из 16 ГБ" above it, in its card. */
+.ram-bar { -fx-cursor: hand; -fx-border-color: transparent; -fx-border-width: 1; -fx-border-insets: -4; }
+.ram-bar:focus-visible { -fx-border-color: -border-hover; }
+.ram-segment {
+    -fx-background-color: -border;
+    -fx-min-height: 12; -fx-pref-height: 12; -fx-max-height: 12;
+}
+.ram-segment:filled { -fx-background-color: -primary; }
+.ram-bar:hover .ram-segment:filled { -fx-background-color: -primary-hover; }
+.ram-segment:reserve { -fx-opacity: 0.4; }
+.ram-summary { -fx-font-size: 13; -fx-text-fill: -foreground; }
 
 /* inputs (dark tile + border, red on focus) */
 .zone-input {
@@ -407,10 +483,8 @@
 }
 .zone-input:hover { -fx-border-color: -border-hover; }
 .zone-input:focus-within { -fx-border-color: -ring; }
-.limit-row { -fx-spacing: 16; }
-.limit-group { -fx-spacing: 6; }
-.limit-caption { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
-.limit-field { -fx-spacing: 8; -fx-pref-width: 200; -fx-max-width: 200; }
+.limit-row { -fx-spacing: 8; }
+.limit-field.zone-input { -fx-spacing: 6; -fx-padding: 0 8 0 8; -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28; -fx-pref-width: 100; -fx-min-width: 100; -fx-max-width: 100; }
 .limit-input {
     -fx-background-color: transparent;
     -fx-background-insets: 0;
@@ -419,15 +493,16 @@
     -fx-highlight-fill: -primary;
     -fx-highlight-text-fill: -primary-foreground;
     -fx-prompt-text-fill: -placeholder;
-    -fx-font-size: 14;
-    -fx-padding: 0 0 0 4;
-    -fx-pref-width: 70;
+    -fx-font-size: 13;
+    -fx-padding: 0 0 0 2;
+    -fx-pref-width: 40;
+    -fx-min-width: 24;
 }
-.limit-unit { -fx-font-size: 14; -fx-text-fill: -placeholder; }
+.limit-unit { -fx-font-size: 12; -fx-text-fill: -placeholder; }
 .icon-download, .icon-upload {
     -fx-background-color: -muted-foreground;
-    -fx-min-width: 15; -fx-pref-width: 15; -fx-max-width: 15;
-    -fx-min-height: 15; -fx-pref-height: 15; -fx-max-height: 15;
+    -fx-min-width: 13; -fx-pref-width: 13; -fx-max-width: 13;
+    -fx-min-height: 13; -fx-pref-height: 13; -fx-max-height: 13;
 }
 .icon-download { -fx-shape: "M7,0 H9 V8 L11.6,5.4 L13,6.8 L8,11.8 L3,6.8 L4.4,5.4 L7,8 Z M1,10 H3 V13 H13 V10 H15 V15 H1 Z"; }
 .icon-upload { -fx-shape: "M7,12 H9 V4 L11.6,6.6 L13,5.2 L8,0.2 L3,5.2 L4.4,6.6 L7,4 Z M1,10 H3 V13 H13 V10 H15 V15 H1 Z"; }

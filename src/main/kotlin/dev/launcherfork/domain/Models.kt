@@ -21,7 +21,10 @@ data class Server(
     val installed: Boolean,
     /** Fake client size for the progress text, bytes. */
     val clientSizeBytes: Long,
-)
+) {
+    /** Players online for the games list; null = unknown or offline ([online] is false or [players] is negative). */
+    val onlineCount: Int? get() = players.takeIf { online && it >= 0 }
+}
 
 data class UserSession(val login: String)
 
@@ -87,6 +90,16 @@ data class Progress(
     val totalBytes: Long,
     val bytesPerSecond: Long,
 )
+
+/** Long-running maintenance of an installed client, started from the game-actions menu next to ИГРАТЬ. */
+enum class ClientOperation {
+    /** «Проверить файлы»: re-check the installed files (client stays installed). */
+    VERIFY,
+    /** «Переустановить»: wipe and download the client again (installed at the end). */
+    REINSTALL,
+    /** «Удалить игру»: remove the client files (not installed at the end). */
+    DELETE,
+}
 
 /** Peer-to-peer download policy (settings). */
 enum class P2pMode { ALWAYS, EXCEPT_MOBILE, NEVER }

@@ -27,16 +27,15 @@
                                AnchorPane.leftAnchor="15" AnchorPane.topAnchor="70" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="82"/>
                     <fx:include fx:id="defaultStatusPane" source="main/status_pane.fxml"
                                 AnchorPane.leftAnchor="11" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="20"/>
-                    <fx:include fx:id="clientSettingsPane" source="main/client_settings.fxml"
-                                AnchorPane.rightAnchor="190" AnchorPane.bottomAnchor="52"/>
                 </AnchorPane>
 
-                <AnchorPane fx:id="settingsPane" visible="false">
+                <!-- settings start below the nav row (same top as centerPane): the nav row holds only the nav -->
+                <AnchorPane fx:id="settingsPane" visible="false" pickOnBounds="false">
                     <fx:include fx:id="settings" source="settings.fxml"
-                                AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+                                AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="64"/>
                 </AnchorPane>
 
-                <!-- top-right row, above home and settings: Forum ↗ / Support ↗ links (home only), then the profile
+                <!-- top-right nav row, above home and settings (the same on both): Communities / Forum ↗ / Support ↗, then the profile
                      (nickname ▾ + dropdown). The links row is pinned to the button height (MainController), so the links
                      stay centred on it; the dropdown is an unmanaged floating card, so it never changes this row.
                      One gap for the whole row (.top-bar / .header-links-row in layout.css). -->

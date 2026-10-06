@@ -26,6 +26,9 @@
     -ring: #737373;                  /* oklch(0.556 0 0) */
     -destructive: #ff6467;           /* oklch(0.704 0.191 22.216) */
     -destructive-border: rgba(255, 100, 103, 0.40);
+    -destructive-soft: rgba(255, 100, 103, 0.10);  /* hover fill of red menu rows (game actions) */
+    -destructive-text: #ff6467;  /* red text / icons of destructive menu rows, readable on -card */
+    -primary-tint: rgba(229, 229, 229, 0.14);  /* translucent accent: progress fill behind the status text */
     -input-foreground: #fafafa;
     -placeholder: #737373;
     -overlay: rgba(0, 0, 0, 0.80);
@@ -66,6 +69,8 @@
     -card-description: #0a0a0a;
     -input-border: #262626;          /* oklch(1 0 0 / 15%) on black */
     -error: #ff6467;
+    -status-online: #10b981;          /* emerald-500 */
+    -status-offline: #525252;         /* neutral-600 */
 }
 
 /* shadcn radius-md (0.625rem - 2px = 8px). JavaFX has no size variables, so it is a selector group. */
@@ -77,4 +82,9 @@
 .check-box > .box {
     -fx-background-radius: 4;
     -fx-border-radius: 4;
+}
+/* small squares (communities menu icon tiles): shadcn radius-sm */
+.community-icon-tile {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
 }

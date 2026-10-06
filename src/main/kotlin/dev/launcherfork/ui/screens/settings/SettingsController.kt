@@ -5,7 +5,7 @@ import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.P2pMode
 import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.components.RamSelector
+import dev.launcherfork.ui.components.RamBar
 import javafx.fxml.FXML
 import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
@@ -13,24 +13,39 @@ import javafx.scene.control.RadioButton
 import javafx.scene.control.ScrollPane
 import javafx.scene.control.TextField
 import javafx.scene.control.TextFormatter
+import javafx.scene.control.Tooltip
 import javafx.scene.control.ToggleGroup
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 
 /**
- * settings.fxml: static layout (sections ИГРА / ОБНОВЛЕНИЕ / ПРОЧЕЕ) bound to [dev.launcherfork.domain.SettingsStore].
+ * settings.fxml: one-screen list (groups ОПЕРАТИВНАЯ ПАМЯТЬ / ПОВЕДЕНИЕ / ОБНОВЛЕНИЕ / ЯЗЫК) bound to [dev.launcherfork.domain.SettingsStore].
  * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var settingsRoot: AnchorPane
     @FXML lateinit var scroll: ScrollPane
     @FXML lateinit var settingsContent: VBox
+    @FXML lateinit var gameSection: VBox
+    @FXML lateinit var updatesSection: VBox
+    @FXML lateinit var languageSection: VBox
+    @FXML lateinit var behaviourSection: VBox
+    @FXML lateinit var ramCard: VBox
+    @FXML lateinit var behaviourCard: VBox
+    @FXML lateinit var exitRow: HBox
+    @FXML lateinit var p2pRow: HBox
+    @FXML lateinit var limitsRow: HBox
+    @FXML lateinit var languageRow: HBox
+    @FXML lateinit var exitLabel: Label
+    @FXML lateinit var p2pLabel: Label
+    @FXML lateinit var columns: HBox
     @FXML lateinit var gameHeading: Label
     @FXML lateinit var updatesHeading: Label
-    @FXML lateinit var othersHeading: Label
+    @FXML lateinit var languageHeading: Label
+    @FXML lateinit var behaviourHeading: Label
 
-    @FXML lateinit var ramSelector: RamSelector
+    @FXML lateinit var ramBar: RamBar
     @FXML lateinit var ramSummary: Label
     @FXML lateinit var exitGroup: ToggleGroup
     @FXML lateinit var exitOnStart: RadioButton
@@ -39,6 +54,8 @@ class SettingsController(private val ctx: UiContext) {
 
     @FXML lateinit var downloadLimitField: TextField
     @FXML lateinit var uploadLimitField: TextField
+    @FXML lateinit var downloadLimitBox: HBox
+    @FXML lateinit var uploadLimitBox: HBox
     @FXML lateinit var p2pGroup: ToggleGroup
     @FXML lateinit var p2pAlways: RadioButton
     @FXML lateinit var p2pNotMobile: RadioButton
@@ -71,8 +88,13 @@ class SettingsController(private val ctx: UiContext) {
             update { it.copy(p2pMode = v) }
         }
 
-        bindLimit(downloadLimitField, s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } }
-        bindLimit(uploadLimitField, s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } }
+        // the rows of ПОВЕДЕНИЕ carry short captions; the original long wording is the tooltip
+        exitLabel.tooltip = Tooltip(ctx.t("settings.exit"))
+        p2pLabel.tooltip = Tooltip(ctx.t("settings.p2p"))
+
+        Tooltip.install(limitsRow, Tooltip(ctx.t("settings.speed_limit.note")))
+        bindLimit(downloadLimitBox, downloadLimitField, "settings.limit.download", s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } }
+        bindLimit(uploadLimitBox, uploadLimitField, "settings.limit.upload", s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } }
 
         bindToggle(defenderRow, defenderToggle, s.defenderHint) { v -> update { it.copy(defenderHint = v) } }
         bindToggle(startOnDownloadedRow, startOnDownloadedToggle, s.startOnDownloaded) { v -> update { it.copy(startOnDownloaded = v) } }
@@ -89,21 +111,31 @@ class SettingsController(private val ctx: UiContext) {
     val totalRamMb: Long get() = ctx.services.system.totalRamMb()
 
     /**
-     * RAM chips: options capped by the computer's memory, the stored value (or the legacy 0..1 fraction) snapped to
-     * an option, recommended one marked. A pick is stored as MB and drops the legacy fraction.
+     * RAM bar (segmented like the original launcher): one segment per GB of the computer's memory, value = stored MB
+     * (or the legacy 0..1 fraction) rounded to whole GB and clamped to [RamOptions.MIN_GB]..[RamOptions.maxGb]. The
+     * line under it, "Выделено: N ГБ из M ГБ", follows the bar's value; the recommended value is in the tooltip. A move
+     * is stored as MB and drops the legacy fraction.
      */
     private fun bindRam(s: LauncherSettings) {
         val total = totalRamMb
         val unit = ctx.t("settings.unit.gb")
-        ramSelector.formatter = { gb -> RamOptions.format(gb, unit) }
-        ramSelector.recommendedText = ctx.t("settings.ram.recommended")
-        ramSelector.setOptions(RamOptions.options(total), RamOptions.recommended(total), RamOptions.selectedGb(s, total))
-        fun summary(gb: Int) = ctx.t("settings.ram.summary", RamOptions.format(gb, unit), RamOptions.format(RamOptions.totalGb(total), unit))
-        ramSummary.text = summary(ramSelector.selected)
-        ramSelector.onChange = { gb ->
-            ramSummary.text = summary(gb)
-            update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) }
-        }
+        val fmt = { gb: Int -> RamOptions.format(gb, unit) }
+        ramBar.formatter = fmt
+        ramBar.configure(
+            totalGb = RamOptions.totalGb(total),
+            minGb = RamOptions.MIN_GB,
+            maxGb = RamOptions.maxGb(total),
+            recommendedGb = RamOptions.recommended(total),
+            value = RamOptions.selectedGb(s, total),
+        )
+        val hint = ctx.t("settings.ram.hint", fmt(ramBar.recommendedGb))
+        ramBar.accessibleHelp = hint
+        Tooltip.install(ramBar, Tooltip(hint))
+        fun summary(gb: Int) = ctx.t("settings.ram.summary", fmt(gb), fmt(RamOptions.totalGb(total)))
+        ramSummary.text = summary(ramBar.value)
+        // the label always follows the bar (user moves and programmatic changes alike)
+        ramBar.valueProperty.addListener { _, _, gb -> ramSummary.text = summary(gb.toInt()) }
+        ramBar.onChange = { gb -> update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) } }
     }
 
     private fun update(change: (LauncherSettings) -> LauncherSettings) = store.save(change(store.load()))
@@ -130,8 +162,9 @@ class SettingsController(private val ctx: UiContext) {
         row.setOnMouseClicked { e -> if (e.target !== toggle && !toggle.isHover) toggle.isSelected = !toggle.isSelected }
     }
 
-    /** Digits only (max 7), empty means 0; saved on every edit. */
-    private fun bindLimit(field: TextField, value: Int, onChange: (Int) -> Unit) {
+    /** Digits only (max 7), empty means 0; saved on every edit. "Загрузка · КБ/с, 0 — без ограничений" as a tooltip. */
+    private fun bindLimit(box: HBox, field: TextField, captionKey: String, value: Int, onChange: (Int) -> Unit) {
+        Tooltip.install(box, Tooltip("${ctx.t(captionKey)} · ${ctx.t("settings.speed_limit.note")}"))
         field.textFormatter = TextFormatter<String> { c -> if (c.controlNewText.matches(Regex("\\d{0,7}"))) c else null }
         field.text = value.toString()
         field.textProperty().addListener { _, _, t -> onChange(t.toIntOrNull() ?: 0) }

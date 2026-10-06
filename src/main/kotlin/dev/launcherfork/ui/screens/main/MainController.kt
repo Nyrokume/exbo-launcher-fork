@@ -1,5 +1,7 @@
 package dev.launcherfork.ui.screens.main
 
+import dev.launcherfork.domain.ClientOperation
+import dev.launcherfork.domain.GameFolders
 import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Disposable
@@ -23,6 +25,8 @@ import dev.launcherfork.ui.screens.main.modals.UpdateModalController
 import dev.launcherfork.ui.screens.settings.SettingsController
 import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.ClientStateStore
+import dev.launcherfork.ui.state.GameAction
+import dev.launcherfork.ui.state.GameActions
 import javafx.fxml.FXML
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
@@ -45,6 +49,8 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var homePane: AnchorPane
     @FXML lateinit var centerPane: StackPane
     @FXML lateinit var settingsPane: AnchorPane
+    /** The nav row (communities / forum / support + profile): nothing else is placed on its level. */
+    @FXML lateinit var topBar: javafx.scene.layout.HBox
     @FXML lateinit var profileLayer: AnchorPane
 
     // included areas: FXMLLoader injects <fx:id>Controller
@@ -52,7 +58,6 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var profileBarController: ProfileController
     @FXML lateinit var headerController: HeaderController
     @FXML lateinit var defaultStatusPaneController: StatusPaneController
-    @FXML lateinit var clientSettingsPaneController: ClientSettingsController
     @FXML lateinit var settingsController: SettingsController
     @FXML lateinit var logoutPaneController: LogoutModalController
     @FXML lateinit var updatePaneController: UpdateModalController
@@ -90,21 +95,22 @@ class MainController(private val ctx: UiContext) : Disposable {
 
         val status = defaultStatusPaneController
         status.onPrimaryAction = ::onPrimaryAction
-        status.onClientSettings = { clientSettingsPaneController.toggle() }
+        // game-actions menu next to ИГРАТЬ: one dropdown at a time with the top-bar menus
+        val actions = status.gameActionsController
+        actions.onShown = { profileBarController.hideMenu(); headerController.hideCommunityMenu() }
+        actions.onAction = ::onGameAction
 
         headerController.onLink = { notAvailable() }
-        // the links sit in the top bar (outside homePane) but, as before, only show on the home screen
-        // (managed too: hidden links leave the row instead of keeping an empty slot left of the profile)
-        headerController.headerPane.visibleProperty().bind(homePane.visibleProperty())
-        headerController.headerPane.managedProperty().bind(homePane.visibleProperty())
+        // one dropdown at a time: opening the communities menu closes the profile menu and vice versa
+        headerController.onMenuShown = { profileBarController.hideMenu(); actions.hide() }
+        profileBarController.onMenuShown = { headerController.hideCommunityMenu(); actions.hide() }
+        // the top bar (links + profile) is the same nav row on every screen: it stays on the settings screen too, and
+        // nothing else (page titles, content) is placed on its level (settings start below it, see main.fxml)
         // same height as the profile button, so the links stay centred on it (the dropdown floats, see ProfileController)
         val buttonHeight = profileBarController.loginButton.heightProperty()
         headerController.headerPane.minHeightProperty().bind(buttonHeight)
         headerController.headerPane.maxHeightProperty().bind(buttonHeight)
 
-        clientSettingsPaneController.onDelete = { deletionPaneController.show() }
-        clientSettingsPaneController.onNotAvailable = { notAvailable() }
-        deletionPaneController.onConfirm = { notAvailable() }
 
         servers = ctx.services.servers.servers()
         serversListController.setServers(servers, store)
@@ -137,7 +143,7 @@ class MainController(private val ctx: UiContext) : Disposable {
     private fun onModalVisibility(changed: ModalController) {
         val blocked = isModalShown
         InputBlock.set(layout, blocked)
-        if (blocked) profileBarController.hideMenu()
+        if (blocked) hideMenus()
         if (changed.isShowing) changed.initialFocus?.requestFocus() ?: InputBlock.focusInto(changed.layer)
     }
 
@@ -160,11 +166,51 @@ class MainController(private val ctx: UiContext) : Disposable {
         serversListController.dispose()
         defaultStatusPaneController.dispose()
         profileBarController.dispose()
+        headerController.dispose()
+    }
+
+    /** Closes every dropdown (profile, communities, game actions). */
+    fun hideMenus() {
+        profileBarController.hideMenu()
+        headerController.hideCommunityMenu()
+        defaultStatusPaneController.gameActionsController.hide()
+    }
+
+    /**
+     * A row of the game-actions menu. Verify starts at once (after a confirmation if the game runs: it gets closed);
+     * reinstall / delete always ask first and only the confirm button starts them (mock operations, nothing on disk).
+     * The folder is the selected game's folder from the settings (GameFolders), opened through FolderOpener.
+     */
+    fun onGameAction(action: GameAction) {
+        val server = selected ?: return
+        val state = store.state(server).get()
+        if (!GameActions.isEnabled(action, state)) return
+        val operation = when (action) {
+            GameAction.OPEN_FOLDER -> {
+                ctx.services.folders.open(GameFolders.dirOf(ctx.services.settings.load(), server))
+                return
+            }
+            GameAction.SETTINGS -> { setSettingsVisible(true); return }
+            GameAction.VERIFY -> ClientOperation.VERIFY
+            GameAction.REINSTALL -> ClientOperation.REINSTALL
+            GameAction.DELETE -> ClientOperation.DELETE
+        }
+        if (!GameActions.needsConfirmation(action, state)) {
+            store.runOperation(server, operation)
+            return
+        }
+        val key = "main.confirm." + operation.name.lowercase()
+        deletionPaneController.ask(
+            title = ctx.t("$key.title"),
+            text = ctx.t("$key.text"),
+            confirm = ctx.t("$key.confirm"),
+            cancel = ctx.t("main.confirm.cancel"),
+        ) { store.runOperation(server, operation) }
     }
 
     fun selectServer(server: Server, showHome: Boolean) {
         selected = server
-        clientSettingsPaneController.hide()
+        defaultStatusPaneController.gameActionsController.hide()
         background.setImageBackground(loadImage(server.backgroundUri, background = true), cover = true)
         defaultStatusPaneController.showServer(server, store.state(server))
         if (showHome) setSettingsVisible(false)
@@ -175,7 +221,8 @@ class MainController(private val ctx: UiContext) : Disposable {
         homePane.isVisible = !visible
         root.toggleClass("settings-mode", visible)
         serversListController.setSettingsActive(visible)
-        if (visible) clientSettingsPaneController.hide()
+        if (visible) defaultStatusPaneController.gameActionsController.hide()
+        headerController.hideCommunityMenu() // a screen switch closes the open dropdown, the links themselves stay
     }
 
     private fun onPrimaryAction(server: Server) {
@@ -220,7 +267,7 @@ class MainController(private val ctx: UiContext) : Disposable {
             KeyCode.F6 -> exceptionPaneController.show("Exception title", "Exception description placeholder")
             KeyCode.F7 -> loadingPaneController.apply { if (isShowing) hide() else show() }
             KeyCode.ESCAPE -> {
-                profileBarController.hideMenu()
+                hideMenus()
                 modals.forEach { it.hide() }
             }
             else -> return

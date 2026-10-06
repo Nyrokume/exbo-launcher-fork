@@ -27,6 +27,9 @@
     -ring: #1c4a61;
     -destructive: #ae171c;           /* error text */
     -destructive-border: #672629;    /* red accent border */
+    -destructive-soft: rgba(174, 23, 28, 0.18);  /* hover fill of red menu rows (game actions) */
+    -destructive-text: #e0454a;  /* red text / icons of destructive menu rows, readable on -card */
+    -primary-tint: rgba(37, 96, 125, 0.55);  /* translucent accent: progress fill behind the status text */
     -input-foreground: #8d8d8d;
     -placeholder: #6d6d6d;
     -overlay: rgba(0, 0, 0, 0.9);    /* modal dim */
@@ -70,6 +73,8 @@
     -card-description: #191919;
     -input-border: #2b2b2b;
     -error: #ae171c;
+    -status-online: #4cb782;          /* games list: green dot of the online count */
+    -status-offline: #5f5f62;         /* games list: grey dot when the count is unknown / offline */
 
     /* body font: defined once. Manrope Light (OFL) replaces the original commercial "Circe Light". */
     -fx-font-family: "Manrope Light";
@@ -79,6 +84,22 @@
 /* Display font (Europe): the only place where this family is named. Add class "font-display". */
 .font-display {
     -fx-font-family: "Europe";
+}
+
+/* Small meta text (online count in the games list): Roboto in every theme, as on stalzone.com. */
+.font-meta {
+    -fx-font-family: "Roboto";
+}
+
+/*
+ * Games list entry, text block (name + online line). Manrope's line box has ~2 px more room above the caps than
+ * Roboto's, so the block would sit 1.5 px below the icon centre: the bottom padding lifts it back. Spacing 2 keeps
+ * an 8 px gap between the name and the digits and an even ink height, so the ink centre equals the icon centre.
+ * theme-zone.css (name in Roboto Medium) has its own values.
+ */
+.entry-text {
+    -fx-spacing: 2;
+    -fx-padding: 0 0 3 0;
 }
 
 /* Bold body text */

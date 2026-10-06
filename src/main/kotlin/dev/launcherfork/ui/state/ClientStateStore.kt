@@ -1,6 +1,7 @@
 package dev.launcherfork.ui.state
 
 import dev.launcherfork.domain.Cancellable
+import dev.launcherfork.domain.ClientOperation
 import dev.launcherfork.domain.GameLauncher
 import dev.launcherfork.domain.GameListener
 import dev.launcherfork.domain.Progress
@@ -19,6 +20,8 @@ sealed interface ClientState {
     data object Ready : ClientState
     data object Starting : ClientState
     data object Running : ClientState
+    /** Verify / reinstall / delete from the game-actions menu is running; the Play button is disabled meanwhile. */
+    data class Busy(val operation: ClientOperation, val fraction: Double) : ClientState
 }
 
 /**
@@ -61,8 +64,36 @@ class ClientStateStore(
             is ClientState.Downloading -> pause(server)
             ClientState.Ready -> launch(server)
             ClientState.Running -> kill(server)
-            ClientState.Starting -> Unit
+            ClientState.Starting, is ClientState.Busy -> Unit
         }
+    }
+
+    /**
+     * Game-actions menu: verify / reinstall / delete. Allowed only where [GameActions] enables it (the UI asks for
+     * confirmation first); a running game is stopped before a verification. Returns false if not started.
+     */
+    fun runOperation(server: Server, operation: ClientOperation): Boolean {
+        val prop = state(server)
+        val action = when (operation) {
+            ClientOperation.VERIFY -> GameAction.VERIFY
+            ClientOperation.REINSTALL -> GameAction.REINSTALL
+            ClientOperation.DELETE -> GameAction.DELETE
+        }
+        if (!GameActions.isEnabled(action, prop.get())) return false
+        val gen = nextGeneration(server) // also stops a running game / a paused download's leftovers
+        prop.set(ClientState.Busy(operation, 0.0))
+        jobs[server.id] = updates.runOperation(server, operation, object : ProgressListener {
+            override fun onProgress(progress: Progress) = ui {
+                if (isCurrent(server, gen)) prop.set(ClientState.Busy(operation, progress.fraction))
+            }
+
+            override fun onFinished() = ui {
+                if (!isCurrent(server, gen)) return@ui
+                jobs.remove(server.id)
+                prop.set(if (operation == ClientOperation.DELETE) ClientState.NotInstalled else ClientState.Ready)
+            }
+        })
+        return true
     }
 
     fun startDownload(server: Server) {
@@ -118,6 +149,7 @@ class ClientStateStore(
             when (val s = p.get()) {
                 is ClientState.Downloading -> p.set(ClientState.Paused(s.progress.fraction, s.progress.totalBytes))
                 ClientState.Starting, ClientState.Running -> p.set(ClientState.Ready)
+                is ClientState.Busy -> p.set(ClientState.Ready)
                 else -> Unit
             }
         }

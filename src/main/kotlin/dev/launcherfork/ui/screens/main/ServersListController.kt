@@ -29,6 +29,8 @@ class ServersListController(private val ctx: UiContext) : Disposable {
     var onSettingsClicked: () -> Unit = {}
 
     private val entries = mutableListOf<ServerEntryController>()
+    /** Cards of the games list, in order (tests, screenshot tour). */
+    val entryControllers: List<ServerEntryController> get() = entries
     private val list = VBox(6.0)
 
     @FXML

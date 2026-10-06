@@ -78,8 +78,11 @@ object Theme {
         ColorAdjust(0.0, (progress - 1.0) * PROGRESS_SATURATION_FACTOR, 0.0, 0.0)
 
     // ---- fonts / stylesheets ----
-    /** Body font: Manrope (SIL OFL 1.1, Cyrillic) replaces the commercial Circe. Europe is still the display font. */
-    private val FONT_FILES = listOf("Manrope-Light.ttf", "Manrope-Bold.ttf", "europe.ttf")
+    /**
+     * Body font: Manrope (SIL OFL 1.1, Cyrillic) replaces the commercial Circe. Europe is still the display font.
+     * Roboto Regular is the small meta text of every theme (.font-meta: online count in the games list).
+     */
+    private val FONT_FILES = listOf("Manrope-Light.ttf", "Manrope-Bold.ttf", "europe.ttf", "Roboto-Regular.ttf")
 
     /** Visual theme: "exbo" (original colors, default) or "shadcn" (shadcn/ui dark neutral). -Dlauncher.theme=shadcn */
     val themeName: String = System.getProperty("launcher.theme", "exbo").lowercase()
