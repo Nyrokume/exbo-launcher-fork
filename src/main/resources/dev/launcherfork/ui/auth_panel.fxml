@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import dev.launcherfork.ui.components.LogoMark?>
 <?import java.lang.Boolean?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
@@ -7,7 +8,7 @@
 
 <!--
   Login panel for the separate login window, after stalzone.com/login (docs: /workspace/stalzone/site-ref/LOGIN.md).
-  Top block (card): title only, takes the spare height. Bottom block (card description): fields, remember / restore, a row of other services (Steam, Epic Games; no Google: not supported by the auth backend), ВОЙТИ, sign up.
+  Top block (card): EXBO logo only, takes the spare height. Bottom block (card description): fields, remember / restore, a row of other services (Steam, Epic Games; no Google: not supported by the auth backend), ВОЙТИ, sign up.
   Self-contained: own stylesheet, flow layout, same fx:ids and controller as initial_auth.fxml.
   The panel fills the window (pref 460x588 under a 32 px title bar), so the blocks have no rounded corners of their own.
   Explicit ids where the fx:id matches a legacy CSS id (lang_*.css / auth.css paint old PNGs on those).
@@ -26,7 +27,8 @@
         </HBox>
 
         <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
-            <Label styleClass="zone-title" text="%fork.zone.title" wrapText="true" minHeight="-Infinity" />
+            <!-- EXBO logo instead of the "come on in" heading (user, 2026-10-06); the title strip hides its small one -->
+            <LogoMark id="zoneLoginLogo" styleClass="zone-logo, zone-login-logo" logoWidth="150" accessibleText="EXBO" />
         </VBox>
 
         <VBox styleClass="zone-bottom">

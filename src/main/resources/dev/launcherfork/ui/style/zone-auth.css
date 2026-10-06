@@ -13,7 +13,7 @@
 .zone-panel { -fx-background-color: -background; }
 .zone-frame { -fx-background-color: transparent; }
 
-/* ---------- top block: title; social tiles sit in the form (row under remember / restore) ---------- */
+/* ---------- top block: title (login: logo); social tiles sit in the form (row under remember / restore) ---------- */
 .zone-top {
     -fx-background-color: -card;
     -fx-padding: 26 28 24 28;
@@ -187,6 +187,8 @@
 .zone-top-hero { -fx-alignment: center-left; -fx-spacing: 14; }
 .zone-logo { -fx-padding: 0 0 18 0; }
 .zone-logo .logo-path { -fx-fill: -foreground; }
+/* login card: the logo stands alone, no gap under it */
+.zone-login-logo { -fx-padding: 0; }
 .zone-bottom-status { -fx-spacing: 12; -fx-padding: 26 28 30 28; }
 .zone-status { -fx-font-size: 15; -fx-text-fill: -foreground; }
 .zone-progress { -fx-pref-height: 6; -fx-min-height: 6; -fx-max-height: 6; }

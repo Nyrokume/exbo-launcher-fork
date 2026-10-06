@@ -50,6 +50,8 @@ class AuthWindowController(private val ctx: UiContext) {
      */
     fun setPanel(panel: Parent) {
         panelHost.children.setAll(panel)
+        // a panel with its own big logo (login, update) gets no second small one in the title strip
+        authLogo.isVisible = panel.lookup(".zone-logo") == null
         InputBlock.focusInto(panel)
     }
 

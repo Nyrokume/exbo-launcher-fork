@@ -179,6 +179,11 @@ class ZonePanelsTest {
                 assertTrue(enterTop - socialsBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - socialsBottom}")
                 assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
                 assertTrue(nav.authStage.height < dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "login window not compact: ${nav.authStage.height}")
+                // the top card shows the EXBO logo instead of a heading; the title strip drops its small copy
+                val logo = scene.root.lookup(".zone-top .zone-login-logo")
+                assertTrue(logo is dev.launcherfork.ui.components.LogoMark && logo.isVisible, "no EXBO logo in the top card")
+                assertTrue(scene.root.lookupAll(".zone-top .zone-title").isEmpty(), "heading left in the top card")
+                assertFalse(scene.root.lookup("#authLogo").isVisible, "second logo in the title strip")
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
                 for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))
@@ -221,6 +226,7 @@ class ZonePanelsTest {
                 val h = nav.authStage.height
                 assertTrue(h < loginHeight, "code window ($h) should be lower than the login window ($loginHeight)")
                 assertTrue(h <= 460.0, "code window too tall: $h")
+                assertTrue(scene.root.lookup("#authLogo").isVisible, "title strip logo missing on the code window")
                 val bottom = c.backButton!!.let { it.localToScene(it.layoutBounds) }.maxY
                 assertTrue(bottom <= scene.height - 16 && bottom >= scene.height - 44, "footer at $bottom of ${scene.height}")
                 if (error) assertTrue(c.errorFirst.localToScene(c.errorFirst.layoutBounds).maxY < c.enterButton.localToScene(c.enterButton.layoutBounds).minY)
