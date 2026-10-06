@@ -49,8 +49,13 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     /** The main window, created here. */
     val mainStage: Stage = Stage(StageStyle.UNDECORATED)
 
-    private val authFrame = WindowFrame(stage)
-    private val mainFrame = WindowFrame(mainStage)
+    /** A window paired with its own frame, so the auth and main frames cannot be mixed up. */
+    private data class WindowSlot(val stage: Stage, val frame: WindowFrame = WindowFrame(stage)) {
+        val isShowing: Boolean get() = stage.isShowing
+    }
+
+    private val authSlot = WindowSlot(stage)
+    private val mainSlot = WindowSlot(mainStage)
     private val authWindow: AuthWindowController
     private val windowController: WindowController
     private val authScene: Scene
@@ -75,7 +80,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     /** How [close] ends the app; tests replace it so the FX toolkit survives. */
     var exit: () -> Unit = { Platform.exit() }
 
-    override val window: Window get() = if (activeWindow == ActiveWindow.MAIN) mainStage else stage
+    override val window: Window get() = slotOf(activeWindow).stage
 
     init {
         // pre-main window
@@ -83,7 +88,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         authWindow = auth.controller
         authScene = Scene(auth.root, Theme.AUTH_WINDOW_WIDTH, Theme.AUTH_WINDOW_HEIGHT, Color.TRANSPARENT)
         Theme.apply(authScene, lang)
-        authFrame.installDrag(authWindow.authDragArea, maximizable = false)
+        authSlot.frame.installDrag(authWindow.authDragArea, maximizable = false)
         stage.scene = authScene
         stage.isResizable = false
         stage.title = ctx.strings.text("title.auth")
@@ -93,9 +98,9 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         windowController = main.controller
         mainScene = Scene(main.root, Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
         Theme.apply(mainScene, lang)
-        mainFrame.installDrag(windowController.dragArea)
-        mainFrame.installResize(mainScene) { windowController.windowButtons }
-        mainFrame.maximizedProperty.addListener { _, _, max -> windowController.setMaximized(max) }
+        mainSlot.frame.installDrag(windowController.dragArea)
+        mainSlot.frame.installResize(mainScene) { windowController.windowButtons }
+        mainSlot.frame.maximizedProperty.addListener { _, _, max -> windowController.setMaximized(max) }
         mainStage.isResizable = true
         mainStage.minWidth = Theme.WINDOW_MIN_WIDTH
         mainStage.minHeight = Theme.WINDOW_MIN_HEIGHT
@@ -148,14 +153,14 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     }
 
     override fun minimize() {
-        (if (activeWindow == ActiveWindow.MAIN) mainStage else stage).isIconified = true
+        slotOf(activeWindow).stage.isIconified = true
     }
 
     override fun toggleMaximize() {
-        if (activeWindow == ActiveWindow.MAIN) mainFrame.toggleMaximize()
+        if (activeWindow == ActiveWindow.MAIN) mainSlot.frame.toggleMaximize()
     }
 
-    val isMaximized: Boolean get() = mainFrame.isMaximized
+    val isMaximized: Boolean get() = mainSlot.frame.isMaximized
 
     /** Close button of either window: no hidden window stays behind, the app exits. */
     override fun close() {
@@ -221,6 +226,8 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         return loaded
     }
 
+    private fun slotOf(window: ActiveWindow): WindowSlot = if (window == ActiveWindow.MAIN) mainSlot else authSlot
+
     /**
      * Makes [target] the active window. Once the app is on screen the target window is shown FIRST (so the app
      * never has zero windows and does not exit implicitly), centered on the screen where the other window was,
@@ -229,28 +236,31 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     private fun switchTo(target: ActiveWindow) {
         val previous = activeWindow
         activeWindow = target
-        val live = stage.isShowing || mainStage.isShowing
-        if (!live) return
-        val show = if (target == ActiveWindow.MAIN) mainStage else stage
-        val hide = if (target == ActiveWindow.MAIN) stage else mainStage
+        if (!authSlot.isShowing && !mainSlot.isShowing) return
+        val show = slotOf(target)
+        val hide = if (show == mainSlot) authSlot else mainSlot
         if (previous != target || !show.isShowing) {
-            val from: Rectangle2D = (if (hide.isShowing) (if (hide === stage) authFrame else mainFrame).bounds else null)
-                ?: (if (show === stage) authFrame else mainFrame).bounds
-            if (show === stage) {
-                stage.width = Theme.AUTH_WINDOW_WIDTH
-                stage.height = Theme.AUTH_WINDOW_HEIGHT
-                authFrame.centerOnScreenOf(from, Theme.AUTH_WINDOW_WIDTH, Theme.AUTH_WINDOW_HEIGHT)
-            } else if (!mainShownOnce || !mainFrame.isMaximized) {
-                val w = if (mainShownOnce) mainStage.width else Theme.WINDOW_WIDTH
-                val h = if (mainShownOnce) mainStage.height else Theme.WINDOW_HEIGHT
-                mainStage.width = w
-                mainStage.height = h
-                mainFrame.centerOnScreenOf(from, w, h)
-            }
-            show.show()
-            if (show === mainStage) mainShownOnce = true
+            place(show, from = if (hide.isShowing) hide.frame.bounds else show.frame.bounds)
+            show.stage.show()
+            if (show == mainSlot) mainShownOnce = true
         }
-        if (hide.isShowing) hide.hide()
+        if (hide.isShowing) hide.stage.hide()
+    }
+
+    /**
+     * Sizes [slot] and centers it on the screen of [from]: the auth window at its fixed size, the main window at
+     * the default size the first time, then at the user's size; a maximized main window is left as it is.
+     */
+    private fun place(slot: WindowSlot, from: Rectangle2D) {
+        val (w, h) = when {
+            slot == authSlot -> Theme.AUTH_WINDOW_WIDTH to Theme.AUTH_WINDOW_HEIGHT
+            !mainShownOnce -> Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT
+            slot.frame.isMaximized -> return
+            else -> slot.stage.width to slot.stage.height
+        }
+        slot.stage.width = w
+        slot.stage.height = h
+        slot.frame.centerOnScreenOf(from, w, h)
     }
 
     /** The legacy auth/update FXMLs were whole windows: their own close/minimize buttons and top strip go away. */

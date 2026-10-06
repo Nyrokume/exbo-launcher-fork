@@ -234,6 +234,57 @@ class AuthWindowTest {
     }
 
     @Test
+    fun mainWindowOpensAtDefaultSizeThenKeepsTheUserSizeAndMaximize() {
+        val live = start()
+        val authBounds = FxTestSupport.onFx {
+            Rectangle2D(live.nav.authStage.x, live.nav.authStage.y, live.nav.authStage.width, live.nav.authStage.height)
+        }
+        login(live)
+        assertTrue(FxTestSupport.waitFx(10_000) { live.nav.activeWindow == ActiveWindow.MAIN })
+        FxTestSupport.onFx {
+            val nav = live.nav
+            // first time: default size, centered on the screen of the auth window; actions target the main slot
+            assertEquals(Theme.WINDOW_WIDTH, nav.mainStage.width, 0.5)
+            assertEquals(Theme.WINDOW_HEIGHT, nav.mainStage.height, 0.5)
+            val (x, y) = WindowFrame.centeredIn(WindowFrame.screenBoundsOf(authBounds), Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
+            assertEquals(x, nav.mainStage.x, 0.5)
+            assertEquals(y, nav.mainStage.y, 0.5)
+            assertSame(nav.mainStage, nav.window)
+            // the user resizes the main window, then switches account
+            nav.mainStage.width = 900.0
+            nav.mainStage.height = 600.0
+            nav.mainController!!.profileBarController.switchAccount.fire()
+            assertSame(nav.authStage, nav.window)
+            assertEquals(Theme.AUTH_WINDOW_WIDTH, nav.authStage.width, 0.5)
+            assertEquals(Theme.AUTH_WINDOW_HEIGHT, nav.authStage.height, 0.5)
+        }
+        login(live)
+        assertTrue(FxTestSupport.waitFx(10_000) { live.nav.activeWindow == ActiveWindow.MAIN })
+        val maximized = FxTestSupport.onFx {
+            val nav = live.nav
+            assertEquals(900.0, nav.mainStage.width, 0.5, "second time the main window keeps the user's size")
+            assertEquals(600.0, nav.mainStage.height, 0.5)
+            nav.toggleMaximize()
+            assertTrue(nav.isMaximized)
+            val bounds = Rectangle2D(nav.mainStage.x, nav.mainStage.y, nav.mainStage.width, nav.mainStage.height)
+            nav.mainController!!.profileBarController.switchAccount.fire()
+            bounds
+        }
+        login(live)
+        assertTrue(FxTestSupport.waitFx(10_000) { live.nav.activeWindow == ActiveWindow.MAIN })
+        FxTestSupport.onFx {
+            val nav = live.nav
+            assertTrue(nav.isMaximized, "a maximized main window stays maximized")
+            assertEquals(maximized, Rectangle2D(nav.mainStage.x, nav.mainStage.y, nav.mainStage.width, nav.mainStage.height))
+            nav.minimize()
+            assertTrue(nav.mainStage.isIconified, "minimize targets the active (main) window")
+            assertFalse(nav.authStage.isIconified)
+            nav.close()
+        }
+        live.app.shutdown()
+    }
+
+    @Test
     fun centeringMathUsesTheGivenScreen() {
         // a second monitor right of a 1920x1080 one
         val (x, y) = WindowFrame.centeredIn(Rectangle2D(1920.0, 0.0, 2560.0, 1400.0), 460.0, 620.0)
