@@ -183,6 +183,13 @@ class ZonePanelsTest {
                 assertTrue(logo is dev.launcherfork.ui.components.LogoMark && logo.isVisible, "no EXBO logo in the top card")
                 assertTrue(scene.root.lookupAll(".zone-top .zone-title").isEmpty(), "heading left in the top card")
                 assertFalse(scene.root.lookup("#authLogo").isVisible, "second logo in the title strip")
+                // the disabled ВОЙТИ keeps a readable label (it took the window colour and vanished in the white theme)
+                val off = javafx.css.PseudoClass.getPseudoClass("disabled")
+                c.enterButton.pseudoClassStateChanged(off, true); c.enterButton.applyCss()
+                val txt = c.enterButton.textFill as javafx.scene.paint.Color
+                val btnBg = c.enterButton.background.fills.first().fill as javafx.scene.paint.Color
+                c.enterButton.pseudoClassStateChanged(off, c.enterButton.isDisabled); c.enterButton.applyCss()
+                assertTrue(contrast(txt, btnBg) >= 3.0, "disabled ВОЙТИ label contrast ${contrast(txt, btnBg)}")
                 // centred, on the same black as the form (no grey card behind the logo)
                 val lb = logo.localToScene(logo.layoutBounds)
                 assertEquals(scene.width / 2, (lb.minX + lb.maxX) / 2, 1.0, "logo not centred")
@@ -286,5 +293,15 @@ class ZonePanelsTest {
         assertEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "logo block and form should be the same black")
         previewDir.mkdirs()
         ImageIO.write(out, "png", File(previewDir, file))
+    }
+
+    /** WCAG contrast of [fg] (alpha blended over [bg]) against [bg]. */
+    private fun contrast(fg: javafx.scene.paint.Color, bg: javafx.scene.paint.Color): Double {
+        fun mix(f: Double, b: Double) = f * fg.opacity + b * (1 - fg.opacity)
+        fun lin(c: Double) = if (c <= 0.03928) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4)
+        fun lum(r: Double, g: Double, b: Double) = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+        val a = lum(mix(fg.red, bg.red), mix(fg.green, bg.green), mix(fg.blue, bg.blue))
+        val b = lum(bg.red, bg.green, bg.blue)
+        return (maxOf(a, b) + 0.05) / (minOf(a, b) + 0.05)
     }
 }

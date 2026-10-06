@@ -163,7 +163,8 @@
 .zone-primary:disabled {
     -fx-opacity: 1;
     -fx-background-color: -border;
-    -fx-text-fill: -background;
+    /* muted text, readable on the grey in both the dark and the white theme (was -background: white on light grey) */
+    -fx-text-fill: -muted-foreground;
 }
 
 /* ---------- footer: "Нет аккаунта? Создать" ---------- */
