@@ -176,7 +176,6 @@ class CommunityMenuTest {
                 "Discord" to "https://discord.gg/stalzone",
                 "YouTube" to "https://www.youtube.com/@stalzone_eng",
                 "Reddit" to "https://www.reddit.com/r/stalzone/",
-                "X" to "https://x.com/stalzone_game",
                 "Telegram" to "https://t.me/stalzone_eng",
             ),
             CommunityLinks.all.map { it.title to it.url },

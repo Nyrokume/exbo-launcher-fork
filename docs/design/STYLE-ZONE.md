@@ -119,10 +119,10 @@ Oswald), поэтому кегли заголовков в `theme-zone.css` ув
   `<link rel="icon" type="image/svg+xml">`), скачан 2026-10-06, отрисован ImageMagick в PNG 48×48 (2× от 24 px
   иконки), рисунок не менялся.
 
-**Иконки соцсетей (меню «Сообщества»).** Монохромные бренд-глифы Discord, YouTube, Reddit, X, Telegram —
+**Иконки соцсетей (меню «Сообщества»).** Монохромные бренд-глифы Discord, YouTube, Reddit, Telegram —
 **Simple Icons 16.34.0** (https://simpleicons.org, https://github.com/simple-icons/simple-icons), лицензия
 **CC0 1.0** (public domain). Path-данные скачаны curl 2026-10-06 с
-`https://cdn.jsdelivr.net/npm/simple-icons@16.34.0/icons/{discord,youtube,reddit,x,telegram}.svg` (viewBox 24×24) и
+`https://cdn.jsdelivr.net/npm/simple-icons@16.34.0/icons/{discord,youtube,reddit,telegram}.svg` (viewBox 24×24) и
 лежат строками в `ui/components/BrandGlyphs.kt`. Пути не менялись, кроме Telegram: оставлен только подконтур
 бумажного самолётика (полная иконка — самолётик, вырезанный из круга; в футере stalzone.com, который взят за
 референс, самолётик без круга). Сами знаки — товарные знаки их владельцев; CC0 касается только векторных путей.
