@@ -8,7 +8,7 @@
 Исходник оригинала: JavaFX 9.0.3, прозрачное окно без рамки, главное окно 886×550, окна авторизации и
 обновления 379×490. Разбор оригинала лежит в `/workspace/stalzone/REPORT.md`.
 
-**Раскладка (ветка `redesign/zone`).** Два окна, как в оригинале (`docs/design/WINDOWS.md`). Обновление, вход
+**Раскладка.** Два окна, как в оригинале (`docs/design/WINDOWS.md`). Обновление, вход
 и код из письма показываются в отдельном окне без рамки 460×620. После входа оно закрывается и открывается
 главное окно: без рамки, с ресайзом, 1024×640 (минимум 900×580). Слева колонка фиксированной ширины с векторным
 логотипом EXBO, профиль (ник ▾ и меню) в правом верхнем углу, контент тянется вместе с окном. Эта адаптивная раскладка
@@ -17,6 +17,25 @@
 `docs/design/STYLE-ZONE.md`; прежние `exbo` и `shadcn` включаются через `-Dlauncher.theme=exbo|shadcn`. У неё есть **белая тема**:
 в настройках «Тема: Тёмная / Белая» (переключается сразу во всех окнах и сохраняется между запусками) или сразу
 `-Dlauncher.theme=zone-light`.
+
+## Возможности
+
+- **Четыре темы:** `zone` (по умолчанию, красный стиль STALZONE), `zone-light` (белая схема zone: «Тема: Тёмная /
+  Белая» в настройках или `-Dlauncher.theme=zone-light`), `exbo` (исходные цвета EXBO) и `shadcn` (neutral shadcn/ui).
+  Выбор схемы сохраняется между запусками (`appearance` в `~/.launcher-fork/settings.properties`).
+- **Обои главного окна, как в оригинальном лаунчере:** шесть скриншотов STALZONE (`ui/wallpapers/`, манифест
+  `wallpapers.txt`). При каждом запуске случайные обои, но не те же, что в прошлый раз (`wallpaper.last` в том же
+  файле настроек). Конкретные обои: `-Dlauncher.wallpaper=1..6` (такой выбор не сохраняется в `wallpaper.last`). Картинка заполняет окно (cover с точкой фокуса) при
+  любом размере и разворачивании, грузится в фоне только выбранная, при ошибке остаётся однотонный фон. Текст
+  читается за счёт полупрозрачных скримов из токенов темы; контраст проверяется тестом по худшему случаю.
+- **Описание игры** в центре главного окна: заголовок STALZONE, вводный абзац, подзаголовок, основной текст и
+  финальная фраза (ru / en, текст приходит с моделью игры). Онлайн показан один раз, под названием игры в колонке.
+- **Оперативная память** — шкала из сегментов по 1 ГБ: от 2 ГБ до всей памяти компьютера (на ПК с 16 ГБ — 2–16 ГБ),
+  для последних 2 ГБ тихая пометка «Мало памяти останется системе».
+- Настройки на один экран, меню действий с игрой «⋯», меню «Сообщества», меню профиля, два окна (вход и главное),
+  демо-авторизация с кодом из письма / Google Authenticator и регистрацией — всё на моках, без сети.
+
+История изменений: `docs/CHANGELOG.md`.
 
 ## Запуск
 
@@ -34,7 +53,8 @@
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
 | `-Dlauncher.theme=zone\|zone-light\|exbo\|shadcn` | тема: STALZONE (`theme-zone.css`, Bebas Neue + Roboto, по умолчанию), исходные цвета EXBO (`theme.css`), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE сразу в белой схеме (`theme-zone-light.css` поверх `theme-zone.css`; при старте важнее сохранённой настройки) |
-| `-Dlauncher.settingsFile=<путь>` | где хранится выбранная тема (по умолчанию `~/.launcher-fork/settings.properties`, одна строка `appearance=light\|dark`; остальные настройки по-прежнему только в памяти). Автотур ничего не сохраняет |
+| `-Dlauncher.settingsFile=<путь>` | где хранятся выбранная тема и номер последних обоев (по умолчанию `~/.launcher-fork/settings.properties`: `appearance=light\|dark` и `wallpaper.last=N`; остальные настройки по-прежнему только в памяти). Автотур ничего не сохраняет |
+| `-Dlauncher.wallpaper=1..6` | всегда эти обои главного окна (без свойства — случайные при каждом запуске, но не те же, что в прошлый раз; автотур без свойства берёт `03`); выбор по свойству не сохраняется в `wallpaper.last` |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 | `-Dlauncher.mock2fa=random\|email\|totp\|none` | второй фактор после пароля: по умолчанию `random` (при каждом входе случайно код из письма или Google Authenticator), `email` / `totp` всегда один из них, `none` сразу на главную. Автотур без явного значения использует `none` |
 | `-Dlauncher.onlineTickMs=10000` | как часто фейковый онлайн в списке игр немного меняется (по умолчанию 10 с, `0` — всегда 1284; в автотуре всегда 0) |
@@ -91,6 +111,10 @@ src/main/kotlin/dev/launcherfork/
 │  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
 │  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
 │  └─ MockScheduler.kt      общий таймер фейков (безопасная отмена/завершение)
+├─ data/local/          settings.properties: SettingsFile (атомарная запись, ключи не теряются), AppearanceFileStore
+│                       (`appearance`), WallpaperFileMemory (`wallpaper.last`)
+├─ wallpaper/           обои главного окна без FX: Wallpapers (манифест, pick без повтора, один выбор на запуск —
+│                       Wallpapers.current), CoverFit (cover-кадрирование с точкой фокуса)
 ├─ i18n/Strings.kt      ResourceBundle из локальных .properties (ru + en) вместо серверного LangManager
 ├─ theme/Theme.kt       то, что нельзя выразить в CSS: пути, геометрия окна, эффекты (оверлей, арт игры), шрифты
 └─ ui/
@@ -98,7 +122,8 @@ src/main/kotlin/dev/launcherfork/
    ├─ Messages.kt       AuthError / UpdatePhase -> ключи строк (домен ключей не знает)
    ├─ Disposable.kt     контроллер экрана освобождает таймеры/слушатели при уходе с экрана
    ├─ state/            ClientStateStore: состояния клиента Download/Pause/Continue/Play/Exit (на сессию)
-   ├─ components/       WindowChrome (WindowFrame: drag/maximize/resize/центрирование, ResizeEdge), RamBar (шкала RAM), ActionGlyphs (иконки меню действий с игрой), CodeInput (ячейки кода TOTP),
+   ├─ components/       WallpaperLayer (фон окна: обои cover-fit + скрим, фоновая загрузка, запасной однотонный фон),
+   │                    WindowChrome (WindowFrame: drag/maximize/resize/центрирование, ResizeEdge), RamBar (шкала RAM), ActionGlyphs (иконки меню действий с игрой), CodeInput (ячейки кода TOTP),
    │                    LogoMark (вектор EXBO из exbo-logo.svg), InputBlock (блок мыши/клавиатуры под диалогом),
    │                    Effects, ServerEntryController (пункт игры в колонке)
    └─ screens/
@@ -113,10 +138,13 @@ src/main/kotlin/dev/launcherfork/
 
 src/main/resources/dev/launcherfork/
 ├─ ui/*.fxml, ui/main/*.fxml, ui/main/modals/*.fxml   разметка (спецификация)
-├─ ui/style/theme.css, theme-shadcn.css, theme-zone.css   токены цветов + шрифты + радиусы (литералы только тут)
+├─ ui/style/theme.css, theme-shadcn.css, theme-zone.css, theme-zone-light.css   токены цветов + шрифты + радиусы
+│                                    (литералы только тут; zone-light переопределяет только цвета zone)
 ├─ ui/style/layout.css   стили новой раскладки (окно, главный экран, настройки, модалки; только токены)
+├─ ui/style/zone-auth.css, zone-steps.css, zone-totp.css   панели окна входа в теме zone
 ├─ ui/style/{common,auth,lang_ru,lang_en}.css   стили legacy-панелей авторизации/обновления
 ├─ ui/style/image/, ui/style/font/   PNG и Europe из оригинала; Manrope, Roboto (OFL), Bebas Neue (шрифт stalzone.com) (см. «Права на ассеты»)
+├─ ui/wallpapers/01.jpg … 06.jpg, wallpapers.txt   обои главного окна (скриншоты STALZONE) и их манифест
 ├─ ui/i18n/messages*.properties      строки ru/en
 └─ mock/                             сгенерированные картинки-заглушки (tools/GenerateZoneArt.java)
 ```
@@ -205,6 +233,13 @@ src/main/resources/dev/launcherfork/
    - `OnlineCountTest`: строка онлайна под названием игры («1 284 онлайн» / «1,284 online», серая точка и
      «не в сети» / «offline» при неизвестном онлайне), обновление по свойству и из `ServerRepository.watchOnline`,
      раскладка во всех темах при минимальном размере окна (иконка по центру двух строк, ничего не обрезано).
+   - Обои: `WallpapersTest` (манифест, случайный выбор без повтора прошлых обоев на внедрённом `Random`,
+     `-Dlauncher.wallpaper`, `wallpaper.last` в settings.properties рядом с `appearance`, выбор один раз на запуск),
+     `CoverFitTest` (математика cover-кадрирования с точкой фокуса), `WallpaperLayerTest` (cover при 900×580 /
+     1024×640 / 1366×800 и разворачивании, те же обои после повторного входа, запасной фон при отсутствующей / битой
+     картинке, фоновая загрузка) и `WallpaperContrastTest`: 4 темы × 6 обоев × 4 экрана, текст сравнивается с 95-м
+     перцентилем самых ярких пикселей под ним (для белой темы — 5-м самых тёмных), ≥ 4.5:1 для текста и ≥ 3:1 для
+     крупного; отчёт в `build/wallpaper-contrast.txt`.
 
 ## Что перенесено
 
@@ -239,7 +274,8 @@ src/main/resources/dev/launcherfork/
 - Авторизация, коды, «скачивание», «запуск игры», самообновление: таймеры в `MockAuthService`,
   `MockUpdateService` и `MockGameLauncher`.
 - Папка игр по умолчанию `~/Games/EXBO` (в оригинале был путь Windows). Путь установки строится через `Path.resolve`.
-- Настройки хранятся только в памяти (`InMemorySettingsStore`). В редизайне со страницы настроек убраны выбор
+- Настройки хранятся только в памяти (`InMemorySettingsStore`); между запусками сохраняются лишь схема (`appearance`)
+  и номер последних обоев (`wallpaper.last`) в `settings.properties`. В редизайне со страницы настроек убраны выбор
   корневой папки и кнопка «Открыть папку логов» (на эталоне их нет, а в форке они были заглушками). Поле
   `gameRoot` осталось в модели, путь установки виден в диалоге установки. Порядок пунктов взят с эталона:
   «Запускать игру по окончании загрузки» перенесён в раздел ОБНОВЛЕНИЕ.
@@ -297,7 +333,9 @@ src/main/resources/dev/launcherfork/
 `11_resized_1366x800`, `12_settings_en`, `13_auth_after_switch_account`, затем снова окно входа (ru):
 `14_age_gate`, `15_age_gate_too_young`, `16_register`, `17_register_error`, `18_registered_login`,
 `19_totp_error`. После `05_profile_menu` есть `05b_logout_confirm` (подтверждение «Выход из аккаунта»). После него `05c_community_menu` (выпадающее меню «Сообщества» со ссылками на соцсети). Единственная игра STALZONE установлена,
-поэтому диалога установки в туре нет.
+поэтому диалога установки в туре нет. Обои в туре всегда одни и те же (`03`, вышка на красном небе; другие —
+`-Dlauncher.wallpaper=N`), поэтому снимки воспроизводимы. Главное окно поверх всех шести обоев во всех темах
+снимает `WallpaperContrastTest` (`build/ui-preview/wallpaper-<тема>-<NN>.png`).
 
 - `docs/screenshots/zone/` — тема `zone`, по умолчанию (основная цель редизайна);
 - `docs/screenshots/` — тема `exbo` (`-Dlauncher.theme=exbo`) на новой раскладке;
@@ -350,7 +388,8 @@ PNG-изображения в `src/main/resources/dev/launcherfork/ui/style/imag
 Это допустимо только для внутренней работы над редизайном. **Перед любым публичным распространением
 (релиз, публичный репозиторий, сборки) все эти ассеты и шрифты нужно заменить** на собственные или свободно
 лицензированные. Глифы соцсетей в меню «Сообщества» (`ui/components/BrandGlyphs.kt`) — Simple Icons, CC0 1.0
-(источник в docs/design/STYLE-ZONE.md). Картинки в `mock/` сгенерированы скриптом и свободны, кроме `mock/servers/game-stalzone.png` — это фавикон
+(источник в docs/design/STYLE-ZONE.md). Обои главного окна `ui/wallpapers/01.jpg`…`06.jpg` — внутриигровые скриншоты
+STALZONE, ассеты проекта (предоставлены владельцем, см. docs/design/STYLE-ZONE.md, «Обои главного окна»). Картинки в `mock/` сгенерированы скриптом и свободны, кроме `mock/servers/game-stalzone.png` — это фавикон
 stalzone.com (ассет проекта, источник в docs/design/STYLE-ZONE.md).
 
 ### Ассеты EXBO уже есть в истории git

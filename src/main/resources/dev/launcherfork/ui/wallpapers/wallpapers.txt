@@ -1,0 +1,11 @@
+# Main-window wallpapers (Wallpapers.all). One row per picture: file, focus point (0..1 of the picture: the spot
+# cover-fit keeps in view when the window crops it), tone (bright = light picture: the theme's -wallpaper-scrim-bright),
+# title. The row number is the wallpaper number (01.jpg = 1):
+# -Dlauncher.wallpaper=N, wallpaper.last=N in ~/.launcher-fork/settings.properties.
+# STALZONE in-game screenshots, project assets (docs/design/STYLE-ZONE.md, «Обои»); 1920 px wide at most, JPEG q82.
+01.jpg 0.50 0.45 bright church, overcast
+02.jpg 0.46 0.45 dark   river at red dusk
+03.jpg 0.55 0.50 dark   watchtower, red night sky
+04.jpg 0.45 0.50 dark   boat, orange sunset
+05.jpg 0.50 0.50 dark   tower, blue night
+06.jpg 0.55 0.60 bright campfire, birches, rain
