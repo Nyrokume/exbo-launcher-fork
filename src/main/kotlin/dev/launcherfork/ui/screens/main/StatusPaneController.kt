@@ -141,7 +141,7 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
             ClientState.Ready -> ctx.t("main.status.ready_to_launch")
             ClientState.Starting -> ctx.t("main.status.starting")
             ClientState.Running -> ctx.t("main.status.running")
-            is ClientState.Busy -> ctx.t("main.status.busy.${s.operation.name.lowercase()}", (s.fraction * 100).roundToInt())
+            is ClientState.Busy -> ctx.t("main.status.busy.${s.operation.name.lowercase()}") // the number is in the percentage slot
         }
         progressBar.progress = when (s) {
             is ClientState.Downloading -> s.progress.fraction
@@ -154,6 +154,7 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
         val fraction = when (s) {
             is ClientState.Downloading -> s.progress.fraction
             is ClientState.Paused -> s.fraction
+            is ClientState.Busy -> s.fraction // verify / reinstall / delete
             else -> null
         }
         progressPercent.text = fraction?.let { "${(it * 100).roundToInt()}%" } ?: ""
