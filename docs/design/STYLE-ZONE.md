@@ -312,7 +312,8 @@ Oswald), поэтому кегли заголовков в `theme-zone.css` ув
 **Выбор (один раз за запуск).** `LauncherApp` до создания окон вызывает
 `Wallpapers.choose(memory, random, forced)`: `-Dlauncher.wallpaper=N` (1..6), в автотуре без свойства всегда `03`,
 иначе `Wallpapers.pick(6, last, random)` — равномерно среди пяти номеров, кроме прошлого. Прошлый номер хранится в
-`~/.launcher-fork/settings.properties` рядом с темой: `wallpaper.last=N` (`WallpaperFileMemory`). `SettingsFile`
+`~/.launcher-fork/settings.properties` рядом с темой: `wallpaper.last=N` (`WallpaperFileMemory`); выбор по
+`-Dlauncher.wallpaper=N` не сохраняется, `wallpaper.last` остаётся прежним. `SettingsFile`
 пишет файл атомарно (временный файл, потом move) и не теряет чужие ключи. Если значения нет, оно битое или вне 1..6,
 подходят любые обои. `Random` и память внедряются (тесты). Результат лежит в `Wallpapers.current`, и до конца
 запуска он не меняется: после входа, повторного входа и смены языка картинка та же.

@@ -96,7 +96,7 @@ object Wallpapers {
 
     /**
      * Chooses this launch's wallpaper ONCE: [forced] if given, else a random one that differs from [memory]'s last;
-     * remembers it in [memory]. Later calls return the same wallpaper and change nothing (the background never
+     * remembers a random choice in [memory] (a forced one is not saved). Later calls return the same wallpaper and change nothing (the background never
      * changes after login, the login and main windows share it).
      */
     @Synchronized
@@ -108,9 +108,10 @@ object Wallpapers {
     ): Wallpaper? {
         current?.let { return it }
         if (list.isEmpty()) return null
-        val number = forced?.takeIf { it in 1..list.size } ?: pick(list.size, memory?.last(), random)
-        val chosen = list[number - 1]
-        runCatching { memory?.remember(chosen.number) }
+        val fixed = forced?.takeIf { it in 1..list.size }
+        val chosen = list[(fixed ?: pick(list.size, memory?.last(), random)) - 1]
+        // a forced choice (-Dlauncher.wallpaper=N) is not saved: wallpaper.last keeps the user's real last wallpaper
+        if (fixed == null) runCatching { memory?.remember(chosen.number) }
             .onFailure { System.err.println("[launcher-fork] WARNING: cannot remember the wallpaper: $it") }
         current = chosen
         System.err.println("[launcher-fork] wallpaper: %02d %s".format(chosen.number, chosen.title))

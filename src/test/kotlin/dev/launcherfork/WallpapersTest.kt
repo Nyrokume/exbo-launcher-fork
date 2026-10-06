@@ -146,6 +146,27 @@ class WallpapersTest {
     }
 
     @Test
+    fun forcedChoiceIsNotSaved(@TempDir dir: Path) {
+        val file = dir.resolve("settings.properties")
+        val memory = WallpaperFileMemory(file)
+        memory.remember(4)
+        assertEquals(5, Wallpapers.choose(memory, Random(1), forced = 5)!!.number)
+        assertEquals(4, memory.last(), "-Dlauncher.wallpaper=N keeps the user's real wallpaper.last")
+        val fake = FakeMemory(4)
+        Wallpapers.resetForTests()
+        Wallpapers.choose(fake, Random(1), forced = 5)
+        assertEquals(emptyList<Int>(), fake.writes, "forced choice: remember() is never called")
+    }
+
+    @Test
+    fun randomChoiceIsSaved(@TempDir dir: Path) {
+        val memory = WallpaperFileMemory(dir.resolve("settings.properties"))
+        memory.remember(4)
+        val chosen = Wallpapers.choose(memory, Random(1), forced = null)!!.number
+        assertEquals(chosen, memory.last(), "without the property wallpaper.last updates")
+    }
+
+    @Test
     fun noManifestMeansNoWallpaper() {
         assertNull(Wallpapers.choose(FakeMemory(null), Random(1), forced = null, list = emptyList<Wallpaper>()))
         assertNull(Wallpapers.current)
