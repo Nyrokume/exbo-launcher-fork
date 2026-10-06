@@ -71,6 +71,13 @@
     -error: #ff6467;
     -status-online: #10b981;          /* emerald-500 */
     -status-offline: #525252;         /* neutral-600 */
+    /* ---- main-window wallpaper (layout.css «wallpaper», WallpaperContrastTest) ---- */
+    -wallpaper-scrim: rgba(10, 10, 10, 0.32);
+    -wallpaper-scrim-bright: rgba(10, 10, 10, 0.55);
+    -wallpaper-shade: rgba(10, 10, 10, 0.40);
+    -wallpaper-sidebar: rgba(10, 10, 10, 0.60);
+    -wallpaper-titlebar: rgba(10, 10, 10, 0.55);
+    -wallpaper-text-muted: #c4c4c4;
 
     /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
     -settings-heading: #fafafa;       /* group headings on -background: 19.0:1 */

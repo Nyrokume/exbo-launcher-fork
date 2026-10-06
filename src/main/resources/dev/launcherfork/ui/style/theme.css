@@ -75,6 +75,14 @@
     -error: #ae171c;
     -status-online: #4cb782;          /* games list: green dot of the online count */
     -status-offline: #5f5f62;         /* games list: grey dot when the count is unknown / offline */
+    /* ---- main-window wallpaper (layout.css «wallpaper»; WallpaperContrastTest: every text >= 4.5:1, titles >= 3:1,
+       on the 95th-percentile brightest pixel of every picture) ---- */
+    -wallpaper-scrim: rgba(16, 16, 18, 0.40);     /* over the whole picture (dark pictures, the default) */
+    -wallpaper-scrim-bright: rgba(16, 16, 18, 0.60); /* instead, over a bright picture (manifest tone) */
+    -wallpaper-shade: rgba(16, 16, 18, 0.45);     /* content area: left (banner text) and top (nav row) fade */
+    -wallpaper-sidebar: rgba(16, 16, 18, 0.60);   /* sidebar, on top of the scrim */
+    -wallpaper-titlebar: rgba(16, 16, 18, 0.55);  /* title bar strip, on top of the scrim */
+    -wallpaper-text-muted: #c8c8c8;               /* quiet text on the picture: links, online count, status */
 
     /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
     -settings-heading: #ffffff;       /* group headings (ОПЕРАТИВНАЯ ПАМЯТЬ ...) on -background: 15.5:1 */

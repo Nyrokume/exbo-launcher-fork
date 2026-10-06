@@ -1,5 +1,6 @@
 package dev.launcherfork.app
 
+import dev.launcherfork.data.local.WallpaperFileMemory
 import dev.launcherfork.data.mock.MockSecondFactor
 import dev.launcherfork.domain.Appearance
 import dev.launcherfork.domain.FolderOpener
@@ -10,20 +11,23 @@ import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.LinkPolicy
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.components.loadImage
+import dev.launcherfork.wallpaper.Wallpapers
 import javafx.application.Application
 import javafx.stage.Stage
 import javafx.stage.StageStyle
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.random.Random
 
 /**
  * Entry point of the visual fork. Two windows (docs/design/WINDOWS.md): the pre-main window (primary stage:
  * update, then auth / mail code) and, after login, the main window.
  * System properties: launcher.lang=ru|en, launcher.mockSpeed=<factor>, launcher.screenshots=<dir> (auto tour),
  * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=zone|zone-light|exbo|shadcn (zone by default; zone-light: start in the white
- * scheme), launcher.settingsFile=<path> (where the chosen theme is kept),
- * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour).
+ * scheme), launcher.settingsFile=<path> (where the chosen theme and the last wallpaper are kept),
+ * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour),
+ * launcher.wallpaper=1..6 (always this main-window wallpaper; the tour uses Wallpapers.TOUR_DEFAULT without it).
  */
 class LauncherApp : Application() {
     private var app: AppContext? = null
@@ -67,9 +71,10 @@ class LauncherApp : Application() {
         val mock2fa = if (shotsDir != null && System.getProperty(MockSecondFactor.PROPERTY) == null) MockSecondFactor.NONE
             else MockSecondFactor.fromSystemProperties()
         System.err.println("[launcher-fork] mock 2FA: ${mock2fa.name.lowercase()}")
+        val settingsFile = settingsFile(shotsDir)
         val app = AppContext.mock(
             language = lang, speed = speed, devMode = devMode, links = links, folders = folders, onlineTickMs = onlineTickMs,
-            mock2fa = mock2fa, settingsFile = settingsFile(shotsDir),
+            mock2fa = mock2fa, settingsFile = settingsFile,
         )
         this.app = app
         // colour scheme (zone only): -Dlauncher.theme=zone-light wins, else the saved «Тема» (dark by default)
@@ -84,6 +89,14 @@ class LauncherApp : Application() {
         // every size (the main window mirrors this list, StageNavigator binds mainStage.icons to it)
         stage.icons += Theme.appIconResources().map { loadImage(it) }
 
+        // this launch's wallpaper, chosen ONCE before any window exists (both windows share Wallpapers.current):
+        // -Dlauncher.wallpaper=N, the tour's fixed one, else random but never the previous launch's (wallpaper.last)
+        Wallpapers.choose(
+            memory = settingsFile?.let(::WallpaperFileMemory),
+            random = Random.Default,
+            forced = Wallpapers.forcedNumber() ?: if (shotsDir != null) Wallpapers.TOUR_DEFAULT else null,
+        )
+
         val navigator = StageNavigator(stage, app, lang)
         if (shotsDir != null) ScreenshotTour(navigator, File(shotsDir)).install()
 
@@ -93,8 +106,8 @@ class LauncherApp : Application() {
     }
 
     /**
-     * Where the chosen theme is kept: -Dlauncher.settingsFile, else ~/.launcher-fork/settings.properties. The screenshot
-     * tour keeps nothing (same pictures on every machine).
+     * Where the chosen theme and the last wallpaper are kept: -Dlauncher.settingsFile, else
+     * ~/.launcher-fork/settings.properties. The screenshot tour keeps nothing (same pictures on every machine).
      */
     private fun settingsFile(shotsDir: String?): Path? = System.getProperty("launcher.settingsFile")?.let { Path.of(it) }
         ?: if (shotsDir != null) null else Path.of(System.getProperty("user.home"), ".launcher-fork", "settings.properties")

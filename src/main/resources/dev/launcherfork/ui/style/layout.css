@@ -51,6 +51,34 @@
 /* content under a dialog is disabled (no mouse, no keyboard focus) but must not fade like disabled controls */
 .input-blocked *:disabled { -fx-opacity: 1; }
 
+/* ===================== wallpaper (main window background) ===================== */
+/* WallpaperLayer (bottom child of the window root, window.fxml / WindowController): this launch's picture, cover-fit,
+   under .wallpaper-scrim (.wallpaper-bright: a light picture, stronger scrim). While it is shown the root carries .wallpaper-on: the window, content host and content area
+   turn transparent, the title bar and sidebar translucent, and the content area adds two soft shades (left, under the
+   banner text; top, under the nav row). Without a picture (loading failed) none of this applies: plain theme look.
+   Colours and opacities: theme tokens -wallpaper-* only (WallpaperContrastTest measures every text over every picture). */
+.wallpaper-scrim { -fx-background-color: -wallpaper-scrim; }
+/* bright pictures (manifest tone «bright»: overcast sky, daylight) take the theme's stronger scrim */
+.wallpaper-scrim.wallpaper-bright { -fx-background-color: -wallpaper-scrim-bright; }
+.app-window.wallpaper-on, .wallpaper-on .content-host { -fx-background-color: transparent; }
+.wallpaper-on .title-bar { -fx-background-color: -wallpaper-titlebar; }
+.wallpaper-on .sidebar { -fx-background-color: -wallpaper-sidebar; }
+/* shades in px, not %: the banner text column (<= 600 px from the sidebar) is covered on every window width, a wide
+   window shows the picture clean on the right; the top fade sits under the nav row */
+.wallpaper-on .main-content {
+    -fx-background-color:
+        linear-gradient(from 0px 0px to 900px 0px, -wallpaper-shade 0%, -wallpaper-shade 70%, transparent 100%),
+        linear-gradient(from 0px 0px to 0px 150px, -wallpaper-shade 0%, -wallpaper-shade 40%, transparent 100%);
+}
+/* the picture replaces the per-game art of the exbo / shadcn themes (zone hides it anyway) */
+.wallpaper-on .main-content > .game-art, .wallpaper-on .main-content > .game-art-shade { visibility: hidden; }
+/* quiet text sits on the picture: one brighter (dark themes) / darker (white scheme) muted shade instead of the
+   translucent muted tokens, which only work on the plain backgrounds */
+.wallpaper-on .header-link, .wallpaper-on .section-label-text { -fx-text-fill: -wallpaper-text-muted; }
+.wallpaper-on .entry-name, .wallpaper-on .entry-online-text, .wallpaper-on .entry-percent, .wallpaper-on .play-status { -fx-fill: -wallpaper-text-muted; }
+.wallpaper-on .header-link:hover, .wallpaper-on .header-menu-toggle:hover, .wallpaper-on .header-menu-toggle.open,
+.wallpaper-on .header-menu-toggle:focus-visible { -fx-text-fill: -foreground; }
+
 /* ===================== pre-main window (update / auth / mail code) ===================== */
 .auth-window { -fx-background-color: -background; }
 /* 1px frame drawn ABOVE the panel (mouse transparent), so the panel can fill the host edge to edge */

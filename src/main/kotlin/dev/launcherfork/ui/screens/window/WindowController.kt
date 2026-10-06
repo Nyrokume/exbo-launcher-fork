@@ -3,6 +3,7 @@ package dev.launcherfork.ui.screens.window
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.InputBlock
+import dev.launcherfork.ui.components.WallpaperLayer
 import dev.launcherfork.ui.components.toggleClass
 import javafx.fxml.FXML
 import javafx.scene.Node
@@ -15,6 +16,8 @@ import javafx.scene.layout.StackPane
  * window.fxml: the frame of the MAIN launcher window - title bar (drag area + minimize/maximize/close),
  * the content host (main screen) and the overlay layer for in-window dialogs (docs/design/WINDOWS.md).
  * Update / auth / mail code are NOT here: they live in the separate pre-main window (auth_window.fxml).
+ * Behind everything: this launch's wallpaper ([WallpaperLayer.forCurrent]), once per window, so it stays the same
+ * picture through logout / login and language switches (only the content host is rebuilt).
  */
 class WindowController(private val ctx: UiContext) {
     @FXML lateinit var windowRoot: StackPane
@@ -26,8 +29,14 @@ class WindowController(private val ctx: UiContext) {
     @FXML lateinit var contentHost: StackPane
     @FXML lateinit var overlayLayer: StackPane
 
+    /** The window background picture (bottom child of [windowRoot]); null when no wallpaper was chosen (tests). */
+    var wallpaper: WallpaperLayer? = null
+        private set
+
     @FXML
     fun initialize() {
+        // loads in the background; windowRoot gets .wallpaper-on once it shows (translucent panels, layout.css)
+        wallpaper = WallpaperLayer.forCurrent(windowRoot)?.also { windowRoot.children.add(0, it) }
         hideButton.setOnAction { ctx.navigator.minimize() }
         maximizeButton.setOnAction { ctx.navigator.toggleMaximize() }
         closeButton.setOnAction { ctx.navigator.close() }
