@@ -1,57 +1,74 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
+<?import java.lang.Boolean?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 
 <!--
-  Zone-style login panel for the main window's overlay slot (reference 3: EXBO / STALCRAFT X).
-  Self-contained: own stylesheet, flow layout (no layoutX/Y), same fx:ids and controller as initial_auth.fxml,
-  so navigation and tests keep working. The host centers it in overlayLayer and blurs the content below.
+  Login panel for the separate login window, after stalzone.com/login (docs: /workspace/stalzone/site-ref/LOGIN.md).
+  Top block (card): title, social tiles. Bottom block (card description): fields, remember / restore, ВОЙТИ, sign up.
+  Self-contained: own stylesheet, flow layout, same fx:ids and controller as initial_auth.fxml.
+  The panel fills the window (pref 460x588 under a 32 px title bar), so the blocks have no rounded corners of their own.
+  Explicit ids where the fx:id matches a legacy CSS id (lang_*.css / auth.css paint old PNGs on those).
 -->
-<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css" minWidth="502.0" prefWidth="502.0" maxWidth="502.0" minHeight="540.0" prefHeight="540.0" maxHeight="540.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.InitialAuthController">
-    <VBox styleClass="zone-frame, zone-radius-md">
-        <!-- the single window has its own title bar (OVERLAY.md); kept for the controller fx:ids, hidden -->
-        <HBox styleClass="zone-titlebar" alignment="CENTER_RIGHT" visible="false" managed="false">
+<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="588.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.InitialAuthController">
+    <fx:define>
+        <!-- hover states come from zone-auth.css, so the controller skips the legacy brightness effect -->
+        <Boolean fx:id="cssHover" fx:value="true" />
+    </fx:define>
+    <VBox styleClass="zone-frame">
+        <!-- the window has its own title bar; kept for the controller fx:ids, hidden -->
+        <HBox styleClass="zone-titlebar" visible="false" managed="false">
             <ImageView fx:id="header" managed="false" visible="false" />
-            <Button fx:id="hideButton" visible="false" styleClass="zone-window-button, zone-hide" mnemonicParsing="false" />
-            <Button fx:id="closeButton" visible="false" styleClass="zone-window-button, zone-close" mnemonicParsing="false" />
+            <Button fx:id="hideButton" visible="false" mnemonicParsing="false" />
+            <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
-        <VBox styleClass="zone-body" alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
-            <Label styleClass="zone-logo" text="%fork.zone.logo" />
-            <Label styleClass="zone-logo-sub" text="%fork.zone.logo_sub" />
-            <VBox styleClass="zone-errors" alignment="CENTER">
-                <Label fx:id="errorFirst" styleClass="zone-error" />
-                <Label fx:id="errorSecond" styleClass="zone-error" />
-            </VBox>
-            <TextField fx:id="loginField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.login" />
+
+        <VBox styleClass="zone-top">
+            <Label styleClass="zone-title" text="%fork.zone.title" wrapText="true" minHeight="-Infinity" />
+            <Label styleClass="zone-description" text="%fork.zone.social" wrapText="true" minHeight="-Infinity" />
+            <HBox styleClass="zone-socials">
+                <Button id="zoneGoogle" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterGoogle" accessibleText="Google">
+                    <graphic><Region styleClass="zone-social-icon, icon-google" /></graphic>
+                </Button>
+                <Button id="zoneSteam" fx:id="enterSteamButton" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterSteam" accessibleText="Steam">
+                    <graphic><Region styleClass="zone-social-icon, icon-steam" /></graphic>
+                </Button>
+                <Button id="zoneEpic" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterEpic" accessibleText="Epic Games">
+                    <graphic><Region styleClass="zone-social-icon, icon-epic" /></graphic>
+                </Button>
+            </HBox>
+        </VBox>
+
+        <VBox styleClass="zone-bottom" VBox.vgrow="ALWAYS">
+            <TextField id="zoneLogin" fx:id="loginField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%fork.zone.login_prompt" />
             <StackPane styleClass="zone-password">
-                <PasswordField fx:id="passwordField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.password" />
-                <TextField fx:id="passwordVisibleField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.password" visible="false" />
-                <ToggleButton fx:id="passwordToggle" styleClass="zone-eye" mnemonicParsing="false" focusTraversable="false" StackPane.alignment="CENTER_RIGHT">
+                <PasswordField id="zonePassword" fx:id="passwordField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.password" />
+                <TextField id="zonePasswordPlain" fx:id="passwordVisibleField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.password" visible="false" />
+                <ToggleButton id="zoneEye" fx:id="passwordToggle" styleClass="zone-eye" mnemonicParsing="false" StackPane.alignment="CENTER_RIGHT">
                     <graphic><Region styleClass="zone-icon, icon-eye" /></graphic>
                 </ToggleButton>
             </StackPane>
-            <HBox styleClass="zone-remember" alignment="CENTER">
-                <CheckBox fx:id="autoAuthCheckBox" styleClass="zone-check" mnemonicParsing="false" onAction="#onAutoAuth" />
-                <Label styleClass="zone-check-label" onMouseClicked="#onLabelAutoAuth" text="%auth.auto_auth" />
-            </HBox>
-            <!-- explicit id: otherwise fx:id becomes the id and lang_*.css #enterButton paints the old PNG -->
-            <Button id="zoneEnter" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#onEnter" text="%fork.zone.enter" />
-            <VBox styleClass="zone-links" alignment="CENTER">
-                <Button fx:id="enterSteamButton" styleClass="zone-link" mnemonicParsing="false" onAction="#onEnterSteam" text="%fork.auth.steam">
-                    <graphic><Region styleClass="zone-icon, icon-steam" /></graphic>
-                </Button>
-                <Button fx:id="restoreButton" styleClass="zone-link" mnemonicParsing="false" onMouseClicked="#onRestore" text="%fork.zone.restore">
-                    <graphic><Region styleClass="zone-icon, icon-key" /></graphic>
-                </Button>
-                <Button fx:id="registerButton" styleClass="zone-link" mnemonicParsing="false" onMouseClicked="#onRegister" text="%fork.auth.register">
-                    <graphic><Region styleClass="zone-icon, icon-user-plus" /></graphic>
-                </Button>
+            <VBox styleClass="zone-errors">
+                <Label id="zoneErrorFirst" fx:id="errorFirst" styleClass="zone-error" wrapText="true" />
+                <Label id="zoneErrorSecond" fx:id="errorSecond" styleClass="zone-error" wrapText="true" />
             </VBox>
+            <BorderPane styleClass="zone-row">
+                <left>
+                    <CheckBox id="zoneRemember" fx:id="autoAuthCheckBox" styleClass="zone-check, zone-radius-sm" mnemonicParsing="false" onAction="#onAutoAuth" text="%fork.zone.remember" BorderPane.alignment="CENTER_LEFT" />
+                </left>
+                <right>
+                    <Button id="zoneRestore" fx:id="restoreButton" styleClass="zone-link-accent" mnemonicParsing="false" onAction="#onRestore" text="%fork.zone.restore" BorderPane.alignment="CENTER_RIGHT" />
+                </right>
+            </BorderPane>
+            <Region VBox.vgrow="ALWAYS" styleClass="zone-spacer" />
+            <Button id="zoneEnter" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#onEnter" text="%fork.zone.enter" maxWidth="Infinity" />
+            <HBox styleClass="zone-footer">
+                <Label styleClass="zone-footer-text" text="%fork.zone.no_account" />
+                <Button id="zoneRegister" fx:id="registerButton" styleClass="zone-link-underline" mnemonicParsing="false" onAction="#onRegister" text="%fork.zone.create" />
+            </HBox>
         </VBox>
-        <Region styleClass="zone-glow" />
     </VBox>
     <ProgressIndicator fx:id="rollingBar" styleClass="zone-spinner" visible="false" />
 </StackPane>

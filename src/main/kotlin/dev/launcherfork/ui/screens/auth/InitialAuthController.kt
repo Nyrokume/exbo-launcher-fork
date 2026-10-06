@@ -4,6 +4,7 @@ import dev.launcherfork.domain.AuthError
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
 import dev.launcherfork.ui.components.brightenOnHover
+import javafx.css.PseudoClass
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
@@ -24,6 +25,8 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     /** Only in auth_panel.fxml (zone style): plain-text twin of [passwordField] shown by the eye toggle. */
     @FXML var passwordVisibleField: TextField? = null
     @FXML var passwordToggle: ToggleButton? = null
+    /** `<Boolean fx:id="cssHover" fx:value="true"/>` in the FXML: hover comes from CSS, skip the brightness effect. */
+    @FXML var cssHover: Boolean? = null
 
     @FXML
     fun initialize() {
@@ -31,9 +34,10 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         loginField.text = ctx.services.auth.savedLogin ?: ""
         autoAuthCheckBox.isSelected = ctx.services.auth.savedLogin != null
         wirePasswordToggle()
-        // the zone panel has CSS :hover states instead of the brightness effect
-        if (!root.styleClass.contains("zone-panel")) {
+        if (cssHover != true) {
             listOf(enterButton, registerButton, restoreButton, enterSteamButton).forEach { it.brightenOnHover() }
+        } else {
+            wireZoneForm()
         }
         enterButton.tooltip = Tooltip(ctx.t("fork.hint"))
     }
@@ -49,6 +53,29 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
             target.requestFocus()
             target.positionCaret(target.text.length)
         }
+        fun label(shown: Boolean) = ctx.t(if (shown) "fork.zone.hide_password" else "fork.zone.show_password")
+        toggle.accessibleText = label(toggle.isSelected)
+        toggle.tooltip = Tooltip(toggle.accessibleText)
+        toggle.selectedProperty().addListener { _, _, shown ->
+            toggle.accessibleText = label(shown)
+            toggle.tooltip.text = toggle.accessibleText
+        }
+    }
+
+    /**
+     * stalzone.com/login behaviour: ВОЙТИ stays disabled (grey) while a field is empty, an error paints the
+     * fields red (:error) until the user edits them, and empty error labels take no space.
+     */
+    private fun wireZoneForm() {
+        enterButton.disableProperty().bind(
+            loginField.textProperty().isEmpty.or(passwordField.textProperty().isEmpty)
+        )
+        val fields = listOfNotNull(loginField, passwordField, passwordVisibleField)
+        errorFirst.textProperty().addListener { _, _, text ->
+            fields.forEach { it.pseudoClassStateChanged(ERROR, !text.isNullOrEmpty()) }
+        }
+        fields.forEach { f -> f.textProperty().addListener { _, _, _ -> fields.forEach { it.pseudoClassStateChanged(ERROR, false) } } }
+        listOf(errorFirst, errorSecond).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
     }
 
     @FXML
@@ -75,4 +102,10 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     @FXML fun onRegister() = showError(ctx.t("fork.not_available"))
     @FXML fun onRestore() = showError(ctx.t("fork.not_available"))
     @FXML fun onEnterSteam() = showError(ctx.t("fork.not_available"))
+    @FXML fun onEnterGoogle() = showError(ctx.t("fork.not_available"))
+    @FXML fun onEnterEpic() = showError(ctx.t("fork.not_available"))
+
+    private companion object {
+        val ERROR: PseudoClass = PseudoClass.getPseudoClass("error")
+    }
 }
