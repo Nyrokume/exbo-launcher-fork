@@ -6,7 +6,10 @@ import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 
-/** Every theme must define the same set of looked-up color tokens, so components work in all of them. */
+/**
+ * Every theme must define the same set of looked-up color tokens, so components work in all of them. The white scheme
+ * (theme-zone-light.css) sits on top of theme-zone.css but redefines every token too: no dark colour leaks into it.
+ */
 class ThemeTokensTest {
     private fun tokens(file: String): Set<String> {
         val css = Theme.resource("style/$file").readText()
@@ -18,7 +21,7 @@ class ThemeTokensTest {
     @TestFactory
     fun themesDefineAllBaseTokens(): List<DynamicTest> {
         val base = tokens("theme.css")
-        return listOf("theme-shadcn.css", "theme-zone.css").map { file ->
+        return listOf("theme-shadcn.css", "theme-zone.css", "theme-zone-light.css").map { file ->
             DynamicTest.dynamicTest(file) {
                 val missing = base - tokens(file) - "-transparent" // constant, inherited from theme.css
                 assertTrue(missing.isEmpty(), "$file misses tokens $missing")

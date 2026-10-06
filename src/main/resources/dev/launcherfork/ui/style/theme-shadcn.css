@@ -82,10 +82,11 @@
     -switch-on: #e5e5e5;              /* switch on: track (14.2:1 on -card) */
     -switch-on-hover: #fafafa;
     -ram-free: #666666;               /* RAM segment: available, not selected (3.1:1 on -card) */
-    -ram-reserve: #3a3a3a;            /* RAM segment: system reserve, outline only */
     -switch-off-knob: #a3a3a3;        /* switch off: knob (7.1:1 on -input) */
     -switch-off-border: #666666;      /* switch off: track ring (3.1:1 on -card) */
     -segment-selected: #e5e5e5;       /* selected segment fill under -primary-foreground: 14.2:1 */
+    -segment-text: #d4d4d4;           /* inactive segment text: 12.1:1 on -input */
+    -settings-warning: #e8b04a;       /* RAM «little memory left» note: 9.2:1 on -card */
 }
 
 /* shadcn radius-md (0.625rem - 2px = 8px). JavaFX has no size variables, so it is a selector group. */

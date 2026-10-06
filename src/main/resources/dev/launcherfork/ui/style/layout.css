@@ -399,48 +399,56 @@
 
 /* ===================== settings ===================== */
 /* One screen at 900x580 (SettingsScreenTest), below the nav row. One tidy list: small Bebas group labels over subtle
-   cards; every row of a card is "label left, control right", 36 px, a thin separator under all but the last. */
+   cards; every row of a card is "label left, control right", 34 px (7 rows in ПОВЕДЕНИЕ since «Тема»; room for the 28 px
+   segmented controls and limit fields: tighter gaps between the groups instead), a thin separator under all but the last. */
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.settings-content { -fx-padding: 4 24 16 24; -fx-max-width: 820; -fx-spacing: 14; }
-.settings-group { -fx-spacing: 6; }
+.settings-content { -fx-padding: 4 24 8 24; -fx-max-width: 820; -fx-spacing: 10; }
+.settings-group { -fx-spacing: 5; }
 .settings-group-label { -fx-font-size: 17; -fx-text-fill: -settings-heading; }
 .settings-columns { -fx-spacing: 14; }
 .settings-card { -fx-padding: 0 14 0 14; }
-.settings-card.ram-card { -fx-padding: 10 14 8 14; -fx-spacing: 8; }
+.settings-card.ram-card { -fx-padding: 8 14 6 14; -fx-spacing: 8; }
 .settings-row {
-    -fx-min-height: 36; -fx-pref-height: 36; -fx-max-height: 36;
+    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
     -fx-border-color: transparent transparent -settings-divider transparent;
     -fx-border-width: 0 0 1 0;
 }
 .settings-row.last { -fx-border-color: transparent; }
 .settings-label { -fx-font-size: 14; -fx-text-fill: -settings-label; }
 
-/* segmented control (auto-exit, P2P, language): RadioButtons drawn as parts of one pill, accent on the selected */
+/* segmented control (auto-exit, P2P, theme, language): RadioButtons drawn as the parts of one control. Same box as the
+   speed-limit fields (-input, 1 px -border, .zone-radius-sm, 28 px tall); every part is 26 px, 14 px text, 13 px side
+   padding, edge to edge (no gaps, no inset pill). Inactive: bright -segment-text (>= 7:1 on -input); hover / keyboard
+   focus: a subtle -tile-hover tint; selected: the theme's accent (-segment-selected) fills the whole part, text
+   -primary-foreground. Font family / weight (medium) per theme: theme.css, theme-zone.css. */
 .segmented {
     -fx-background-color: -input;
     -fx-border-color: -border;
     -fx-border-width: 1;
-    -fx-padding: 2;
-    -fx-spacing: 2;
+    -fx-padding: 0;
+    -fx-spacing: 0;
 }
 .segment {
-    -fx-font-size: 13;
-    -fx-text-fill: -settings-muted;
+    -fx-font-size: 14;
+    -fx-text-fill: -segment-text;
     -fx-background-color: transparent;
-    -fx-padding: 2 10 2 10;
+    -fx-padding: 0 13 0 13;
+    -fx-min-height: 26; -fx-pref-height: 26; -fx-max-height: 26;
     -fx-label-padding: 0;
     -fx-graphic-text-gap: 0;
+    -fx-alignment: center;
     -fx-cursor: hand;
 }
 .segment > .radio, .segment > .radio > .dot {
     -fx-padding: 0; -fx-background-color: transparent; -fx-background-insets: 0; -fx-border-color: transparent;
     -fx-min-width: 0; -fx-pref-width: 0; -fx-max-width: 0; -fx-min-height: 0; -fx-pref-height: 0; -fx-max-height: 0;
 }
-.segment:hover { -fx-text-fill: -foreground; -fx-background-color: -tile-hover; }
-.segment:selected, .segment:selected:hover { -fx-background-color: -segment-selected; -fx-text-fill: -primary-foreground; }
-.segment:focused { -fx-text-fill: -foreground; }
-.segment:selected:focused { -fx-text-fill: -primary-foreground; }
+.segment:hover, .segment:focus-visible { -fx-text-fill: -settings-label; -fx-background-color: -tile-hover; }
+.segment:selected, .segment:selected:hover, .segment:selected:focus-visible {
+    -fx-background-color: -segment-selected;
+    -fx-text-fill: -primary-foreground;
+}
 
 /* on/off option: a small switch on the right of the row (the whole row clicks), so it never looks like a radio.
    Off: knob left on the input track; on: accent track, light knob right. 30x16, round ends. */
@@ -464,9 +472,9 @@
 .switch:selected > .box > .mark { -fx-background-color: -primary-foreground; }
 .switch:selected:hover > .box { -fx-background-color: -switch-on-hover, -switch-on-hover; }
 
-/* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb. Three
-   states: accent up to the value (:filled), mid grey = available (-ram-free), outline only = system reserve above the
-   max (:reserve, cannot be reached). "Выделено: 6 ГБ из 16 ГБ" above it, the min / max captions (RamScale) under it. */
+/* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb. Two
+   states: accent up to the value (:filled), mid grey = available (-ram-free); every segment from the min (2 GB) to the
+   whole memory can be chosen. "Выделено: 6 ГБ из 16 ГБ" above it, the min / max captions (RamScale) under it. */
 .ram-bar { -fx-cursor: hand; -fx-border-color: transparent; -fx-border-width: 1; -fx-border-insets: -4; }
 .ram-bar:focus-visible { -fx-border-color: -border-hover; }
 .ram-segment {
@@ -475,8 +483,10 @@
 }
 .ram-segment:filled { -fx-background-color: -ram-filled; }
 .ram-bar:hover .ram-segment:filled { -fx-background-color: -ram-filled-hover; }
-.ram-segment:reserve { -fx-background-color: -ram-reserve, -card; -fx-background-insets: 0, 1; }
 .ram-summary { -fx-font-size: 14; -fx-text-fill: -settings-label; }
+/* «Мало памяти останется системе»: a quiet note after the summary (no box, no icon), only hidden when not needed */
+.ram-head { -fx-spacing: 12; }
+.ram-warning { -fx-font-size: 13; -fx-text-fill: -settings-warning; }
 .ram-scale-label { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
 
 /* inputs (dark tile + border, red on focus) */
