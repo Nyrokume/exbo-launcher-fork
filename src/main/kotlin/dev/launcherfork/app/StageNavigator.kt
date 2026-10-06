@@ -10,6 +10,7 @@ import dev.launcherfork.ui.Loaded
 import dev.launcherfork.ui.Navigator
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.UpdatePanel
+import dev.launcherfork.ui.components.WallpaperLayer
 import dev.launcherfork.ui.components.WindowFrame
 import dev.launcherfork.ui.screens.auth.AgeGateController
 import dev.launcherfork.ui.screens.auth.InitialAuthController
@@ -231,6 +232,9 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     }
 
     val isOverlayShown: Boolean get() = windowController.isOverlayShown
+
+    /** Background picture of the main window (this launch's wallpaper), null when none was chosen. */
+    val wallpaperLayer: WallpaperLayer? get() = windowController.wallpaper
 
     // ---- internals ----
 
