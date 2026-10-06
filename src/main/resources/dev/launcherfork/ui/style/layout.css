@@ -71,6 +71,8 @@
 .auth-panel-host { -fx-background-color: -background; }
 
 /* ===================== profile (top-right of the main window) ===================== */
+/* one gap for the whole top-right row: ФОРУМ ↔ ПОДДЕРЖКА (links row) and ПОДДЕРЖКА ↔ nickname (top bar) */
+.top-bar, .header-links-row { -fx-spacing: 20; }
 .profile-button {
     -fx-background-color: -tile;
     -fx-background-insets: 0;

@@ -7,6 +7,8 @@
   Profile control in the top-right corner of the main window (stalzone.com menu account row): UPPERCASE nickname
   + caret; a click opens a small dropdown card (in the scene, not a popup window) with Profile ↗, Switch account
   (back to the separate auth window) and Log out (confirmation modal, then the auth window).
+  The card is always managed="false": it floats under the button (ProfileController.placeMenu) and never takes
+  part in the top bar's layout, so opening it does not move the Forum / Support links.
   loginButton / accountName keep the fx:ids of the former sidebar account card.
 -->
 <VBox fx:id="profileRoot" id="profileRoot" styleClass="profile-root" alignment="TOP_RIGHT" pickOnBounds="false"

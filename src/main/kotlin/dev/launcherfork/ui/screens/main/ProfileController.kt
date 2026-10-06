@@ -17,6 +17,10 @@ import java.util.Locale
 /**
  * main/profile.fxml: nickname + caret in the top-right corner of the main window and its dropdown card.
  * The dropdown closes on a pick, on a click anywhere else and on ESC (MainController).
+ *
+ * The card is a floating layer: it stays an UNMANAGED child of [profileRoot] (never counted in the top bar's
+ * layout, so opening it cannot widen the row and push Forum / Support to the left) and is placed by hand right
+ * under the nickname button, right edges aligned ([placeMenu]).
  */
 class ProfileController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var profileRoot: VBox
@@ -49,6 +53,9 @@ class ProfileController(private val ctx: UiContext) : Disposable {
             new?.addEventFilter(MouseEvent.MOUSE_PRESSED, outsideClick)
             scene = new
         }
+        // follow the button (window resize, nickname change) and the card's own size (theme / language switch)
+        loginButton.boundsInParentProperty().addListener { _, _, _ -> placeMenu() }
+        profileMenu.layoutBoundsProperty().addListener { _, _, _ -> placeMenu() }
     }
 
     // UPPERCASE nickname (.zone-caps) - to be swapped to SpacedLabel after the redesign/auth merge
@@ -62,9 +69,17 @@ class ProfileController(private val ctx: UiContext) : Disposable {
     fun hideMenu() = setMenu(false)
 
     private fun setMenu(shown: Boolean) {
-        profileMenu.isVisible = shown
-        profileMenu.isManaged = shown
         loginButton.toggleClass("open", shown)
+        profileMenu.isVisible = shown
+        if (shown) placeMenu()
+    }
+
+    /** Pref-size the unmanaged card and hang it under the button, right-aligned with it (the parent never lays it out). */
+    private fun placeMenu() {
+        if (profileMenu.scene != null) profileMenu.applyCss()
+        profileMenu.autosize()
+        val button = loginButton.boundsInParent
+        profileMenu.relocate(button.maxX - profileMenu.width, button.maxY)
     }
 
     private fun isInside(node: Node?): Boolean {

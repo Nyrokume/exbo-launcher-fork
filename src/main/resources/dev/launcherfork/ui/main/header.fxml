@@ -9,7 +9,7 @@
       stylesheets="@../style/layout.css"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.screens.main.HeaderController">
-    <HBox fx:id="linksContainer" alignment="CENTER_RIGHT" spacing="20">
+    <HBox fx:id="linksContainer" styleClass="header-links-row" alignment="CENTER_RIGHT">
         <Label fx:id="forum" id="linkForum" styleClass="header-link,menu-item,zone-caps" text="%main.link.forum" contentDisplay="RIGHT">
             <graphic><Region styleClass="external-arrow"/></graphic>
         </Label>
