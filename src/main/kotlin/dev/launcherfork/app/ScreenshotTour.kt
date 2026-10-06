@@ -1,6 +1,9 @@
 package dev.launcherfork.app
 
+import dev.launcherfork.ui.screens.auth.AgeGateController
 import dev.launcherfork.ui.screens.auth.InitialAuthController
+import dev.launcherfork.ui.screens.auth.RegisterController
+import dev.launcherfork.ui.screens.auth.TotpAuthController
 import dev.launcherfork.theme.Theme
 import javafx.animation.PauseTransition
 import javafx.application.Platform
@@ -53,7 +56,9 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         step(1.0) { shot("04_main") }
         step(0.1) { main().profileBarController.showMenu() }
         step(0.3) { shot("05_profile_menu") }
-        step(0.1) { main().profileBarController.hideMenu(); main().setSettingsVisible(true) }
+        step(0.1) { main().profileBarController.logout.fire() } // "Выйти из аккаунта" -> the logout confirmation
+        step(0.4) { shot("05b_logout_confirm") }
+        step(0.1) { main().logoutPaneController.logoutButtonLeft.fire(); main().setSettingsVisible(true) } // cancel
         step(0.6) { shot("06_settings_game") }
         step(0.1) { main().settingsController.scroll.vvalue = 0.55 }
         step(0.4) { shot("07_settings_updates") }
@@ -82,8 +87,43 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         step(1.0) { shot("12_settings_en") }
         step(0.1) { main().profileBarController.switchAccount.fire() } // back to the separate auth window
         step(0.6) { shot("13_auth_after_switch_account") }
+        step(0.1) { nav.switchLanguage("ru"); nav.showAgeGate() }
+        registrationAndSecondFactorFlow()
         step(0.3) { Platform.exit() }
         run()
+    }
+
+    /** Pre-main window again (ru): age gate, registration form, back to login, authenticator-code panel with its toast. */
+    private fun registrationAndSecondFactorFlow() {
+        val gate = { nav.panelController as AgeGateController }
+        val form = { nav.panelController as RegisterController }
+        val auth = { nav.panelController as InitialAuthController }
+        val totp = { nav.panelController as TotpAuthController }
+        step(0.6) { shot("14_age_gate") }
+        step(0.1) {
+            gate().dayBox.value = 12; gate().monthBox.value = 3; gate().yearBox.value = gate().today.year - 12
+            gate().onContinue() // too young
+        }
+        step(0.3) { shot("15_age_gate_too_young") }
+        step(0.1) {
+            gate().dayBox.value = 26; gate().monthBox.value = 7; gate().yearBox.value = 2000
+            gate().onContinue()
+        }
+        step(0.6) { shot("16_register") }
+        step(0.1) {
+            form().emailField.text = "stalker@mail"
+            form().usernameField.text = "stalker_1"
+            form().passwordField.text = "zone2026!"
+            form().newsletterCheckBox.isSelected = true
+            form().licenseCheckBox.isSelected = true
+            form().onCreate() // e-mail format error
+        }
+        step(0.3) { shot("17_register_error") }
+        step(0.1) { form().emailField.text = "stalker@mail.ru"; form().onCreate() }
+        step(1.3) { shot("18_registered_login") }
+        step(0.1) { auth().loginField.text = "totp"; auth().passwordField.text = "secret"; auth().onEnter() }
+        step(1.3) { totp().codeInput.setCode("000000"); totp().enter() } // the mock's wrong code
+        step(1.3) { shot("19_totp_error") }
     }
 
     private fun step(delaySec: Double, action: () -> Unit) = steps.addLast(delaySec to action)

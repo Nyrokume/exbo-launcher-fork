@@ -1,7 +1,7 @@
 # WINDOWS: два окна, как в оригинальном лаунчере
 
 Запуск → окно обновления → **отдельное окно входа** (и окно кода из письма) → при успешном входе оно закрывается
-и открывается главное окно 1024×640. «Сменить аккаунт» и «Выйти» закрывают главное окно и снова открывают окно
+и открывается главное окно 1024×640. «Сменить аккаунт» и «Выйти из аккаунта» закрывают главное окно и снова открывают окно
 входа. Оверлей внутри главного окна остался только для внутренних диалогов.
 
 ## Окна
@@ -39,15 +39,21 @@ auth_window.fxml (AuthWindowController)            ← 460×620, clip со ск�
    `showLauncherUpdate(afterUpdate = showAuth)`, затем `stage.show()` (по центру экрана).
 2. Панель обновления кладётся в `panelHost`, у её контроллера вызывается `UpdatePanel.start(done)`.
 3. По `done` вызывается `showAuth()`: панель входа заменяет панель обновления в том же окне.
-4. Нужен код из письма → `showMailAuth()`, панель кода в том же окне.
+4. Нужен код из письма → `showMailAuth()`, код приложения-аутентификатора → `showTotpAuth()` (6 ячеек,
+   «Вернуться ко входу» / Esc → `showAuth()`): панель кода в том же окне.
+   Регистрация: «Создать» на панели входа → `showAgeGate()` → «ПРОДОЛЖИТЬ» (возраст ≥ 18) → `showRegister(дата)`
+   → «← Назад» / Esc → `showAgeGate(дата)` (дата сохраняется), успех → `showRegistered(логин)`: панель входа с
+   заполненным логином и уведомлением «Аккаунт … создан».
 5. Успешный вход → `showMain()`: у панели вызывается `dispose()`, строится `main.fxml`, **сначала** показывается
    главное окно (по центру того экрана, где было окно входа), **потом** окно входа прячется. Порядок важен: у
    приложения ни в какой момент не бывает ноль окон, иначе JavaFX завершился бы сам (implicit exit).
 6. «Сменить аккаунт» (меню профиля) → `auth.logout()` + `clientStates.shutdown()` → `showAuth()`.
-   «Выйти» → подтверждение (`logout_pane`) → то же самое. `StageNavigator` вызывает `MainController.dispose()`
+   «Выйти из аккаунта» → подтверждение «Выход из аккаунта» (`logout_pane`; единственный путь к нему:
+   `ProfileController.logout` → `onLogout` → `logoutPaneController.show()` в `MainController`; Enter — выйти,
+   Esc — отмена, фокус на «Отмена») → то же самое. `StageNavigator` вызывает `MainController.dispose()`
    **до** показа окна входа (снимает слушатели со сцены и стора), затем окно входа появляется по центру экрана,
    где было главное окно, а главное окно прячется.
-7. Крестик любого окна (и Alt+F4) → `close()`: dispose, обе Stage прячутся, `Platform.exit()`. Скрытых окон не
+7. Крестик любого окна (и Alt+F4) → `close()` **без подтверждения выхода из аккаунта**: dispose, обе Stage прячутся, `Platform.exit()`. Скрытых окон не
    остаётся.
 
 ## Какие файлы ищет навигатор
@@ -57,6 +63,10 @@ auth_window.fxml (AuthWindowController)            ← 460×620, clip со ск�
 | `showLauncherUpdate` | `ui/update_panel.fxml` | `ui/update.fxml` |
 | `showAuth` | `ui/auth_panel.fxml` | `ui/initial_auth.fxml` |
 | `showMailAuth` | `ui/mail_auth_panel.fxml` | `ui/mail_auth.fxml` |
+| `showTotpAuth` | `ui/totp_auth_panel.fxml` | — |
+| `showAgeGate(date?)` | `ui/age_gate_panel.fxml` | — |
+| `showRegister(date)` | `ui/register_panel.fxml` | — |
+| `showRegistered(login)` | `showAuth()` + `InitialAuthController.showRegistered(login)` | |
 
 Навигатор проверяет, лежит ли новый файл в classpath (`Theme.UI_ROOT + имя`), иначе берёт legacy-файл. **Добавив
 новые панели, ни `StageNavigator`, ни `Theme.kt` менять не нужно.** У legacy-панелей (бывшие окна 379×490)
@@ -77,8 +87,11 @@ auth_window.fxml (AuthWindowController)            ← 460×620, clip со ск�
 - Контроллер получает `UiContext` через конструктор `(UiContext)` (`ui/Fxml.kt`).
 - **Панель обновления** реализует `dev.launcherfork.ui.UpdatePanel` (`fun start(done: () -> Unit)`). Если не
   реализует, навигатор сразу вызывает `afterUpdate`.
-- **Панели входа** по результату вызывают `ctx.navigator.showMain()` (успех), `showMailAuth()` (нужен код) или
-  показывают ошибку у себя. Готовая логика: `AuthScreenBase.handle(Result<AuthResult>)`.
+- **Панели входа** по результату вызывают `ctx.navigator.showMain()` (успех), `showMailAuth()` (код из письма),
+  `showTotpAuth()` (код приложения) или показывают ошибку у себя. Готовая логика:
+  `AuthScreenBase.handle(Result<AuthResult>)`. Панель TOTP (`TotpAuthController`) самостоятельна: ячейки
+  `CodeInput` (число ячеек — параметр), стили в `zone-totp.css`; экран кода из письма в этой ветке не меняется. Новые методы `Navigator` (`showTotpAuth`, `showAgeGate`,
+  `showRegister`, `showRegistered`) имеют реализации по умолчанию, тестовым навигаторам их писать не нужно.
 - Таймеры и слушатели → `dev.launcherfork.ui.Disposable`: `dispose()` вызывается при замене панели, входе и закрытии.
 - Фокус при показе уходит в первый фокусируемый узел панели (обычно поле логина).
 - Стили: `layout.css` подключён к корню окна. Цвета берите только из токенов (`-card`, `-card-description`,
