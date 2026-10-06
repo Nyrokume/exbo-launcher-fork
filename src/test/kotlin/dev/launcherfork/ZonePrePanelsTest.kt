@@ -35,49 +35,67 @@ class ZonePrePanelsTest {
         return Fxml.load<MailAuthController>(ctx, "mail_auth_panel.fxml").controller
     }
 
+    private fun MailAuthController.cells() = requireNotNull(codeInput) { "mail_auth_panel.fxml has no CodeInput" }
+
     @Test
-    fun confirmIsGreyUntilAllDigitsAndEnterDoesNotBypassIt() = FxTestSupport.onFx {
+    fun nineCellsAndConfirmIsGreyUntilAllAreFilled() = FxTestSupport.onFx {
         val c = mail()
-        assertEquals(true, c.cssHover)
+        val cells = c.cells()
+        assertEquals(MailAuthController.CODE_LENGTH, cells.cells.size)
+        assertEquals(9, MailAuthController.CODE_LENGTH)
+        assertEquals("Цифра 1 из 9", cells.cells.first().accessibleText)
         assertTrue(c.enterButton.isDisabled)
-        c.codeField.text = "12345"
+        cells.setCode("26841924")
         assertTrue(c.enterButton.isDisabled)
-        c.enter() // Enter in the field with 5 digits
+        c.enter() // Enter in a cell with 8 digits
         assertTrue(c.errorFirst.text.isNullOrEmpty())
-        c.codeField.text = "123456"
+        cells.cells[8].replaceSelection("9")
+        assertEquals("268419249", c.code)
         assertFalse(c.enterButton.isDisabled)
-        c.codeField.text = "12a"
-        assertEquals("12", c.codeField.text, "letters are dropped, digits stay")
     }
 
     @Test
-    fun pastedCodeKeepsOnlyDigitsAndIsCutToSix() = FxTestSupport.onFx {
+    fun pastedCodeFillsEveryCell() = FxTestSupport.onFx {
         val c = mail()
-        c.codeField.replaceSelection("123 456\n")
-        assertEquals("123456", c.codeField.text, "spaces and the newline from the e-mail are dropped")
+        val cells = c.cells()
+        cells.cells[4].replaceSelection("268 419 249\n") // pasted into a middle cell, with spaces and a newline
+        assertEquals("268419249", c.code, "a whole code fills all cells from the first")
+        assertTrue(cells.cells.all { it.text.length == 1 })
         assertFalse(c.enterButton.isDisabled)
-        c.codeField.clear()
-        c.codeField.replaceSelection("12-34-56-78")
-        assertEquals("123456", c.codeField.text, "cut to six digits")
-        c.codeField.selectRange(2, 4)
-        c.codeField.replaceSelection("9 9 9")
-        assertEquals("129956", c.codeField.text, "a selection is replaced by as many digits as fit")
-        c.codeField.replaceSelection("x")
-        assertEquals("129956", c.codeField.text)
+        cells.clear()
+        cells.cells[0].replaceSelection("26-84-19-24-99-1")
+        assertEquals("268419249", c.code, "extra digits are dropped")
+        cells.cells[3].replaceSelection("x")
+        assertEquals("268419249", c.code, "letters change nothing")
     }
 
     @Test
-    fun serverErrorPaintsTheCodeFieldUntilEdited() {
+    fun serverErrorPaintsTheCellsUntilEdited() {
         // fresh mock without a pending login answers SERVER_ERROR
-        val c = FxTestSupport.onFx { mail().also { it.codeField.text = "123456"; it.enter() } }
+        val c = FxTestSupport.onFx { mail().also { it.cells().setCode("268419249"); it.enter() } }
         assertTrue(FxTestSupport.waitFx { !c.errorFirst.text.isNullOrEmpty() })
         FxTestSupport.onFx {
-            assertTrue(c.codeField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            val cells = c.cells()
+            assertTrue(cells.cells.all { cell -> cell.pseudoClassStates.any { it.pseudoClassName == "error" } })
             assertTrue(c.errorFirst.isManaged)
             assertFalse(c.errorSecond.isManaged)
-            c.codeField.text = "12345"
-            assertFalse(c.codeField.pseudoClassStates.any { it.pseudoClassName == "error" })
+            cells.cells[8].replaceSelection("1")
+            assertTrue(c.errorFirst.text.isNullOrEmpty())
+            assertFalse(cells.cells.any { cell -> cell.pseudoClassStates.any { it.pseudoClassName == "error" } })
         }
+    }
+
+    @Test
+    fun nineDigitCodeSignsInAfterTheEmailStep() {
+        val app = AppContext.mock(language = "ru", speed = 50.0, authDelayMs = 0)
+        assertEquals(dev.launcherfork.domain.AuthResult.CodeRequired, app.services.auth.login("2fa", "x", false))
+        val ctx = UiContext(app.services, NoopNavigator, Strings.bundle("ru"), "ru", app.clientStates, app.devMode)
+        val c = FxTestSupport.onFx {
+            Fxml.load<MailAuthController>(ctx, "mail_auth_panel.fxml").controller.also { it.cells().setCode("268419249"); it.enter() }
+        }
+        assertTrue(FxTestSupport.waitFx { app.services.auth.currentSession != null }, "the 9-digit code was not accepted")
+        FxTestSupport.onFx { assertTrue(c.errorFirst.text.isNullOrEmpty()) }
+        app.shutdown()
     }
 
     @Test
@@ -91,10 +109,13 @@ class ZonePrePanelsTest {
     }
 
     @Test
-    fun legacyMailPanelUntouched() = FxTestSupport.onFx {
+    fun legacyMailPanelKeepsItsTextField() = FxTestSupport.onFx {
         val c = Fxml.load<MailAuthController>(FxTestSupport.context("ru"), "mail_auth.fxml").controller
-        assertEquals(null, c.cssHover)
+        assertEquals(null, c.codeInput)
+        val field = requireNotNull(c.codeField)
         assertFalse(c.enterButton.disableProperty().isBound)
+        field.replaceSelection("268 419 249 1")
+        assertEquals("268419249", field.text, "digits only, cut to nine")
     }
 
     @Test
@@ -134,10 +155,23 @@ class ZonePrePanelsTest {
         assertTrue(FxTestSupport.waitFx { nav.panelController is MailAuthController })
         assertTrue(FxTestSupport.waitFx {
             val c = nav.panelController as MailAuthController
-            nav.authStage.scene.focusOwner === c.codeField
-        }, "focus is not in the code field")
+            nav.authStage.scene.focusOwner === c.codeInput!!.cells.first()
+        }, "focus is not in the first code cell")
         snap(nav, "mail_window_ru.png")
-        FxTestSupport.onFx { (nav.panelController as MailAuthController).codeField.text = "123456" }
+        FxTestSupport.onFx {
+            val c = nav.panelController as MailAuthController
+            c.codeInput!!.setCode("268419249")
+            val scene = nav.authStage.scene
+            scene.root.applyCss(); scene.root.layout()
+            // all nine cells inside the 460 px window, with the form's side padding
+            val first = c.codeInput!!.cells.first().let { it.localToScene(it.layoutBounds) }
+            val last = c.codeInput!!.cells.last().let { it.localToScene(it.layoutBounds) }
+            assertTrue(first.minX >= 20.0 && last.maxX <= scene.width - 20.0, "cells overflow: ${first.minX}..${last.maxX} of ${scene.width}")
+            val button = c.enterButton.localToScene(c.enterButton.layoutBounds)
+            assertEquals(button.minX, first.minX, 1.0, "cells start where ПОДТВЕРДИТЬ starts")
+            // like the login panel: no hole between the cells and ПОДТВЕРДИТЬ, spare height goes to the top card
+            assertTrue(button.minY - first.maxY <= 48.0, "gap above ПОДТВЕРДИТЬ: ${button.minY - first.maxY}")
+        }
         snap(nav, "mail_window_filled.png")
         FxTestSupport.onFx { nav.close() }
         app.shutdown()

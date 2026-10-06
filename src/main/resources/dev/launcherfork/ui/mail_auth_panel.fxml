@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.Boolean?>
+<?import dev.launcherfork.ui.components.CodeInput?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 
 <!--
   E-mail code panel for the separate login window, same look as auth_panel.fxml (stalzone.com/login, LOGIN.md).
-  Top block (card): title + what happened. Bottom block (card description): 6-digit code, ПОДТВЕРДИТЬ, back to login.
+  Top block (card): title + what happened. Bottom block (card description): 9 digit cells (shared CodeInput, as on the authenticator screen), ПОДТВЕРДИТЬ, back to login.
   Same fx:ids and controller as mail_auth.fxml; explicit ids so legacy auth.css ids (#input, #enterButton) never match.
 -->
-<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="588.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.MailAuthController">
-    <fx:define>
-        <Boolean fx:id="cssHover" fx:value="true" />
-    </fx:define>
+<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css,@style/zone-totp.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="588.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.MailAuthController">
     <VBox styleClass="zone-frame">
         <HBox styleClass="zone-titlebar" visible="false" managed="false">
             <ImageView fx:id="header" managed="false" visible="false" />
@@ -21,19 +18,19 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <VBox styleClass="zone-top">
+        <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
             <Label styleClass="zone-title" text="%fork.zone.mail_title" wrapText="true" minHeight="-Infinity" />
             <Label styleClass="zone-description" text="%fork.zone.mail_info" wrapText="true" minHeight="-Infinity" />
         </VBox>
 
-        <VBox styleClass="zone-bottom" VBox.vgrow="ALWAYS">
-            <Label styleClass="zone-field-label" text="%auth.mail_code" labelFor="$codeField" />
-            <TextField id="zoneCode" fx:id="codeField" styleClass="zone-input, zone-code, zone-radius-sm" onAction="#enter" promptText="%fork.zone.code_prompt" />
+        <VBox styleClass="zone-bottom">
+            <Label styleClass="zone-field-label" text="%auth.mail_code" />
+            <CodeInput fx:id="codeInput" id="zoneMailCode" cellCount="9" />
             <VBox styleClass="zone-errors">
                 <Label id="zoneErrorFirst" fx:id="errorFirst" styleClass="zone-error" wrapText="true" />
                 <Label id="zoneErrorSecond" fx:id="errorSecond" styleClass="zone-error" wrapText="true" />
             </VBox>
-            <Region VBox.vgrow="ALWAYS" styleClass="zone-spacer" />
+            <Region styleClass="zone-spacer" />
             <Button id="zoneConfirm" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#enter" text="%fork.zone.confirm" maxWidth="Infinity" />
             <HBox styleClass="zone-footer">
                 <Label styleClass="zone-footer-text" text="%fork.zone.wrong_account" />

@@ -173,11 +173,12 @@
 
 /* ---------- e-mail code panel (mail_auth_panel.fxml) ---------- */
 .zone-field-label { -fx-font-size: 14; -fx-text-fill: -text-description; }
-.zone-code {
-    -fx-font-family: "Bebas Neue Regular";
-    -fx-font-size: 30;
-    -fx-alignment: center;
-    -fx-padding: 0 20 0 20;
+/* 9 digit cells (CodeInput cellCount="9", base look in zone-totp.css) in the 412 px form: 9 x 40 + 8 x 6 = 408 */
+.code-input.cells-9 { -fx-spacing: 6; }
+.cells-9 .code-cell {
+    -fx-font-size: 22;
+    -fx-pref-width: 40; -fx-pref-height: 52;
+    -fx-min-height: 52; -fx-max-height: 52;
 }
 
 /* ---------- update panel (update_panel.fxml) ---------- */
