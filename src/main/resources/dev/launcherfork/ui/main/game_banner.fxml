@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Game banner in the centre slot of the main screen (GameBannerController): the selected game's title (display font),
+  lead, subheading, body and closing line, left-aligned, text at most 560 px wide. No online line: the count is shown
+  once, in the games list. No text here: it comes with the game (Server.description) and the i18n bundles. No card,
+  no box: plain text on the content background. The ScrollPane (transparent, no visible frame) fills the anchored centre slot, so
+  the text wraps and, in a small window, scrolls inside the slot instead of pushing the status row / ИГРАТЬ.
+-->
+<ScrollPane fx:id="scroll" id="gameBanner" styleClass="game-banner-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+            focusTraversable="false" stylesheets="@../style/layout.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.main.GameBannerController">
+    <VBox styleClass="game-banner-column" fillWidth="true">
+        <VBox fx:id="content" id="gameBannerContent" styleClass="game-banner" maxWidth="560">
+            <Label fx:id="title" id="gameTitle" styleClass="game-banner-title,font-display" minHeight="-Infinity"/>
+            <Label fx:id="lead" id="gameLead" styleClass="game-banner-lead,font-meta" wrapText="true" minHeight="-Infinity"/>
+            <Label fx:id="subheading" id="gameSubheading" styleClass="game-banner-subheading,font-meta" wrapText="true" minHeight="-Infinity"/>
+            <Label fx:id="body" id="gameBody" styleClass="game-banner-body,font-meta" wrapText="true" minHeight="-Infinity"/>
+            <Label fx:id="closing" id="gameClosing" styleClass="game-banner-closing,font-meta" wrapText="true" minHeight="-Infinity"/>
+        </VBox>
+    </VBox>
+</ScrollPane>

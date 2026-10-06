@@ -14,7 +14,8 @@ data class Server(
     val caption: String,
     val online: Boolean,
     val players: Int,
-    val description: List<String>,
+    /** Banner text on the main screen (title, lead, …); null = the game has no description, the banner stays empty. */
+    val description: GameDescription?,
     val iconUri: URI,
     val backgroundUri: URI,
     /** Fake "client is installed" flag; decides Download vs Play button. */
@@ -24,6 +25,17 @@ data class Server(
 ) {
     /** Players online for the games list; null = unknown or offline ([online] is false or [players] is negative). */
     val onlineCount: Int? get() = players.takeIf { online && it >= 0 }
+}
+
+/**
+ * Text of a game's banner on the main screen: title, lead, subheading, body and a closing line, plus the live online
+ * line built by the UI. It comes with the game from ServerRepository, the UI never hard-codes it:
+ *  - [Keys]: i18n keys `<prefix>.title|lead|subheading|body|closing` in the messages bundles (mock data, ru + en);
+ *  - [Text]: ready text in the user's language, for a real server that sends its own description later.
+ */
+sealed interface GameDescription {
+    data class Keys(val prefix: String) : GameDescription
+    data class Text(val title: String, val lead: String, val subheading: String, val body: String, val closing: String) : GameDescription
 }
 
 data class UserSession(val login: String)
@@ -107,6 +119,9 @@ enum class P2pMode { ALWAYS, EXCEPT_MOBILE, NEVER }
 /** When the launcher closes itself (settings). */
 enum class ExitMode { ON_GAME_START, ON_GAME_EXIT, NEVER }
 
+/** Colour scheme (settings «Тема»): the dark theme chosen by -Dlauncher.theme, or the white STALZONE scheme. */
+enum class Appearance { DARK, LIGHT }
+
 data class LauncherSettings(
     val runOnStartUp: Boolean = false,
     val startOnDownloaded: Boolean = true,
@@ -125,4 +140,6 @@ data class LauncherSettings(
     val uploadLimitKb: Int = 0,
     val gameRoot: Path = Path.of(System.getProperty("user.home"), "Games", "EXBO"),
     val language: String = "ru",
+    /** «Тема: Тёмная / Белая»; survives a restart (data/local/AppearanceFileStore), the other fields do not. */
+    val appearance: Appearance = Appearance.DARK,
 )

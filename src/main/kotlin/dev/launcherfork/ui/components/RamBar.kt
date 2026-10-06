@@ -15,12 +15,12 @@ import kotlin.math.ceil
  * RAM bar of the settings page, built like the original EXBO launcher's control (`progression_entry.fxml` +
  * `ProgressionController`: a 13 px bar of 14 equal segments with 2 px gaps, no thumb, filled with the accent up to the
  * value, click / drag anywhere sets it, the value as text under the bar). Here every segment is one GB of the
- * computer's memory (0..[totalGb]), so "6 ГБ из 16 ГБ" fills 6 of 16 segments; the segments above [maxGb] (the system
- * reserve) are drawn as outlines and cannot be reached; [RamScale] captions the min / max under the bar.
+ * computer's memory (0..[totalGb]), so "6 ГБ из 16 ГБ" fills 6 of 16 segments, and every segment from [minGb] up to
+ * the last one can be chosen; [RamScale] captions the min / max under the bar.
  *
  * Values are whole GB, steps of exactly 1 GB, always clamped to [minGb]..[maxGb]. Mouse: press / drag on segment N
  * selects N GB; keyboard (focusable): Left / Down -1, Right / Up +1, Page Down / Page Up -2 / +2, Home / End = min /
- * max. [onChange] fires only for user changes. Styling: .ram-bar, .ram-segment(:filled, :reserve) in layout.css; the
+ * max. [onChange] fires only for user changes. Styling: .ram-bar, .ram-segment(:filled) in layout.css; the
  * segment height comes from CSS.
  */
 class RamBar : Region() {
@@ -34,7 +34,7 @@ class RamBar : Region() {
         private set
     var minGb: Int = 2
         private set
-    var maxGb: Int = 14
+    var maxGb: Int = 16
         private set
     var recommendedGb: Int = 6
         private set
@@ -69,7 +69,6 @@ class RamBar : Region() {
                 styleClass.setAll("ram-segment")
                 userData = gb
                 isMouseTransparent = true
-                pseudoClassStateChanged(RESERVE, gb > maxGb)
             }
         }
         children.setAll(segments)
@@ -166,6 +165,5 @@ class RamBar : Region() {
 
     companion object {
         val FILLED: PseudoClass = PseudoClass.getPseudoClass("filled")
-        val RESERVE: PseudoClass = PseudoClass.getPseudoClass("reserve")
     }
 }

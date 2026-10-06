@@ -11,11 +11,13 @@
 
   The page starts BELOW the nav row (main.fxml anchors it under the top bar; no page title: the sidebar already marks
   НАСТРОЙКИ as active). One tidy list: small Bebas group labels, each over a subtle card (.card) whose rows all look
-  the same: label left, control right, 36 px, thin separators between rows; no wrapping labels (long wording in
+  the same: label left, control right, 34 px, thin separators between rows; no wrapping labels (long wording in
   tooltips).
-    ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" + the segmented RAM bar (like the original launcher) + min / max
-                        captions under the selectable range (RamScale).
-    ПОВЕДЕНИЕ           auto-exit and P2P as segmented controls (accent on the selected part), four switches.
+    ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" (+ «Мало памяти останется системе» for the last 2 GB) + the
+                        segmented RAM bar (like the original launcher, 2 GB .. the whole memory) + min / max captions
+                        under the selectable range (RamScale).
+    ПОВЕДЕНИЕ           auto-exit, P2P and the theme (Тёмная / Белая) as segmented controls (accent on the selected
+                        part), four switches.
     ОБНОВЛЕНИЕ | ЯЗЫК   one row each, side by side: speed limits (download / upload fields) | Русский / English.
 -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
@@ -25,6 +27,7 @@
         <ToggleGroup fx:id="exitGroup"/>
         <ToggleGroup fx:id="p2pGroup"/>
         <ToggleGroup fx:id="languageGroup"/>
+        <ToggleGroup fx:id="themeGroup"/>
     </fx:define>
     <ScrollPane fx:id="scroll" id="settingsScroll" styleClass="settings-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER"
                 AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
@@ -35,6 +38,7 @@
                 <VBox fx:id="ramCard" styleClass="settings-card,card,zone-radius-md,ram-card">
                     <HBox styleClass="ram-head" alignment="CENTER_LEFT">
                         <Label fx:id="ramSummary" id="ramSummary" styleClass="ram-summary" minWidth="-Infinity"/>
+                        <Label fx:id="ramWarning" id="ramWarning" styleClass="ram-warning" minWidth="-Infinity" visible="false"/>
                     </HBox>
                     <RamBar fx:id="ramBar" id="ramBar" maxWidth="Infinity" accessibleText="%settings.ram"/>
                     <RamScale fx:id="ramScale" id="ramScale" maxWidth="Infinity"/>
@@ -61,6 +65,14 @@
                             <RadioButton fx:id="p2pAlways" styleClass="segment,zone-radius-sm" text="%settings.p2p.always" toggleGroup="$p2pGroup" minWidth="-Infinity"/>
                             <RadioButton fx:id="p2pNotMobile" styleClass="segment,zone-radius-sm" text="%settings.p2p.not_mobile" toggleGroup="$p2pGroup" minWidth="-Infinity"/>
                             <RadioButton fx:id="p2pNever" styleClass="segment,zone-radius-sm" text="%settings.p2p.never" toggleGroup="$p2pGroup" minWidth="-Infinity"/>
+                        </HBox>
+                    </HBox>
+                    <HBox fx:id="themeRow" styleClass="settings-row" alignment="CENTER_LEFT">
+                        <Label fx:id="themeLabel" styleClass="settings-label,row-label" text="%settings.theme" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
+                            <RadioButton fx:id="themeDark" id="themeDark" styleClass="segment,zone-radius-sm" text="%settings.theme.dark" toggleGroup="$themeGroup" minWidth="-Infinity"/>
+                            <RadioButton fx:id="themeLight" id="themeLight" styleClass="segment,zone-radius-sm" text="%settings.theme.light" toggleGroup="$themeGroup" minWidth="-Infinity"/>
                         </HBox>
                     </HBox>
                     <HBox fx:id="startOnDownloadedRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">

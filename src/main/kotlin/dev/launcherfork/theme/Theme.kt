@@ -1,5 +1,6 @@
 package dev.launcherfork.theme
 
+import dev.launcherfork.domain.Appearance
 import javafx.scene.Scene
 import javafx.scene.effect.ColorAdjust
 import javafx.scene.effect.Effect
@@ -87,8 +88,39 @@ object Theme {
      */
     private val FONT_FILES = listOf("Manrope-Light.ttf", "Manrope-Bold.ttf", "europe.ttf", "Roboto-Regular.ttf")
 
-    /** Visual theme: "exbo" (original colors, default) or "shadcn" (shadcn/ui dark neutral). -Dlauncher.theme=shadcn */
-    val themeName: String = System.getProperty("launcher.theme", "exbo").lowercase()
+    /** Theme without -Dlauncher.theme: the red STALZONE look (exbo / shadcn stay available through the property). */
+    const val DEFAULT_THEME = "zone"
+
+    /** -Dlauncher.theme value that starts in the white scheme (on top of "zone"). */
+    const val ZONE_LIGHT = "zone-light"
+
+    private val requestedTheme: String = System.getProperty("launcher.theme", DEFAULT_THEME).lowercase()
+
+    /**
+     * Dark base theme: "zone" (STALZONE, default), "exbo" (original EXBO colors) or "shadcn" (shadcn/ui dark neutral).
+     * -Dlauncher.theme=shadcn; -Dlauncher.theme=zone-light is "zone" started in the white scheme.
+     */
+    var themeName: String = if (requestedTheme == ZONE_LIGHT) "zone" else requestedTheme
+        internal set // fixed per JVM; tests switch it to check the zone-only white scheme
+
+    /**
+     * Set by -Dlauncher.theme=zone-light: wins over the saved setting at start (Settings can still switch).
+     * Settings then show «Белая» while the persisted choice stays whatever was saved: the property overrides at startup only and is never written.
+     */
+    val forcedAppearance: Appearance? = if (requestedTheme == ZONE_LIGHT) Appearance.LIGHT else null
+
+    /**
+     * The white scheme exists for the zone (STALZONE) look only; the exbo / shadcn dev themes stay dark (settings show
+     * the «Тема» row disabled there).
+     */
+    val supportsLight: Boolean get() = themeName == "zone"
+
+    /**
+     * Current colour scheme of every window: DARK = [themeName] as is; LIGHT = the white STALZONE scheme
+     * (theme-zone-light.css over theme-zone.css), zone only. Changed by StageNavigator.switchAppearance
+     * (settings «Тема») and LauncherApp at start (saved setting or [forcedAppearance]).
+     */
+    @Volatile var appearance: Appearance = forcedAppearance ?: Appearance.DARK
 
     /** Registers bundled fonts so CSS can refer to them by family name. Returns loaded family names. */
     fun loadFonts(): List<String> = FONT_FILES.mapNotNull { file ->
@@ -117,16 +149,22 @@ object Theme {
 
     /**
      * theme.css must be on the Scene so that .root defines the color tokens for every subtree.
-     * Optional theme overrides (-Dlauncher.theme=shadcn|zone) come right after it.
+     * Optional theme overrides (-Dlauncher.theme=shadcn|zone) come right after it; the white scheme (zone + LIGHT)
+     * adds theme-zone-light.css (tokens only) on top, so fonts, radii and layout stay those of the zone theme.
      */
-    fun apply(scene: Scene, lang: String) {
+    fun stylesheets(theme: String, appearance: Appearance, lang: String): List<String> {
         val sheets = mutableListOf(stylesheet("theme.css"))
-        if (themeName == "shadcn") sheets += stylesheet("theme-shadcn.css")
-        if (themeName == "zone") {
+        if (theme == "shadcn") sheets += stylesheet("theme-shadcn.css")
+        if (theme == "zone") {
             zoneFonts // fonts must be registered before the stylesheet names them
             sheets += stylesheet("theme-zone.css")
+            if (appearance == Appearance.LIGHT) sheets += stylesheet("theme-zone-light.css")
         }
         sheets += stylesheet(if (lang == "en") "lang_en.css" else "lang_ru.css")
-        scene.stylesheets.setAll(sheets)
+        return sheets
+    }
+
+    fun apply(scene: Scene, lang: String) {
+        scene.stylesheets.setAll(stylesheets(themeName, appearance, lang))
     }
 }

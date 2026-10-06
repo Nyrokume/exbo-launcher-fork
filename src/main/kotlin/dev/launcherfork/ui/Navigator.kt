@@ -1,5 +1,6 @@
 package dev.launcherfork.ui
 
+import dev.launcherfork.domain.Appearance
 import java.time.LocalDate
 import javafx.stage.Window
 
@@ -26,6 +27,8 @@ interface Navigator {
     /** Closes the pre-main window and opens the main window with a main screen built for the current session. */
     fun showMain()
     fun switchLanguage(lang: String)
+    /** Re-styles every launcher window (main and pre-main) with the dark or the white scheme, live. */
+    fun switchAppearance(appearance: Appearance) = Unit
     fun minimize()
     fun toggleMaximize() {}
     fun close()

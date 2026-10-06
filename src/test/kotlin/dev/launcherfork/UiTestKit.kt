@@ -2,6 +2,7 @@ package dev.launcherfork
 
 import dev.launcherfork.app.AppContext
 import dev.launcherfork.app.StageNavigator
+import dev.launcherfork.domain.Appearance
 import dev.launcherfork.theme.Theme
 import javafx.geometry.Bounds
 import javafx.scene.Node
@@ -18,7 +19,8 @@ import javax.imageio.ImageIO
 
 /** Shared helpers of the settings / game-actions UI tests: live main window, theme switch, events, previews. */
 object UiTestKit {
-    val THEMES = listOf("exbo", "shadcn", "zone")
+    /** The dark themes plus the white scheme ("zone-light" = zone + theme-zone-light.css, settings «Тема: Белая»). */
+    val THEMES = listOf("exbo", "shadcn", "zone", Theme.ZONE_LIGHT)
 
     fun Node.sceneBounds(): Bounds = localToScene(layoutBounds)
 
@@ -28,11 +30,8 @@ object UiTestKit {
 
     /** Same stylesheet stack as Theme.apply for [theme] / [lang] (Theme.themeName is fixed per JVM). */
     fun applyTheme(scene: Scene, theme: String, lang: String) {
-        val sheets = mutableListOf(Theme.stylesheet("theme.css"))
-        if (theme == "shadcn") sheets += Theme.stylesheet("theme-shadcn.css")
-        if (theme == "zone") { Theme.zoneFonts; sheets += Theme.stylesheet("theme-zone.css") }
-        sheets += Theme.stylesheet(if (lang == "en") "lang_en.css" else "lang_ru.css")
-        scene.stylesheets.setAll(sheets)
+        val light = theme == Theme.ZONE_LIGHT
+        scene.stylesheets.setAll(Theme.stylesheets(if (light) "zone" else theme, if (light) Appearance.LIGHT else Appearance.DARK, lang))
     }
 
     fun relayout(nav: StageNavigator) = nav.mainStage.scene.root.run { applyCss(); layout(); applyCss(); layout() }

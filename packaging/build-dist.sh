@@ -50,7 +50,7 @@ $APP $VERSION - visual-only fork of the EXBO launcher UI (mock data, no network)
 INTERNAL USE ONLY: contains EXBO-owned images and the commercial "Europe" font. Do not redistribute.
 
 $1
-JVM/system options (e.g. -Dlauncher.lang=en, -Dlauncher.theme=shadcn, -Dlauncher.dev=true) can be passed as
+JVM/system options (e.g. -Dlauncher.lang=en, -Dlauncher.theme=exbo, -Dlauncher.dev=true) can be passed as
 command-line arguments of the launcher; they are given to the JVM.
 TXT
 }

@@ -1,6 +1,7 @@
 package dev.launcherfork.app
 
 import dev.launcherfork.data.mock.MockSecondFactor
+import dev.launcherfork.domain.Appearance
 import dev.launcherfork.domain.FolderOpener
 import dev.launcherfork.domain.FolderTarget
 import dev.launcherfork.domain.GameFolders
@@ -14,20 +15,21 @@ import javafx.stage.Stage
 import javafx.stage.StageStyle
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 
 /**
  * Entry point of the visual fork. Two windows (docs/design/WINDOWS.md): the pre-main window (primary stage:
  * update, then auth / mail code) and, after login, the main window.
  * System properties: launcher.lang=ru|en, launcher.mockSpeed=<factor>, launcher.screenshots=<dir> (auto tour),
- * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=exbo|shadcn|zone,
+ * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=zone|zone-light|exbo|shadcn (zone by default; zone-light: start in the white
+ * scheme), launcher.settingsFile=<path> (where the chosen theme is kept),
  * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour).
  */
 class LauncherApp : Application() {
     private var app: AppContext? = null
 
     override fun start(stage: Stage) {
-        val fonts = Theme.loadFonts() + (if (Theme.themeName == "zone") Theme.zoneFonts else emptyList())
-        System.err.println("[launcher-fork] fonts: $fonts")
+        val fonts = Theme.loadFonts()
         val lang = System.getProperty("launcher.lang", "ru")
         val speed = System.getProperty("launcher.mockSpeed")?.toDoubleOrNull() ?: 1.0
         val devMode = System.getProperty("launcher.dev").toBoolean()
@@ -67,9 +69,14 @@ class LauncherApp : Application() {
         System.err.println("[launcher-fork] mock 2FA: ${mock2fa.name.lowercase()}")
         val app = AppContext.mock(
             language = lang, speed = speed, devMode = devMode, links = links, folders = folders, onlineTickMs = onlineTickMs,
-            mock2fa = mock2fa,
+            mock2fa = mock2fa, settingsFile = settingsFile(shotsDir),
         )
         this.app = app
+        // colour scheme (zone only): -Dlauncher.theme=zone-light wins, else the saved «Тема» (dark by default)
+        Theme.appearance = if (!Theme.supportsLight) Appearance.DARK
+            else Theme.forcedAppearance ?: app.services.settings.load().appearance
+        val zoneFonts = if (Theme.themeName == "zone") Theme.zoneFonts else emptyList()
+        System.err.println("[launcher-fork] fonts: ${fonts + zoneFonts}, theme: ${Theme.themeName}, appearance: ${Theme.appearance.name.lowercase()}")
 
         // pre-main window: no OS frame, transparent outside its rounded corners, fixed size
         stage.initStyle(StageStyle.TRANSPARENT)
@@ -84,6 +91,13 @@ class LauncherApp : Application() {
         stage.show()
         stage.centerOnScreen()
     }
+
+    /**
+     * Where the chosen theme is kept: -Dlauncher.settingsFile, else ~/.launcher-fork/settings.properties. The screenshot
+     * tour keeps nothing (same pictures on every machine).
+     */
+    private fun settingsFile(shotsDir: String?): Path? = System.getProperty("launcher.settingsFile")?.let { Path.of(it) }
+        ?: if (shotsDir != null) null else Path.of(System.getProperty("user.home"), ".launcher-fork", "settings.properties")
 
     override fun stop() {
         app?.shutdown()

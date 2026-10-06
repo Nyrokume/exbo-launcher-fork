@@ -1,5 +1,6 @@
 package dev.launcherfork.app
 
+import dev.launcherfork.domain.Appearance
 import dev.launcherfork.i18n.Strings
 import dev.launcherfork.i18n.text
 import dev.launcherfork.theme.Theme
@@ -182,6 +183,17 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
             mainController?.setSettingsVisible(true)
             onScreenChanged("main")
         }
+    }
+
+    /**
+     * Settings «Тема» (zone theme only): both windows (main and pre-main) get the new stylesheet stack at once, like
+     * [switchLanguage]; no screen is rebuilt, every colour is a looked-up token, so CSS alone repaints them.
+     */
+    override fun switchAppearance(appearance: Appearance) {
+        if (appearance == Theme.appearance || !Theme.supportsLight) return
+        Theme.appearance = appearance
+        Theme.apply(mainScene, lang)
+        Theme.apply(authScene, lang)
     }
 
     override fun minimize() {
