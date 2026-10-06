@@ -4,7 +4,7 @@ import dev.launcherfork.app.AppContext
 import dev.launcherfork.app.StageNavigator
 import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.LogoMark
-import dev.launcherfork.ui.components.SegmentedBar
+import dev.launcherfork.ui.components.RamSelector
 import dev.launcherfork.ui.screens.window.WindowController
 import javafx.scene.Node
 import javafx.scene.Scene
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test
 /**
  * In-window dialogs of the MAIN window (overlay layer and the modal layers of main.fxml): they block mouse AND
  * keyboard of the screen below (nothing there can take focus), the blurred content is cached, focus moves into
- * the dialog. Plus the logo and SegmentedBar components.
+ * the dialog. Plus the logo and RamSelector components.
  */
 class OverlayNavigatorTest {
     private fun window(nav: StageNavigator): WindowController {
@@ -137,17 +137,29 @@ class OverlayNavigatorTest {
     }
 
     @Test
-    fun segmentedBarSnapsToSegments() {
+    fun ramSelectorShowsLabelledOptionsAndKeepsOneSelected() {
         FxTestSupport.onFx {
-            val bar = SegmentedBar().apply { segments = 9 }
-            bar.value = 0.5
-            assertEquals(5, bar.activeCount) // 4.5 rounds up
-            assertEquals(5.0 / 9, bar.value, 1e-9)
-            bar.value = 0.0
-            assertEquals(1, bar.activeCount) // never empty
-            bar.value = 2.0
-            assertEquals(9, bar.activeCount)
-            assertEquals(9, bar.children.count { "active" in it.styleClass })
+            val changes = mutableListOf<Int>()
+            val sel = RamSelector().apply {
+                formatter = { "$it ГБ" }
+                recommendedText = "рекомендуем"
+                setOptions(listOf(2, 3, 4, 6, 8, 12), recommended = 6, selected = 4)
+                onChange = { changes += it }
+            }
+            assertEquals(listOf("2 ГБ", "3 ГБ", "4 ГБ", "6 ГБ", "8 ГБ", "12 ГБ"), sel.buttons.map { it.text })
+            assertEquals(4, sel.selected)
+            assertEquals(listOf(4), sel.buttons.filter { it.isSelected }.map { it.userData })
+            assertEquals(listOf(6), sel.buttons.filter { "recommended" in it.styleClass }.map { it.userData })
+            assertTrue(changes.isEmpty(), "setOptions is not a user change")
+            sel.select(8)
+            assertEquals(8, sel.selected)
+            assertEquals(listOf(8), changes)
+            sel.buttons[4].isSelected = false // clicking the selected chip again does not empty the group
+            assertEquals(8, sel.selected)
+            assertTrue(sel.buttons[4].isSelected)
+            sel.setOptions(listOf(2, 3), recommended = 2, selected = 3) // rebuild: no stale toggles, no change event
+            assertEquals(3, sel.selected)
+            assertEquals(listOf(8), changes)
         }
     }
 }

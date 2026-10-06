@@ -80,6 +80,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         // this controller before the auth window shows up
         profileBarController.onProfile = { notAvailable() }
         profileBarController.onSwitchAccount = ::leaveToAuth
+        // the ONLY way to the logout confirmation: profile menu "Выйти из аккаунта" (window close never asks)
         profileBarController.onLogout = { logoutPaneController.show() }
         logoutPaneController.onConfirm = ::leaveToAuth
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
@@ -135,7 +136,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         val blocked = isModalShown
         InputBlock.set(layout, blocked)
         if (blocked) profileBarController.hideMenu()
-        if (changed.isShowing) InputBlock.focusInto(changed.layer)
+        if (changed.isShowing) changed.initialFocus?.requestFocus() ?: InputBlock.focusInto(changed.layer)
     }
 
     /** Switch account / confirmed logout: end the session and go back to the separate auth window. */

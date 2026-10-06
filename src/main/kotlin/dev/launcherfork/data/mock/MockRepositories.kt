@@ -17,3 +17,8 @@ class InMemorySettingsStore(initial: LauncherSettings = LauncherSettings()) : Se
         current = settings
     }
 }
+
+/** Fixed amount of RAM (16 GB by default), so settings and screenshots look the same on every machine. */
+class MockSystemInfo(private val totalMb: Long = 16L * 1024) : dev.launcherfork.domain.SystemInfo {
+    override fun totalRamMb(): Long = totalMb
+}

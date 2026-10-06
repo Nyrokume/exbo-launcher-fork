@@ -11,6 +11,9 @@ import javafx.scene.control.ProgressIndicator
 import javafx.scene.control.TextField
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.BorderPane
+import javafx.scene.layout.VBox
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import javafx.scene.text.Text
 import javafx.util.Duration
 
@@ -20,6 +23,8 @@ abstract class ModalController(protected val ctx: UiContext) {
     abstract val layer: Node
     var onConfirm: () -> Unit = {}
     var onCancel: () -> Unit = {}
+    /** Node that gets the focus when the modal opens; null = the first focusable node of [layer]. */
+    open val initialFocus: Node? get() = null
 
     fun show() { layer.isVisible = true }
     fun hide() { layer.isVisible = false }
@@ -33,16 +38,30 @@ abstract class ModalController(protected val ctx: UiContext) {
     }
 }
 
-/** main/modals/logout_pane.fxml */
+/**
+ * main/modals/logout_pane.fxml: "Выход из аккаунта" confirmation. Opened only by the profile menu item
+ * "Выйти из аккаунта" (MainController wires ProfileController.onLogout to [show]); closing the window never opens
+ * it. Enter = log out ([logoutButtonRight]), Esc = cancel (MainController's Esc closes modals), focus starts on
+ * Cancel ([logoutButtonLeft]) so a stray Space does not log out.
+ */
 class LogoutModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML lateinit var logoutPane: AnchorPane
+    @FXML lateinit var logoutCard: VBox
     @FXML lateinit var logoutTitle: Label
     @FXML lateinit var logoutDesc: Label
     @FXML lateinit var logoutButtonRight: Button
     @FXML lateinit var logoutButtonLeft: Button
     override val layer: Node get() = logoutPane
+    override val initialFocus: Node get() = logoutButtonLeft
 
-    @FXML fun initialize() = wire(confirm = logoutButtonRight, cancel = logoutButtonLeft)
+    @FXML
+    fun initialize() {
+        wire(confirm = logoutButtonRight, cancel = logoutButtonLeft)
+        // filter, not handler: Enter means "log out" even while Cancel has the focus
+        logoutPane.addEventFilter(KeyEvent.KEY_PRESSED) { e ->
+            if (isShowing && e.code == KeyCode.ENTER) { e.consume(); logoutButtonRight.fire() }
+        }
+    }
 }
 
 /** main/modals/update_pane.fxml */
@@ -154,14 +173,16 @@ class LoadingModalController(ctx: UiContext) : ModalController(ctx) {
     override val layer: Node get() = loadingPane
 }
 
-/** main/modals/deletion_pane.fxml */
+/** main/modals/deletion_pane.fxml: flow layout like logout; Esc = cancel, focus starts on Cancel ([deletionNo]). */
 class DeletionModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML lateinit var deletionPane: AnchorPane
+    @FXML lateinit var deletionCard: VBox
     @FXML lateinit var deletionTitle: Label
     @FXML lateinit var deletionDesc: Label
     @FXML lateinit var deletionYes: Button
     @FXML lateinit var deletionNo: Button
     override val layer: Node get() = deletionPane
+    override val initialFocus: Node get() = deletionNo
 
     @FXML fun initialize() = wire(deletionYes, deletionNo)
 }

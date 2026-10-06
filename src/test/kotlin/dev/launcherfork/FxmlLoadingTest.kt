@@ -67,7 +67,7 @@ class FxmlLoadingTest {
             // bottom bar + tools popup
             "defaultStatusPane", "downloadingStatus", "progressBar", "clientSettingsButton", "downloadButton", "clientSettingsPane",
             // settings
-            "settings", "scroll", "ramBar", "exitOnStart", "exitNever", "downloadLimitField", "uploadLimitField", "p2pNotMobile",
+            "settings", "scroll", "ramSelector", "ramSummary", "exitOnStart", "exitNever", "downloadLimitField", "uploadLimitField", "p2pNotMobile",
             "defenderToggle", "startOnDownloadedToggle", "trayToggle", "autostartToggle", "langRu", "langEn",
             // modals (original names)
             "logoutPane", "logoutButtonRight", "updatePane", "updateYes", "licensePane", "licenseFirst", "licenseLoading", "offlinePane",

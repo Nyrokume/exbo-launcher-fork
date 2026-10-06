@@ -1,0 +1,111 @@
+/*
+ * zone-steps.css - registration and second-factor panels of the login window, on top of zone-auth.css:
+ * age gate (dropdowns), registration form (check rows with inline links), digit cells (CodeInput), the site's error
+ * toast, the light ОТПРАВИТЬ button and the success notice of the login panel. Tokens only, radii from FXML classes.
+ */
+
+/* ---------- shared bits ---------- */
+.zone-top-compact { -fx-padding: 24 28 20 28; }
+.zone-bottom-dense { -fx-spacing: 12; -fx-padding: 22 24 20 24; }
+.zone-field-label { -fx-font-size: 14; -fx-text-fill: -text-description; }
+.zone-notice-text { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
+.zone-center-row { -fx-alignment: center; }
+.zone-link-plain:focused { -fx-underline: true; }
+.zone-footer-split { -fx-padding: 4 0 0 0; }
+.zone-description-flow { -fx-line-spacing: 2; }
+.zone-description-text { -fx-font-size: 15; -fx-fill: -muted-foreground; }
+.zone-description-text.zone-strong { -fx-font-family: "Roboto Medium"; -fx-fill: -foreground; }
+
+/* success notice of the login panel after a registration: neutral card, light left bar */
+.zone-notice {
+    -fx-font-size: 14;
+    -fx-text-fill: -foreground;
+    -fx-background-color: -card;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent transparent transparent -foreground;
+    -fx-border-width: 0 0 0 2;
+    -fx-padding: 10 14 10 14;
+}
+
+/* ---------- light button (ОТПРАВИТЬ of the 2FA step, as on the site) ---------- */
+.zone-light {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 24;
+    -fx-text-fill: -background;
+    -fx-background-color: -foreground;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-min-height: 54; -fx-pref-height: 54; -fx-max-height: 54;
+    -fx-cursor: hand;
+}
+.zone-light:hover { -fx-background-color: derive(-foreground, -8%); }
+.zone-light:pressed { -fx-background-color: derive(-foreground, -16%); }
+.zone-light:focused { -fx-border-color: -primary; -fx-border-width: 1; -fx-border-radius: inherit; }
+.zone-light:disabled { -fx-opacity: 1; -fx-background-color: -border; -fx-text-fill: -background; }
+
+/* ---------- dropdowns (age gate): input look, white triangle, dark list ---------- */
+.zone-combo {
+    -fx-min-height: 54; -fx-pref-height: 54; -fx-max-height: 54;
+    -fx-background-color: -card;
+    -fx-background-insets: 0;
+    -fx-border-color: -input-border;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+.zone-combo:hover { -fx-border-color: -text-dim; }
+.zone-combo:focused, .zone-combo:showing { -fx-border-color: -foreground; }
+.zone-combo:error { -fx-border-color: -error; }
+.zone-combo > .list-cell {
+    -fx-font-size: 16;
+    -fx-text-fill: -foreground;
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 16;
+}
+.zone-combo > .list-cell:empty { -fx-text-fill: -placeholder; }
+.zone-combo > .arrow-button { -fx-background-color: transparent; -fx-padding: 0 18 0 10; }
+.zone-combo > .arrow-button > .arrow {
+    -fx-background-color: -foreground;
+    -fx-shape: "M0 0 H10 L5 6 Z";
+    -fx-padding: 3 5 3 5;
+}
+.zone-combo .list-view {
+    -fx-background-color: -card-description;
+    -fx-background-insets: 0;
+    -fx-border-color: -input-border;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.zone-combo .list-view .list-cell {
+    -fx-font-size: 15;
+    -fx-text-fill: -foreground;
+    -fx-background-color: -card-description;
+    -fx-padding: 9 16 9 16;
+}
+.zone-combo .list-view .list-cell:hover { -fx-background-color: -card; }
+.zone-combo .list-view .list-cell:selected { -fx-background-color: -card; -fx-text-fill: -primary; }
+.zone-combo .list-view .scroll-bar:vertical { -fx-background-color: transparent; -fx-pref-width: 8; -fx-padding: 0; }
+.zone-combo .list-view .scroll-bar .thumb { -fx-background-color: -input-border; -fx-background-insets: 1; }
+.zone-combo .list-view .scroll-bar .increment-button, .zone-combo .list-view .scroll-bar .decrement-button {
+    -fx-padding: 0; -fx-pref-height: 0;
+}
+.zone-combo .list-view .scroll-bar .increment-arrow, .zone-combo .list-view .scroll-bar .decrement-arrow { -fx-padding: 0; -fx-shape: null; }
+
+/* ---------- registration: checkbox + wrapping text with underlined links ---------- */
+.zone-check-row { -fx-spacing: 12; -fx-alignment: top-left; }
+.zone-check-row > .zone-check { -fx-label-padding: 0; -fx-graphic-text-gap: 0; }
+.zone-check-row > .zone-check:error > .box { -fx-border-color: -error; }
+.zone-check-flow { -fx-line-spacing: 3; -fx-cursor: hand; -fx-padding: 2 0 0 0; }
+.zone-check-text { -fx-font-size: 14; -fx-fill: -text-description; }
+.zone-inline-link {
+    -fx-font-size: 14;
+    -fx-text-fill: -foreground;
+    -fx-underline: true;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+}
+.zone-inline-link:visited { -fx-text-fill: -foreground; }
+.zone-inline-link:hover { -fx-text-fill: -primary-hover; }
+.zone-inline-link:focused { -fx-text-fill: -primary; }

@@ -1,5 +1,6 @@
 package dev.launcherfork.ui
 
+import java.time.LocalDate
 import javafx.stage.Window
 
 /**
@@ -14,6 +15,14 @@ interface Navigator {
     fun showAuth()
     /** E-mail code panel (mail_auth_panel.fxml or legacy mail_auth.fxml) in the pre-main window. */
     fun showMailAuth()
+    /** Authenticator-app (TOTP) code panel (totp_auth_panel.fxml) in the pre-main window. */
+    fun showTotpAuth() = Unit
+    /** Registration step 1: age gate (age_gate_panel.fxml); [birthDate] preselects the dropdowns (back from step 2). */
+    fun showAgeGate(birthDate: LocalDate? = null) = Unit
+    /** Registration step 2: the form (register_panel.fxml) for a user born on [birthDate]. */
+    fun showRegister(birthDate: LocalDate) = Unit
+    /** Back to the auth panel after a registration: [login] pre-filled and a success notice shown. */
+    fun showRegistered(login: String) = showAuth()
     /** Closes the pre-main window and opens the main window with a main screen built for the current session. */
     fun showMain()
     fun switchLanguage(lang: String)

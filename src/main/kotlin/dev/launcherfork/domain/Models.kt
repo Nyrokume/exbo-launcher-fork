@@ -2,6 +2,7 @@ package dev.launcherfork.domain
 
 import java.net.URI
 import java.nio.file.Path
+import java.time.LocalDate
 
 /**
  * A game server card shown in the sidebar.
@@ -39,7 +40,33 @@ sealed interface AuthResult {
     data class Success(val session: UserSession) : AuthResult
     /** Second factor (e-mail code) is required -> mail_auth screen. */
     data object CodeRequired : AuthResult
+    /** Second factor (authenticator app / TOTP, 6 digits) is required -> totp_auth screen. */
+    data object TotpRequired : AuthResult
     data class Failure(val error: AuthError) : AuthResult
+}
+
+/** What the registration form sends (after the age gate). */
+data class RegistrationRequest(
+    val email: String,
+    val username: String,
+    val password: String,
+    val birthDate: LocalDate,
+    /** "Я даю согласие на получение информационной рассылки". */
+    val newsletter: Boolean,
+)
+
+/** Why registration failed on the server side. The UI maps these to localized strings. */
+enum class RegisterError {
+    USERNAME_TAKEN,
+    EMAIL_TAKEN,
+    UNDER_AGE,
+    SERVER_ERROR,
+}
+
+sealed interface RegisterResult {
+    /** Account created; [login] is what the login form gets pre-filled with. */
+    data class Success(val login: String) : RegisterResult
+    data class Failure(val error: RegisterError) : RegisterResult
 }
 
 /** Phase of a long-running update/download operation. The UI maps these to localized strings. */
@@ -70,8 +97,13 @@ data class LauncherSettings(
     val defenderHint: Boolean = true,
     val p2pMode: P2pMode = P2pMode.EXCEPT_MOBILE,
     val exitMode: ExitMode = ExitMode.NEVER,
-    /** 0..1, mapped to MB by the UI */
-    val ramFraction: Double = 0.5,
+    /** Game heap in MB chosen in settings (one of the RAM options); null = not chosen yet -> recommended value. */
+    val ramMb: Int? = null,
+    /**
+     * Legacy value of the old segmented bar: 0..1, mapped to `512 + 3584 * f` MB. Only read when [ramMb] is null
+     * (settings saved before the RAM selector) and converted to the nearest RAM option; cleared on the next change.
+     */
+    val ramFraction: Double? = null,
     val downloadLimitKb: Int = 0,
     val uploadLimitKb: Int = 0,
     val gameRoot: Path = Path.of(System.getProperty("user.home"), "Games", "EXBO"),

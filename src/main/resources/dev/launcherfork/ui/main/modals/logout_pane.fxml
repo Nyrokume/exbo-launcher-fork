@@ -1,26 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
 
-<!-- "Change user" confirmation (original logoutPane). -->
+<!--
+  "Log out" confirmation (original logoutPane). Opened ONLY by the profile menu item "Выйти из аккаунта"
+  (ProfileController.logout -> MainController: logoutPaneController.show()); closing the window never opens it,
+  "Сменить аккаунт" leaves without asking.
+  Flow layout instead of the original absolute coordinates: the card is sized by its content (title, rule, text,
+  button row at the bottom right); padding and spacing come from .modal-box in layout.css, so nothing is clipped
+  for any font, theme or language. Keys: Enter = log out, Esc = cancel; initial focus on Cancel.
+-->
 <AnchorPane fx:id="logoutPane" styleClass="modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.LogoutModalController">
     <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
-    <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
-        <center>
-            <Pane styleClass="modal-card,zone-radius-md" maxHeight="146" maxWidth="487">
-                <Label fx:id="logoutTitle" styleClass="modal-title,font-display" text="%main.modal.logout.title"/>
-                <Region styleClass="modal-rule" layoutX="0" layoutY="40" prefWidth="440" prefHeight="1"/>
-                <Label fx:id="logoutDesc" layoutY="55" styleClass="modal-text" text="%main.modal.logout.text"/>
-                <Region styleClass="modal-rule-light" layoutX="0" layoutY="85" prefWidth="440" prefHeight="1"/>
-                <Button id="modal-logoutButtonRight" fx:id="logoutButtonRight" layoutX="60" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button,btn-primary,zone-caps,zone-radius-sm" text="%main.modal.logout.confirm"/>
-                <Button id="modal-logoutButtonLeft" fx:id="logoutButtonLeft" layoutX="230" layoutY="140" prefHeight="46" prefWidth="160" styleClass="modal-button,tile,zone-caps,zone-radius-sm" text="%main.modal.logout.cancel"/>
-            </Pane>
-        </center>
-    </BorderPane>
+    <StackPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <VBox fx:id="logoutCard" id="modal-logoutCard" styleClass="modal-box,zone-radius-md"
+              maxWidth="-Infinity" maxHeight="-Infinity">
+            <Label fx:id="logoutTitle" styleClass="modal-title,font-display" text="%main.modal.logout.title"/>
+            <Region styleClass="modal-box-rule"/>
+            <Label fx:id="logoutDesc" styleClass="modal-text" text="%main.modal.logout.text" wrapText="true" minHeight="-Infinity"/>
+            <HBox styleClass="modal-actions" alignment="CENTER_RIGHT">
+                <Button id="modal-logoutButtonRight" fx:id="logoutButtonRight" mnemonicParsing="false"
+                        styleClass="modal-action,btn-primary,font-display,zone-radius-sm" text="%main.modal.logout.confirm"/>
+                <Button id="modal-logoutButtonLeft" fx:id="logoutButtonLeft" mnemonicParsing="false"
+                        styleClass="modal-action,btn-outline,font-display,zone-radius-sm" text="%main.modal.logout.cancel"/>
+            </HBox>
+        </VBox>
+    </StackPane>
 </AnchorPane>

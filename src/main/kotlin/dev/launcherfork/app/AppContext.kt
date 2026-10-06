@@ -4,6 +4,7 @@ import dev.launcherfork.data.mock.InMemorySettingsStore
 import dev.launcherfork.data.mock.MockAuthService
 import dev.launcherfork.data.mock.MockGameLauncher
 import dev.launcherfork.data.mock.MockServerRepository
+import dev.launcherfork.data.mock.MockSystemInfo
 import dev.launcherfork.data.mock.MockUpdateService
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.Services
@@ -33,6 +34,7 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
                 updates = MockUpdateService(speed),
                 launcher = MockGameLauncher(),
                 settings = InMemorySettingsStore(LauncherSettings(language = language)),
+                system = MockSystemInfo(),
             ),
             devMode,
         )

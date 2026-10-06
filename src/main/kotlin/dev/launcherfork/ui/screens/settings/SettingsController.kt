@@ -3,8 +3,9 @@ package dev.launcherfork.ui.screens.settings
 import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.P2pMode
+import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.ui.UiContext
-import dev.launcherfork.ui.components.SegmentedBar
+import dev.launcherfork.ui.components.RamSelector
 import javafx.fxml.FXML
 import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
@@ -16,7 +17,6 @@ import javafx.scene.control.ToggleGroup
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
-import kotlin.math.roundToInt
 
 /**
  * settings.fxml: static layout (sections ИГРА / ОБНОВЛЕНИЕ / ПРОЧЕЕ) bound to [dev.launcherfork.domain.SettingsStore].
@@ -30,7 +30,8 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var updatesHeading: Label
     @FXML lateinit var othersHeading: Label
 
-    @FXML lateinit var ramBar: SegmentedBar
+    @FXML lateinit var ramSelector: RamSelector
+    @FXML lateinit var ramSummary: Label
     @FXML lateinit var exitGroup: ToggleGroup
     @FXML lateinit var exitOnStart: RadioButton
     @FXML lateinit var exitOnGameExit: RadioButton
@@ -61,9 +62,7 @@ class SettingsController(private val ctx: UiContext) {
     fun initialize() {
         val s = store.load()
 
-        ramBar.formatter = { "${heapMb(it)}MB" }
-        ramBar.value = s.ramFraction
-        ramBar.onChange = { v -> update { it.copy(ramFraction = v) } }
+        bindRam(s)
 
         bindRadios(exitGroup, mapOf(exitOnStart to ExitMode.ON_GAME_START, exitOnGameExit to ExitMode.ON_GAME_EXIT, exitNever to ExitMode.NEVER), s.exitMode) { v ->
             update { it.copy(exitMode = v) }
@@ -86,8 +85,26 @@ class SettingsController(private val ctx: UiContext) {
         }
     }
 
-    /** RAM fraction -> MB shown in the bar (same mapping as before the redesign). */
-    fun heapMb(fraction: Double): Int = (3584 * fraction).roundToInt() + 512
+    /** Total memory of the computer, MB (SystemInfo; the mock reports 16 GB). */
+    val totalRamMb: Long get() = ctx.services.system.totalRamMb()
+
+    /**
+     * RAM chips: options capped by the computer's memory, the stored value (or the legacy 0..1 fraction) snapped to
+     * an option, recommended one marked. A pick is stored as MB and drops the legacy fraction.
+     */
+    private fun bindRam(s: LauncherSettings) {
+        val total = totalRamMb
+        val unit = ctx.t("settings.unit.gb")
+        ramSelector.formatter = { gb -> RamOptions.format(gb, unit) }
+        ramSelector.recommendedText = ctx.t("settings.ram.recommended")
+        ramSelector.setOptions(RamOptions.options(total), RamOptions.recommended(total), RamOptions.selectedGb(s, total))
+        fun summary(gb: Int) = ctx.t("settings.ram.summary", RamOptions.format(gb, unit), RamOptions.format(RamOptions.totalGb(total), unit))
+        ramSummary.text = summary(ramSelector.selected)
+        ramSelector.onChange = { gb ->
+            ramSummary.text = summary(gb)
+            update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) }
+        }
+    }
 
     private fun update(change: (LauncherSettings) -> LauncherSettings) = store.save(change(store.load()))
 
