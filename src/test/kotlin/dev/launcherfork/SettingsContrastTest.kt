@@ -157,21 +157,19 @@ class SettingsContrastTest {
         Triple("login: form text", "-foreground" to "-card-description", 4.5),
         Triple("login: hints, labels", "-muted-foreground" to "-card-description", 4.5),
         Triple("login: input text", "-input-foreground" to "-input", 4.5),
-        Triple("login: red links", "-primary" to "-card-description", 4.5),
-        Triple("registration: selected combo row (red text on card)", "-primary" to "-card", 4.5),
+        Triple("login: red links", "-destructive-text" to "-card-description", 4.5),
+        Triple("registration: selected combo row (red text on card)", "-destructive-text" to "-card", 4.5),
         Triple("login: error text", "-error" to "-card-description", 4.5),
     )
 
     /**
      * Known gaps of the DARK zone theme (rules owned by other branches, not touched here): -text-status on -input
-     * 2.98:1 and -error on -card-description 4.41:1 predate the white scheme; red TEXT in -primary (login links in
-     * zone-auth.css, the selected registration combo row) is the site's --red-color #e91932: 4.24:1 on
-     * -card-description, 3.93:1 on -card (no red can carry white text >= 4.5:1 AND be >= 4.5:1 text on near-black;
-     * the fix is -destructive-text #ff3b52 in those rules). Self-checking: [knownDarkZoneGapsAreStillGaps] fails as soon
-     * as a listed pair passes (or no longer exists), so a stale entry is removed when the fix lands.
+     * 2.98:1 and -error on -card-description 4.41:1 predate the white scheme. Red TEXT (login links, the selected
+     * registration combo row) uses -destructive-text, not -primary, so it is AA in both zone themes. Self-checking:
+     * [knownDarkZoneGapsAreStillGaps] fails as soon as a listed pair passes (or no longer exists), so a stale entry is
+     * removed when the fix lands.
      */
-    private val knownDarkZoneGaps = setOf("-text-status" to "-input", "-error" to "-card-description",
-        "-primary" to "-card-description", "-primary" to "-card")
+    private val knownDarkZoneGaps = setOf("-text-status" to "-input", "-error" to "-card-description")
 
     /** Every exception above is a real, still failing window pair of the dark zone theme; otherwise delete it. */
     @TestFactory
