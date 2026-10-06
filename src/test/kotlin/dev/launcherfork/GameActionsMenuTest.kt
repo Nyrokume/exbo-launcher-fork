@@ -142,7 +142,7 @@ class GameActionsMenuTest {
     private operator fun <T> List<T>.component6() = this[5]
 
     private fun token(theme: String, name: String): javafx.scene.paint.Color {
-        val file = mapOf("exbo" to "theme.css", "zone" to "theme-zone.css", "shadcn" to "theme-shadcn.css").getValue(theme)
+        val file = mapOf("exbo" to "theme.css", "zone" to "theme-zone.css", "shadcn" to "theme-shadcn.css", "zone-light" to "theme-zone-light.css").getValue(theme)
         val css = javaClass.getResource("/dev/launcherfork/ui/style/$file")!!.readText()
         val hex = Regex("""(?m)^\s*${Regex.escape(name)}:\s*([^;]+);""").find(css)!!.groupValues[1].trim()
         return javafx.scene.paint.Color.web(hex)

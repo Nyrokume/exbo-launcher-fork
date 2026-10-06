@@ -1,9 +1,11 @@
 package dev.launcherfork.ui.screens.settings
 
+import dev.launcherfork.domain.Appearance
 import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.P2pMode
 import dev.launcherfork.domain.RamOptions
+import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.RamBar
 import dev.launcherfork.ui.components.RamScale
@@ -22,7 +24,8 @@ import javafx.scene.layout.VBox
 
 /**
  * settings.fxml: one-screen list (groups ОПЕРАТИВНАЯ ПАМЯТЬ / ПОВЕДЕНИЕ / ОБНОВЛЕНИЕ / ЯЗЫК) bound to [dev.launcherfork.domain.SettingsStore].
- * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
+ * Every change is saved immediately. The language radio rebuilds the main screen via the navigator; the theme radio
+ * (Тёмная / Белая) re-styles all windows via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var settingsRoot: AnchorPane
@@ -36,6 +39,7 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var behaviourCard: VBox
     @FXML lateinit var exitRow: HBox
     @FXML lateinit var p2pRow: HBox
+    @FXML lateinit var themeRow: HBox
     @FXML lateinit var limitsRow: HBox
     @FXML lateinit var languageRow: HBox
     @FXML lateinit var exitLabel: Label
@@ -48,6 +52,7 @@ class SettingsController(private val ctx: UiContext) {
 
     @FXML lateinit var ramBar: RamBar
     @FXML lateinit var ramSummary: Label
+    @FXML lateinit var ramWarning: Label
     @FXML lateinit var ramScale: RamScale
     @FXML lateinit var exitGroup: ToggleGroup
     @FXML lateinit var exitOnStart: RadioButton
@@ -62,6 +67,9 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var p2pAlways: RadioButton
     @FXML lateinit var p2pNotMobile: RadioButton
     @FXML lateinit var p2pNever: RadioButton
+    @FXML lateinit var themeGroup: ToggleGroup
+    @FXML lateinit var themeDark: RadioButton
+    @FXML lateinit var themeLight: RadioButton
     @FXML lateinit var defenderRow: HBox
     @FXML lateinit var defenderToggle: CheckBox
     @FXML lateinit var startOnDownloadedRow: HBox
@@ -88,6 +96,18 @@ class SettingsController(private val ctx: UiContext) {
         }
         bindRadios(p2pGroup, mapOf(p2pAlways to P2pMode.ALWAYS, p2pNotMobile to P2pMode.EXCEPT_MOBILE, p2pNever to P2pMode.NEVER), s.p2pMode) { v ->
             update { it.copy(p2pMode = v) }
+        }
+
+        // «Тема»: what the windows show now (saved setting or -Dlauncher.theme=zone-light); a change is saved (it survives a
+        // restart) and re-styles every window live. The white scheme is a zone variant: disabled in the exbo / shadcn themes.
+        bindRadios(themeGroup, mapOf(themeDark to Appearance.DARK, themeLight to Appearance.LIGHT), Theme.appearance) { v ->
+            update { it.copy(appearance = v) }
+            ctx.navigator.switchAppearance(v)
+        }
+        if (!Theme.supportsLight) {
+            themeDark.isDisable = true
+            themeLight.isDisable = true
+            Tooltip.install(themeRow, Tooltip(ctx.t("settings.theme.zone_only")))
         }
 
         // the rows of ПОВЕДЕНИЕ carry short captions; the original long wording is the tooltip
@@ -124,22 +144,33 @@ class SettingsController(private val ctx: UiContext) {
         val fmt = { gb: Int -> RamOptions.format(gb, unit) }
         ramBar.formatter = fmt
         ramBar.configure(
-            totalGb = RamOptions.totalGb(total),
+            totalGb = RamOptions.maxGb(total), // the scale is the selectable range: no unreachable segments
             minGb = RamOptions.MIN_GB,
             maxGb = RamOptions.maxGb(total),
             recommendedGb = RamOptions.recommended(total),
             value = RamOptions.selectedGb(s, total),
         )
-        // the selectable range under the bar: «2 ГБ» under the first, «14 ГБ» under the last reachable segment
+        // the selectable range under the bar: «2 ГБ» under the first, «16 ГБ» under the last segment (whole GB of memory)
         ramScale.setCaptions(fmt(ramBar.minGb), fmt(ramBar.maxGb))
         ramScale.bar = ramBar
         val hint = ctx.t("settings.ram.hint", fmt(ramBar.recommendedGb))
-        ramBar.accessibleHelp = hint
-        Tooltip.install(ramBar, Tooltip(hint))
+        val tooltip = Tooltip(hint)
+        Tooltip.install(ramBar, tooltip)
         fun summary(gb: Int) = ctx.t("settings.ram.summary", fmt(gb), fmt(RamOptions.totalGb(total)))
-        ramSummary.text = summary(ramBar.value)
-        // the label always follows the bar (user moves and programmatic changes alike)
-        ramBar.valueProperty.addListener { _, _, gb -> ramSummary.text = summary(gb.toInt()) }
+        // soft note next to the summary when the OS keeps less than 2 GB; always managed (only hidden), so no layout shift
+        ramWarning.text = ctx.t("settings.ram.low_system")
+        fun show(gb: Int) {
+            ramSummary.text = summary(gb)
+            val low = RamOptions.leavesLittleForSystem(gb, total)
+            ramWarning.isVisible = low
+            // screen readers and the tooltip get the note too, only while it is shown
+            val help = if (low) ctx.t("settings.ram.hint_low_system", hint, ramWarning.text) else hint
+            ramBar.accessibleHelp = help
+            tooltip.text = help
+        }
+        show(ramBar.value)
+        // the labels always follow the bar (user moves and programmatic changes alike)
+        ramBar.valueProperty.addListener { _, _, gb -> show(gb.toInt()) }
         ramBar.onChange = { gb -> update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) } }
     }
 

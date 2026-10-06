@@ -133,17 +133,18 @@ class SettingsScreenTest {
     }
 
     /**
-     * Every card is a list of uniform rows: 36 px, label at the card's left padding, control ending at its right
-     * padding, one line (no wrapped or cut labels); auto-exit, P2P and language are segmented controls whose parts sit
-     * edge to edge on one line.
+     * Every card is a list of uniform rows: 34 px (7 rows in ПОВЕДЕНИЕ must fit 900x580), label at the card's left
+     * padding, control ending at its right padding, one line (no wrapped or cut labels); auto-exit, P2P, theme and
+     * language are segmented controls: a 28 px box (like the limit fields) whose 26 px parts sit edge to edge on one
+     * line, the selected one filled over the whole part height (no inset pill).
      */
     private fun checkRows(s: SettingsController, where: String) {
-        val behaviourRows = listOf(s.exitRow, s.p2pRow, s.startOnDownloadedRow, s.defenderRow, s.trayRow, s.autostartRow)
+        val behaviourRows = listOf(s.exitRow, s.p2pRow, s.themeRow, s.startOnDownloadedRow, s.defenderRow, s.trayRow, s.autostartRow)
         assertEquals(behaviourRows, s.behaviourCard.children.toList(), "$where: ПОВЕДЕНИЕ is one column of rows in this order")
         val rows = behaviourRows + listOf(s.limitsRow, s.languageRow)
         rows.forEach { row ->
             val rb = row.sceneBounds()
-            assertEquals(36.0, rb.height, 0.5, "$where: ${row.id} height")
+            assertEquals(34.0, rb.height, 0.5, "$where: ${row.id} height")
             val card = row.parent as javafx.scene.layout.Region
             val cb = card.sceneBounds()
             val inner = cb.minX + card.snappedLeftInset() to cb.maxX - card.snappedRightInset()
@@ -156,15 +157,22 @@ class SettingsScreenTest {
         // switches of the four toggle rows share one right edge
         val switches = listOf(s.startOnDownloadedToggle, s.defenderToggle, s.trayToggle, s.autostartToggle).map { it.sceneBounds() }
         switches.forEach { assertEquals(switches[0].maxX, it.maxX, 0.5, "$where: switches not aligned") }
-        // segmented controls: parts on one line, edge to edge (2 px gap), the selected one painted with the accent
-        listOf(listOf(s.exitOnStart, s.exitOnGameExit, s.exitNever), listOf(s.p2pAlways, s.p2pNotMobile, s.p2pNever), listOf(s.langRu, s.langEn))
+        // segmented controls: parts on one line, edge to edge, the selected one painted with the accent over its full height
+        listOf(listOf(s.exitOnStart, s.exitOnGameExit, s.exitNever), listOf(s.p2pAlways, s.p2pNotMobile, s.p2pNever),
+            listOf(s.themeDark, s.themeLight), listOf(s.langRu, s.langEn))
             .forEach { parts ->
                 val b = parts.map { it.sceneBounds() }
                 b.forEach { assertEquals(b[0].centerY, it.centerY, 0.5, "$where: segments not on one line") }
-                b.zipWithNext { x, y -> assertTrue(y.minX - x.maxX in 0.0..3.0, "$where: segments apart (${y.minX - x.maxX})") }
+                b.zipWithNext { x, y -> assertEquals(0.0, y.minX - x.maxX, 0.5, "$where: segments apart (${y.minX - x.maxX})") }
+                b.forEach { assertEquals(26.0, it.height, 0.5, "$where: segment height ${it.height}") }
                 parts.forEach { assertTrue("segment" in it.styleClass, "$where: ${it.text} is not a segment") }
                 val group = parts[0].parent.sceneBounds(); val row = parts[0].parent.parent.sceneBounds()
-                assertTrue(group.height <= row.height - 8, "$where: segmented control ${group.height} fills the ${row.height} px row")
+                assertEquals(28.0, group.height, 0.5, "$where: segmented control height")
+                assertTrue(group.height <= row.height - 6, "$where: segmented control ${group.height} fills the ${row.height} px row")
+                // the parts fill the box inside its 1 px border: no inset pill
+                assertEquals(group.minY + 1, b[0].minY, 0.5, "$where: segment not at the top of the box")
+                assertEquals(group.maxY - 1, b[0].maxY, 0.5, "$where: segment not at the bottom of the box")
+                assertEquals(group.minX + 1, b.first().minX, 0.5, "$where: first segment inset"); assertEquals(group.maxX - 1, b.last().maxX, 0.5, "$where: last segment inset")
                 val sel = parts.single { it.isSelected }
                 assertTrue(sel.background != null && sel.background.fills.isNotEmpty() && sel.background.fills.last().fill != javafx.scene.paint.Color.TRANSPARENT,
                     "$where: selected segment '${sel.text}' not filled")
@@ -209,10 +217,10 @@ class SettingsScreenTest {
         val (c, _) = settingsWith(LauncherSettings(ramFraction = 0.5))
         FxTestSupport.onFx {
             val bar = c.ramBar
-            assertEquals(16, bar.totalGb); assertEquals(2, bar.minGb); assertEquals(14, bar.maxGb); assertEquals(6, bar.recommendedGb)
+            assertEquals(16, bar.totalGb); assertEquals(2, bar.minGb); assertEquals(16, bar.maxGb); assertEquals(6, bar.recommendedGb)
             assertFill(c, 2, 16, "legacy 0.5 = 2304 MB -> 2 GB")
             assertEquals("Выделено: 2 ГБ из 16 ГБ", c.ramSummary.text)
-            for (v in listOf(6, 9, 14)) {
+            for (v in listOf(6, 9, 14, 16)) {
                 bar.setValue(v)
                 assertFill(c, v, 16, "value $v")
                 assertEquals("Выделено: $v ГБ из 16 ГБ", c.ramSummary.text)
@@ -225,18 +233,114 @@ class SettingsScreenTest {
             assertTrue(bar.childrenUnmodifiable.all { "ram-segment" in it.styleClass }, "only segments inside the bar")
             // the value label sits in the RAM card, right above the bar
             assertTrue(c.ramSummary.sceneBounds().maxY <= bar.sceneBounds().minY, "value label not above the bar")
-            // min / max captions right under the bar, each centred under its segment (2 GB, 14 GB), on one line
+            // min / max captions right under the bar, on one line, centred under the first / last selectable segment (2, 16 GB)
             val scale = c.ramScale
-            assertEquals("2 ГБ", scale.minLabel.text); assertEquals("14 ГБ", scale.maxLabel.text)
+            assertEquals("2 ГБ", scale.minLabel.text); assertEquals("16 ГБ", scale.maxLabel.text)
             val minB = scale.minLabel.sceneBounds(); val maxB = scale.maxLabel.sceneBounds()
             assertTrue(minB.minY >= bar.sceneBounds().maxY, "captions not under the bar")
             assertEquals(minB.centerY, maxB.centerY, 0.5, "captions not on one line")
             assertEquals(segmentCentre(c, 2), minB.centerX, 1.0, "min caption not under the 2 GB segment")
-            assertEquals(segmentCentre(c, 14), maxB.centerX, 1.0, "max caption not under the 14 GB segment")
-            // the system reserve (15, 16 GB) is marked and cannot be reached
-            assertEquals(listOf(15, 16), bar.segments.filter { it.pseudoClassStates.any { p -> p.pseudoClassName == "reserve" } }.map { it.userData })
+            assertEquals(segmentCentre(c, 16), maxB.centerX, 1.0, "max caption not under the 16 GB (last) segment")
+            assertTrue(maxB.maxX <= bar.sceneBounds().maxX + 0.5, "max caption sticks out past the bar")
+            // no system reserve any more: every segment is a plain selectable one (2..16 GB)
+            assertTrue(bar.segments.none { it.pseudoClassStates.any { p -> p.pseudoClassName == "reserve" } }, "reserve segments left")
             // the recommended value is explained in the tooltip / accessible help, not in an extra line
             assertTrue(bar.accessibleHelp.contains("6 ГБ"), bar.accessibleHelp)
+        }
+    }
+
+    /** «Мало памяти останется системе» only for the last 2 GB (15, 16 of 16), next to the summary, without moving anything. */
+    @Test
+    fun lowSystemMemoryNoteForTheLastTwoGb() {
+        val (c, _) = settingsWith(LauncherSettings(ramMb = 6 * 1024))
+        FxTestSupport.onFx {
+            val bar = c.ramBar; val note = c.ramWarning
+            fun lay() { c.settingsRoot.applyCss(); c.settingsRoot.layout() }
+            assertEquals("Мало памяти останется системе", note.text)
+            assertFalse(note.isVisible, "6 of 16 GB: no note")
+            assertTrue(note.isManaged, "the note keeps its place (no layout shift)")
+            lay()
+            // the summary's width follows its digits («6» / «16»); its line, the bar, the captions and the card stay put
+            fun frame() = listOf(c.ramSummary.sceneBounds().let { listOf(it.minX, it.minY, it.height) }) +
+                listOf(bar, c.ramScale, c.ramCard).map { it.sceneBounds().let { b -> listOf(b.minX, b.minY, b.width, b.height) } }
+            val before = frame()
+            val hint = bar.accessibleHelp
+            assertFalse(hint.contains(note.text), "hidden note not in the help")
+            for ((v, shown) in listOf(13 to false, 14 to false, 15 to true, 16 to true, 14 to false, 2 to false, 16 to true)) {
+                bar.setValue(v); lay()
+                assertEquals(shown, note.isVisible, "$v of 16 GB: note visible")
+                // screen readers (and the tooltip) hear the note exactly while it is shown
+                assertEquals(shown, bar.accessibleHelp.contains("Мало памяти останется системе"), "$v GB: help '${bar.accessibleHelp}'")
+                assertTrue(bar.accessibleHelp.startsWith(hint), "$v GB: the recommendation stays in the help")
+                assertEquals(before, frame(), "$v GB: the RAM card moved")
+            }
+            // shown: on the summary line, after it, inside the card, not cut
+            val sb = c.ramSummary.sceneBounds(); val nb = note.sceneBounds(); val card = c.ramCard.sceneBounds()
+            assertTrue(nb.minX >= sb.maxX, "note overlaps the summary")
+            assertEquals(sb.centerY, nb.centerY, 2.0, "note not on the summary line")
+            assertTrue(nb.maxX <= card.maxX && nb.maxY <= bar.sceneBounds().minY, "note outside the card / over the bar")
+            assertTrue(note.width >= note.prefWidth(-1.0) - 0.5, "note truncated")
+            assertTrue("ram-warning" in note.styleClass)
+            preview(c.settingsRoot.scene, "settings-ram-low-system")
+        }
+        val (en, _) = settingsWith(LauncherSettings(ramMb = 8 * 1024), totalMb = 8 * gb, lang = "en")
+        FxTestSupport.onFx {
+            assertEquals("Little memory left for the system", en.ramWarning.text)
+            assertTrue(en.ramWarning.isVisible, "8 of 8 GB: note")
+            en.ramBar.setValue(6); assertFalse(en.ramWarning.isVisible, "6 of 8 GB: no note")
+            en.ramBar.setValue(7); assertTrue(en.ramWarning.isVisible, "7 of 8 GB: note")
+            assertTrue(en.ramBar.accessibleHelp.endsWith("Little memory left for the system."), en.ramBar.accessibleHelp)
+            en.ramBar.setValue(6); assertFalse(en.ramBar.accessibleHelp.contains("Little memory"), en.ramBar.accessibleHelp)
+        }
+    }
+
+    /** «из N ГБ», the max and the number of segments come from one function; every segment can be chosen. */
+    @Test
+    fun displayedTotalMaxAndSegmentsAgree() {
+        mapOf(15_974L to 15, 16_250L to 16, 16_384L to 16, 8_100L to 8, 2_048L to 2).forEach { (mb, n) ->
+            val (c, _) = settingsWith(LauncherSettings(ramMb = 2 * 1024), totalMb = mb)
+            FxTestSupport.onFx {
+                val bar = c.ramBar
+                assertEquals(n, bar.maxGb, "$mb MB: max"); assertEquals(n, bar.totalGb, "$mb MB: scale")
+                assertEquals(n, bar.segments.size, "$mb MB: segments")
+                assertEquals("Выделено: 2 ГБ из $n ГБ", c.ramSummary.text, "$mb MB: summary")
+                key(bar, KeyCode.END)
+                assertEquals(n, bar.value, "$mb MB: the last segment is reachable")
+                assertEquals("Выделено: $n ГБ из $n ГБ", c.ramSummary.text)
+            }
+        }
+    }
+
+    /** A 16 GB PC reporting 16 250 MB (hardware-reserved memory): still 2..16 GB, 16 segments, «16 ГБ». */
+    @Test
+    fun sixteenGbPcReportingABitLessKeepsSixteen() {
+        val (c, _) = settingsWith(LauncherSettings(ramMb = 16 * 1024), totalMb = 16_250)
+        FxTestSupport.onFx {
+            assertEquals(16, c.ramBar.maxGb); assertEquals(16, c.ramBar.segments.size); assertEquals(16, c.ramBar.value)
+            assertEquals("16 ГБ", c.ramScale.maxLabel.text)
+            assertEquals("Выделено: 16 ГБ из 16 ГБ", c.ramSummary.text)
+            assertTrue(c.ramWarning.isVisible, "16 of 16: note")
+        }
+    }
+
+    /** A machine reporting 15.6 GB (0.4 GB below 16): «из 15 ГБ», 2..15, 15 segments, no dead one. */
+    @Test
+    fun maxNeverExceedsThePhysicalMemory() {
+        val (c, store) = settingsWith(LauncherSettings(ramMb = 16 * 1024), totalMb = (15.6 * gb).toLong())
+        FxTestSupport.onFx {
+            val bar = c.ramBar
+            assertEquals(15, bar.maxGb); assertEquals(15, bar.totalGb, "scale = selectable range"); assertEquals(15, bar.segments.size)
+            assertEquals(15, bar.value, "stored 16 GB clamped to 15")
+            assertEquals("Выделено: 15 ГБ из 15 ГБ", c.ramSummary.text)
+            assertEquals("15 ГБ", c.ramScale.maxLabel.text)
+            assertEquals(segmentCentre(c, 15), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the last segment")
+            key(bar, KeyCode.LEFT); key(bar, KeyCode.END); key(bar, KeyCode.RIGHT)
+            assertEquals(15, bar.value, "END / RIGHT stop at 15")
+            assertEquals(15 * 1024, store.load().ramMb)
+            // the note follows the new max: 14 and 15 of 15
+            assertTrue(c.ramWarning.isVisible)
+            bar.setValue(14); assertTrue(c.ramWarning.isVisible, "14 of max 15: note")
+            bar.setValue(13); assertFalse(c.ramWarning.isVisible, "13 of max 15: no note")
         }
     }
 
@@ -254,10 +358,10 @@ class SettingsScreenTest {
             key(bar, KeyCode.LEFT); key(bar, KeyCode.LEFT)
             assertEquals(5, bar.value); assertEquals(5 * 1024, store.load().ramMb)
             key(bar, KeyCode.END)
-            assertEquals(14, bar.value); assertEquals(14 * 1024, store.load().ramMb)
+            assertEquals(16, bar.value); assertEquals(16 * 1024, store.load().ramMb)
             key(bar, KeyCode.RIGHT); key(bar, KeyCode.PAGE_UP)
-            assertEquals(14, bar.value, "upper bound: total minus reserve")
-            assertEquals("Выделено: 14 ГБ из 16 ГБ", c.ramSummary.text)
+            assertEquals(16, bar.value, "upper bound: the whole memory")
+            assertEquals("Выделено: 16 ГБ из 16 ГБ", c.ramSummary.text)
             key(bar, KeyCode.HOME)
             assertEquals(2, bar.value); assertEquals(2 * 1024, store.load().ramMb)
             key(bar, KeyCode.LEFT); key(bar, KeyCode.PAGE_DOWN)
@@ -287,9 +391,10 @@ class SettingsScreenTest {
             assertEquals(9 * 1024, store.load().ramMb)
             assertEquals("Выделено: 9 ГБ из 16 ГБ", c.ramSummary.text)
             mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(16).centerX, y)
-            assertEquals(14, bar.value, "reserve segment: clamped to the max")
+            assertEquals(16, bar.value, "last segment = the whole memory")
+            assertEquals(16 * 1024, store.load().ramMb)
             mouse(bar, MouseEvent.MOUSE_DRAGGED, b.maxX + 100, y)
-            assertEquals(14, bar.value, "dragged past the end: max")
+            assertEquals(16, bar.value, "dragged past the end: max")
             mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(1).centerX, y)
             assertEquals(2, bar.value, "first segment: clamped to the min")
             mouse(bar, MouseEvent.MOUSE_DRAGGED, b.minX - 100, y)
@@ -303,8 +408,8 @@ class SettingsScreenTest {
         val (big, _) = settingsWith(LauncherSettings(ramMb = 64 * 1024))
         val (small, _) = settingsWith(LauncherSettings(ramMb = 256))
         FxTestSupport.onFx {
-            assertEquals(14, big.ramBar.value)
-            assertEquals("Выделено: 14 ГБ из 16 ГБ", big.ramSummary.text)
+            assertEquals(16, big.ramBar.value)
+            assertEquals("Выделено: 16 ГБ из 16 ГБ", big.ramSummary.text)
             assertEquals(2, small.ramBar.value)
             assertEquals("Выделено: 2 ГБ из 16 ГБ", small.ramSummary.text)
         }
@@ -314,19 +419,19 @@ class SettingsScreenTest {
     fun smallMachineInEnglish() {
         val (c, _) = settingsWith(LauncherSettings(), totalMb = 8 * gb, lang = "en")
         FxTestSupport.onFx {
-            assertEquals(8, c.ramBar.totalGb); assertEquals(6, c.ramBar.maxGb)
+            assertEquals(8, c.ramBar.totalGb); assertEquals(8, c.ramBar.maxGb)
             assertEquals(4, c.ramBar.value, "nothing stored -> recommended")
             assertEquals("Allocated: 4 GB of 8 GB", c.ramSummary.text)
             assertTrue(c.ramBar.accessibleHelp.contains("4 GB"), c.ramBar.accessibleHelp)
             assertFill(c, 4, 8, "8 GB machine")
-            assertEquals("2 GB", c.ramScale.minLabel.text); assertEquals("6 GB", c.ramScale.maxLabel.text)
-            assertEquals(segmentCentre(c, 6), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the 6 GB segment")
+            assertEquals("2 GB", c.ramScale.minLabel.text); assertEquals("8 GB", c.ramScale.maxLabel.text)
+            assertEquals(segmentCentre(c, 8), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the 8 GB (last) segment")
         }
     }
 
     @Test
-    fun fourGbMachineShowsOneCaption() {
-        listOf(4 * gb, 3 * gb).forEach { total ->
+    fun twoGbMachineShowsOneCaption() {
+        listOf(2 * gb, 1 * gb).forEach { total ->
             val (c, _) = settingsWith(LauncherSettings(), totalMb = total)
             FxTestSupport.onFx {
                 assertEquals(2, c.ramBar.minGb); assertEquals(2, c.ramBar.maxGb, "$total MB: only 2 GB can be chosen")
@@ -381,7 +486,7 @@ class SettingsScreenTest {
 
     @Test
     fun newStringsInEveryBundle() {
-        val keys = listOf("settings.heading.ram", "settings.ram.summary", "settings.ram.hint", "settings.unit.gb",
+        val keys = listOf("settings.heading.ram", "settings.ram.summary", "settings.ram.low_system", "settings.ram.hint_low_system", "settings.ram.hint", "settings.unit.gb",
             "settings.heading.behaviour", "settings.heading.language", "settings.language.interface", "settings.exit.short", "settings.p2p.short")
         listOf("messages.properties", "messages_ru.properties", "messages_en.properties").forEach { file ->
             val props = Properties()
