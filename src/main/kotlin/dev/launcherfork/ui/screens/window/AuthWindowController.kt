@@ -5,6 +5,7 @@ import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.LogoMark
 import dev.launcherfork.ui.components.PanelHost
+import dev.launcherfork.ui.motion.Motion
 import javafx.fxml.FXML
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -49,9 +50,17 @@ class AuthWindowController(private val ctx: UiContext) {
      * root), a fixed-size panel is centered.
      */
     fun setPanel(panel: Parent) {
-        panelHost.children.setAll(panel)
+        // the next panel (update -> login -> code, registration steps) crossfades in over the previous one; the panel
+        // nodes themselves are never touched (their controllers / FXML belong to the login work)
+        Motion.snapshotCrossfade(panelHost) { panelHost.children.setAll(panel) }
         InputBlock.focusInto(panel)
     }
+
+    /** The window appears: the whole rounded card fades in (transparent stage, nothing behind it flashes). */
+    fun appear() = Motion.fadeIn(authWindowRoot)
+
+    /** Restyle in place (theme switch): crossfade over the whole card. */
+    fun crossfade(change: () -> Unit) = Motion.snapshotCrossfade(authWindowRoot, change = change)
 
     fun clear() = panelHost.children.clear()
 }

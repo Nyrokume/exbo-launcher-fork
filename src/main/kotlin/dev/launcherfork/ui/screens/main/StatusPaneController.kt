@@ -6,6 +6,7 @@ import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.formatBytes
 import dev.launcherfork.ui.components.toggleClass
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.state.ClientState
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
@@ -52,6 +53,10 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
         downloadingStatus.text = ""
         downloadButton.text = ""
         downloadButton.setOnAction { current?.let(onPrimaryAction) }
+        // ИГРАТЬ: a short press scale and a soft hover brighten (ui/motion/Motion); the actions button only presses
+        Motion.pressScale(downloadButton)
+        Motion.hoverBrighten(downloadButton)
+        Motion.pressScale(gameActionsButton)
 
         val menu = gameActionsController
         menu.anchor = gameActionsButton
@@ -137,19 +142,20 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
                 formatBytes(s.progress.totalBytes - s.progress.doneBytes),
                 formatBytes(s.progress.bytesPerSecond),
             )
-            is ClientState.Paused -> ctx.t("main.status.paused", formatBytes(((1 - s.fraction) * s.totalBytes).toLong()))
+            is ClientState.Paused -> ctx.t("main.status.paused", formatBytes(((1 - Motion.safeFraction(s.fraction)) * s.totalBytes).toLong()))
             ClientState.Ready -> ctx.t("main.status.ready_to_launch")
             ClientState.Starting -> ctx.t("main.status.starting")
             ClientState.Running -> ctx.t("main.status.running")
             is ClientState.Busy -> ctx.t("main.status.busy.${s.operation.name.lowercase()}") // the number is in the percentage slot
         }
-        progressBar.progress = when (s) {
+        // the bar glides between the service's ticks instead of jumping (back to 0 / another game: at once)
+        Motion.progress(progressBar, when (s) {
             is ClientState.Downloading -> s.progress.fraction
             is ClientState.Paused -> s.fraction
             is ClientState.Busy -> s.fraction
             ClientState.Running, ClientState.Starting -> 1.0
             else -> 0.0
-        }
+        })
         // percentage inside the pill (right) while something is in progress
         val fraction = when (s) {
             is ClientState.Downloading -> s.progress.fraction
@@ -157,7 +163,7 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
             is ClientState.Busy -> s.fraction // verify / reinstall / delete
             else -> null
         }
-        progressPercent.text = fraction?.let { "${(it * 100).roundToInt()}%" } ?: ""
+        progressPercent.text = fraction?.let { "${(Motion.safeFraction(it) * 100).roundToInt()}%" } ?: ""
         statusPill.toggleClass("in-progress", s is ClientState.Downloading || s is ClientState.Busy)
         statusPill.toggleClass("paused", s is ClientState.Paused)
         statusPill.toggleClass("running", s == ClientState.Running || s == ClientState.Starting)

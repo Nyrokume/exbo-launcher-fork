@@ -133,18 +133,18 @@ class SettingsScreenTest {
     }
 
     /**
-     * Every card is a list of uniform rows: 34 px (7 rows in ПОВЕДЕНИЕ must fit 900x580), label at the card's left
+     * Every card is a list of uniform rows: 34 px, switch rows 30 px (8 rows in ПОВЕДЕНИЕ since «Анимации» must fit 900x580), label at the card's left
      * padding, control ending at its right padding, one line (no wrapped or cut labels); auto-exit, P2P, theme and
      * language are segmented controls: a 28 px box (like the limit fields) whose 26 px parts sit edge to edge on one
      * line, the selected one filled over the whole part height (no inset pill).
      */
     private fun checkRows(s: SettingsController, where: String) {
-        val behaviourRows = listOf(s.exitRow, s.p2pRow, s.themeRow, s.startOnDownloadedRow, s.defenderRow, s.trayRow, s.autostartRow)
+        val behaviourRows = listOf(s.exitRow, s.p2pRow, s.themeRow, s.animationsRow, s.startOnDownloadedRow, s.defenderRow, s.trayRow, s.autostartRow)
         assertEquals(behaviourRows, s.behaviourCard.children.toList(), "$where: ПОВЕДЕНИЕ is one column of rows in this order")
         val rows = behaviourRows + listOf(s.limitsRow, s.languageRow)
         rows.forEach { row ->
             val rb = row.sceneBounds()
-            assertEquals(34.0, rb.height, 0.5, "$where: ${row.id} height")
+            assertEquals(if ("toggle-row" in row.styleClass) 30.0 else 34.0, rb.height, 0.5, "$where: ${row.id} height")
             val card = row.parent as javafx.scene.layout.Region
             val cb = card.sceneBounds()
             val inner = cb.minX + card.snappedLeftInset() to cb.maxX - card.snappedRightInset()
@@ -154,8 +154,8 @@ class SettingsScreenTest {
             assertEquals(rb.centerY, last.centerY, 1.0, "$where: ${row.id} control not centred")
             row.children.filterIsInstance<Labeled>().forEach { l -> assertTrue(!l.isWrapText, "$where: '${l.text}' may wrap") }
         }
-        // switches of the four toggle rows share one right edge
-        val switches = listOf(s.startOnDownloadedToggle, s.defenderToggle, s.trayToggle, s.autostartToggle).map { it.sceneBounds() }
+        // switches of the five toggle rows share one right edge
+        val switches = listOf(s.animationsToggle, s.startOnDownloadedToggle, s.defenderToggle, s.trayToggle, s.autostartToggle).map { it.sceneBounds() }
         switches.forEach { assertEquals(switches[0].maxX, it.maxX, 0.5, "$where: switches not aligned") }
         // segmented controls: parts on one line, edge to edge, the selected one painted with the accent over its full height
         listOf(listOf(s.exitOnStart, s.exitOnGameExit, s.exitNever), listOf(s.p2pAlways, s.p2pNotMobile, s.p2pNever),

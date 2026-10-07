@@ -40,12 +40,29 @@ tasks.named<JavaExec>("run") {
     }
 }
 
+// ./gradlew showcase: looping presentation of the redesign with mock data that keeps nothing (docs/SHOWCASE.md);
+// -Dlauncher.showcase.size=1920x1080, -Dlauncher.showcase.captions=false etc. are forwarded like for `run`
+tasks.register<JavaExec>("showcase") {
+    group = "application"
+    description = "Runs the launcher in showcase mode (looping presentation, mock data, nothing saved)"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("dev.launcherfork.app.MainKt")
+    jvmArgs("-Dprism.lcdtext=false")
+    systemProperty("launcher.showcase", "true")
+    System.getProperties().forEach { k, v ->
+        if (k.toString().startsWith("launcher.")) systemProperty(k.toString(), v)
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
     systemProperty("glass.platform", "Monocle")
     systemProperty("monocle.platform", "Headless")
     systemProperty("prism.order", "sw")
     systemProperty("java.awt.headless", "true")
+    // no motion in tests: every transition applies its end state at once, so layout / contrast checks never see a
+    // half-finished frame (MotionTest switches it on for itself)
+    systemProperty("launcher.animations", "off")
     testLogging {
         events("passed", "failed", "skipped")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

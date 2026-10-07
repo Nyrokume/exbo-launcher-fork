@@ -28,6 +28,7 @@ import javafx.scene.paint.Color
 import javafx.stage.Stage
 import javafx.stage.StageStyle
 import javafx.stage.Window
+import javafx.stage.WindowEvent
 import java.time.LocalDate
 
 /**
@@ -114,6 +115,10 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         mainStage.scene = mainScene
         mainStage.title = ctx.strings.text("title.launcher")
         Bindings.bindContent(mainStage.icons, stage.icons)
+        // every time a window shows up its content fades in (ui/motion/Motion): the window switch itself stays instant
+        // (the new window is shown first, then the old one hidden), so nothing flashes twice
+        mainStage.addEventHandler(WindowEvent.WINDOW_SHOWN) { windowController.appear() }
+        stage.addEventHandler(WindowEvent.WINDOW_SHOWN) { authWindow.appear() }
         // closing the main window by the OS (Alt+F4) ends the app like the close button
         mainStage.setOnCloseRequest { close() }
         stage.setOnCloseRequest { close() }
@@ -185,8 +190,13 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     override fun switchAppearance(appearance: Appearance) {
         if (appearance == Theme.appearance || !Theme.supportsLight) return
         Theme.appearance = appearance
-        Theme.apply(mainScene, lang)
-        Theme.apply(authScene, lang)
+        restyle()
+    }
+
+    /** Re-applies the theme stylesheets to both windows, crossfading the visible one (theme switch, showcase). */
+    fun restyle() {
+        windowController.crossfade { Theme.apply(mainScene, lang) }
+        authWindow.crossfade { Theme.apply(authScene, lang) }
     }
 
     override fun minimize() {
@@ -225,6 +235,23 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     val isOverlayShown: Boolean get() = windowController.isOverlayShown
 
+    /** Size of the main window the first time it shows (the showcase's -Dlauncher.showcase.size); null = Theme.WINDOW_*. */
+    var mainWindowSize: Pair<Double, Double>? = null
+
+    /** Root of the main window (window.fxml) and of the pre-main window (auth_window.fxml): showcase captions go there. */
+    val mainWindowRoot: javafx.scene.layout.StackPane get() = windowController.windowRoot
+    val authWindowRoot: javafx.scene.layout.StackPane get() = authWindow.authWindowRoot
+
+    /**
+     * Showcase: another base theme ([theme] = zone | exbo | shadcn) and scheme on both windows, crossfaded like the
+     * settings «Тема» switch. Session only: nothing is saved (the settings store is not touched).
+     */
+    fun applyLook(theme: String, appearance: Appearance) {
+        Theme.themeName = theme
+        Theme.appearance = if (Theme.supportsLight) appearance else Appearance.DARK
+        restyle()
+    }
+
     /** Background picture of the main window (this launch's wallpaper), null when none was chosen. */
     val wallpaperLayer: WallpaperLayer? get() = windowController.wallpaper
 
@@ -243,7 +270,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         if (overlayController != null || isOverlayShown) hideOverlay()
         mainController?.dispose()
         mainController = null
-        windowController.setContent(javafx.scene.layout.Region())
+        windowController.setContent(javafx.scene.layout.Region(), animate = false)
     }
 
     private fun disposePanel() {
@@ -294,7 +321,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     private fun place(slot: WindowSlot, from: Rectangle2D) {
         val (w, h) = when {
             slot === authSlot -> Theme.AUTH_WINDOW_WIDTH to Theme.AUTH_WINDOW_HEIGHT
-            !mainShownOnce -> Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT
+            !mainShownOnce -> mainWindowSize ?: (Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT)
             slot.frame.isMaximized -> return
             else -> slot.stage.width to slot.stage.height
         }

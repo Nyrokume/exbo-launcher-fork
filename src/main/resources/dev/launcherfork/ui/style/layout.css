@@ -57,6 +57,8 @@
    turn transparent, the title bar and sidebar translucent, and the content area adds two soft shades (left, under the
    banner text; top, under the nav row). Without a picture (loading failed) none of this applies: plain theme look.
    Colours and opacities: theme tokens -wallpaper-* only (WallpaperContrastTest measures every text over every picture). */
+/* the layer's own plain background: the picture fades in over it (ui/motion/Motion), never over the scene fill */
+.wallpaper-layer { -fx-background-color: -background; }
 .wallpaper-scrim { -fx-background-color: -wallpaper-scrim; }
 /* bright pictures (manifest tone «bright»: overcast sky, daylight) take the theme's stronger scrim */
 .wallpaper-scrim.wallpaper-bright { -fx-background-color: -wallpaper-scrim-bright; }
@@ -252,6 +254,9 @@
 
 .server-entry { -fx-background-color: transparent; -fx-cursor: hand; }
 .server-entry:hover { -fx-background-color: -accent; }
+/* animations on (ServerEntryController): the same fill on a layer under the row, faded in code instead of switched */
+.server-entry.motion:hover { -fx-background-color: transparent; }
+.entry-hover-fill { -fx-background-color: -accent; }
 .entry-indicator { -fx-background-color: transparent; }
 .server-entry.selected .entry-indicator { -fx-background-color: -primary; }
 .settings-mode .server-entry.selected .entry-indicator { -fx-background-color: transparent; }
@@ -443,22 +448,25 @@
 
 /* ===================== settings ===================== */
 /* One screen at 900x580 (SettingsScreenTest), below the nav row. One tidy list: small Bebas group labels over subtle
-   cards; every row of a card is "label left, control right", 34 px (7 rows in ПОВЕДЕНИЕ since «Тема»; room for the 28 px
-   segmented controls and limit fields: tighter gaps between the groups instead), a thin separator under all but the last. */
+   cards; every row of a card is "label left, control right": 34 px for the 28 px segmented controls and limit fields,
+   30 px for the switch rows (8 rows in ПОВЕДЕНИЕ since «Тема» and «Анимации»; tighter gaps between the groups and inside
+   the RAM card too), a thin separator under all but the last. */
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.settings-content { -fx-padding: 4 24 8 24; -fx-max-width: 820; -fx-spacing: 10; }
-.settings-group { -fx-spacing: 5; }
+.settings-content { -fx-padding: 4 24 4 24; -fx-max-width: 820; -fx-spacing: 6; }
+.settings-group { -fx-spacing: 4; }
 .settings-group-label { -fx-font-size: 17; -fx-text-fill: -settings-heading; }
 .settings-columns { -fx-spacing: 14; }
 .settings-card { -fx-padding: 0 14 0 14; }
-.settings-card.ram-card { -fx-padding: 8 14 6 14; -fx-spacing: 8; }
+.settings-card.ram-card { -fx-padding: 6 14 4 14; -fx-spacing: 8; }
 .settings-row {
     -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
     -fx-border-color: transparent transparent -settings-divider transparent;
     -fx-border-width: 0 0 1 0;
 }
 .settings-row.last { -fx-border-color: transparent; }
+/* switch rows: 30 px (the 16 px switch keeps 7 px of air) so the five of them and «Анимации» fit one screen */
+.settings-row.toggle-row { -fx-min-height: 30; -fx-pref-height: 30; -fx-max-height: 30; }
 .settings-label { -fx-font-size: 14; -fx-text-fill: -settings-label; }
 
 /* segmented control (auto-exit, P2P, theme, language): RadioButtons drawn as the parts of one control. Same box as the
@@ -646,3 +654,21 @@
 }
 .modal-layer .check-box:selected > .box > .mark { -fx-background-color: -primary; }
 .progress-indicator { -fx-progress-color: -primary; }
+
+/* ---- Showcase caption (app/ShowcaseTour, -Dlauncher.showcase.captions): small chip in the title strip, never in the nav row ---- */
+.showcase-caption {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 3 10 3 8;
+}
+.showcase-caption-dot {
+    -fx-background-color: -primary;
+    -fx-background-radius: 3;
+}
+.showcase-caption-text {
+    -fx-text-fill: -muted-foreground;
+    -fx-font-size: 11px;
+}
