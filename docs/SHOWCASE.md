@@ -1,6 +1,16 @@
 # UI Showcase — подготовка презентации
 
-Краткая карта экранов и как снять PNG для HTML-слайдов (frontend-slides / talk deck).
+Краткая карта экранов и как прогнать живой тур / снять PNG для HTML-слайдов (frontend-slides / talk deck).
+
+## Живой showcase (с анимациями)
+
+```bash
+./gradlew run "-Dlauncher.showcase=true"
+```
+
+Опции: `launcher.showcase.size=1366x800`, `launcher.showcase.captions=true|false`,
+`launcher.showcase.stills=<dir>` (PNG шагов первого круга), `launcher.showcase.loops=N` (0 = бесконечно).
+Esc — выход. Белой темы в туре нет (только zone / exbo / shadcn).
 
 ## Снять скриншоты автотуром
 
@@ -8,7 +18,7 @@
 ./gradlew run "-Dlauncher.screenshots=docs/screenshots/zone"
 ```
 
-PNG появятся в `docs/screenshots/zone/`. Тема по умолчанию — тёмная `zone` (белая схема удалена).
+PNG появятся в `docs/screenshots/zone/`. Тема по умолчанию — тёмная `zone`.
 
 ## Слайды (порядок)
 
