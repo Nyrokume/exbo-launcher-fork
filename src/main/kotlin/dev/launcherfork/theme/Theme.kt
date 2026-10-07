@@ -27,12 +27,13 @@ object Theme {
 
     /**
      * Separate pre-main window (update / auth / mail code, docs/design/WINDOWS.md): undecorated (transparent
-     * corners), not resizable, rounded like the stalzone.com/login card. 460x620 = 32 px title strip + 460x588
-     * panel host; the zone login panel stretches to the host (its min is 420x560), legacy 379x490 panels are centered.
+     * corners), not resizable, rounded like the stalzone.com/login card. 460x700 = 32 px title strip + 460x668
+     * panel host; room for registration/TOTP error toasts in the form flow without clipping. The zone login panel
+     * stretches to the host (its min is 420x560), legacy 379x490 panels are centered.
      */
     const val AUTH_WINDOW_WIDTH = 460.0
     /** Tallest pre-main window (fixed-size legacy panels and update panel); compact panels fit their content. */
-    const val AUTH_WINDOW_HEIGHT = 620.0
+    const val AUTH_WINDOW_HEIGHT = 700.0
     /** Shortest pre-main window: a compact (content-sized) panel never makes the window lower than this. */
     const val AUTH_WINDOW_MIN_HEIGHT = 360.0
     const val AUTH_TITLEBAR_HEIGHT = 32.0

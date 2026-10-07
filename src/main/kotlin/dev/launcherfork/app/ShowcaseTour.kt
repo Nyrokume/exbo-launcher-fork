@@ -13,13 +13,15 @@ import javafx.scene.input.KeyEvent
 import java.io.File
 
 /**
- * Showcase mode ([Showcase], docs/SHOWCASE.md): a looping, hands-off presentation of the redesign with the animations
- * on. Main window with its wallpaper -> other wallpapers -> looks (exbo, shadcn, zone) -> game
- * banner -> settings (RAM, «Поведение») -> profile menu -> «Сообщества» -> download / pause / ready -> auth window ->
- * registration steps -> sign-in -> again. Each step 3–4 s; navigation through [TourActions] (shared with the screenshot
- * tour). Mock data only (login «player»), nothing is saved: theme switches go through [StageNavigator.applyLook]
- * (session only), wallpapers through the layer (never `wallpaper.last`), and the app runs on an in-memory settings
- * store (LauncherApp). Escape exits. Optional caption chip in the title strip (never in the nav row).
+ * Showcase mode ([Showcase], docs/SHOWCASE.md): hands-off animated presentation.
+ *
+ * Narrative order (one pass):
+ *  1. Registration — age gate → register form (filled)
+ *  2. Authorization — login form → sign-in into main
+ *  3. Launcher — wallpaper, looks, banner, settings, profile / logout confirm, communities,
+ *     game «⋯» menu, download / pause / ready
+ *
+ * Escape exits. Optional caption chips. Mock data only; nothing is saved.
  */
 class ShowcaseTour(
     private val nav: StageNavigator,
@@ -42,20 +44,55 @@ class ShowcaseTour(
     private val timers = mutableListOf<PauseTransition>()
     private var waitingForMain: (() -> Unit)? = null
     private var stopped = false
-    /** The loop proper has begun (the very first sign-in, right after start, does not close a loop). */
-    private var looping = false
 
     /** Index of the step on screen (tests). */
     var current = -1
         private set
-    /** Finished loops (the sign-in step closes a loop). */
+    /** Finished full narrative passes (last step → wrap). */
     var loopsDone = 0
         private set
     /** Stills written so far (first loop, -Dlauncher.showcase.stills). */
     val stills = mutableListOf<File>()
 
-    /** The loop, in order; the first loop starts at [SIGN_IN] (the app opens on the auth window). */
+    /**
+     * Registration → authorization → launcher click-through.
+     * Loop limit ([Showcase.loops]) counts full passes ending after [paused_ready].
+     */
     val steps: List<Step> = listOf(
+        // —— registration ——
+        Step(
+            "age_gate",
+            3.5,
+            ticks = listOf(
+                0.8 to { act.fillAgeGate() },
+                2.2 to { act.continueAgeGate() },
+            ),
+        ) { act.showAgeGate() },
+        Step(
+            "register",
+            4.0,
+            ticks = listOf(
+                0.6 to { act.fillRegister() },
+                2.8 to { act.showAuth() },
+            ),
+        ) { act.showRegister() },
+        // —— authorization ——
+        Step(
+            "auth",
+            3.5,
+            ticks = listOf(
+                0.8 to {
+                    val auth = nav.panelController as? dev.launcherfork.ui.screens.auth.InitialAuthController ?: return@to
+                    auth.loginField.text = TourActions.MOCK_LOGIN
+                },
+                1.6 to {
+                    val auth = nav.panelController as? dev.launcherfork.ui.screens.auth.InitialAuthController ?: return@to
+                    auth.passwordField.text = TourActions.MOCK_PASSWORD
+                },
+            ),
+        ) { act.showAuth() },
+        Step(SIGN_IN, 1.6, ticks = listOf(0.4 to { act.signIn() }), awaitsMain = true) { act.showAuth() },
+        // —— launcher ——
         Step("main", 3.5) {
             act.hideMenus(); act.showSettings(false)
             nav.applyLook("zone")
@@ -68,16 +105,33 @@ class ShowcaseTour(
         Step("theme_zone", 3.0) { nav.applyLook("zone") },
         Step("banner", 3.5) { act.reselectGame() },
         Step("settings", 4.0, ticks = listOf(1.6 to { toggleTray() }, 2.6 to { toggleTray() })) { act.showSettings(true) },
-        Step("profile_menu", 3.0, ticks = listOf(0.5 to { act.showProfileMenu() })) { act.showSettings(false) },
+        Step(
+            "profile_menu",
+            3.0,
+            ticks = listOf(
+                0.5 to { act.showProfileMenu() },
+                1.6 to { act.showLogoutConfirm() },
+                2.5 to { act.cancelLogout() },
+            ),
+        ) { act.showSettings(false) },
         Step("community_menu", 3.0) { act.showCommunityMenu() },
-        Step("download", 4.0, ticks = listOf(1.0 to { act.downloading(0.42) }, 2.0 to { act.downloading(0.67) }, 3.0 to { act.downloading(0.86) })) {
-            act.hideMenus(); act.downloading(0.18)
+        Step(
+            "game_actions",
+            3.5,
+            ticks = listOf(2.6 to { act.hideGameActions() }),
+        ) {
+            act.hideMenus()
+            act.ready()
+            act.showGameActions()
         },
-        Step("paused_ready", 3.0, ticks = listOf(1.5 to { act.ready() })) { act.paused(0.86) },
-        Step("auth", 3.5) { act.showAuth() },  // leave to auth window (not «Сменить аккаунт»: that item is gone in #19)
-        Step("age_gate", 3.0) { act.showAgeGate() },
-        Step("register", 3.5) { act.showRegister() },
-        Step(SIGN_IN, 1.6, ticks = listOf(1.5 to { act.signIn() }), awaitsMain = true) { act.showAuth() },
+        Step("download", 4.0, ticks = listOf(
+            1.0 to { act.downloading(0.42) },
+            2.0 to { act.downloading(0.67) },
+            3.0 to { act.downloading(0.86) },
+        )) {
+            act.hideMenus(); act.hideGameActions(); act.downloading(0.18)
+        },
+        Step("paused_ready", 3.5, ticks = listOf(1.6 to { act.ready() })) { act.paused(0.86) },
     )
 
     fun install() {
@@ -90,7 +144,11 @@ class ShowcaseTour(
         var started = false
         nav.onScreenChanged = { name ->
             when {
-                name == "auth" && !started -> { started = true; later(0.8) { run(steps.indexOfFirst { it.id == SIGN_IN }) } }
+                // App opens on auth → begin the narrative at registration (age gate).
+                name == "auth" && !started -> {
+                    started = true
+                    later(0.9) { run(0) }
+                }
                 name == "main" -> waitingForMain?.let { waitingForMain = null; later(0.4) { it() } }
             }
         }
@@ -122,24 +180,24 @@ class ShowcaseTour(
     }
 
     /**
-     * Bookkeeping after step [index]: the index of the next step, or null when the `launcher.showcase.loops` limit is
-     * reached. A loop closes with the sign-in that follows a full pass; the very first sign-in after start does not
-     * count (the app opens on the auth window, then the loop proper starts at step 1).
+     * After step [index]: next index, or null when [Showcase.loops] full passes are done.
+     * A pass closes when leaving the last step (wrap to 0).
      */
     fun advance(index: Int): Int? {
-        if (steps[index].id == SIGN_IN && looping) loopsDone++
         val next = (index + 1) % steps.size
-        if (next == 0) looping = true
-        return if (config.loops in 1..loopsDone) null else next
+        if (next == 0) {
+            loopsDone++
+            if (config.loops in 1..loopsDone) return null
+        }
+        return next
     }
 
     /**
-     * The loop limit is reached: the main window (just signed in again) stays on screen for [FINISH_HOLD_SEC], then a
-     * "showcase finished" line goes to stderr and the app exits. Recorders stop on that line / on the exit instead of
-     * a fixed duration (otherwise the tail of the video is the empty screen after the windows closed).
+     * The loop limit is reached: the last launcher frame stays on screen for [FINISH_HOLD_SEC], then
+     * "showcase finished" goes to stderr and the app exits (recorders stop on that line).
      */
     private fun finish() {
-        captions.forEach { it.text = caption(steps.first()) }
+        captions.forEach { it.text = caption(steps.last()) }
         later(FINISH_HOLD_SEC) {
             System.err.println("[launcher-fork] showcase finished after $loopsDone loop(s)")
             stop()
@@ -192,7 +250,7 @@ class ShowcaseTour(
 
     companion object {
         const val SIGN_IN = "sign_in"
-        /** Seconds the final main window stays on screen before the app exits (`launcher.showcase.loops`). */
+        /** Seconds the final frame stays on screen before the app exits (`launcher.showcase.loops`). */
         const val FINISH_HOLD_SEC = 2.5
     }
 }

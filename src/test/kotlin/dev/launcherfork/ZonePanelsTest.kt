@@ -1,5 +1,6 @@
 package dev.launcherfork
 
+import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.screens.auth.InitialAuthController
 import javafx.css.CssParser
@@ -95,9 +96,9 @@ class ZonePanelsTest {
         // Google auth is not supported: only Steam and Epic Games tiles, 44x44 with 10 px spacing, right-aligned in the form
         // row under remember / restore (user's sketch), the top card keeps only the title
         val panel = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml")
-        val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
-        dev.launcherfork.theme.Theme.apply(scene, "ru")
-        val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+        val scene = Scene(panel.root, Theme.AUTH_PANEL_WIDTH, Theme.AUTH_PANEL_HEIGHT, Color.BLACK)
+        Theme.apply(scene, "ru")
+        val zoneSheet = Theme.stylesheet("theme-zone.css")
         if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
         scene.root.applyCss(); scene.root.layout()
         val tiles = scene.root.lookupAll(".zone-social").map { it as javafx.scene.control.Button }
@@ -270,7 +271,7 @@ class ZonePanelsTest {
     ) {
         val panel = FxTestSupport.onFx {
             val panel = Fxml.load<InitialAuthController>(FxTestSupport.context(lang), "auth_panel.fxml")
-            val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
+            val scene = Scene(panel.root, Theme.AUTH_PANEL_WIDTH, Theme.AUTH_PANEL_HEIGHT, Color.BLACK)
             dev.launcherfork.theme.Theme.apply(scene, lang)
             // preview always in the zone theme, whatever -Dlauncher.theme the test JVM got
             dev.launcherfork.theme.Theme.zoneFonts

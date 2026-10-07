@@ -7,13 +7,13 @@
 
 <!--
   Frame of the separate PRE-MAIN window (update / auth / mail code), docs/design/WINDOWS.md.
-  Transparent corners, not resizable, 460x620, rounded like the stalzone.com/login card (.zone-radius-md):
+  Transparent corners, not resizable, 460x700, rounded like the stalzone.com/login card (.zone-radius-md):
   a 32 px title strip (logo, drag area, minimize, close) and panelHost below it. The panel FXML
-  (auth_panel.fxml / initial_auth.fxml / ...) is put into panelHost unchanged and sized by it (460x588).
+  (auth_panel.fxml / initial_auth.fxml / ...) is put into panelHost unchanged and sized by it (460x668).
   Explicit ids (auth*) keep legacy #close/#hide rules of common.css away from these buttons.
 -->
 <StackPane fx:id="authWindowRoot" id="authWindow" styleClass="auth-window,zone-radius-md" stylesheets="@style/layout.css"
-           prefWidth="460" prefHeight="620"
+           prefWidth="460" prefHeight="700"
            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="dev.launcherfork.ui.screens.window.AuthWindowController">
     <BorderPane>

@@ -75,6 +75,11 @@
                         <Region HBox.hgrow="ALWAYS" minWidth="16"/>
                         <CheckBox fx:id="defenderToggle" styleClass="switch" accessibleText="%settings.defender"/>
                     </HBox>
+                    <HBox fx:id="animationsRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.animations" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <CheckBox fx:id="animationsToggle" styleClass="switch" accessibleText="%settings.animations"/>
+                    </HBox>
                     <HBox fx:id="trayRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">
                         <Label styleClass="settings-label,row-label" text="%settings.tray" minWidth="-Infinity"/>
                         <Region HBox.hgrow="ALWAYS" minWidth="16"/>

@@ -117,10 +117,13 @@ class AuthWindowTest {
 
     @Test
     fun panelWithoutFixedSizeFillsTheHost() {
-        // contract for auth_panel.fxml (redesign/auth-zone): min 420x560, pref 460x588, no max -> fills the host
+        // contract for auth_panel.fxml (redesign/auth-zone): min 420x560, pref = AUTH_PANEL, no max -> fills the host
         FxTestSupport.onFx {
             val nav = StageNavigator(Stage(StageStyle.TRANSPARENT), AppContext.mock(authDelayMs = 0), "ru")
-            val panel = javafx.scene.layout.StackPane().apply { setMinSize(420.0, 560.0); setPrefSize(460.0, 588.0) }
+            val panel = javafx.scene.layout.StackPane().apply {
+                setMinSize(420.0, 560.0)
+                setPrefSize(Theme.AUTH_PANEL_WIDTH, Theme.AUTH_PANEL_HEIGHT)
+            }
             authWindow(nav).setPanel(panel)
             nav.authStage.scene.root.applyCss(); nav.authStage.scene.root.layout()
             assertEquals(Theme.AUTH_PANEL_WIDTH, panel.width, 0.5)
@@ -131,10 +134,11 @@ class AuthWindowTest {
 
     @Test
     fun panelAskingForMoreThanTheHostStillFitsBelowTheTitleStrip() {
-        // content of a real panel may compute a min height a bit above 588: the host sizes it like a Scene root
+        // content of a real panel may compute a min height a bit above AUTH_PANEL: the host sizes it like a Scene root
         FxTestSupport.onFx {
             val nav = StageNavigator(Stage(StageStyle.TRANSPARENT), AppContext.mock(authDelayMs = 0), "ru")
-            val panel = javafx.scene.layout.StackPane().apply { setMinSize(420.0, 610.0); setPrefSize(460.0, 610.0) }
+            val over = Theme.AUTH_PANEL_HEIGHT + 20.0
+            val panel = javafx.scene.layout.StackPane().apply { setMinSize(420.0, over); setPrefSize(460.0, over) }
             authWindow(nav).setPanel(panel)
             nav.authStage.scene.root.applyCss(); nav.authStage.scene.root.layout()
             assertEquals(Theme.AUTH_PANEL_HEIGHT, panel.height, 0.5)

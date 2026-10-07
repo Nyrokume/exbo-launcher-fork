@@ -32,7 +32,7 @@ class MockAuthService(
     @Volatile private var pending: Pair<String, Factor>? = null
     @Volatile override var currentSession: UserSession? = null
         private set
-    @Volatile override var savedLogin: String? = "player"
+    @Volatile override var savedLogin: String? = "DementiyRezak"
         private set
 
     override fun login(login: String, password: String, remember: Boolean): AuthResult {

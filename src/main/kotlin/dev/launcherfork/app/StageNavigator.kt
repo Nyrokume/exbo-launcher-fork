@@ -87,6 +87,9 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     /** How [close] ends the app; tests replace it so the FX toolkit survives. */
     var exit: () -> Unit = { Platform.exit() }
 
+    /** Size of the main window the first time it shows (`-Dlauncher.showcase.size`); null = Theme.WINDOW_*. */
+    var mainWindowSize: Pair<Double, Double>? = null
+
     /** Root of the main window (window.fxml) and of the pre-main window (auth_window.fxml): showcase captions go there. */
     val mainWindowRoot: javafx.scene.layout.StackPane get() = windowController.windowRoot
     val authWindowRoot: javafx.scene.layout.StackPane get() = authWindow.authWindowRoot
@@ -313,7 +316,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     private fun place(slot: WindowSlot, from: Rectangle2D) {
         val (w, h) = when {
             slot === authSlot -> Theme.AUTH_WINDOW_WIDTH to authWindow.fittedWindowHeight()
-            !mainShownOnce -> Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT
+            !mainShownOnce -> mainWindowSize ?: (Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT)
             slot.frame.isMaximized -> return
             else -> slot.stage.width to slot.stage.height
         }

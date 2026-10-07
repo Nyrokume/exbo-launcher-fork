@@ -11,6 +11,7 @@ import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.LinkPolicy
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.components.loadImage
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.wallpaper.Wallpapers
 import javafx.application.Application
 import javafx.stage.Stage
@@ -26,7 +27,11 @@ import kotlin.random.Random
  * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=zone|exbo|shadcn (zone by default),
  * launcher.settingsFile=<path> (where the last wallpaper number is kept),
  * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour),
- * launcher.wallpaper=1..6 (always this main-window wallpaper; the tour uses Wallpapers.TOUR_DEFAULT without it).
+ * launcher.wallpaper=1..6 (always this main-window wallpaper; the tour uses Wallpapers.TOUR_DEFAULT without it),
+ * launcher.animations=on|off (interface motion; ui/motion/Motion),
+ * launcher.wallpaper.drift=on (very slow wallpaper zoom, off by default),
+ * launcher.showcase=true (looping interactive presentation; launcher.showcase.size=WxH,
+ * launcher.showcase.captions=true|false, launcher.showcase.stills=<dir>, launcher.showcase.loops=N).
  */
 class LauncherApp : Application() {
     private var app: AppContext? = null
@@ -36,7 +41,6 @@ class LauncherApp : Application() {
         val lang = System.getProperty("launcher.lang", "ru")
         val speed = System.getProperty("launcher.mockSpeed")?.toDoubleOrNull() ?: 1.0
         val devMode = System.getProperty("launcher.dev").toBoolean()
-        // community links (header «Сообщества») open in the system browser through JavaFX HostServices
         val browser = hostServices
         val links = LinkOpener { url ->
             if (LinkPolicy.isAllowed(url)) {
@@ -46,8 +50,6 @@ class LauncherApp : Application() {
                 System.err.println("[launcher-fork] WARNING: refused to open non-allowlisted link: $url")
             }
         }
-        // game-actions: «Открыть папку игры» (under gameRoot) or «Открыть папку логов» (under %APPDATA%/EXBO).
-        // Not through LinkOpener. Missing dirs: nearest existing parent, never above the allowlisted root.
         val folders = FolderOpener { dir ->
             val abs = dir.toAbsolutePath().normalize()
             val gameRoot = this.app?.services?.settings?.load()?.gameRoot ?: LauncherSettings().gameRoot
@@ -64,51 +66,76 @@ class LauncherApp : Application() {
                     System.err.println("[launcher-fork] WARNING: refused to open ${target.dir}: outside ${target.root}")
             }
         }
-        val shotsDir = System.getProperty("launcher.screenshots")
-        // the games list shows the online count: the mock drifts a little in normal runs, the tour keeps it fixed
-        val onlineTickMs = if (shotsDir != null) 0L else System.getProperty("launcher.onlineTickMs")?.toLongOrNull() ?: 10_000L
-        // second factor after the password: random e-mail code / authenticator app per login unless -Dlauncher.mock2fa
-        // says otherwise; the tour signs in without one (it shows the panels through the "2fa" / "totp" logins)
-        val mock2fa = if (shotsDir != null && System.getProperty(MockSecondFactor.PROPERTY) == null) MockSecondFactor.NONE
-            else MockSecondFactor.fromSystemProperties()
+        // showcase: mock-only looping presentation; wins over the screenshot tour
+        val showcase = Showcase.fromProperties()
+        val shotsDir = if (showcase != null) null else System.getProperty("launcher.screenshots")
+        if (showcase != null) {
+            Motion.override = Motion.parse(System.getProperty(Motion.PROPERTY)) ?: true
+            if (System.getProperty(Motion.DRIFT_PROPERTY) == null) System.setProperty(Motion.DRIFT_PROPERTY, "on")
+            System.err.println(
+                "[launcher-fork] showcase: ${showcase.width.toInt()}x${showcase.height.toInt()}, " +
+                    "captions ${if (showcase.captions) "on" else "off"}, nothing is saved"
+            )
+        } else if (shotsDir != null) {
+            // stills must never catch a half-faded menu/modal; -Dlauncher.animations=on can re-enable for debugging
+            Motion.override = Motion.parse(System.getProperty(Motion.PROPERTY)) ?: false
+        }
+        val tour = shotsDir != null || showcase != null
+        val onlineTickMs = if (tour) 0L else System.getProperty("launcher.onlineTickMs")?.toLongOrNull() ?: 10_000L
+        val mock2fa = when {
+            showcase != null -> MockSecondFactor.NONE
+            shotsDir != null && System.getProperty(MockSecondFactor.PROPERTY) == null -> MockSecondFactor.NONE
+            else -> MockSecondFactor.fromSystemProperties()
+        }
         System.err.println("[launcher-fork] mock 2FA: ${mock2fa.name.lowercase()}")
-        val settingsFile = settingsFile(shotsDir)
+        val settingsFile = settingsFile(showcase = showcase != null, screenshots = shotsDir != null)
         val app = AppContext.mock(
-            language = lang, speed = speed, devMode = devMode, links = links, folders = folders, onlineTickMs = onlineTickMs,
-            mock2fa = mock2fa,
+            language = lang, speed = speed, devMode = devMode, links = links, folders = folders,
+            onlineTickMs = onlineTickMs, mock2fa = mock2fa,
         )
         this.app = app
+        Motion.setting = app.services.settings.load().animations
+        System.err.println(
+            "[launcher-fork] animations: ${Motion.settingValue(Motion.enabled)}" +
+                (Motion.override?.let { " (-D${Motion.PROPERTY})" } ?: "")
+        )
         val zoneFonts = if (Theme.themeName == "zone") Theme.zoneFonts else emptyList()
         System.err.println("[launcher-fork] fonts: ${fonts + zoneFonts}, theme: ${Theme.themeName}")
 
-        // pre-main window: no OS frame, transparent outside its rounded corners, fixed size
         stage.initStyle(StageStyle.TRANSPARENT)
         stage.isResizable = false
-        // every size (the main window mirrors this list, StageNavigator binds mainStage.icons to it)
         stage.icons += Theme.appIconResources().map { loadImage(it) }
 
-        // this launch's wallpaper, chosen ONCE before any window exists (both windows share Wallpapers.current):
-        // -Dlauncher.wallpaper=N, the tour's fixed one, else random but never the previous launch's (wallpaper.last)
         Wallpapers.choose(
             memory = settingsFile?.let(::WallpaperFileMemory),
             random = Random.Default,
-            forced = Wallpapers.forcedNumber() ?: if (shotsDir != null) Wallpapers.TOUR_DEFAULT else null,
+            forced = Wallpapers.forcedNumber() ?: if (tour) Wallpapers.TOUR_DEFAULT else null,
         )
 
         val navigator = StageNavigator(stage, app, lang)
         if (shotsDir != null) ScreenshotTour(navigator, File(shotsDir)).install()
+        if (showcase != null) {
+            navigator.mainWindowSize = showcase.width to showcase.height
+            ShowcaseTour(navigator, showcase, lang).install()
+        }
 
-        navigator.showLauncherUpdate(afterUpdate = navigator::showAuth)
+        // Showcase starts on auth (then registration tour); skip the update splash for a clean narrative.
+        if (showcase != null) navigator.showAuth()
+        else navigator.showLauncherUpdate(afterUpdate = navigator::showAuth)
         stage.show()
         stage.centerOnScreen()
     }
 
     /**
-     * Where the last wallpaper number is kept: -Dlauncher.settingsFile, else
-     * ~/.launcher-fork/settings.properties. The screenshot tour keeps nothing (same pictures on every machine).
+     * Wallpaper persistence path. Showcase never writes anything (null = in-memory). Screenshot tour also keeps
+     * nothing unless -Dlauncher.settingsFile is set.
      */
-    private fun settingsFile(shotsDir: String?): Path? = System.getProperty("launcher.settingsFile")?.let { Path.of(it) }
-        ?: if (shotsDir != null) null else Path.of(System.getProperty("user.home"), ".launcher-fork", "settings.properties")
+    private fun settingsFile(showcase: Boolean, screenshots: Boolean): Path? = when {
+        showcase -> null
+        System.getProperty("launcher.settingsFile") != null -> Path.of(System.getProperty("launcher.settingsFile"))
+        screenshots -> null
+        else -> Path.of(System.getProperty("user.home"), ".launcher-fork", "settings.properties")
+    }
 
     override fun stop() {
         app?.shutdown()

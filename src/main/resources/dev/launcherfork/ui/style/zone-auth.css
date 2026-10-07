@@ -23,7 +23,8 @@
     -fx-font-family: "Bebas Neue Regular";
     -fx-font-size: 35;
     -fx-text-fill: -foreground;
-    -fx-line-spacing: -4;
+    -fx-line-spacing: 0;
+    -fx-padding: 8 0 2 0; /* Bebas caps extend above the layout ascent; keep them inside the card */
 }
 .zone-description {
     -fx-font-size: 15;
@@ -59,7 +60,7 @@
 .zone-bottom {
     -fx-background-color: -card-description;
     -fx-padding: 24 24 24 24;
-    -fx-spacing: 12;
+    -fx-spacing: 16;
 }
 
 .zone-input {

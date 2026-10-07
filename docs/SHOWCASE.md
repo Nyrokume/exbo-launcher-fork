@@ -12,6 +12,9 @@
 `launcher.showcase.stills=<dir>` (PNG шагов первого круга), `launcher.showcase.loops=N` (0 = бесконечно).
 Esc — выход. Белой темы в туре нет (только zone / exbo / shadcn).
 
+Порядок одного круга: **регистрация** (возраст → форма) → **авторизация** (логин → вход) →
+**лаунчер** (обои, темы, баннер, настройки, ЛК, сообщества, меню «⋯», загрузка / пауза / готово).
+
 ## Снять скриншоты автотуром
 
 ```bash
@@ -48,6 +51,14 @@ PNG появятся в `docs/screenshots/zone/`. Тема по умолчани
 - Акцент на: два окна (auth 460×620 / main 1024×640), обои, ЛК как на сайте, меню действий с логами
 - Не включать удалённую белую тему
 
-## Следующий шаг
+## Артефакт для показа
 
-Собрать HTML deck по `frontend-slides` skill: один self-contained файл, viewport-fit слайды, превью скринов из `docs/screenshots/zone/`.
+Набор PNG всех экранов/состояний: `docs/screenshots/zone/` (Scene snapshot, без записи монитора).
+
+Переснять:
+
+```bash
+./gradlew run "-Dlauncher.screenshots=docs/screenshots/zone" "-Dlauncher.animations=off"
+```
+
+Опционально позже: HTML deck по `frontend-slides` из этих PNG.

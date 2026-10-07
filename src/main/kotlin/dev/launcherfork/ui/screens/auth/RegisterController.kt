@@ -17,14 +17,15 @@ import javafx.scene.control.Hyperlink
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.scene.control.ToggleButton
+import javafx.scene.layout.HBox
 import javafx.scene.text.TextFlow
 import java.time.LocalDate
 
 /**
  * register_panel.fxml, registration step 2 (stalzone.com/register form):
  *  - СОЗДАТЬ АККАУНТ is grey until e-mail, username and password are filled and the license box is ticked;
- *  - on click the formats are checked ([RegistrationRules]); the first problem is shown under the checkboxes and
- *    every invalid field turns red until it is edited;
+ *  - on click the formats are checked ([RegistrationRules]); the first problem is shown in the compact toast
+ *    (same style as TOTP) and every invalid field turns red until it is edited;
  *  - then [dev.launcherfork.domain.AuthService.register] runs in the background (spinner, form locked); success
  *    returns to the login panel with the username filled in and a notice, "taken" errors paint their field;
  *  - back link / Esc -> age gate with the date kept; "Войти" -> login.
@@ -44,6 +45,8 @@ class RegisterController(ctx: UiContext) : AuthScreenBase(ctx) {
     @FXML lateinit var createButton: Button
     @FXML lateinit var backButton: Button
     @FXML lateinit var loginLink: Button
+    @FXML lateinit var toast: HBox
+    @FXML lateinit var toastClose: Button
 
     /** Date from the age gate (StageNavigator.showRegister). Without it the form sends the user back there. */
     var birthDate: LocalDate? = null
@@ -74,8 +77,13 @@ class RegisterController(ctx: UiContext) : AuthScreenBase(ctx) {
         toggleOnTextClick(newsletterText, newsletterCheckBox)
         toggleOnTextClick(licenseText, licenseCheckBox)
         listOf(errorFirst, errorSecond).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
+        toast.visibleProperty().bind(errorFirst.textProperty().isNotEmpty.or(errorSecond.textProperty().isNotEmpty))
+        toast.managedProperty().bind(toast.visibleProperty())
+        toastClose.accessibleText = ctx.t("fork.toast.close")
         onEscape(::onBack)
     }
+
+    @FXML fun onCloseToast() = showError(null)
 
     private fun toggleOnTextClick(text: TextFlow, box: CheckBox) {
         text.setOnMouseClicked { e ->

@@ -1,7 +1,9 @@
 package dev.launcherfork.app
 
 import dev.launcherfork.domain.Progress
+import dev.launcherfork.ui.screens.auth.AgeGateController
 import dev.launcherfork.ui.screens.auth.InitialAuthController
+import dev.launcherfork.ui.screens.auth.RegisterController
 import dev.launcherfork.ui.screens.main.MainController
 import dev.launcherfork.ui.state.ClientState
 import javafx.animation.PauseTransition
@@ -61,9 +63,48 @@ class TourActions(private val nav: StageNavigator) {
     fun showAgeGate() = nav.showAgeGate()
     fun showRegister(birthDate: LocalDate = SAMPLE_BIRTH_DATE) = nav.showRegister(birthDate)
 
+    /** Fills the age-gate dropdowns with [birthDate] (registration step 1, visible pick). */
+    fun fillAgeGate(birthDate: LocalDate = SAMPLE_BIRTH_DATE) {
+        val gate = nav.panelController as AgeGateController
+        gate.preset(birthDate)
+    }
+
+    /** Continues from a filled age gate into the registration form. */
+    fun continueAgeGate() {
+        (nav.panelController as AgeGateController).onContinue()
+    }
+
+    /** Fills the registration form with sample mock data (no submit: showcase stays on the form). */
+    fun fillRegister(
+        email: String = SAMPLE_EMAIL,
+        username: String = SAMPLE_USERNAME,
+        password: String = MOCK_PASSWORD,
+    ) {
+        val form = nav.panelController as RegisterController
+        form.emailField.text = email
+        form.usernameField.text = username
+        form.passwordField.text = password
+        form.newsletterCheckBox.isSelected = true
+        form.licenseCheckBox.isSelected = true
+    }
+
+    /** «⋯» menu next to ИГРАТЬ. */
+    fun showGameActions() = main.defaultStatusPaneController.gameActionsController.show()
+    fun hideGameActions() = main.defaultStatusPaneController.gameActionsController.hide()
+
+    /** Profile → «Выйти» opens the confirm pane; [cancelLogout] dismisses it. */
+    fun showLogoutConfirm() {
+        showProfileMenu()
+        main.profileBarController.logout.fire()
+    }
+
+    fun cancelLogout() = main.logoutPaneController.logoutButtonLeft.fire()
+
     companion object {
-        const val MOCK_LOGIN = "player"
+        const val MOCK_LOGIN = "DementiyRezak"
         const val MOCK_PASSWORD = "secret"
+        const val SAMPLE_EMAIL = "stalker@mail.ru"
+        const val SAMPLE_USERNAME = "DementiyRezak"
         const val SAMPLE_TOTAL = 10_737_418_240L
         const val SAMPLE_SPEED = 25_165_824L
         val SAMPLE_BIRTH_DATE: LocalDate = LocalDate.of(2000, 7, 26)

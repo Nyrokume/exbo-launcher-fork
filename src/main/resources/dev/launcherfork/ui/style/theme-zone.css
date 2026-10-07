@@ -63,7 +63,7 @@
     -icon: rgba(202, 185, 166, 0.64);         /* small icon buttons, menu arrows */
     -primary-hover: #ff3b52;                  /* site hover red (.text-btn:hover, links :hover) */
     -input: #121212;                          /* filled inputs */
-    -scrim: rgba(0, 0, 0, 0.55);              /* dim behind overlay panels */
+    -scrim: rgba(0, 0, 0, 0.72);              /* dim behind overlay panels (opaque enough that banner text does not fight the card) */
     -tile: #121212;                           /* full-width dark tiles (secondary buttons, menu rows) */
     -tile-hover: #1a1a1a;
     -border-hover: #525252;                   /* tile/input border on hover */

@@ -5,8 +5,9 @@
  */
 
 /* ---------- shared bits ---------- */
-.zone-top-compact { -fx-padding: 24 28 20 28; }
-.zone-bottom-dense { -fx-spacing: 12; -fx-padding: 22 24 20 24; }
+/* extra top pad: Bebas Neue caps sit high in the em-box and were clipping under the titlebar edge */
+.zone-top-compact { -fx-padding: 34 28 22 28; }
+.zone-bottom-dense { -fx-spacing: 16; -fx-padding: 22 24 22 24; }
 .zone-field-label { -fx-font-size: 14; -fx-text-fill: -text-description; }
 .zone-notice-text { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
 .zone-center-row { -fx-alignment: center; }
@@ -118,3 +119,50 @@
 .zone-inline-link:visited { -fx-text-fill: -foreground; }
 .zone-inline-link:hover { -fx-text-fill: -primary-hover; }
 .zone-inline-link:focused { -fx-text-fill: -destructive-text; }
+
+/* ---------- compact error toast (registration + TOTP): left accent + title + message + small X ---------- */
+.zone-toast {
+    -fx-background-color: -card;
+    /* top | right | bottom | left */
+    -fx-border-color: -border -border -border -error;
+    -fx-border-width: 1 1 1 3;
+    -fx-effect: dropshadow(gaussian, -shadow, 16, 0.1, 0, 3);
+    -fx-alignment: TOP_LEFT;
+    -fx-spacing: 0;
+}
+.zone-toast-body {
+    -fx-padding: 12 8 12 14;
+    -fx-spacing: 3;
+}
+.zone-toast-title {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 20;
+    -fx-text-fill: -foreground;
+    -fx-line-spacing: -2;
+}
+.zone-toast-text {
+    -fx-font-size: 13;
+    -fx-text-fill: -text-description;
+    -fx-wrap-text: true;
+}
+.zone-toast-close {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4;
+    -fx-min-width: 32; -fx-pref-width: 32; -fx-max-width: 32;
+    -fx-min-height: 32; -fx-pref-height: 32; -fx-max-height: 32;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-translate-x: -6;
+    -fx-translate-y: 6;
+}
+.zone-toast-close:hover { -fx-background-color: -border; }
+.zone-toast-close:focused { -fx-background-color: -border-hover; }
+.zone-toast-x {
+    -fx-background-color: -muted-foreground;
+    -fx-shape: "M1.4 0 8 6.6 14.6 0 16 1.4 9.4 8 16 14.6 14.6 16 8 9.4 1.4 16 0 14.6 6.6 8 0 1.4Z";
+    -fx-min-width: 12; -fx-pref-width: 12; -fx-max-width: 12;
+    -fx-min-height: 12; -fx-pref-height: 12; -fx-max-height: 12;
+}
+.zone-toast-close:hover .zone-toast-x,
+.zone-toast-close:focused .zone-toast-x { -fx-background-color: -foreground; }

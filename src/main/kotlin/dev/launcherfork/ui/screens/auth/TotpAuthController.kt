@@ -8,14 +8,13 @@ import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.geometry.Pos
 import javafx.scene.control.Button
-import javafx.scene.layout.VBox
+import javafx.scene.layout.HBox
 
 /**
  * totp_auth_panel.fxml: code of an authenticator app ([CODE_LENGTH] digit cells of [CodeInput]), after the
  * stalzone.com 2FA step. ОТПРАВИТЬ stays grey until every cell is filled (Enter in a cell = the button, it cannot
- * bypass the grey state), Esc / "Вернуться ко входу" = login panel. Errors appear in the site's toast
- * ("ОШИБКА ПРИ ПОДТВЕРЖДЕНИИ" / "Неправильный код аутентификации!") instead of a line of text, the cells turn red;
- * the toast closes with its X or as soon as the code is edited.
+ * bypass the grey state), Esc / "Вернуться ко входу" = login panel. Errors appear in a compact toast card
+ * (title + message + small X); the cells turn red. The toast closes with its X or as soon as the code is edited.
  *
  * Self-contained on purpose: the e-mail code screen (mail_auth_panel.fxml / MailAuthController) is owned by the
  * redesign/panels-zone branch and is not touched here.
@@ -24,7 +23,7 @@ class TotpAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
     @FXML lateinit var codeInput: CodeInput
     @FXML lateinit var enterButton: Button
     @FXML lateinit var backButton: Button
-    @FXML lateinit var toast: VBox
+    @FXML lateinit var toast: HBox
     @FXML lateinit var toastClose: Button
 
     override fun errorText(error: AuthError): String =
@@ -46,6 +45,7 @@ class TotpAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         onEscape(::onBack)
 
         toast.visibleProperty().bind(errorFirst.textProperty().isNotEmpty)
+        toast.managedProperty().bind(toast.visibleProperty())
         errorSecond.managedProperty().bind(errorSecond.textProperty().isNotEmpty)
         toastClose.accessibleText = ctx.t("fork.toast.close")
     }

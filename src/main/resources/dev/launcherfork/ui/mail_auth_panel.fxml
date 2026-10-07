@@ -10,7 +10,7 @@
   Top block (card): title + what happened. Bottom block (card description): 9 digit cells (shared CodeInput, as on the authenticator screen), ПОДТВЕРДИТЬ, back to login.
   Same fx:ids and controller as mail_auth.fxml; explicit ids so legacy auth.css ids (#input, #enterButton) never match.
 -->
-<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css,@style/zone-totp.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="588.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.MailAuthController">
+<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css,@style/zone-totp.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="668.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.MailAuthController">
     <VBox styleClass="zone-frame">
         <HBox styleClass="zone-titlebar" visible="false" managed="false">
             <ImageView fx:id="header" managed="false" visible="false" />
