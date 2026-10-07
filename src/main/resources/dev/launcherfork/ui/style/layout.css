@@ -654,3 +654,21 @@
 }
 .modal-layer .check-box:selected > .box > .mark { -fx-background-color: -primary; }
 .progress-indicator { -fx-progress-color: -primary; }
+
+/* ---- Showcase caption (app/ShowcaseTour, -Dlauncher.showcase.captions): small chip in the title strip, never in the nav row ---- */
+.showcase-caption {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-padding: 3 10 3 8;
+}
+.showcase-caption-dot {
+    -fx-background-color: -primary;
+    -fx-background-radius: 3;
+}
+.showcase-caption-text {
+    -fx-text-fill: -muted-foreground;
+    -fx-font-size: 11px;
+}
