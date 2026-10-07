@@ -111,7 +111,7 @@ class WallpaperLayerTest {
 
     @Test
     fun missingPictureFallsBackToThePlainThemeBackground() {
-        val missing = Wallpaper(9, Wallpapers.ROOT + "09.jpg")
+        val missing = Wallpaper(99, Wallpapers.ROOT + "99.jpg")
         FxTestSupport.onFx {
             val target = StackPane()
             val layer = WallpaperLayer()

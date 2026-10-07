@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Two windows as in the original launcher: start -> update -> auth (-> mail code) in the separate pre-main window,
- * login success closes it and opens the main window; switch account / logout dispose the main screen and come
+ * login success closes it and opens the main window; confirmed logout disposes the main screen and comes
  * back to the auth window on the same screen; closing either window exits the app.
  */
 class AuthWindowTest {
@@ -202,13 +202,6 @@ class AuthWindowTest {
     }
 
     @Test
-    fun switchAccountDisposesMainAndOpensAuthWindow() = assertBackToAuth { main ->
-        main.profileBarController.loginButton.fire()
-        assertTrue(main.profileBarController.isMenuShown)
-        main.profileBarController.switchAccount.fire()
-    }
-
-    @Test
     fun logoutDisposesMainAndOpensAuthWindow() = assertBackToAuth { main ->
         main.profileBarController.loginButton.fire()
         main.profileBarController.logout.fire()
@@ -224,7 +217,9 @@ class AuthWindowTest {
             nav.mainStage.x = 40.0
             nav.mainStage.y = 30.0
             val mainBounds = Rectangle2D(nav.mainStage.x, nav.mainStage.y, nav.mainStage.width, nav.mainStage.height)
-            nav.mainController!!.profileBarController.switchAccount.fire()
+            nav.mainController!!.profileBarController.loginButton.fire()
+            nav.mainController!!.profileBarController.logout.fire()
+            nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
             val (x, y) = WindowFrame.centeredIn(WindowFrame.screenBoundsOf(mainBounds), Theme.AUTH_WINDOW_WIDTH, Theme.AUTH_WINDOW_HEIGHT)
             assertEquals(x, nav.authStage.x, 0.5)
             assertEquals(y, nav.authStage.y, 0.5)
@@ -250,10 +245,12 @@ class AuthWindowTest {
             assertEquals(x, nav.mainStage.x, 0.5)
             assertEquals(y, nav.mainStage.y, 0.5)
             assertSame(nav.mainStage, nav.window)
-            // the user resizes the main window, then switches account
+            // the user resizes the main window, then logs out
             nav.mainStage.width = 900.0
             nav.mainStage.height = 600.0
-            nav.mainController!!.profileBarController.switchAccount.fire()
+            nav.mainController!!.profileBarController.loginButton.fire()
+            nav.mainController!!.profileBarController.logout.fire()
+            nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
             assertSame(nav.authStage, nav.window)
             assertEquals(Theme.AUTH_WINDOW_WIDTH, nav.authStage.width, 0.5)
             assertEquals(Theme.AUTH_WINDOW_HEIGHT, nav.authStage.height, 0.5)
@@ -267,7 +264,9 @@ class AuthWindowTest {
             nav.toggleMaximize()
             assertTrue(nav.isMaximized)
             val bounds = Rectangle2D(nav.mainStage.x, nav.mainStage.y, nav.mainStage.width, nav.mainStage.height)
-            nav.mainController!!.profileBarController.switchAccount.fire()
+            nav.mainController!!.profileBarController.loginButton.fire()
+            nav.mainController!!.profileBarController.logout.fire()
+            nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
             bounds
         }
         login(live)

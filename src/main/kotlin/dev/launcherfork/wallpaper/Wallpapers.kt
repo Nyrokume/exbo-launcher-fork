@@ -36,7 +36,7 @@ interface WallpaperMemory {
  * (see docs/design/STYLE-ZONE.md, «Обои»); it then shows exactly the picture of the main window.
  */
 object Wallpapers {
-    /** `-Dlauncher.wallpaper=N` (1..6): always this wallpaper (screenshots, reproducible checks). */
+    /** `-Dlauncher.wallpaper=N` (1..11): always this wallpaper (screenshots, reproducible checks). */
     const val PROPERTY = "launcher.wallpaper"
     const val ROOT = "/dev/launcherfork/ui/wallpapers/"
     const val MANIFEST = ROOT + "wallpapers.txt"

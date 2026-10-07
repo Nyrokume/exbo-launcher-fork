@@ -135,7 +135,7 @@ class HeaderMenuLayoutTest {
         profile.loginButton.fire()
         relayout(nav)
         // a press inside the floating menu keeps it open, a press elsewhere closes it
-        Event.fireEvent(profile.switchAccount, press(scene, profile.switchAccount))
+        Event.fireEvent(profile.inviteFriend, press(scene, profile.inviteFriend))
         assertTrue(profile.isMenuShown, "$theme: a press inside the menu must not close it")
         Event.fireEvent(main.centerPane, press(scene, main.centerPane))
         assertFalse(profile.isMenuShown, "$theme: an outside press closes the menu")

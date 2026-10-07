@@ -1,5 +1,6 @@
 package dev.launcherfork.ui.screens.main
 
+import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.domain.ClientOperation
 import dev.launcherfork.domain.GameFolders
 import dev.launcherfork.domain.Server
@@ -85,10 +86,9 @@ class MainController(private val ctx: UiContext) : Disposable {
     fun initialize() {
         background.effect = Theme.gameArtEffect()
 
-        // profile menu (top-right): both ways back lead to the separate auth window; the navigator disposes
-        // this controller before the auth window shows up
-        profileBarController.onProfile = { notAvailable() }
-        profileBarController.onSwitchAccount = ::leaveToAuth
+        // profile menu (top-right): account / referral open in the browser; logout confirms then leaveToAuth
+        profileBarController.onProfile = { ctx.services.links.open(ExternalLinks.ACCOUNT) }
+        profileBarController.onInviteFriend = { ctx.services.links.open(ExternalLinks.REFERRAL) }
         // the ONLY way to the logout confirmation: profile menu "Выйти из аккаунта" (window close never asks)
         profileBarController.onLogout = { logoutPaneController.show() }
         logoutPaneController.onConfirm = ::leaveToAuth
@@ -191,7 +191,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         if (changed.isShowing) changed.initialFocus?.requestFocus() ?: InputBlock.focusInto(changed.layer)
     }
 
-    /** Switch account / confirmed logout: end the session and go back to the separate auth window. */
+    /** Confirmed logout: end the session and go back to the separate auth window. */
     private fun leaveToAuth() {
         ctx.services.auth.logout()
         store.shutdown()

@@ -1,5 +1,6 @@
 package dev.launcherfork.ui.screens.main.modals
 
+import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.ui.UiContext
 import javafx.animation.PauseTransition
 import javafx.fxml.FXML
@@ -92,6 +93,8 @@ class LicenseModalController(ctx: UiContext) : ModalController(ctx) {
     fun initialize() {
         wire(licenseYes, licenseNo)
         licenseYes.disableProperty().bind(licenseFirst.selectedProperty().and(licenseSecond.selectedProperty()).not())
+        licenseRef.setOnMouseClicked { ctx.services.links.open(ExternalLinks.LICENSE) }
+        confidentialityRef.setOnMouseClicked { ctx.services.links.open(ExternalLinks.PRIVACY) }
     }
 }
 

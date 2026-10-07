@@ -3,9 +3,15 @@
 # title. The row number is the wallpaper number (01.jpg = 1):
 # -Dlauncher.wallpaper=N, wallpaper.last=N in ~/.launcher-fork/settings.properties.
 # STALZONE in-game screenshots, project assets (docs/design/STYLE-ZONE.md, «Обои»); 1920 px wide at most, JPEG q82.
+# 11.jpg was upscaled from 600×338 (Lanczos + light unsharp) to 1920 px wide.
 01.jpg 0.50 0.45 bright church, overcast
 02.jpg 0.46 0.45 dark   river at red dusk
 03.jpg 0.55 0.50 dark   watchtower, red night sky
 04.jpg 0.45 0.50 dark   boat, orange sunset
 05.jpg 0.50 0.50 dark   tower, blue night
 06.jpg 0.55 0.60 bright campfire, birches, rain
+07.jpg 0.50 0.55 bright anomaly, green fog
+08.jpg 0.48 0.52 dark   bus in the zone
+09.jpg 0.40 0.70 bright orange suit, red pool
+10.jpg 0.50 0.45 dark   helicopter anomaly
+11.jpg 0.50 0.50 dark   excavator (upscaled from 600×338)

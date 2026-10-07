@@ -1,6 +1,7 @@
 package dev.launcherfork
 
 import dev.launcherfork.domain.CommunityLinks
+import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.domain.LinkPolicy
 import dev.launcherfork.ui.components.BrandGlyphs
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,5 +44,19 @@ class LinkPolicyTest {
             "https://stalzone.com.evil.com", "https://user@stalzone.com", "C:\\foo.exe",
             "javascript:alert(1)", "", "/relative/path", "https://notstalzone.com", "https://[bad",
         ).forEach { assertFalse(LinkPolicy.isAllowed(it), it) }
+    }
+
+    @Test
+    fun exboGamesAndExboNetAreAllowed() {
+        assertTrue("exbo.games" in LinkPolicy.allowedHosts)
+        assertTrue("exbo.net" in LinkPolicy.allowedHosts)
+        listOf(ExternalLinks.LICENSE, ExternalLinks.PRIVACY, "https://exbo.net/", "https://www.exbo.games/legal/x")
+            .forEach { assertTrue(LinkPolicy.isAllowed(it), it) }
+    }
+
+    @Test
+    fun externalLinksAreAllowed() {
+        listOf(ExternalLinks.LICENSE, ExternalLinks.PRIVACY, ExternalLinks.ACCOUNT, ExternalLinks.REFERRAL)
+            .forEach { assertTrue(LinkPolicy.isAllowed(it), it) }
     }
 }

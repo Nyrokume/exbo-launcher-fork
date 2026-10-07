@@ -21,6 +21,8 @@ import java.util.Locale
  * The card is a floating layer: it stays an UNMANAGED child of [profileRoot] (never counted in the top bar's
  * layout, so opening it cannot widen the row and push Forum / Support to the left) and is placed by hand right
  * under the nickname button, right edges aligned ([placeMenu]).
+ *
+ * Menu: «Личный кабинет» ↗ / «Пригласить друга» ↗ (browser via LinkOpener) and «Выйти» (confirmation modal).
  */
 class ProfileController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var profileRoot: VBox
@@ -29,11 +31,11 @@ class ProfileController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var profileCaret: Region
     @FXML lateinit var profileMenu: VBox
     @FXML lateinit var profile: Button
-    @FXML lateinit var switchAccount: Button
+    @FXML lateinit var inviteFriend: Button
     @FXML lateinit var logout: Button
 
     var onProfile: () -> Unit = {}
-    var onSwitchAccount: () -> Unit = {}
+    var onInviteFriend: () -> Unit = {}
     var onLogout: () -> Unit = {}
     /** Fired after the dropdown opened (MainController closes the communities menu: one menu at a time). */
     var onMenuShown: () -> Unit = {}
@@ -48,7 +50,7 @@ class ProfileController(private val ctx: UiContext) : Disposable {
         setLogin(ctx.services.auth.currentSession?.login)
         loginButton.setOnAction { if (isMenuShown) hideMenu() else showMenu() }
         profile.setOnAction { hideMenu(); onProfile() }
-        switchAccount.setOnAction { hideMenu(); onSwitchAccount() }
+        inviteFriend.setOnAction { hideMenu(); onInviteFriend() }
         logout.setOnAction { hideMenu(); onLogout() }
         profileRoot.sceneProperty().addListener { _, old, new ->
             old?.removeEventFilter(MouseEvent.MOUSE_PRESSED, outsideClick)
