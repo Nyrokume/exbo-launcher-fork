@@ -5,7 +5,6 @@ import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.LogoMark
 import dev.launcherfork.ui.components.PanelHost
-import dev.launcherfork.ui.components.WallpaperLayer
 import javafx.fxml.FXML
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -18,9 +17,6 @@ import javafx.scene.shape.Rectangle
 /**
  * auth_window.fxml: frame of the separate pre-main window (update / auth / mail code, docs/design/WINDOWS.md).
  * Hosts ONE panel node in [panelHost]; the panel is loaded from its own FXML and dropped in unchanged.
- * Behind everything: this launch's wallpaper ([WallpaperLayer.forCurrent]), the same picture as the main window. While
- * it shows, the window root carries .wallpaper-on: the title strip and each panel's top block (logo, heading) become
- * see-through over the auth scrim, the form block keeps its solid fill (layout.css, zone-auth.css).
  */
 class AuthWindowController(private val ctx: UiContext) {
     @FXML lateinit var authWindowRoot: StackPane
@@ -31,15 +27,8 @@ class AuthWindowController(private val ctx: UiContext) {
     @FXML lateinit var authCloseButton: Button
     @FXML lateinit var panelHost: PanelHost
 
-    /** The window background picture (bottom child of [authWindowRoot]); null when no wallpaper was chosen (tests). */
-    var wallpaper: WallpaperLayer? = null
-        private set
-
     @FXML
     fun initialize() {
-        // loads in the background; same picture as the main window (chosen once per launch, Wallpapers.current)
-        wallpaper = WallpaperLayer.forCurrent(authWindowRoot, scrimStyleClass = "auth-wallpaper-scrim")
-            ?.also { authWindowRoot.children.add(0, it) }
         authHideButton.setOnAction { ctx.navigator.minimize() }
         authCloseButton.setOnAction { ctx.navigator.close() }
         // rounded window: the panel fills the host edge to edge, so the corners are cut by a clip, not by CSS
@@ -71,15 +60,18 @@ class AuthWindowController(private val ctx: UiContext) {
      * e.g. auth_panel.fxml / mail_auth_panel.fxml) gets title strip + its content height, clamped to
      * [Theme.AUTH_WINDOW_MIN_HEIGHT]..[Theme.AUTH_WINDOW_HEIGHT]; a fixed-size panel keeps the full height.
      */
-    fun fittedWindowHeight(): Double = fittedWindowHeight(panel as? Region)
+    fun fittedWindowHeight(applyCss: Boolean = true): Double = fittedWindowHeight(panel as? Region, applyCss)
 
     fun clear() = panelHost.children.clear()
 
     companion object {
-        /** See [fittedWindowHeight]; [panel] must already be in a scene for its CSS sizes to count. */
-        fun fittedWindowHeight(panel: Region?): Double {
+        /**
+         * See [fittedWindowHeight]; [panel] must already be in a scene for its CSS sizes to count. [applyCss] false:
+         * right after a layout pulse, when the panel's CSS is already current.
+         */
+        fun fittedWindowHeight(panel: Region?, applyCss: Boolean = true): Double {
             if (panel == null || panel.prefHeight != Region.USE_COMPUTED_SIZE) return Theme.AUTH_WINDOW_HEIGHT
-            if (panel.scene != null) panel.applyCss()
+            if (applyCss && panel.scene != null) panel.applyCss()
             val content = panel.prefHeight(Theme.AUTH_PANEL_WIDTH)
             return (Theme.AUTH_TITLEBAR_HEIGHT + content).coerceIn(Theme.AUTH_WINDOW_MIN_HEIGHT, Theme.AUTH_WINDOW_HEIGHT)
         }

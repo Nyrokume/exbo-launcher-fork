@@ -78,10 +78,6 @@
     -wallpaper-sidebar: rgba(10, 10, 10, 0.60);
     -wallpaper-titlebar: rgba(10, 10, 10, 0.55);
     -wallpaper-text-muted: #c4c4c4;
-    /* pre-main window (layout.css «auth-wallpaper»): one scrim over the picture behind the title strip and the panels'
-       top blocks (logo, heading); the form block stays solid. WallpaperContrastTest, pre-main windows */
-    -auth-wallpaper-scrim: rgba(10, 10, 10, 0.55);
-    -auth-wallpaper-scrim-bright: rgba(10, 10, 10, 0.70);
 
     /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
     -settings-heading: #fafafa;       /* group headings on -background: 19.0:1 */

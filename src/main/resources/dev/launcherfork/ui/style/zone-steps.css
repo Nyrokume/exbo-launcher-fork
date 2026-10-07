@@ -15,8 +15,6 @@
 .zone-description-flow { -fx-line-spacing: 2; }
 .zone-description-text { -fx-font-size: 15; -fx-fill: -muted-foreground; }
 .zone-description-text.zone-strong { -fx-font-family: "Roboto Medium"; -fx-fill: -foreground; }
-.wallpaper-on .zone-top .zone-description-text { -fx-fill: -wallpaper-text-muted; }
-.wallpaper-on .zone-top .zone-description-text.zone-strong { -fx-fill: -foreground; }
 
 /* success notice of the login panel after a registration: neutral card, light left bar */
 .zone-notice {

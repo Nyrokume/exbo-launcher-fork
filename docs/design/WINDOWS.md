@@ -15,8 +15,7 @@
 
 ```
 auth_window.fxml (AuthWindowController)            ← 460 × высота панели, clip со скруглением 10 px (= .zone-radius-md)
-└─ StackPane#authWindowRoot .auth-window (фон -background; прозрачный, пока видны обои)
-   ├─ WallpaperLayer .auth-wallpaper-scrim     ← обои этого запуска (те же, что в главном окне), нижний ребёнок
+└─ StackPane#authWindowRoot .auth-window (фон -background)
    ├─ BorderPane
    │  ├─ top:    HBox#authTitleBar 32 px [authLogo (вектор EXBO; скрыт, если у панели свой .zone-logo) | authDragArea | authHideButton | authCloseButton]
    │  └─ center: PanelHost#panelHost 460×588  ← сюда кладётся корень панели (размер как у Scene root)
@@ -32,12 +31,10 @@ auth_window.fxml (AuthWindowController)            ← 460 × высота па�
   панели, в пределах `Theme.AUTH_WINDOW_MIN_HEIGHT` (360) … `AUTH_WINDOW_HEIGHT` (620). Вход сейчас 460×526 (460×576 с
   уведомлением «Аккаунт создан»), код аутентификатора 460×404, код из письма около 460×440; обновление,
   возраст и регистрация остаются 460×620. Ширина и высота меняются вместе
-  (GTK не применял изменение одной высоты), пересчёт после раскладки идёт через `runLater`, нечисловые высоты
-  пропускаются. `PanelFitTest`: каждая панель ровно заполняет своё окно в ru и en.
-- **Обои.** `AuthWindowController.initialize()` кладёт `WallpaperLayer.forCurrent(authWindowRoot,
-  "auth-wallpaper-scrim")` нижним ребёнком корня. Пока картинка видна (`.wallpaper-on`), полоса заголовка и верхний
-  блок панели прозрачны над скримом `-auth-wallpaper-scrim`, форма остаётся сплошной. Подробно и токены:
-  STYLE-ZONE.md, «Обои главного окна и окна входа»; читаемость: `WallpaperContrastTest` (168 случаев окна входа).
+  (GTK не применял изменение одной высоты), пересчёт идёт через `runLater` и только когда панель
+  запросила раскладку (`needsLayoutProperty` её корня: новая строка ошибки, смена текста), а не после каждого
+  кадра: мигающий курсор, наведение и анимации прозрачности его не запускают (`AuthWindowRefitTest`). Нечисловые
+  высоты пропускаются. `PanelFitTest`: каждая панель ровно заполняет своё окно в ru и en.
 - **Логотип на панели входа.** Вместо заголовка по центру векторный логотип EXBO (`#zoneLoginLogo`, 150 px) на
   `-card-description`, том же чёрном, что и форма. Если в панели есть `.zone-logo`, маленький `authLogo` в полосе
   заголовка прячется, чтобы логотип не дублировался.

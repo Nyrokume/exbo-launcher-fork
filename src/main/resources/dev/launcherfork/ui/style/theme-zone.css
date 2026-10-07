@@ -84,10 +84,6 @@
     -wallpaper-sidebar: rgba(10, 10, 10, 0.55);   /* sidebar, on top of the scrim */
     -wallpaper-titlebar: rgba(10, 10, 10, 0.50);  /* title bar strip, on top of the scrim */
     -wallpaper-text-muted: #d8cfc5;               /* quiet text on the picture (warm beige): links, online count, status */
-    /* pre-main window (layout.css «auth-wallpaper»): one scrim over the picture behind the title strip and the panels'
-       top blocks (logo, heading); the form block stays solid. WallpaperContrastTest, pre-main windows */
-    -auth-wallpaper-scrim: rgba(10, 10, 10, 0.50);
-    -auth-wallpaper-scrim-bright: rgba(10, 10, 10, 0.62);
 
     /* ---- settings page (readability, WCAG AA; SettingsContrastTest checks the ratios) ---- */
     -settings-heading: #f7f3ee;               /* group headings on -background: 17.9:1 */

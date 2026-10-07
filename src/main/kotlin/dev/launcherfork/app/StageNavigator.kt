@@ -20,6 +20,7 @@ import dev.launcherfork.ui.screens.window.AuthWindowController
 import dev.launcherfork.ui.screens.window.WindowController
 import javafx.application.Platform
 import javafx.beans.binding.Bindings
+import javafx.beans.value.ChangeListener
 import javafx.geometry.Rectangle2D
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -117,12 +118,16 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         // closing the main window by the OS (Alt+F4) ends the app like the close button
         mainStage.setOnCloseRequest { close() }
         stage.setOnCloseRequest { close() }
-        // compact panels: the window follows the panel's content height (an error line appearing grows it downwards)
+        // compact panels: the window follows the panel's content height (an error line appearing grows it downwards).
+        // Only pulses in which the panel itself was relaid out count (watchPanel): a caret blink, a hover or an
+        // animation (opacity / translate) does not request layout, so it costs nothing here.
         authScene.addPostLayoutPulseListener {
+            if (!authPanelDirty) return@addPostLayoutPulseListener
+            authPanelDirty = false
             // resize after the pulse, not inside it (a resize relayouts the scene); one pending refit at a time
             if (!authRefitPending) {
                 authRefitPending = true
-                Platform.runLater { authRefitPending = false; fitAuthHeight(recenter = false) }
+                Platform.runLater { authRefitPending = false; fitAuthHeight(recenter = false, cssApplied = true) }
             }
         }
     }
@@ -235,8 +240,6 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     /** Background picture of the main window (this launch's wallpaper), null when none was chosen. */
     val wallpaperLayer: WallpaperLayer? get() = windowController.wallpaper
-    /** Background picture of the pre-main window: the same wallpaper as [wallpaperLayer], null when none was chosen. */
-    val authWallpaperLayer: WallpaperLayer? get() = authWindow.wallpaper
 
     // ---- internals ----
 
@@ -270,6 +273,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         if (!isNew) hideLegacyChrome(loaded.root)
         panelController = loaded.controller
         authWindow.setPanel(loaded.root)
+        (loaded.root as? Parent)?.let(::watchPanel)
         stage.title = ctx.strings.text(titleKey)
         switchTo(ActiveWindow.PRE_MAIN)
         fitAuthHeight(recenter = true)
@@ -315,18 +319,34 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         slot.frame.centerOnScreenOf(from, w, h)
     }
 
-    /**
-     * Resizes the shown pre-main window to [AuthWindowController.fittedWindowHeight]: a new panel keeps the window's
-     * vertical center ([recenter]), a change inside the same panel (error line) keeps its top edge.
-     */
     /** Last height asked of the pre-main window (see [fitAuthHeight]). */
     private var requestedAuthHeight = Double.NaN
     /** A refit is queued by the post-layout listener and not run yet. */
     private var authRefitPending = false
+    /** The current panel requested a layout since the last pulse (its content changed: error line, text, rows). */
+    private var authPanelDirty = false
+    /** Refits actually run by the post-layout listener (tests: an idle panel with a blinking caret runs none). */
+    internal var authRefitChecks = 0
+        private set
+    private var watchedPanel: Parent? = null
+    private val panelLayoutListener = ChangeListener<Boolean> { _, _, dirty -> if (dirty) authPanelDirty = true }
 
-    private fun fitAuthHeight(recenter: Boolean) {
+    /** Follows [panel]'s layout requests (a child's requestLayout reaches the panel root), instead of every pulse. */
+    private fun watchPanel(panel: Parent) {
+        watchedPanel?.needsLayoutProperty()?.removeListener(panelLayoutListener)
+        watchedPanel = panel
+        panel.needsLayoutProperty().addListener(panelLayoutListener)
+    }
+
+    /**
+     * Resizes the shown pre-main window to [AuthWindowController.fittedWindowHeight]: a new panel keeps the window's
+     * vertical center ([recenter]), a change inside the same panel (error line) keeps its top edge. [cssApplied]:
+     * called right after a layout pulse, the panel's CSS is current and is not applied again.
+     */
+    private fun fitAuthHeight(recenter: Boolean, cssApplied: Boolean = false) {
         if (activeWindow != ActiveWindow.PRE_MAIN || !authSlot.isShowing) return
-        val h = authWindow.fittedWindowHeight()
+        if (cssApplied) authRefitChecks++
+        val h = authWindow.fittedWindowHeight(applyCss = !cssApplied)
         if (!h.isFinite() || h <= 0.0) return
         val old = stage.height
         // asked for this height already: don't re-request it on every pulse if the window system lags or refuses
