@@ -4,6 +4,7 @@ import dev.launcherfork.UiTestKit.THEMES
 import dev.launcherfork.UiTestKit.applyTheme
 import dev.launcherfork.UiTestKit.mainOnScreen
 import dev.launcherfork.UiTestKit.preview
+import dev.launcherfork.UiTestKit.relayout
 import dev.launcherfork.UiTestKit.resize
 import dev.launcherfork.UiTestKit.sceneBounds
 import dev.launcherfork.app.AppContext
@@ -22,6 +23,7 @@ import javafx.scene.Scene
 import javafx.scene.control.Label
 import javafx.scene.control.Labeled
 import javafx.scene.text.Text
+import javafx.scene.text.TextBoundsType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -32,8 +34,9 @@ import java.util.Properties
 /**
  * The STALZONE banner on the main screen: text from the game model (Server.description -> i18n keys, ru + en), no
  * second online count (it is shown once, in the games list), the layout (left column <= 560 px inside the
- * centre slot, never over the nav row, the status row or ИГРАТЬ; long text scrolls inside the slot) at the minimum and
- * the default window size in every theme. Colors: SettingsContrastTest.gameBannerTextIsReadable.
+ * centre slot, never over the nav row, the status row or ИГРАТЬ; long text scrolls inside the slot) and the title's
+ * letters starting on the line of the selected game row in the sidebar, at the minimum, the default, 1366x800 and a
+ * maximized (1920x1080) window in every theme. Colors: SettingsContrastTest.gameBannerTextIsReadable.
  */
 class GameBannerTest {
     private val nbsp = '\u00A0'
@@ -42,6 +45,17 @@ class GameBannerTest {
     private fun contains(outer: Bounds, inner: Bounds, slack: Double = 0.5) =
         inner.minX >= outer.minX - slack && inner.maxX <= outer.maxX + slack &&
             inner.minY >= outer.minY - slack && inner.maxY <= outer.maxY + slack
+
+    /**
+     * Scene Y of the top of [label]'s letters (the cap line of «STALZONE»): the label's text node gives the line box,
+     * the font metrics (logical vs visual bounds of the same text) the distance from the line top to the ink.
+     */
+    private fun inkTop(label: Label): Double {
+        val line = label.lookup(".text") as Text
+        val logical = Text(label.text).apply { font = line.font }
+        val visual = Text(label.text).apply { font = line.font; boundsType = TextBoundsType.VISUAL }
+        return line.sceneBounds().minY + (visual.layoutBounds.minY - logical.layoutBounds.minY)
+    }
 
     private fun overlaps(a: Bounds, b: Bounds) = a.minX < b.maxX - 0.5 && b.minX < a.maxX - 0.5 && a.minY < b.maxY - 0.5 && b.minY < a.maxY - 0.5
 
@@ -127,7 +141,10 @@ class GameBannerTest {
             val nav = mainOnScreen(app, lang)
             try {
                 THEMES.forEach { theme ->
-                    listOf(Theme.WINDOW_MIN_WIDTH to Theme.WINDOW_MIN_HEIGHT, Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT).forEach { (w, h) ->
+                    listOf(
+                        Theme.WINDOW_MIN_WIDTH to Theme.WINDOW_MIN_HEIGHT, Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT,
+                        1366.0 to 800.0, 1920.0 to 1080.0, // 1920x1080: a maximized window on a Full HD screen
+                    ).forEach { (w, h) ->
                         FxTestSupport.onFx { applyTheme(nav.mainStage.scene, theme, lang) }
                         resize(nav, w, h)
                         FxTestSupport.onFx {
@@ -150,6 +167,14 @@ class GameBannerTest {
                             listOf(play, pill, bar, navRow).forEach { assertFalse(overlaps(banner, it), "$where: banner $banner overlaps $it") }
                             assertTrue(banner.maxY <= bar.minY, "$where: banner reaches into the status row")
                             assertTrue(banner.minY >= navRow.maxY, "$where: banner reaches into the nav row")
+                            // the description starts on the line of its game in the sidebar: the top of the title's
+                            // letters on the top edge of the selected row (= the red marker), ±2 px
+                            val row = main.serversListController.entryControllers.single { "selected" in it.root.styleClass }
+                            val rowTop = row.root.sceneBounds().minY
+                            assertEquals(row.cursor.sceneBounds().minY, rowTop, 0.5, "$where: marker not at the row top")
+                            assertEquals(0.0, b.scroll.vvalue, "$where: banner scrolled")
+                            assertEquals(rowTop, inkTop(b.title), 2.0, "$where: title top ${inkTop(b.title)} vs game row top $rowTop")
+                            assertTrue(b.title.sceneBounds().minY >= banner.minY - 0.5, "$where: title clipped by the slot top")
                             // left column, <= 560 px, every text line inside the visible viewport width; no truncation
                             val content = b.content.sceneBounds()
                             assertTrue(content.width <= 560.5, "$where: text column ${content.width} px")
@@ -163,8 +188,25 @@ class GameBannerTest {
                                 assertTrue(l.sceneBounds().maxX <= banner.maxX + 0.5, "$where: ${l.id} wider than the banner")
                             }
                             // all of it readable without scrolling at the default size; at the minimum size it may scroll
-                            if (w == Theme.WINDOW_WIDTH) assertTrue(content.maxY <= banner.maxY + 0.5, "$where: text cut at the default size")
+                            if (w >= Theme.WINDOW_WIDTH) assertTrue(content.maxY <= banner.maxY + 0.5, "$where: text cut at ${w.toInt()}x${h.toInt()}")
                             if (lang == "ru") preview(scene, "banner-$theme-${w.toInt()}")
+                        }
+                        // when the text is taller than the slot it scrolls inside it: the last line comes into view,
+                        // still above the status row; the title goes back on the row line once scrolled back
+                        FxTestSupport.onFx {
+                            val main = nav.mainController!!
+                            val b = main.gameBannerController
+                            val where = "$theme/$lang ${w.toInt()}x${h.toInt()} scrolled"
+                            b.scroll.vvalue = 1.0
+                            relayout(nav)
+                            val banner = b.scroll.sceneBounds()
+                            val closing = b.closing.sceneBounds()
+                            assertTrue(closing.maxY <= banner.maxY + 0.5, "$where: closing line $closing below the banner $banner")
+                            assertTrue(closing.maxY <= main.defaultStatusPaneController.defaultStatusPane.sceneBounds().minY, "$where: closing line over the status row")
+                            b.scroll.vvalue = 0.0
+                            relayout(nav)
+                            val rowTop = main.serversListController.entryControllers.single { "selected" in it.root.styleClass }.root.sceneBounds().minY
+                            assertEquals(rowTop, inkTop(b.title), 2.0, "$where: title off the row line after scrolling back")
                         }
                     }
                 }

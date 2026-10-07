@@ -23,7 +23,9 @@
 
                 <AnchorPane fx:id="homePane" pickOnBounds="false">
                     <!-- centre slot (between the top bar and the status bar): the selected game's banner text (main/game_banner.fxml);
-                         anchored on both ends, so the banner scrolls inside it and never moves the status bar -->
+                         anchored on both ends, so the banner scrolls inside it and never moves the status bar. topAnchor 70 is
+                         only the highest it may go (under the nav row): MainController.alignBanner moves the top down so the
+                         title's letters start on the line of the selected game's row in the sidebar -->
                     <StackPane fx:id="centerPane" id="centerPane" styleClass="center-pane" pickOnBounds="false"
                                AnchorPane.leftAnchor="15" AnchorPane.topAnchor="70" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="82">
                         <fx:include fx:id="gameBanner" source="main/game_banner.fxml"/>

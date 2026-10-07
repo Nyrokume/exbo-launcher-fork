@@ -32,6 +32,8 @@ class ServersListController(private val ctx: UiContext) : Disposable {
     /** Cards of the games list, in order (tests, screenshot tour). */
     val entryControllers: List<ServerEntryController> get() = entries
     private val list = VBox(6.0)
+    /** Row of the selected game (MainController lines the game banner up with it). */
+    val selectedEntry: ServerEntryController? get() = entries.firstOrNull { "selected" in it.root.styleClass }
 
     @FXML
     fun initialize() {
