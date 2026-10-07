@@ -31,9 +31,9 @@ interface WallpaperMemory {
  * manifest (works inside the jar, no directory scanning), a random pick per launch that never repeats the previous
  * launch, and ONE holder ([current]) so every window of a launch shows the same picture.
  *
- * Use: LauncherApp calls [choose] once at start, before any window exists; windows ask
- * `WallpaperLayer.forCurrent(...)` (ui/components) for their background node. The login window can do the same
- * (see docs/design/STYLE-ZONE.md, «Обои»); it then shows exactly the picture of the main window.
+ * Use: LauncherApp calls [choose] once at start, before any window exists; the main window asks
+ * `WallpaperLayer.forCurrent(...)` (ui/components) for its background node. The login window stays solid
+ * (see docs/design/STYLE-ZONE.md, «Обои»).
  */
 object Wallpapers {
     /** `-Dlauncher.wallpaper=N` (1..6): always this wallpaper (screenshots, reproducible checks). */
