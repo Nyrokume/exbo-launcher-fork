@@ -269,6 +269,9 @@ class MainController(private val ctx: UiContext) : Disposable {
         if (showHome) setSettingsVisible(false)
     }
 
+    /** Whether the settings screen (not home) is showing. */
+    val isSettingsShown: Boolean get() = settingsPane.isVisible
+
     fun setSettingsVisible(visible: Boolean) {
         settingsPane.isVisible = visible
         homePane.isVisible = !visible

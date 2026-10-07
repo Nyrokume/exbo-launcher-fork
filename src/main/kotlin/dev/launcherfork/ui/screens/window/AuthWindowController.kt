@@ -5,6 +5,7 @@ import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.LogoMark
 import dev.launcherfork.ui.components.PanelHost
+import dev.launcherfork.ui.motion.Motion
 import javafx.fxml.FXML
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -49,11 +50,18 @@ class AuthWindowController(private val ctx: UiContext) {
      * root), a fixed-size panel is centered.
      */
     fun setPanel(panel: Parent) {
-        panelHost.children.setAll(panel)
+        // next panel crossfades in; panel nodes themselves are never touched by Motion
+        Motion.snapshotCrossfade(panelHost) { panelHost.children.setAll(panel) }
         // a panel with its own big logo (login, update) gets no second small one in the title strip
         authLogo.isVisible = panel.lookup(".zone-logo") == null
         InputBlock.focusInto(panel)
     }
+
+    /** The window appears: the whole rounded card fades in (transparent stage). */
+    fun appear() = Motion.fadeIn(authWindowRoot)
+
+    /** Restyle in place (theme switch): crossfade over the whole card. */
+    fun crossfade(change: () -> Unit) = Motion.snapshotCrossfade(authWindowRoot, change = change)
 
     /**
      * Height the window should have for the current panel. A compact panel (its root leaves prefHeight computed,

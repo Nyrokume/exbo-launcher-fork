@@ -6,9 +6,7 @@ import dev.launcherfork.UiTestKit.sceneBounds
 import dev.launcherfork.app.AppContext
 import dev.launcherfork.app.ScreenshotTour
 import dev.launcherfork.app.StageNavigator
-import dev.launcherfork.data.local.AppearanceFileStore
 import dev.launcherfork.data.local.SettingsFile
-import dev.launcherfork.data.mock.InMemorySettingsStore
 import dev.launcherfork.data.mock.MockData
 import dev.launcherfork.data.mock.MockServerRepository
 import dev.launcherfork.domain.GameDescription
@@ -28,7 +26,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -240,7 +237,7 @@ class MotionTest {
         val box = FxTestSupport.onFx {
             CheckBox().apply { styleClass += "switch" }.also { cb ->
                 val scene = javafx.scene.Scene(StackPane(cb), 200.0, 60.0)
-                scene.stylesheets.setAll(dev.launcherfork.theme.Theme.stylesheets("zone", dev.launcherfork.domain.Appearance.DARK, "ru"))
+                scene.stylesheets.setAll(dev.launcherfork.theme.Theme.stylesheets("zone", "ru"))
                 scene.stylesheets += dev.launcherfork.theme.Theme.stylesheet("layout.css")
                 Motion.smoothSwitch(cb)
                 cb.applyCss(); scene.root.layout()
@@ -257,17 +254,15 @@ class MotionTest {
     @Test
     fun animationsSettingSurvivesARestart(@TempDir dir: Path) {
         val file = dir.resolve("settings.properties")
-        val store = AppearanceFileStore(InMemorySettingsStore(), file)
-        assertTrue(store.load().animations)
+        assertTrue(Motion.parseSetting(SettingsFile.read(file, Motion.SETTINGS_KEY)), "missing file = on")
         assertFalse(Files.exists(file), "nothing written until something changes")
-        store.save(store.load().copy(animations = false))
-        assertEquals("off", SettingsFile.read(file, "animations"))
-        assertFalse(AppearanceFileStore(InMemorySettingsStore(), file).load().animations, "read back after a restart")
-        store.save(store.load().copy(animations = true))
-        assertEquals("on", SettingsFile.read(file, "animations"))
-        SettingsFile.write(file, "animations", "garbage")
-        assertTrue(AppearanceFileStore(InMemorySettingsStore(), file).load().animations, "unknown value = on")
-        assertEquals(null, AppearanceFileStore.readAnimations(file))
+        SettingsFile.write(file, Motion.SETTINGS_KEY, Motion.settingValue(false))
+        assertEquals("off", SettingsFile.read(file, Motion.SETTINGS_KEY))
+        assertFalse(Motion.parseSetting(SettingsFile.read(file, Motion.SETTINGS_KEY)), "read back after a restart")
+        SettingsFile.write(file, Motion.SETTINGS_KEY, Motion.settingValue(true))
+        assertEquals("on", SettingsFile.read(file, Motion.SETTINGS_KEY))
+        SettingsFile.write(file, Motion.SETTINGS_KEY, "garbage")
+        assertTrue(Motion.parseSetting(SettingsFile.read(file, Motion.SETTINGS_KEY)), "unknown value = on")
     }
 
     @Test
@@ -373,8 +368,8 @@ class MotionTest {
         repeat(11) { i -> FxTestSupport.onFx { main.setSettingsVisible(i % 2 == 0) }; Thread.sleep(20) }
         assertTrue(FxTestSupport.waitFx(3_000) { !Motion.isAnimating(main.settingsPane) && !Motion.isAnimating(main.homePane) })
         FxTestSupport.onFx {
-            assertTrue(main.isSettingsShown)
-            assertTrue(main.settingsPane.isVisible); assertFalse(main.homePane.isVisible)
+            assertTrue(main.isSettingsShown); assertTrue(main.settingsPane.isVisible)
+            assertFalse(main.homePane.isVisible)
             assertEquals(1.0, main.settingsPane.opacity); assertEquals(1.0, main.homePane.opacity)
         }
         // a modal opened and closed quickly ends closed, the screen unblocked

@@ -1,6 +1,5 @@
 package dev.launcherfork.app
 
-import dev.launcherfork.domain.Appearance
 import dev.launcherfork.i18n.Strings
 import dev.launcherfork.i18n.text
 import dev.launcherfork.ui.components.ShowcaseCaption
@@ -15,8 +14,8 @@ import java.io.File
 
 /**
  * Showcase mode ([Showcase], docs/SHOWCASE.md): a looping, hands-off presentation of the redesign with the animations
- * on. Main window with its wallpaper -> other wallpapers -> the four looks (zone-light, exbo, shadcn, zone) -> game
- * banner -> settings (RAM, «Поведение») -> profile menu -> «Сообщества» -> download / pause / ready -> auth window (showAuth) ->
+ * on. Main window with its wallpaper -> other wallpapers -> looks (exbo, shadcn, zone) -> game
+ * banner -> settings (RAM, «Поведение») -> profile menu -> «Сообщества» -> download / pause / ready -> auth window ->
  * registration steps -> sign-in -> again. Each step 3–4 s; navigation through [TourActions] (shared with the screenshot
  * tour). Mock data only (login «player»), nothing is saved: theme switches go through [StageNavigator.applyLook]
  * (session only), wallpapers through the layer (never `wallpaper.last`), and the app runs on an in-memory settings
@@ -59,15 +58,14 @@ class ShowcaseTour(
     val steps: List<Step> = listOf(
         Step("main", 3.5) {
             act.hideMenus(); act.showSettings(false)
-            nav.applyLook("zone", Appearance.DARK)
+            nav.applyLook("zone")
             Wallpapers.current?.let { nav.wallpaperLayer?.show(it) }
             act.ready()
         },
         Step("wallpapers", 4.0, ticks = listOf(2.0 to { showWallpaper(2) })) { showWallpaper(5) },
-        Step("theme_light", 3.5) { Wallpapers.current?.let { nav.wallpaperLayer?.show(it) }; nav.applyLook("zone", Appearance.LIGHT) },
-        Step("theme_exbo", 3.5) { nav.applyLook("exbo", Appearance.DARK) },
-        Step("theme_shadcn", 3.5) { nav.applyLook("shadcn", Appearance.DARK) },
-        Step("theme_zone", 3.0) { nav.applyLook("zone", Appearance.DARK) },
+        Step("theme_exbo", 3.5) { nav.applyLook("exbo") },
+        Step("theme_shadcn", 3.5) { nav.applyLook("shadcn") },
+        Step("theme_zone", 3.0) { nav.applyLook("zone") },
         Step("banner", 3.5) { act.reselectGame() },
         Step("settings", 4.0, ticks = listOf(1.6 to { toggleTray() }, 2.6 to { toggleTray() })) { act.showSettings(true) },
         Step("profile_menu", 3.0, ticks = listOf(0.5 to { act.showProfileMenu() })) { act.showSettings(false) },

@@ -124,6 +124,8 @@ data class LauncherSettings(
     val startOnDownloaded: Boolean = true,
     val hideToTray: Boolean = true,
     val defenderHint: Boolean = true,
+    /** «Анимации» (Поведение): interface motion on / off (ui/motion/Motion); persists like wallpaper.last. */
+    val animations: Boolean = true,
     val p2pMode: P2pMode = P2pMode.EXCEPT_MOBILE,
     val exitMode: ExitMode = ExitMode.NEVER,
     /** Game heap in MB chosen in settings (one of the RAM options); null = not chosen yet -> recommended value. */

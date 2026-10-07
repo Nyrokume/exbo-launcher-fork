@@ -1,11 +1,11 @@
 package dev.launcherfork
 
 import dev.launcherfork.app.AppContext
-import dev.launcherfork.app.LauncherApp
 import dev.launcherfork.app.Showcase
 import dev.launcherfork.app.ShowcaseTour
 import dev.launcherfork.app.StageNavigator
 import dev.launcherfork.app.TourActions
+import dev.launcherfork.data.mock.InMemorySettingsStore
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -16,7 +16,7 @@ import java.nio.file.Files
 
 /**
  * Showcase mode (app/Showcase, docs/SHOWCASE.md): the step sequence, size parsing, and the hard rule that
- * nothing is written to the user's settings file (theme / appearance / wallpaper.last).
+ * nothing is written to disk (in-memory settings; no WallpaperFileMemory / wallpaper.last).
  */
 class ShowcaseTest {
     @Test
@@ -53,13 +53,14 @@ class ShowcaseTest {
     }
 
     @Test
-    fun `settingsFile is always null in showcase even with launcher_settingsFile`() {
-        val home = "/tmp/home-should-not-matter"
-        assertNull(LauncherApp.settingsFile(showcase = true, screenshots = false, property = "/tmp/forced.properties", home = home))
-        assertNull(LauncherApp.settingsFile(showcase = true, screenshots = true, property = null, home = home))
-        assertEquals("/tmp/forced.properties", LauncherApp.settingsFile(false, false, "/tmp/forced.properties", home)!!.toString())
-        assertNull(LauncherApp.settingsFile(false, screenshots = true, property = null, home = home))
-        assertTrue(LauncherApp.settingsFile(false, false, null, home)!!.toString().endsWith(".launcher-fork/settings.properties"))
+    fun `AppContext mock always uses in-memory settings`() {
+        // Showcase / tests never pass a settings file: AppContext.mock always installs InMemorySettingsStore.
+        val app = AppContext.mock(speed = 50.0, authDelayMs = 0)
+        assertTrue(app.services.settings is InMemorySettingsStore)
+        val loaded = app.services.settings.load()
+        app.services.settings.save(loaded.copy(animations = false, language = "en"))
+        assertFalse(app.services.settings.load().animations)
+        assertEquals("en", app.services.settings.load().language)
     }
 
     @Test
@@ -84,16 +85,18 @@ class ShowcaseTest {
     }
 
     @Test
-    fun `settings file bytes stay untouched after showcase settingsFile resolution`() {
-        // AppearanceFileStore would rewrite the file on theme / animations / tray changes; WallpaperFileMemory
-        // would write wallpaper.last. Showcase mode never opens either: settingsFile is forced to null.
+    fun `disk settings and wallpaper last stay untouched under in-memory showcase`() {
+        // Showcase uses AppContext.mock (InMemorySettingsStore) and does not attach WallpaperFileMemory,
+        // so neither animations nor wallpaper.last hit the disk.
         val sentinel = Files.createTempFile("showcase-settings-", ".properties")
         val before = byteArrayOf(0x53, 0x48, 0x4f, 0x57) // "SHOW"
         Files.write(sentinel, before)
         val wallpaperLast = Files.createTempFile("showcase-wallpaper-", ".properties")
         Files.write(wallpaperLast, "wallpaper.last=3\n".toByteArray())
 
-        assertNull(LauncherApp.settingsFile(showcase = true, screenshots = false, property = sentinel.toString(), home = "/tmp"))
+        val app = AppContext.mock(speed = 50.0, authDelayMs = 0)
+        assertTrue(app.services.settings is InMemorySettingsStore)
+        app.services.settings.save(app.services.settings.load().copy(animations = false))
         assertTrue(Files.readAllBytes(sentinel).contentEquals(before), "settings file must stay byte-identical")
         assertEquals("wallpaper.last=3\n", Files.readString(wallpaperLast), "wallpaper.last must stay untouched")
 

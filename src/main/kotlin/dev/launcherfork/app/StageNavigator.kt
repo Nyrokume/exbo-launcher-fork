@@ -87,6 +87,10 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     /** How [close] ends the app; tests replace it so the FX toolkit survives. */
     var exit: () -> Unit = { Platform.exit() }
 
+    /** Root of the main window (window.fxml) and of the pre-main window (auth_window.fxml): showcase captions go there. */
+    val mainWindowRoot: javafx.scene.layout.StackPane get() = windowController.windowRoot
+    val authWindowRoot: javafx.scene.layout.StackPane get() = authWindow.authWindowRoot
+
     override val window: Window get() = slotOf(activeWindow).stage
 
     init {
@@ -188,6 +192,18 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
             mainController?.setSettingsVisible(true)
             onScreenChanged("main")
         }
+    }
+
+    /** Re-applies the theme stylesheets to both windows, crossfading the visible one (theme switch, showcase). */
+    fun restyle() {
+        windowController.crossfade { Theme.apply(mainScene, lang) }
+        authWindow.crossfade { Theme.apply(authScene, lang) }
+    }
+
+    /** Showcase / session-only theme switch (`zone` | `exbo` | `shadcn`); not persisted. */
+    fun applyLook(theme: String) {
+        Theme.themeName = if (theme == "zone-light") "zone" else theme
+        restyle()
     }
 
     override fun minimize() {
