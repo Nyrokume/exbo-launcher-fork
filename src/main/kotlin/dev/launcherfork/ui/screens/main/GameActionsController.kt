@@ -2,6 +2,7 @@ package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.components.ActionGlyphs
 import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.GameAction
@@ -78,11 +79,15 @@ class GameActionsController(private val ctx: UiContext) : Disposable {
         items.forEach { (action, b) -> b.isDisable = !GameActions.isEnabled(action, state) }
     }
 
-    val isShown: Boolean get() = gameActionsMenu.isVisible
+    /** Logical state (the card may still be fading out for a moment after [hide]). */
+    var isShown: Boolean = false
+        private set
 
     fun show(focusFirst: Boolean = false) {
         if (!isShown) {
-            gameActionsMenu.isVisible = true
+            isShown = true
+            // the card opens ABOVE its button: it rises 6 px towards it while fading in
+            Motion.popIn(gameActionsMenu, dy = Motion.MENU_SLIDE)
             onShown()
         }
         if (focusFirst) enabledItems().firstOrNull()?.requestFocus()
@@ -91,7 +96,8 @@ class GameActionsController(private val ctx: UiContext) : Disposable {
     fun hide() {
         if (!isShown) return
         val focusInMenu = generateSequence(scene?.focusOwner) { it.parent }.any { it === gameActionsMenu }
-        gameActionsMenu.isVisible = false
+        isShown = false
+        Motion.popOut(gameActionsMenu, dy = Motion.MENU_SLIDE / 2)
         if (focusInMenu) anchor?.requestFocus()
     }
 

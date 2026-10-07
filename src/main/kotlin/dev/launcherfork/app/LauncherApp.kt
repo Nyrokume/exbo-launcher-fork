@@ -11,6 +11,7 @@ import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.LinkPolicy
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.components.loadImage
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.wallpaper.Wallpapers
 import javafx.application.Application
 import javafx.stage.Stage
@@ -27,7 +28,9 @@ import kotlin.random.Random
  * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=zone|zone-light|exbo|shadcn (zone by default; zone-light: start in the white
  * scheme), launcher.settingsFile=<path> (where the chosen theme and the last wallpaper are kept),
  * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour),
- * launcher.wallpaper=1..6 (always this main-window wallpaper; the tour uses Wallpapers.TOUR_DEFAULT without it).
+ * launcher.wallpaper=1..6 (always this main-window wallpaper; the tour uses Wallpapers.TOUR_DEFAULT without it),
+ * launcher.animations=on|off (interface motion, wins over the saved «Анимации»; ui/motion/Motion),
+ * launcher.wallpaper.drift=on (very slow wallpaper zoom, off by default).
  */
 class LauncherApp : Application() {
     private var app: AppContext? = null
@@ -80,6 +83,11 @@ class LauncherApp : Application() {
         // colour scheme (zone only): -Dlauncher.theme=zone-light wins, else the saved «Тема» (dark by default)
         Theme.appearance = if (!Theme.supportsLight) Appearance.DARK
             else Theme.forcedAppearance ?: app.services.settings.load().appearance
+        // interface motion: -Dlauncher.animations=on|off wins over the saved «Анимации» (on by default); the screenshot
+        // tour switches it off itself (ScreenshotTour.install), so its pictures never catch a half-finished fade
+        Motion.setting = app.services.settings.load().animations
+        System.err.println("[launcher-fork] animations: ${Motion.settingValue(Motion.enabled)}" +
+            (Motion.override?.let { " (-D${Motion.PROPERTY})" } ?: ""))
         val zoneFonts = if (Theme.themeName == "zone") Theme.zoneFonts else emptyList()
         System.err.println("[launcher-fork] fonts: ${fonts + zoneFonts}, theme: ${Theme.themeName}, appearance: ${Theme.appearance.name.lowercase()}")
 

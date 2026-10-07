@@ -3,6 +3,7 @@ package dev.launcherfork.ui.screens.main
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.toggleClass
+import dev.launcherfork.ui.motion.Motion
 import javafx.event.EventHandler
 import javafx.fxml.FXML
 import javafx.scene.Node
@@ -65,17 +66,32 @@ class ProfileController(private val ctx: UiContext) : Disposable {
         accountName.text = (login ?: "player").uppercase(Locale.forLanguageTag(ctx.lang))
     }
 
-    val isMenuShown: Boolean get() = profileMenu.isVisible
+    /**
+     * Logical state: true from [showMenu] to [hideMenu]. The card itself may still be fading out for a moment after
+     * [hideMenu] (ui/motion/Motion.popOut), so callers ask this, not the card's visibility.
+     */
+    var isMenuShown: Boolean = false
+        private set
 
     fun showMenu() = setMenu(true)
     fun hideMenu() = setMenu(false)
 
     private fun setMenu(shown: Boolean) {
         val wasShown = isMenuShown
+        isMenuShown = shown
         loginButton.toggleClass("open", shown)
-        profileMenu.isVisible = shown
-        if (shown) placeMenu()
-        if (shown && !wasShown) onMenuShown()
+        if (shown == wasShown) {
+            if (shown) placeMenu()
+            return
+        }
+        if (shown) {
+            // drops 6 px from the button while fading in; closes with a quicker fade (Motion tokens)
+            Motion.popIn(profileMenu, dy = -Motion.MENU_SLIDE)
+            placeMenu()
+            onMenuShown()
+        } else {
+            Motion.popOut(profileMenu)
+        }
     }
 
     /** Pref-size the unmanaged card and hang it under the button, right-aligned with it (the parent never lays it out). */

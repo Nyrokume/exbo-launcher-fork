@@ -9,6 +9,7 @@ import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.RamBar
 import dev.launcherfork.ui.components.RamScale
+import dev.launcherfork.ui.motion.Motion
 import javafx.fxml.FXML
 import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
@@ -75,6 +76,8 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var startOnDownloadedRow: HBox
     @FXML lateinit var startOnDownloadedToggle: CheckBox
 
+    @FXML lateinit var animationsRow: HBox
+    @FXML lateinit var animationsToggle: CheckBox
     @FXML lateinit var trayRow: HBox
     @FXML lateinit var trayToggle: CheckBox
     @FXML lateinit var autostartRow: HBox
@@ -118,6 +121,16 @@ class SettingsController(private val ctx: UiContext) {
         bindLimit(downloadLimitBox, downloadLimitField, "settings.limit.download", s.downloadLimitKb) { v -> update { it.copy(downloadLimitKb = v) } }
         bindLimit(uploadLimitBox, uploadLimitField, "settings.limit.upload", s.uploadLimitKb) { v -> update { it.copy(uploadLimitKb = v) } }
 
+        // «Анимации»: interface motion (ui/motion/Motion), saved and applied at once; -Dlauncher.animations wins, then the
+        // switch shows the forced value, disabled, with the reason as a tooltip
+        bindToggle(animationsRow, animationsToggle, Motion.enabled) { v ->
+            update { it.copy(animations = v) }
+            Motion.setting = v
+        }
+        if (Motion.override != null) {
+            animationsToggle.isDisable = true
+            Tooltip.install(animationsRow, Tooltip(ctx.t("settings.animations.forced")))
+        }
         bindToggle(defenderRow, defenderToggle, s.defenderHint) { v -> update { it.copy(defenderHint = v) } }
         bindToggle(startOnDownloadedRow, startOnDownloadedToggle, s.startOnDownloaded) { v -> update { it.copy(startOnDownloaded = v) } }
         bindToggle(trayRow, trayToggle, s.hideToTray) { v -> update { it.copy(hideToTray = v) } }
@@ -194,8 +207,9 @@ class SettingsController(private val ctx: UiContext) {
     private fun bindToggle(row: HBox, toggle: CheckBox, value: Boolean, onChange: (Boolean) -> Unit) {
         toggle.isSelected = value
         toggle.selectedProperty().addListener { _, _, v -> onChange(v) }
+        Motion.smoothSwitch(toggle) // the thumb slides to its side instead of jumping
         // the whole row is clickable, like on the reference
-        row.setOnMouseClicked { e -> if (e.target !== toggle && !toggle.isHover) toggle.isSelected = !toggle.isSelected }
+        row.setOnMouseClicked { e -> if (e.target !== toggle && !toggle.isHover && !toggle.isDisable) toggle.isSelected = !toggle.isSelected }
     }
 
     /** Digits only (max 7), empty means 0; saved on every edit. "Загрузка · КБ/с, 0 — без ограничений" as a tooltip. */

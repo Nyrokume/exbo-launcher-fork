@@ -46,6 +46,9 @@ tasks.test {
     systemProperty("monocle.platform", "Headless")
     systemProperty("prism.order", "sw")
     systemProperty("java.awt.headless", "true")
+    // no motion in tests: every transition applies its end state at once, so layout / contrast checks never see a
+    // half-finished frame (MotionTest switches it on for itself)
+    systemProperty("launcher.animations", "off")
     testLogging {
         events("passed", "failed", "skipped")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

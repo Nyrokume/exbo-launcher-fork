@@ -1,6 +1,7 @@
 package dev.launcherfork.ui.screens.main.modals
 
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.motion.Motion
 import javafx.animation.PauseTransition
 import javafx.fxml.FXML
 import javafx.scene.Node
@@ -26,9 +27,28 @@ abstract class ModalController(protected val ctx: UiContext) {
     /** Node that gets the focus when the modal opens; null = the first focusable node of [layer]. */
     open val initialFocus: Node? get() = null
 
-    fun show() { layer.isVisible = true }
-    fun hide() { layer.isVisible = false }
-    val isShowing: Boolean get() = layer.isVisible
+    /**
+     * The dim layer fades in and the card (.modal-box) rises 8 px from 98 % scale ([NORMAL]); closing fades the layer out
+     * ([FAST]), the layer stays visible (input-blocking) until the fade ends (ui/motion/Motion).
+     */
+    fun show() {
+        showing = true
+        Motion.fadeIn(layer)
+        card?.let { Motion.popIn(it, dy = Motion.SLIDE, scale = Motion.POP_SCALE) }
+    }
+
+    fun hide() {
+        if (!showing && !layer.isVisible) return
+        showing = false
+        Motion.fadeOut(layer)
+    }
+
+    private var showing = false
+    /** Logical state: true from [show] to [hide] (the layer may still be fading out for a moment after [hide]). */
+    val isShowing: Boolean get() = showing && layer.isVisible
+
+    /** The modal's card (the first .modal-box in [layer]); null for card-less layers (loading spinner). */
+    private val card: Node? get() = layer.lookup(".modal-box")
 
     protected fun wire(confirm: Button?, cancel: Button?) {
         // UPPERCASE buttons (.zone-caps) - to be swapped to SpacedLabel after the redesign/auth merge

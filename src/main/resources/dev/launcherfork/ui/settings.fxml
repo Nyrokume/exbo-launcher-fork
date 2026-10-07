@@ -17,7 +17,7 @@
                         segmented RAM bar (like the original launcher, 2 GB .. the whole memory) + min / max captions
                         under the selectable range (RamScale).
     ПОВЕДЕНИЕ           auto-exit, P2P and the theme (Тёмная / Белая) as segmented controls (accent on the selected
-                        part), four switches.
+                        part), five switches («Анимации» first: interface motion, ui/motion/Motion).
     ОБНОВЛЕНИЕ | ЯЗЫК   one row each, side by side: speed limits (download / upload fields) | Русский / English.
 -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
@@ -74,6 +74,11 @@
                             <RadioButton fx:id="themeDark" id="themeDark" styleClass="segment,zone-radius-sm" text="%settings.theme.dark" toggleGroup="$themeGroup" minWidth="-Infinity"/>
                             <RadioButton fx:id="themeLight" id="themeLight" styleClass="segment,zone-radius-sm" text="%settings.theme.light" toggleGroup="$themeGroup" minWidth="-Infinity"/>
                         </HBox>
+                    </HBox>
+                    <HBox fx:id="animationsRow" id="animationsRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.animations" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <CheckBox fx:id="animationsToggle" id="animationsToggle" styleClass="switch" accessibleText="%settings.animations"/>
                     </HBox>
                     <HBox fx:id="startOnDownloadedRow" styleClass="settings-row,toggle-row" alignment="CENTER_LEFT">
                         <Label styleClass="settings-label,row-label" text="%settings.start_on_downloaded" minWidth="-Infinity"/>

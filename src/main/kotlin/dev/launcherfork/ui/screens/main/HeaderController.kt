@@ -6,6 +6,7 @@ import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.BrandGlyphs
 import dev.launcherfork.ui.components.toggleClass
+import dev.launcherfork.ui.motion.Motion
 import javafx.event.EventHandler
 import javafx.fxml.FXML
 import javafx.geometry.Insets
@@ -93,12 +94,15 @@ class HeaderController(private val ctx: UiContext) : Disposable {
         communityMenu.layoutBoundsProperty().addListener { _, _, _ -> placeMenu() }
     }
 
-    val isCommunityMenuShown: Boolean get() = communityMenu.isVisible
+    /** Logical state (the card may still be fading out for a moment after [hideCommunityMenu]). */
+    var isCommunityMenuShown: Boolean = false
+        private set
 
     fun showCommunityMenu(focusFirst: Boolean = false) {
         if (!isCommunityMenuShown) {
+            isCommunityMenuShown = true
             communities.toggleClass("open", true)
-            communityMenu.isVisible = true
+            Motion.popIn(communityMenu, dy = -Motion.MENU_SLIDE) // drops 6 px from the link while fading in
             placeMenu()
             onMenuShown()
         }
@@ -109,8 +113,9 @@ class HeaderController(private val ctx: UiContext) : Disposable {
         if (!isCommunityMenuShown) return
         // keyboard users land back on the link instead of on a hidden row
         val focusInMenu = generateSequence(scene?.focusOwner) { it.parent }.any { it === communityMenu }
+        isCommunityMenuShown = false
         communities.toggleClass("open", false)
-        communityMenu.isVisible = false
+        Motion.popOut(communityMenu)
         if (focusInMenu) communities.requestFocus()
     }
 
