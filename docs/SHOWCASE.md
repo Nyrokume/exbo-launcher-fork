@@ -48,15 +48,27 @@ Front.end.master не правятся: только переходы `StageNavi
 - `showcase/showcase.gif` — palettegen/paletteuse, ≤ 8 МБ, ~960 px
 - `showcase/stills/*.png` — 6–8 ключевых кадров
 
-Пример записи с Xvfb (`ffmpeg` 7.1, без доп. пакетов):
+Пример записи с Xvfb (`ffmpeg` 7.1 и ImageMagick, без доп. пакетов). Запись останавливается, когда витрина
+сама закрывается после `launcher.showcase.loops` кругов (в stderr строка `showcase finished`), а не по
+фиксированной длительности: иначе хвост видео — пустой чёрный экран после закрытия окон.
 
 ```bash
-Xvfb :17 -screen 0 1920x1080x24 -ac +render -noreset &
-DISPLAY=:17 ./gradlew showcase -Dlauncher.showcase.loops=1 -Dlauncher.showcase.stills=showcase/stills &
-# crop 1366×800 по центру экрана 1920×1080:
-ffmpeg -f x11grab -draw_mouse 0 -framerate 30 -video_size 1366x800 -i :17.0+277,140 -t 95 \
-  -c:v libx264 -pix_fmt yuv420p -r 30 showcase/showcase-1366x800.mp4
+Xvfb :19 -screen 0 1920x1080x24 -ac +render -noreset &
+# фон за маленьким окном входа (только для видео, в самом окне входа обоев нет):
+convert src/main/resources/dev/launcherfork/ui/wallpapers/03.jpg -resize 1920x1080^ -gravity center \
+  -extent 1920x1080 -blur 0x18 -fill black -colorize 40% /tmp/backdrop.png
+DISPLAY=:19 display -window root /tmp/backdrop.png
+DISPLAY=:19 ./gradlew showcase -Dlauncher.showcase.loops=1 -Dlauncher.showcase.size=1920x1080 &
+APP=$!
+ffmpeg -f x11grab -draw_mouse 0 -framerate 30 -video_size 1920x1080 -i :19.0 \
+  -c:v libx264 -pix_fmt yuv420p -r 30 showcase/showcase-1920x1080.mp4 &
+FF=$!
+wait $APP; kill -INT $FF; wait $FF
+# проверка: вывод должен быть пустым
+ffmpeg -i showcase/showcase-1920x1080.mp4 -vf blackdetect=d=0.3:pix_th=0.05 -an -f null - 2>&1 | grep black_start
 ```
+
+После последнего круга главное окно держится на экране ещё 2.5 с, затем лаунчер закрывается.
 
 ## Что не делает витрина
 

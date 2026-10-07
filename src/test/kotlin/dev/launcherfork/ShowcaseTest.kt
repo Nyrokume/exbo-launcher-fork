@@ -102,6 +102,24 @@ class ShowcaseTest {
     }
 
     @Test
+    fun `loop limit counts full passes only and ends after the closing sign-in`() {
+        val tour = ShowcaseTour(navigator(), Showcase(captions = false, loops = 1))
+        val signIn = tour.steps.indexOfFirst { it.id == ShowcaseTour.SIGN_IN }
+        // start: the app opens on the auth window, the first sign-in leads into step 1 and closes no loop
+        assertEquals(0, tour.advance(signIn))
+        assertEquals(0, tour.loopsDone)
+        // one full pass: every step leads to the next one
+        for (i in 0 until signIn) assertEquals(i + 1, tour.advance(i))
+        // the closing sign-in reaches the limit: no next step (the app holds the main window, then exits)
+        assertNull(tour.advance(signIn))
+        assertEquals(1, tour.loopsDone)
+
+        val endless = ShowcaseTour(navigator(), Showcase(captions = false, loops = 0))
+        repeat(3) { for (i in endless.steps.indices) assertEquals((i + 1) % endless.steps.size, endless.advance(i)) }
+        assertEquals(2, endless.loopsDone) // the first sign-in only opens the loop (it starts the count), loops=0 never ends
+    }
+
+    @Test
     fun `TourActions mock login is the showcase nickname`() {
         assertEquals("player", TourActions.MOCK_LOGIN)
         assertEquals("secret", TourActions.MOCK_PASSWORD)

@@ -50,7 +50,7 @@ class TourActions(private val nav: StageNavigator) {
     fun paused(fraction: Double) = setClientState(ClientState.Paused(fraction, SAMPLE_TOTAL))
     fun ready() = setClientState(ClientState.Ready)
 
-    /** Profile menu «Сменить аккаунт»: back to the separate auth window (session ends). */
+    /** Profile menu «Сменить аккаунт»: back to the separate auth window (session ends). Showcase uses [showAuth] instead (that menu item is removed in #19). */
     fun switchAccount() = main.profileBarController.switchAccount.fire()
 
     fun showAuth() = nav.showAuth()

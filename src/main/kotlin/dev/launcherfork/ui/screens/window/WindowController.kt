@@ -80,13 +80,11 @@ class WindowController(private val ctx: UiContext) {
     }
 
     fun hideOverlay() {
-        Motion.stop(overlayLayer)
-        overlayLayer.opacity = 1.0
-        overlayLayer.children.clear()
-        overlayLayer.isVisible = false
+        // clicks / blur back immediately (same moment as hide); the dim layer fades out, then its children go
         contentHost.effect = null
         contentHost.isMouseTransparent = false
         InputBlock.set(contentHost, false)
+        Motion.fadeOut(overlayLayer) { overlayLayer.children.clear() }
     }
 
     fun setMaximized(maximized: Boolean) {

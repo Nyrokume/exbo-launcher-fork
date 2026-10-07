@@ -16,7 +16,7 @@ import java.io.File
 /**
  * Showcase mode ([Showcase], docs/SHOWCASE.md): a looping, hands-off presentation of the redesign with the animations
  * on. Main window with its wallpaper -> other wallpapers -> the four looks (zone-light, exbo, shadcn, zone) -> game
- * banner -> settings (RAM, «Поведение») -> profile menu -> «Сообщества» -> download / pause / ready -> auth window ->
+ * banner -> settings (RAM, «Поведение») -> profile menu -> «Сообщества» -> download / pause / ready -> auth window (showAuth) ->
  * registration steps -> sign-in -> again. Each step 3–4 s; navigation through [TourActions] (shared with the screenshot
  * tour). Mock data only (login «player»), nothing is saved: theme switches go through [StageNavigator.applyLook]
  * (session only), wallpapers through the layer (never `wallpaper.last`), and the app runs on an in-memory settings
@@ -76,7 +76,7 @@ class ShowcaseTour(
             act.hideMenus(); act.downloading(0.18)
         },
         Step("paused_ready", 3.0, ticks = listOf(1.5 to { act.ready() })) { act.paused(0.86) },
-        Step("auth", 3.5) { act.switchAccount() },
+        Step("auth", 3.5) { act.showAuth() },  // leave to auth window (not «Сменить аккаунт»: that item is gone in #19)
         Step("age_gate", 3.0) { act.showAgeGate() },
         Step("register", 3.5) { act.showRegister() },
         Step(SIGN_IN, 1.6, ticks = listOf(1.5 to { act.signIn() }), awaitsMain = true) { act.showAuth() },
@@ -106,14 +106,12 @@ class ShowcaseTour(
         if (stopped) return
         val step = steps[index]
         current = index
-        if (index == 0) looping = true
         captions.forEach { it.text = caption(step) }
         System.err.println("[launcher-fork] showcase step ${index + 1}/${steps.size}: ${step.id}")
         runAction(step)
-        val next = (index + 1) % steps.size
         val proceed = {
-            if (step.id == SIGN_IN && looping) loopsDone++
-            if (config.loops in 1..loopsDone) stop() else run(next)
+            val next = advance(index)
+            if (next == null) finish() else run(next)
         }
         if (step.awaitsMain) waitingForMain = proceed
         else later(step.seconds) { saveStill(index, step); proceed() }
@@ -123,6 +121,31 @@ class ShowcaseTour(
     fun runAction(step: Step) {
         try { step.action() } catch (e: Exception) { e.printStackTrace() }
         step.ticks.forEach { (t, tick) -> later(t) { try { tick() } catch (e: Exception) { e.printStackTrace() } } }
+    }
+
+    /**
+     * Bookkeeping after step [index]: the index of the next step, or null when the `launcher.showcase.loops` limit is
+     * reached. A loop closes with the sign-in that follows a full pass; the very first sign-in after start does not
+     * count (the app opens on the auth window, then the loop proper starts at step 1).
+     */
+    fun advance(index: Int): Int? {
+        if (steps[index].id == SIGN_IN && looping) loopsDone++
+        val next = (index + 1) % steps.size
+        if (next == 0) looping = true
+        return if (config.loops in 1..loopsDone) null else next
+    }
+
+    /**
+     * The loop limit is reached: the main window (just signed in again) stays on screen for [FINISH_HOLD_SEC], then a
+     * "showcase finished" line goes to stderr and the app exits. Recorders stop on that line / on the exit instead of
+     * a fixed duration (otherwise the tail of the video is the empty screen after the windows closed).
+     */
+    private fun finish() {
+        captions.forEach { it.text = caption(steps.first()) }
+        later(FINISH_HOLD_SEC) {
+            System.err.println("[launcher-fork] showcase finished after $loopsDone loop(s)")
+            stop()
+        }
     }
 
     /** Ends the showcase: timers stop, the app exits through the navigator. */
@@ -171,5 +194,7 @@ class ShowcaseTour(
 
     companion object {
         const val SIGN_IN = "sign_in"
+        /** Seconds the final main window stays on screen before the app exits (`launcher.showcase.loops`). */
+        const val FINISH_HOLD_SEC = 2.5
     }
 }
