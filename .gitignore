@@ -6,3 +6,11 @@ out/
 *.iml
 local.properties
 dist/
+
+# abandoned screen recording / ffmpeg stills (use docs/screenshots instead)
+docs/showcase-video/
+
+# local preview dumps from tests / showcase stills flag
+build/zone-preview/
+build/ui-preview/
+*.mp4
