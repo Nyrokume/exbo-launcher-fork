@@ -11,11 +11,12 @@ import kotlin.math.pow
  * luminance, contrast ratio and the looked-up colour tokens of every theme stack.
  */
 object ContrastKit {
-    /** Stylesheet stack per theme, same order as Theme.stylesheets (zone-light = zone + theme-zone-light.css). */
-    val themes = mapOf("exbo" to listOf("theme.css"), "shadcn" to listOf("theme.css", "theme-shadcn.css"),
+    /** Stylesheet stack per theme, same order as Theme.stylesheets. */
+    val themes = mapOf(
+        "exbo" to listOf("theme.css"),
+        "shadcn" to listOf("theme.css", "theme-shadcn.css"),
         "zone" to listOf("theme.css", "theme-zone.css"),
-        // the white scheme (settings «Тема: Белая»): same stack as Theme.stylesheets("zone", LIGHT, ...)
-        "zone-light" to listOf("theme.css", "theme-zone.css", "theme-zone-light.css"))
+    )
 
     data class Rgba(val r: Double, val g: Double, val b: Double, val a: Double = 1.0) {
         fun over(bg: Rgba) = Rgba(r * a + bg.r * (1 - a), g * a + bg.g * (1 - a), b * a + bg.b * (1 - a))

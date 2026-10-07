@@ -14,17 +14,25 @@
 .zone-footer-split { -fx-padding: 4 0 0 0; }
 .zone-description-flow { -fx-line-spacing: 2; }
 .zone-description-text { -fx-font-size: 15; -fx-fill: -muted-foreground; }
-.zone-description-text.zone-strong { -fx-font-family: "Roboto Medium"; -fx-fill: -foreground; }
+.zone-description-text.zone-strong { -fx-font-family: "Roboto"; -fx-font-weight: 500; -fx-fill: -foreground; }
 
-/* success notice of the login panel after a registration: neutral card, light left bar */
+/*
+ * Success notice after registration («Аккаунт … создан»): soft tile, site-red accent bar, rounded.
+ * Sits tight above the login field (zone-bottom spacing); hides when the user starts typing the password.
+ */
 .zone-notice {
+    -fx-font-family: "Roboto";
     -fx-font-size: 14;
     -fx-text-fill: -foreground;
-    -fx-background-color: -card;
+    -fx-wrap-text: true;
+    -fx-background-color: -tile;
     -fx-background-insets: 0;
-    -fx-border-color: transparent transparent transparent -foreground;
-    -fx-border-width: 0 0 0 2;
-    -fx-padding: 10 14 10 14;
+    -fx-background-radius: 6;
+    -fx-border-color: transparent transparent transparent -primary;
+    -fx-border-width: 0 0 0 3;
+    -fx-border-radius: 6;
+    -fx-padding: 12 16 12 14;
+    -fx-max-width: Infinity;
 }
 
 /* ---------- light button (ОТПРАВИТЬ of the 2FA step, as on the site) ---------- */
@@ -41,7 +49,8 @@
 .zone-light:hover { -fx-background-color: derive(-foreground, -8%); }
 .zone-light:pressed { -fx-background-color: derive(-foreground, -16%); }
 .zone-light:focused { -fx-border-color: -primary; -fx-border-width: 1; -fx-border-radius: inherit; }
-.zone-light:disabled { -fx-opacity: 1; -fx-background-color: -border; -fx-text-fill: -background; }
+/* disabled: grey fill + muted label (same pattern as .zone-primary:disabled) */
+.zone-light:disabled { -fx-opacity: 1; -fx-background-color: -border; -fx-text-fill: -muted-foreground; }
 
 /* ---------- dropdowns (age gate): input look, white triangle, dark list ---------- */
 .zone-combo {
@@ -83,7 +92,7 @@
     -fx-padding: 9 16 9 16;
 }
 .zone-combo .list-view .list-cell:hover { -fx-background-color: -card; }
-.zone-combo .list-view .list-cell:selected { -fx-background-color: -card; -fx-text-fill: -primary; }
+.zone-combo .list-view .list-cell:selected { -fx-background-color: -card; -fx-text-fill: -destructive-text; } /* red text: AA on -card */
 .zone-combo .list-view .scroll-bar:vertical { -fx-background-color: transparent; -fx-pref-width: 8; -fx-padding: 0; }
 .zone-combo .list-view .scroll-bar .thumb { -fx-background-color: -input-border; -fx-background-insets: 1; }
 .zone-combo .list-view .scroll-bar .increment-button, .zone-combo .list-view .scroll-bar .decrement-button {
@@ -108,4 +117,4 @@
 }
 .zone-inline-link:visited { -fx-text-fill: -foreground; }
 .zone-inline-link:hover { -fx-text-fill: -primary-hover; }
-.zone-inline-link:focused { -fx-text-fill: -primary; }
+.zone-inline-link:focused { -fx-text-fill: -destructive-text; }

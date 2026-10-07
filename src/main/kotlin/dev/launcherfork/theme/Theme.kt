@@ -1,6 +1,5 @@
 package dev.launcherfork.theme
 
-import dev.launcherfork.domain.Appearance
 import javafx.scene.Scene
 import javafx.scene.effect.ColorAdjust
 import javafx.scene.effect.Effect
@@ -32,7 +31,10 @@ object Theme {
      * panel host; the zone login panel stretches to the host (its min is 420x560), legacy 379x490 panels are centered.
      */
     const val AUTH_WINDOW_WIDTH = 460.0
+    /** Tallest pre-main window (fixed-size legacy panels and update panel); compact panels fit their content. */
     const val AUTH_WINDOW_HEIGHT = 620.0
+    /** Shortest pre-main window: a compact (content-sized) panel never makes the window lower than this. */
+    const val AUTH_WINDOW_MIN_HEIGHT = 360.0
     const val AUTH_TITLEBAR_HEIGHT = 32.0
     const val AUTH_PANEL_WIDTH = AUTH_WINDOW_WIDTH
     const val AUTH_PANEL_HEIGHT = AUTH_WINDOW_HEIGHT - AUTH_TITLEBAR_HEIGHT
@@ -45,7 +47,8 @@ object Theme {
      */
     val APP_ICON_SIZES = listOf(16, 32, 48, 64, 128, 256)
 
-    fun appIconResources(): List<String> = APP_ICON_SIZES.map { IMAGE_ROOT + "icon-$it.png" }
+    fun appIconResources(): List<String> =
+        APP_ICON_SIZES.map { size -> IMAGE_ROOT + "icon-$size.png" }
 
     // ---- overlay (in-window dialogs over the main screen) ----
     const val OVERLAY_BLUR_RADIUS = 16.0
@@ -88,36 +91,14 @@ object Theme {
     /** Theme without -Dlauncher.theme: the red STALZONE look (exbo / shadcn stay available through the property). */
     const val DEFAULT_THEME = "zone"
 
-    /** -Dlauncher.theme value that starts in the white scheme (on top of "zone"). */
-    const val ZONE_LIGHT = "zone-light"
-
     private val requestedTheme: String = System.getProperty("launcher.theme", DEFAULT_THEME).lowercase()
 
     /**
-     * Dark base theme: "zone" (STALZONE, default), "exbo" (original EXBO colors) or "shadcn" (shadcn/ui dark neutral).
-     * -Dlauncher.theme=shadcn; -Dlauncher.theme=zone-light is "zone" started in the white scheme.
+     * Dark theme: "zone" (STALZONE, default), "exbo" (original EXBO colors) or "shadcn" (shadcn/ui dark neutral).
+     * Legacy -Dlauncher.theme=zone-light is treated as "zone".
      */
-    var themeName: String = if (requestedTheme == ZONE_LIGHT) "zone" else requestedTheme
-        internal set // fixed per JVM; tests switch it to check the zone-only white scheme
-
-    /**
-     * Set by -Dlauncher.theme=zone-light: wins over the saved setting at start (Settings can still switch).
-     * Settings then show «Белая» while the persisted choice stays whatever was saved: the property overrides at startup only and is never written.
-     */
-    val forcedAppearance: Appearance? = if (requestedTheme == ZONE_LIGHT) Appearance.LIGHT else null
-
-    /**
-     * The white scheme exists for the zone (STALZONE) look only; the exbo / shadcn dev themes stay dark (settings show
-     * the «Тема» row disabled there).
-     */
-    val supportsLight: Boolean get() = themeName == "zone"
-
-    /**
-     * Current colour scheme of every window: DARK = [themeName] as is; LIGHT = the white STALZONE scheme
-     * (theme-zone-light.css over theme-zone.css), zone only. Changed by StageNavigator.switchAppearance
-     * (settings «Тема») and LauncherApp at start (saved setting or [forcedAppearance]).
-     */
-    @Volatile var appearance: Appearance = forcedAppearance ?: Appearance.DARK
+    var themeName: String = if (requestedTheme == "zone-light") "zone" else requestedTheme
+        internal set
 
     /** Registers bundled fonts so CSS can refer to them by family name. Returns loaded family names. */
     fun loadFonts(): List<String> = FONT_FILES.mapNotNull { file ->
@@ -146,22 +127,20 @@ object Theme {
 
     /**
      * theme.css must be on the Scene so that .root defines the color tokens for every subtree.
-     * Optional theme overrides (-Dlauncher.theme=shadcn|zone) come right after it; the white scheme (zone + LIGHT)
-     * adds theme-zone-light.css (tokens only) on top, so fonts, radii and layout stay those of the zone theme.
+     * Optional theme overrides (-Dlauncher.theme=shadcn|zone) come right after it.
      */
-    fun stylesheets(theme: String, appearance: Appearance, lang: String): List<String> {
+    fun stylesheets(theme: String, lang: String): List<String> {
         val sheets = mutableListOf(stylesheet("theme.css"))
         if (theme == "shadcn") sheets += stylesheet("theme-shadcn.css")
         if (theme == "zone") {
             zoneFonts // fonts must be registered before the stylesheet names them
             sheets += stylesheet("theme-zone.css")
-            if (appearance == Appearance.LIGHT) sheets += stylesheet("theme-zone-light.css")
         }
         sheets += stylesheet(if (lang == "en") "lang_en.css" else "lang_ru.css")
         return sheets
     }
 
     fun apply(scene: Scene, lang: String) {
-        scene.stylesheets.setAll(stylesheets(themeName, appearance, lang))
+        scene.stylesheets.setAll(stylesheets(themeName, lang))
     }
 }

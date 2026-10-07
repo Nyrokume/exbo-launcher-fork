@@ -11,6 +11,7 @@ enum class GameAction(
 ) {
     VERIFY("main.actions.verify", "ga-icon-verify"),
     OPEN_FOLDER("main.actions.open_folder", "ga-icon-folder"),
+    OPEN_LOGS("main.actions.open_logs", "ga-icon-logs"),
     SETTINGS("main.actions.settings", "ga-icon-settings"),
     REINSTALL("main.actions.reinstall", "ga-icon-reinstall", destructive = true),
     DELETE("main.actions.delete", "ga-icon-delete", destructive = true),
@@ -23,6 +24,8 @@ object GameActions {
         GameAction.VERIFY -> state == ClientState.Ready || state == ClientState.Running
         // the folder exists as soon as a download started
         GameAction.OPEN_FOLDER -> state != ClientState.NotInstalled
+        // EXBO runtime logs live under %APPDATA%, independent of install state
+        GameAction.OPEN_LOGS -> true
         GameAction.SETTINGS -> true
         GameAction.REINSTALL -> state == ClientState.Ready
         // a paused partial download can be removed too

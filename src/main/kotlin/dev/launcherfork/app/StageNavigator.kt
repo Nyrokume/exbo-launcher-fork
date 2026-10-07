@@ -1,6 +1,5 @@
 package dev.launcherfork.app
 
-import dev.launcherfork.domain.Appearance
 import dev.launcherfork.i18n.Strings
 import dev.launcherfork.i18n.text
 import dev.launcherfork.theme.Theme
@@ -20,6 +19,7 @@ import dev.launcherfork.ui.screens.window.AuthWindowController
 import dev.launcherfork.ui.screens.window.WindowController
 import javafx.application.Platform
 import javafx.beans.binding.Bindings
+import javafx.beans.value.ChangeListener
 import javafx.geometry.Rectangle2D
 import javafx.scene.Node
 import javafx.scene.Parent
@@ -28,7 +28,6 @@ import javafx.scene.paint.Color
 import javafx.stage.Stage
 import javafx.stage.StageStyle
 import javafx.stage.Window
-import javafx.stage.WindowEvent
 import java.time.LocalDate
 
 /**
@@ -115,13 +114,21 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         mainStage.scene = mainScene
         mainStage.title = ctx.strings.text("title.launcher")
         Bindings.bindContent(mainStage.icons, stage.icons)
-        // every time a window shows up its content fades in (ui/motion/Motion): the window switch itself stays instant
-        // (the new window is shown first, then the old one hidden), so nothing flashes twice
-        mainStage.addEventHandler(WindowEvent.WINDOW_SHOWN) { windowController.appear() }
-        stage.addEventHandler(WindowEvent.WINDOW_SHOWN) { authWindow.appear() }
         // closing the main window by the OS (Alt+F4) ends the app like the close button
         mainStage.setOnCloseRequest { close() }
         stage.setOnCloseRequest { close() }
+        // compact panels: the window follows the panel's content height (an error line appearing grows it downwards).
+        // Only pulses in which the panel itself was relaid out count (watchPanel): a caret blink, a hover or an
+        // animation (opacity / translate) does not request layout, so it costs nothing here.
+        authScene.addPostLayoutPulseListener {
+            if (!authPanelDirty) return@addPostLayoutPulseListener
+            authPanelDirty = false
+            // resize after the pulse, not inside it (a resize relayouts the scene); one pending refit at a time
+            if (!authRefitPending) {
+                authRefitPending = true
+                Platform.runLater { authRefitPending = false; fitAuthHeight(recenter = false, cssApplied = true) }
+            }
+        }
     }
 
     private fun newContext() = UiContext(app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode)
@@ -183,22 +190,6 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         }
     }
 
-    /**
-     * Settings «Тема» (zone theme only): both windows (main and pre-main) get the new stylesheet stack at once, like
-     * [switchLanguage]; no screen is rebuilt, every colour is a looked-up token, so CSS alone repaints them.
-     */
-    override fun switchAppearance(appearance: Appearance) {
-        if (appearance == Theme.appearance || !Theme.supportsLight) return
-        Theme.appearance = appearance
-        restyle()
-    }
-
-    /** Re-applies the theme stylesheets to both windows, crossfading the visible one (theme switch, showcase). */
-    fun restyle() {
-        windowController.crossfade { Theme.apply(mainScene, lang) }
-        authWindow.crossfade { Theme.apply(authScene, lang) }
-    }
-
     override fun minimize() {
         slotOf(activeWindow).stage.isIconified = true
     }
@@ -235,23 +226,6 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     val isOverlayShown: Boolean get() = windowController.isOverlayShown
 
-    /** Size of the main window the first time it shows (the showcase's -Dlauncher.showcase.size); null = Theme.WINDOW_*. */
-    var mainWindowSize: Pair<Double, Double>? = null
-
-    /** Root of the main window (window.fxml) and of the pre-main window (auth_window.fxml): showcase captions go there. */
-    val mainWindowRoot: javafx.scene.layout.StackPane get() = windowController.windowRoot
-    val authWindowRoot: javafx.scene.layout.StackPane get() = authWindow.authWindowRoot
-
-    /**
-     * Showcase: another base theme ([theme] = zone | exbo | shadcn) and scheme on both windows, crossfaded like the
-     * settings «Тема» switch. Session only: nothing is saved (the settings store is not touched).
-     */
-    fun applyLook(theme: String, appearance: Appearance) {
-        Theme.themeName = theme
-        Theme.appearance = if (Theme.supportsLight) appearance else Appearance.DARK
-        restyle()
-    }
-
     /** Background picture of the main window (this launch's wallpaper), null when none was chosen. */
     val wallpaperLayer: WallpaperLayer? get() = windowController.wallpaper
 
@@ -270,7 +244,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         if (overlayController != null || isOverlayShown) hideOverlay()
         mainController?.dispose()
         mainController = null
-        windowController.setContent(javafx.scene.layout.Region(), animate = false)
+        windowController.setContent(javafx.scene.layout.Region())
     }
 
     private fun disposePanel() {
@@ -287,8 +261,10 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         if (!isNew) hideLegacyChrome(loaded.root)
         panelController = loaded.controller
         authWindow.setPanel(loaded.root)
+        (loaded.root as? Parent)?.let(::watchPanel)
         stage.title = ctx.strings.text(titleKey)
         switchTo(ActiveWindow.PRE_MAIN)
+        fitAuthHeight(recenter = true)
         onScreenChanged(name)
         return loaded
     }
@@ -320,14 +296,58 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
      */
     private fun place(slot: WindowSlot, from: Rectangle2D) {
         val (w, h) = when {
-            slot === authSlot -> Theme.AUTH_WINDOW_WIDTH to Theme.AUTH_WINDOW_HEIGHT
-            !mainShownOnce -> mainWindowSize ?: (Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT)
+            slot === authSlot -> Theme.AUTH_WINDOW_WIDTH to authWindow.fittedWindowHeight()
+            !mainShownOnce -> Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT
             slot.frame.isMaximized -> return
             else -> slot.stage.width to slot.stage.height
         }
         slot.stage.width = w
         slot.stage.height = h
+        if (slot === authSlot) requestedAuthHeight = h
         slot.frame.centerOnScreenOf(from, w, h)
+    }
+
+    /** Last height asked of the pre-main window (see [fitAuthHeight]). */
+    private var requestedAuthHeight = Double.NaN
+    /** A refit is queued by the post-layout listener and not run yet. */
+    private var authRefitPending = false
+    /** The current panel requested a layout since the last pulse (its content changed: error line, text, rows). */
+    private var authPanelDirty = false
+    /** Refits actually run by the post-layout listener (tests: an idle panel with a blinking caret runs none). */
+    internal var authRefitChecks = 0
+        private set
+    private var watchedPanel: Parent? = null
+    private val panelLayoutListener = ChangeListener<Boolean> { _, _, dirty -> if (dirty) authPanelDirty = true }
+
+    /** Follows [panel]'s layout requests (a child's requestLayout reaches the panel root), instead of every pulse. */
+    private fun watchPanel(panel: Parent) {
+        watchedPanel?.needsLayoutProperty()?.removeListener(panelLayoutListener)
+        watchedPanel = panel
+        panel.needsLayoutProperty().addListener(panelLayoutListener)
+    }
+
+    /**
+     * Resizes the shown pre-main window to [AuthWindowController.fittedWindowHeight]: a new panel keeps the window's
+     * vertical center ([recenter]), a change inside the same panel (error line) keeps its top edge. [cssApplied]:
+     * called right after a layout pulse, the panel's CSS is current and is not applied again.
+     */
+    private fun fitAuthHeight(recenter: Boolean, cssApplied: Boolean = false) {
+        if (activeWindow != ActiveWindow.PRE_MAIN || !authSlot.isShowing) return
+        if (cssApplied) authRefitChecks++
+        val h = authWindow.fittedWindowHeight(applyCss = !cssApplied)
+        if (!h.isFinite() || h <= 0.0) return
+        val old = stage.height
+        // asked for this height already: don't re-request it on every pulse if the window system lags or refuses
+        if (kotlin.math.abs(h - old) < 0.5 || kotlin.math.abs(h - requestedAuthHeight) < 0.5) return
+        requestedAuthHeight = h
+        // width and height together: a height-only change reaches GTK with width 0 (gtk_window_resize fails,
+        // the window keeps its old size and the stale bottom stays on screen)
+        stage.width = Theme.AUTH_WINDOW_WIDTH
+        stage.height = h
+        if (recenter) stage.y += (old - h) / 2
+        // never past the screen edge (small monitors, a growing error line near the bottom)
+        val screen = WindowFrame.screenBoundsOf(Rectangle2D(stage.x, stage.y, stage.width, h))
+        stage.y = stage.y.coerceIn(screen.minY, (screen.maxY - h).coerceAtLeast(screen.minY))
     }
 
     /** The legacy auth/update FXMLs were whole windows: their own close/minimize buttons and top strip go away. */

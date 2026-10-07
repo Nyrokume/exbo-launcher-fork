@@ -1,7 +1,8 @@
 package dev.launcherfork.ui.screens.main
 
-import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.domain.ClientOperation
+import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.domain.GameFolders
 import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
@@ -12,7 +13,6 @@ import dev.launcherfork.ui.components.formatBytes
 import dev.launcherfork.ui.components.loadImage
 import dev.launcherfork.ui.components.setImageBackground
 import dev.launcherfork.ui.components.toggleClass
-import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.screens.main.modals.DefenderModalController
 import dev.launcherfork.ui.screens.main.modals.DeletionModalController
 import dev.launcherfork.ui.screens.main.modals.DownloadWarnModalController
@@ -87,16 +87,17 @@ class MainController(private val ctx: UiContext) : Disposable {
     fun initialize() {
         background.effect = Theme.gameArtEffect()
 
-        // profile menu (top-right): account / referral open in the browser; logout confirms then leaveToAuth
-        profileBarController.onProfile = { ctx.services.links.open(ExternalLinks.ACCOUNT) }
+        // profile menu (top-right): ЛК / invite / top-up open in the browser; logout confirms then leaveToAuth
+        profileBarController.onTopUp = { ctx.services.links.open(ExternalLinks.TOP_UP) }
         profileBarController.onInviteFriend = { ctx.services.links.open(ExternalLinks.REFERRAL) }
-        // the ONLY way to the logout confirmation: profile menu "Выйти из аккаунта" (window close never asks)
+        profileBarController.onProfile = { ctx.services.links.open(ExternalLinks.ACCOUNT) }
+        // the ONLY way to the logout confirmation: profile menu «Выйти» (window close never asks)
         profileBarController.onLogout = { logoutPaneController.show() }
         logoutPaneController.onConfirm = ::leaveToAuth
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
 
         serversListController.onServerSelected = { server -> selectServer(server, showHome = true) }
-        serversListController.onSettingsClicked = { setSettingsVisible(!isSettingsShown) }
+        serversListController.onSettingsClicked = { setSettingsVisible(!settingsPane.isVisible) }
 
         val status = defaultStatusPaneController
         status.onPrimaryAction = ::onPrimaryAction
@@ -192,7 +193,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         if (changed.isShowing) changed.initialFocus?.requestFocus() ?: InputBlock.focusInto(changed.layer)
     }
 
-    /** Confirmed logout: end the session and go back to the separate auth window. */
+    /** Switch account / confirmed logout: end the session and go back to the separate auth window. */
     private fun leaveToAuth() {
         ctx.services.auth.logout()
         store.shutdown()
@@ -225,7 +226,7 @@ class MainController(private val ctx: UiContext) : Disposable {
     /**
      * A row of the game-actions menu. Verify starts at once (after a confirmation if the game runs: it gets closed);
      * reinstall / delete always ask first and only the confirm button starts them (mock operations, nothing on disk).
-     * The folder is the selected game's folder from the settings (GameFolders), opened through FolderOpener.
+     * Game folder → [GameFolders] + [FolderOpener]; logs → [ExboPaths.runtimeLogs] + [FolderOpener].
      */
     fun onGameAction(action: GameAction) {
         val server = selected ?: return
@@ -234,6 +235,10 @@ class MainController(private val ctx: UiContext) : Disposable {
         val operation = when (action) {
             GameAction.OPEN_FOLDER -> {
                 ctx.services.folders.open(GameFolders.dirOf(ctx.services.settings.load(), server))
+                return
+            }
+            GameAction.OPEN_LOGS -> {
+                ctx.services.folders.open(ExboPaths.runtimeLogs())
                 return
             }
             GameAction.SETTINGS -> { setSettingsVisible(true); return }
@@ -264,19 +269,9 @@ class MainController(private val ctx: UiContext) : Disposable {
         if (showHome) setSettingsVisible(false)
     }
 
-    /** Logical screen: settings or home (the other pane may still be fading out for a moment). */
-    var isSettingsShown: Boolean = false
-        private set
-
     fun setSettingsVisible(visible: Boolean) {
-        val changed = visible != isSettingsShown
-        isSettingsShown = visible
-        // home <-> settings crossfade (ui/motion/Motion); a repeated call only makes sure the end state is right
-        if (changed) Motion.crossfade(old = if (visible) homePane else settingsPane, new = if (visible) settingsPane else homePane)
-        else if (!Motion.isAnimating(if (visible) settingsPane else homePane)) {
-            settingsPane.isVisible = visible
-            homePane.isVisible = !visible
-        }
+        settingsPane.isVisible = visible
+        homePane.isVisible = !visible
         root.toggleClass("settings-mode", visible)
         serversListController.setSettingsActive(visible)
         if (visible) defaultStatusPaneController.gameActionsController.hide()

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Two windows as in the original launcher: start -> update -> auth (-> mail code) in the separate pre-main window,
- * login success closes it and opens the main window; confirmed logout disposes the main screen and comes
+ * login success closes it and opens the main window; switch account / logout dispose the main screen and come
  * back to the auth window on the same screen; closing either window exits the app.
  */
 class AuthWindowTest {
@@ -91,14 +91,19 @@ class AuthWindowTest {
             assertFalse(nav.mainStage.isShowing)
             assertFalse(nav.authStage.isResizable)
             assertEquals(Theme.AUTH_WINDOW_WIDTH, nav.authStage.scene.width, 0.5)
-            assertEquals(Theme.AUTH_WINDOW_HEIGHT, nav.authStage.scene.height, 0.5)
+            assertEquals(authWindow(nav).fittedWindowHeight(), nav.authStage.height, 0.5)
         }
         assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
+        assertTrue(FxTestSupport.waitFx(5_000) { kotlin.math.abs(nav.authStage.scene.height - authWindow(nav).fittedWindowHeight()) < 0.5 }, "scene never took the auth window height")
         FxTestSupport.onFx {
             val host = authWindow(nav).panelHost
             nav.authStage.scene.root.applyCss(); nav.authStage.scene.root.layout()
             assertEquals(Theme.AUTH_PANEL_WIDTH, host.width, 0.5)
-            assertEquals(Theme.AUTH_PANEL_HEIGHT, host.height, 0.5)
+            // login / mail / TOTP share the full 460×620 auth window (same as register / age gate)
+            val fitted = authWindow(nav).fittedWindowHeight()
+            assertEquals(Theme.AUTH_WINDOW_HEIGHT, fitted, 0.5, "login window height $fitted")
+            assertEquals(fitted, nav.authStage.height, 0.5)
+            assertEquals(fitted - Theme.AUTH_TITLEBAR_HEIGHT, host.height, 0.5)
             assertNotNull(authWindow(nav).panel as? Region)
             assertSame(nav.authStage.scene, (nav.panelController as InitialAuthController).loginField.scene, "panel lives in the auth window")
             // legacy chrome hidden: the window strip has its own minimize / close
@@ -202,6 +207,15 @@ class AuthWindowTest {
     }
 
     @Test
+    fun confirmedLogoutDisposesMainAndOpensAuthWindowFromMenu() = assertBackToAuth { main ->
+        main.profileBarController.loginButton.fire()
+        assertTrue(main.profileBarController.isMenuShown)
+        main.profileBarController.logout.fire()
+        assertTrue(main.logoutPaneController.isShowing)
+        main.logoutPaneController.logoutButtonRight.fire()
+    }
+
+    @Test
     fun logoutDisposesMainAndOpensAuthWindow() = assertBackToAuth { main ->
         main.profileBarController.loginButton.fire()
         main.profileBarController.logout.fire()
@@ -220,7 +234,7 @@ class AuthWindowTest {
             nav.mainController!!.profileBarController.loginButton.fire()
             nav.mainController!!.profileBarController.logout.fire()
             nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
-            val (x, y) = WindowFrame.centeredIn(WindowFrame.screenBoundsOf(mainBounds), Theme.AUTH_WINDOW_WIDTH, Theme.AUTH_WINDOW_HEIGHT)
+            val (x, y) = WindowFrame.centeredIn(WindowFrame.screenBoundsOf(mainBounds), Theme.AUTH_WINDOW_WIDTH, authWindow(nav).fittedWindowHeight())
             assertEquals(x, nav.authStage.x, 0.5)
             assertEquals(y, nav.authStage.y, 0.5)
             nav.close()
@@ -245,7 +259,7 @@ class AuthWindowTest {
             assertEquals(x, nav.mainStage.x, 0.5)
             assertEquals(y, nav.mainStage.y, 0.5)
             assertSame(nav.mainStage, nav.window)
-            // the user resizes the main window, then logs out
+            // the user resizes the main window, then logs out (ЛК menu «Выйти»)
             nav.mainStage.width = 900.0
             nav.mainStage.height = 600.0
             nav.mainController!!.profileBarController.loginButton.fire()
@@ -253,7 +267,7 @@ class AuthWindowTest {
             nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
             assertSame(nav.authStage, nav.window)
             assertEquals(Theme.AUTH_WINDOW_WIDTH, nav.authStage.width, 0.5)
-            assertEquals(Theme.AUTH_WINDOW_HEIGHT, nav.authStage.height, 0.5)
+            assertEquals(authWindow(nav).fittedWindowHeight(), nav.authStage.height, 0.5)
         }
         login(live)
         assertTrue(FxTestSupport.waitFx(10_000) { live.nav.activeWindow == ActiveWindow.MAIN })

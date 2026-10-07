@@ -11,11 +11,10 @@ import org.junit.jupiter.api.TestFactory
 
 /**
  * Readability of the settings page, from the stylesheets alone (no FX): the text and background tokens of every theme
- * (theme.css + theme-shadcn.css / theme-zone.css, and the white scheme theme-zone-light.css on top of the zone theme;
- * the ratio is symmetric, so dark-on-light is measured the same way) must meet WCAG 2.1 AA:
- * 4.5:1 for normal text (row labels, RAM summary and captions, inactive segment labels, KB/s), 3:1 for the large group
- * headings and for non-text parts that carry state (RAM segments, switch off-state; WCAG 1.4.11). layout.css is checked
- * too, so the settings selectors really paint with the tokens measured here.
+ * (theme.css + theme-shadcn.css / theme-zone.css; the ratio is symmetric, so dark-on-light is measured the same way)
+ * must meet WCAG 2.1 AA: 4.5:1 for normal text (row labels, RAM summary and captions, inactive segment labels, KB/s),
+ * 3:1 for the large group headings and for non-text parts that carry state (RAM segments, switch off-state; WCAG
+ * 1.4.11). layout.css is checked too, so the settings selectors really paint with the tokens measured here.
  */
 class SettingsContrastTest {
     private val themes = ContrastKit.themes
@@ -70,10 +69,10 @@ class SettingsContrastTest {
     }
 
     /**
-     * Segmented controls («Закрывать лаунчер», «Peer-to-peer», «Тема», «Язык»): the inactive options are bright text on
-     * the control (>= 7:1, AAA, also when hovered), the selected one is the theme accent filling the whole part with
-     * -primary-foreground on it (>= 4.5:1). In zone, zone-light and exbo that is white text on the accent (site red /
-     * exbo blue); shadcn is monochrome (near-white accent, dark text). Figures are printed for the PR.
+     * Segmented controls («Закрывать лаунчер», «Peer-to-peer», «Язык»): the inactive options are bright text on the
+     * control (>= 7:1, AAA, also when hovered), the selected one is the theme accent filling the whole part with
+     * -primary-foreground on it (>= 4.5:1). In zone and exbo that is white text on the accent (site red / exbo blue);
+     * shadcn is monochrome (near-white accent, dark text). Figures are printed for the PR.
      */
     @Test
     fun segmentedControlsAreReadableInEveryTheme() = themes.keys.forEach { theme ->
@@ -86,10 +85,10 @@ class SettingsContrastTest {
         assertTrue(inactive >= 7.0, "$theme: inactive segment text ${"%.2f".format(inactive)}:1 < 7:1")
         assertTrue(hovered >= 7.0, "$theme: hovered segment text ${"%.2f".format(hovered)}:1 < 7:1")
         assertTrue(selected >= 4.5, "$theme: selected segment text ${"%.2f".format(selected)}:1 < 4.5:1")
-        // inactive text close to the row labels: brighter than the muted captions (dark) / darker (white scheme)
+        // inactive text close to the row labels: brighter than the muted captions
         assertTrue(ratio(color(t, "-segment-text"), input) > ratio(color(t, "-settings-muted"), input), "$theme: inactive segments as dim as captions")
         if (theme != "shadcn") assertEquals(parseColor("#ffffff"), color(t, "-primary-foreground"), "$theme: selected text not white")
-        if (theme.startsWith("zone")) assertEquals(parseColor("#e91932"), color(t, "-segment-selected"), "$theme: selected part not the site red")
+        if (theme == "zone") assertEquals(parseColor("#e91932"), color(t, "-segment-selected"), "$theme: selected part not the site red")
         else assertEquals(color(t, "-primary"), color(t, "-segment-selected"), "$theme: selected part not the theme primary")
     }
 
@@ -111,21 +110,20 @@ class SettingsContrastTest {
         Triple("login: form text", "-foreground" to "-card-description", 4.5),
         Triple("login: hints, labels", "-muted-foreground" to "-card-description", 4.5),
         Triple("login: input text", "-input-foreground" to "-input", 4.5),
-        Triple("login: red links", "-primary" to "-card-description", 4.5),
-        Triple("registration: selected combo row (red text on card)", "-primary" to "-card", 4.5),
-        Triple("login: error text", "-error" to "-card-description", 4.5),
+        Triple("login: placeholder in an empty field", "-placeholder" to "-input", 4.5),
+        Triple("login: red links", "-destructive-text" to "-card-description", 4.5),
+        Triple("registration: selected combo row (red text on card)", "-destructive-text" to "-card", 4.5),
+        Triple("login: error text", "-destructive-text" to "-card-description", 4.5),
+        Triple("login: field text in the error state", "-destructive-text" to "-input", 4.5),
     )
 
     /**
-     * Known gaps of the DARK zone theme (rules owned by other branches, not touched here): -text-status on -input
-     * 2.98:1 and -error on -card-description 4.41:1 predate the white scheme; red TEXT in -primary (login links in
-     * zone-auth.css, the selected registration combo row) is the site's --red-color #e91932: 4.24:1 on
-     * -card-description, 3.93:1 on -card (no red can carry white text >= 4.5:1 AND be >= 4.5:1 text on near-black;
-     * the fix is -destructive-text #ff3b52 in those rules). Self-checking: [knownDarkZoneGapsAreStillGaps] fails as soon
-     * as a listed pair passes (or no longer exists), so a stale entry is removed when the fix lands.
+     * Known gap of the zone theme (a rule owned by another branch, not touched here): -text-status on -input 2.98:1.
+     * Red TEXT (login links, error lines and field text, the selected registration combo row) uses -destructive-text,
+     * not -primary / -error (4.41:1). Self-checking: [knownDarkZoneGapsAreStillGaps] fails as soon as a listed pair
+     * passes (or no longer exists), so a stale entry is removed when the fix lands.
      */
-    private val knownDarkZoneGaps = setOf("-text-status" to "-input", "-error" to "-card-description",
-        "-primary" to "-card-description", "-primary" to "-card")
+    private val knownDarkZoneGaps = setOf("-text-status" to "-input")
 
     /** Every exception above is a real, still failing window pair of the dark zone theme; otherwise delete it. */
     @TestFactory
@@ -145,13 +143,14 @@ class SettingsContrastTest {
     }
 
     /**
-     * Main and login window text in the zone look, dark and white. The exbo / shadcn dev themes keep the original
-     * colours (some original greys, e.g. exbo -text-link, are below AA) and are not part of this check.
+     * Main and login window text in the zone look. The exbo / shadcn dev themes keep the original colours (some
+     * original greys, e.g. exbo -text-link, are below AA) and are not part of this check.
      */
     @TestFactory
-    fun mainAndLoginTextMeetWcagAaInTheZoneSchemes(): List<DynamicTest> = listOf("zone", "zone-light").flatMap { theme ->
+    fun mainAndLoginTextMeetWcagAaInTheZoneSchemes(): List<DynamicTest> {
+        val theme = "zone"
         val t = tokens(theme)
-        windowPairs.filterNot { theme == "zone" && it.second in knownDarkZoneGaps }.map { (what, tokens, minRatio) ->
+        return windowPairs.filterNot { it.second in knownDarkZoneGaps }.map { (what, tokens, minRatio) ->
             DynamicTest.dynamicTest("$theme: $what") {
                 val bg = color(t, tokens.second, color(t, "-background"))
                 val fg = color(t, tokens.first, bg)
@@ -161,37 +160,15 @@ class SettingsContrastTest {
         }
     }
 
-    /** The zone accent is the red of stalzone.com (--red-color #E91932) on every red fill, dark and white. */
+    /** The zone accent is the red of stalzone.com (--red-color #E91932) on every red fill. */
     @Test
     fun zoneUsesTheSiteRed() {
         val site = parseColor("#e91932")
-        for (theme in listOf("zone", "zone-light")) {
-            val t = tokens(theme)
-            for (tok in listOf("-segment-selected", "-ram-filled", "-switch-on", "-ring", "-window-close"))
-                assertEquals(site, parseColor(t.getValue(tok)), "$theme: $tok is not the site red")
-        }
-        assertEquals(site, parseColor(tokens("zone").getValue("-primary")), "zone: -primary is not the site red")
-        assertEquals(parseColor("#ff3b52"), parseColor(tokens("zone").getValue("-primary-hover")), "zone: site hover red")
-    }
-
-    /** The white scheme really is light: light surfaces, dark text, no translucent white left over from the dark tokens. */
-    @Test
-    fun whiteSchemeIsLight() {
-        val t = tokens("zone-light")
-        val white = color(t, "-background")
-        assertTrue(white.luminance() > 0.95, "background not white")
-        for (surface in listOf("-card", "-sidebar", "-input", "-card-description", "-titlebar", "-tile"))
-            assertTrue(color(t, surface).luminance() > 0.85, "$surface is not light")
-        for (text in listOf("-foreground", "-settings-heading", "-settings-label", "-input-foreground"))
-            assertTrue(color(t, text).luminance() < 0.02, "$text is not dark")
-        // hover / fill / overlay tokens are black-with-alpha here (white-with-alpha would vanish on white)
-        for (tok in listOf("-accent", "-fill-subtle", "-fill-strong", "-divider-light", "-scrim", "-overlay", "-shadow")) {
-            val c = parseColor(t.getValue(tok))
-            assertTrue(c.a < 1.0 && c.luminance() < 0.01, "$tok should be translucent black, is ${t[tok]}")
-        }
-        // the switch knob (white, -primary-foreground) on the red ON track, the off knob on the white track
-        assertTrue(ratio(color(t, "-primary-foreground"), color(t, "-switch-on")) >= 4.5)
-        assertTrue(ratio(color(t, "-switch-off-knob"), color(t, "-input")) >= 3.0)
+        val t = tokens("zone")
+        for (tok in listOf("-segment-selected", "-ram-filled", "-switch-on", "-ring", "-window-close"))
+            assertEquals(site, parseColor(t.getValue(tok)), "zone: $tok is not the site red")
+        assertEquals(site, parseColor(t.getValue("-primary")), "zone: -primary is not the site red")
+        assertEquals(parseColor("#ff3b52"), parseColor(t.getValue("-primary-hover")), "zone: site hover red")
     }
 
     /**
@@ -209,9 +186,8 @@ class SettingsContrastTest {
     )
 
     /**
-     * Banner text in EVERY theme of [themes] (exbo, shadcn, zone here): a theme added to that map (e.g. zone-light when
-     * the white scheme is merged) is checked by this test without further changes. exbo / shadcn draw the game art
-     * behind the content; its left / bottom fade is -background, so -background is the reference there too.
+     * Banner text in EVERY theme of [themes] (exbo, shadcn, zone). exbo / shadcn draw the game art behind the content;
+     * its left / bottom fade is -background, so -background is the reference there too.
      */
     @TestFactory
     fun gameBannerTextIsReadable(): List<DynamicTest> {
@@ -286,8 +262,7 @@ class SettingsContrastTest {
 
     /**
      * Wallpaper scrims (WallpaperContrastTest measures them over the real pictures): every theme defines them as
-     * translucent colours, so the picture shows through; the dark themes dim with near-black scrims, the white scheme
-     * lightens with white ones (the theme stays white, dark text stays readable). layout.css paints with them.
+     * translucent near-black colours, so the picture shows through while text stays readable. layout.css paints with them.
      */
     @Test
     fun wallpaperScrimsAreTranslucentThemeTokens() {
@@ -296,8 +271,7 @@ class SettingsContrastTest {
             for (tok in listOf("-wallpaper-scrim", "-wallpaper-scrim-bright", "-wallpaper-shade", "-wallpaper-sidebar", "-wallpaper-titlebar")) {
                 val c = parseColor(t[tok] ?: error("$theme: $tok missing"))
                 assertTrue(c.a in 0.05..0.95, "$theme: $tok alpha ${c.a} (must let the picture through)")
-                if (theme == "zone-light") assertTrue(c.luminance() > 0.85, "$theme: $tok is not a light scrim: ${t[tok]}")
-                else assertTrue(c.luminance() < 0.02, "$theme: $tok is not a dark scrim: ${t[tok]}")
+                assertTrue(c.luminance() < 0.02, "$theme: $tok is not a dark scrim: ${t[tok]}")
             }
             assertEquals(1.0, parseColor(t.getValue("-wallpaper-text-muted")).a, "$theme: -wallpaper-text-muted must be opaque")
         }

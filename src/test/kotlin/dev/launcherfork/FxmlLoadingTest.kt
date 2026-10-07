@@ -99,7 +99,7 @@ class FxmlLoadingTest {
         assertTrue("loginButton" !in sidebar && "accountName" !in sidebar, "sidebar still has the account card")
         assertTrue("profile" !in fxIdsReachableFrom("main/header.fxml"), "header still has the Profile link")
         val menu = fxIdsReachableFrom("main/profile.fxml")
-        assertTrue(menu.containsAll(listOf("loginButton", "accountName", "profile", "inviteFriend", "logout")), "$menu")
+        assertTrue(menu.containsAll(listOf("loginButton", "accountName", "profile", "inviteFriend", "topUp", "logout")), "$menu")
     }
 
     /** fx:id without an explicit id becomes the CSS id; legacy #rules (lang_*.css, auth.css, common.css) must not hit new nodes. */

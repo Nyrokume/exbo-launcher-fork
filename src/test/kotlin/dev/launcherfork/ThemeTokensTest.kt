@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 
 /**
- * Every theme must define the same set of looked-up color tokens, so components work in all of them. The white scheme
- * (theme-zone-light.css) sits on top of theme-zone.css but redefines every token too: no dark colour leaks into it.
+ * Every theme must define the same set of looked-up color tokens, so components work in all of them.
  */
 class ThemeTokensTest {
     private fun tokens(file: String): Set<String> {
@@ -21,7 +20,7 @@ class ThemeTokensTest {
     @TestFactory
     fun themesDefineAllBaseTokens(): List<DynamicTest> {
         val base = tokens("theme.css")
-        return listOf("theme-shadcn.css", "theme-zone.css", "theme-zone-light.css").map { file ->
+        return listOf("theme-shadcn.css", "theme-zone.css").map { file ->
             DynamicTest.dynamicTest(file) {
                 val missing = base - tokens(file) - "-transparent" // constant, inherited from theme.css
                 assertTrue(missing.isEmpty(), "$file misses tokens $missing")
@@ -33,6 +32,7 @@ class ThemeTokensTest {
     fun zoneFontsRegister() {
         FxTestSupport.start()
         val families = FxTestSupport.onFx { Theme.zoneFonts }
-        assertTrue(families.containsAll(listOf("Bebas Neue Regular", "Roboto", "Roboto Medium")), "$families")
+        // Medium / Light / Regular share the family name "Roboto" (weight via -fx-font-weight)
+        assertTrue(families.containsAll(listOf("Bebas Neue Regular", "Roboto")), "$families")
     }
 }

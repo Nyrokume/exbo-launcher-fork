@@ -30,7 +30,10 @@ dependencies {
 
 application {
     mainClass.set("dev.launcherfork.app.MainKt")
-    applicationDefaultJvmArgs = listOf("-Dprism.lcdtext=false")
+    applicationDefaultJvmArgs = listOf(
+        "-Dprism.text=native",
+        "-Dprism.lcdtext=true",
+    )
 }
 
 tasks.named<JavaExec>("run") {

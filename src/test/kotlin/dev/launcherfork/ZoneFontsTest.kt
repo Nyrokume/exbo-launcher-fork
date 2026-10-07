@@ -39,7 +39,7 @@ class ZoneFontsTest {
         FxTestSupport.start()
         val bundled = bundledFamilies()
         val families = cssFamilies()
-        assertTrue("Bebas Neue Regular" in families && "Roboto Medium" in families, "$families")
+        assertTrue("Bebas Neue Regular" in families && "Roboto" in families, "$families")
         FxTestSupport.onFx {
             Theme.zoneFonts
             families.forEach { name ->

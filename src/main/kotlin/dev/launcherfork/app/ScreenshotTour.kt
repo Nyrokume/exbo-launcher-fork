@@ -5,10 +5,13 @@ import dev.launcherfork.ui.screens.auth.InitialAuthController
 import dev.launcherfork.ui.screens.auth.RegisterController
 import dev.launcherfork.ui.screens.auth.TotpAuthController
 import dev.launcherfork.theme.Theme
+import dev.launcherfork.domain.Progress
+import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.GameAction
-import dev.launcherfork.ui.motion.Motion
+import javafx.animation.PauseTransition
 import javafx.application.Platform
 import javafx.scene.Scene
+import javafx.util.Duration
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
@@ -16,16 +19,11 @@ import javax.imageio.ImageIO
 /**
  * Dev tool: walks through the screens automatically and saves Scene snapshots as PNG
  * (`./gradlew run -Dlauncher.screenshots=docs/screenshots/zone`, zone is the default theme). Not used in normal runs.
- * Shared actions (sign in, menus, sample download states, registration steps): [TourActions], also used by the showcase.
- * Animations are switched off for the whole tour ([Motion.override]), so every shot shows the settled end state.
  */
 class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
-    private val queue = StepQueue()
-    private val act = TourActions(nav)
+    private val steps = ArrayDeque<Pair<Double, () -> Unit>>()
 
     fun install() {
-        // deterministic pictures: every transition ends at once (no shot can catch a half-faded menu or a gliding bar)
-        Motion.override = false
         dir.mkdirs()
         var authDone = false
         var mainDone = false
@@ -47,7 +45,11 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
             auth().onEnter() // shows the "empty login" error
         }
         step(0.3) { shot("03_auth_error") }
-        step(0.1) { act.signIn() }
+        step(0.1) {
+            auth().loginField.text = "player"
+            auth().passwordField.text = "secret"
+            auth().onEnter()
+        }
         run()
     }
 
@@ -55,14 +57,14 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         val main = { nav.mainController!! }
         val stage = nav.mainStage
         step(1.0) { shot("04_main") }
-        step(0.1) { act.showProfileMenu() }
+        step(0.1) { main().profileBarController.showMenu() }
         step(0.3) { shot("05_profile_menu") }
         step(0.1) { main().profileBarController.logout.fire() } // "Выйти из аккаунта" -> the logout confirmation
         step(0.4) { shot("05b_logout_confirm") }
         step(0.1) { main().logoutPaneController.logoutButtonLeft.fire() } // cancel
-        step(0.1) { act.showCommunityMenu() } // «СООБЩЕСТВА ▾»: social links dropdown
+        step(0.1) { main().headerController.showCommunityMenu() } // «СООБЩЕСТВА ▾»: social links dropdown
         step(0.3) { shot("05c_community_menu") }
-        step(0.1) { act.showSettings(true) }
+        step(0.1) { main().hideMenus(); main().setSettingsVisible(true) }
         step(0.6) { shot("06_settings") } // one screen, no scrolling
         step(0.1) { stage.width = Theme.WINDOW_MIN_WIDTH; stage.height = Theme.WINDOW_MIN_HEIGHT }
         step(0.6) { shot("07_settings_min_size") }
@@ -84,11 +86,11 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         step(0.3) { main().deletionPaneController.deletionYes.fire() } // close the game and verify
         step(0.5) { shot("10_verifying") }
         // status pill states with a fixed sample (the mock's real download is too fast / too slow for a stable shot)
-        step(3.0) { act.downloading(0.42) }
+        step(3.0) { main().run { store.state(selected!!).set(ClientState.Downloading(Progress(0.42, 4_509_715_660, 10_737_418_240, 25_165_824))) } }
         step(0.4) { shot("10b_downloading") }
-        step(0.1) { act.paused(0.42) }
+        step(0.1) { main().run { store.state(selected!!).set(ClientState.Paused(0.42, 10_737_418_240)) } }
         step(0.4) { shot("10c_paused") }
-        step(0.1) { act.ready() }
+        step(0.1) { main().run { store.state(selected!!).set(ClientState.Ready) } }
         step(0.1) {
             stage.width = 1366.0
             stage.height = 800.0
@@ -100,9 +102,14 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
             nav.switchLanguage("en")
         }
         step(1.0) { shot("12_settings_en") }
-        step(0.1) { act.logoutToAuth() } // logout confirm is the only menu path back to auth (switch account removed)
+        step(0.1) {
+            // logout confirm is the only menu path back to auth («Сменить аккаунт» removed; ЛК like the site)
+            main().profileBarController.loginButton.fire()
+            main().profileBarController.logout.fire()
+            main().logoutPaneController.logoutButtonRight.fire()
+        }
         step(0.6) { shot("13_auth_after_switch_account") }
-        step(0.1) { nav.switchLanguage("ru"); act.showAgeGate() }
+        step(0.1) { nav.switchLanguage("ru"); nav.showAgeGate() }
         registrationAndSecondFactorFlow()
         step(0.3) { Platform.exit() }
         run()
@@ -136,16 +143,23 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
         step(0.3) { shot("17_register_error") }
         step(0.1) { form().emailField.text = "stalker@mail.ru"; form().onCreate() }
         step(1.3) { shot("18_registered_login") }
-        step(0.1) { act.signIn(login = "totp") }
+        step(0.1) { auth().loginField.text = "totp"; auth().passwordField.text = "secret"; auth().onEnter() }
         step(1.3) { totp().codeInput.setCode("000000"); totp().enter() } // the mock's wrong code
         step(1.3) { shot("19_totp_error") }
     }
 
-    private fun step(delaySec: Double, action: () -> Unit) = queue.step(delaySec, action)
+    private fun step(delaySec: Double, action: () -> Unit) = steps.addLast(delaySec to action)
 
-    private fun run() = queue.run()
+    private fun run() {
+        val (delay, action) = steps.removeFirstOrNull() ?: return
+        later(delay) {
+            try { action() } catch (e: Exception) { e.printStackTrace() }
+            run()
+        }
+    }
 
-    private fun later(sec: Double, action: () -> Unit) { StepQueue.later(sec, action) }
+    private fun later(sec: Double, action: () -> Unit) =
+        PauseTransition(Duration.seconds(sec)).apply { setOnFinished { action() } }.play()
 
     /** Snapshot of the window the user currently sees (pre-main or main). */
     private fun shot(name: String) = save(nav.window.scene, File(dir, "$name.png"))

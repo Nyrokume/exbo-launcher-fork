@@ -9,15 +9,15 @@
 | | Окно до входа (pre-main) | Главное окно |
 |---|---|---|
 | Stage | primary stage из `LauncherApp`, `StageStyle.TRANSPARENT` (без рамки ОС, скруглённые углы) | `StageNavigator.mainStage`, `StageStyle.UNDECORATED` |
-| Размер | **460×620**, без ресайза | 1024×640, ресайз за края, минимум 900×580 |
+| Размер | **ширина 460, высота по панели** (360…620), без ресайза | 1024×640, ресайз за края, минимум 900×580 |
 | Рамка | `auth_window.fxml` (`AuthWindowController`) | `window.fxml` (`WindowController`) |
 | Что показывает | панели update / auth / mail code (по одной) | `main.fxml` в `contentHost`, диалоги в `overlayLayer` |
 
 ```
-auth_window.fxml (AuthWindowController)            ← 460×620, clip со скруглением 10 px (= .zone-radius-md)
+auth_window.fxml (AuthWindowController)            ← 460 × высота панели, clip со скруглением 10 px (= .zone-radius-md)
 └─ StackPane#authWindowRoot .auth-window (фон -background)
    ├─ BorderPane
-   │  ├─ top:    HBox#authTitleBar 32 px [authLogo (вектор EXBO) | authDragArea | authHideButton | authCloseButton]
+   │  ├─ top:    HBox#authTitleBar 32 px [authLogo (вектор EXBO; скрыт, если у панели свой .zone-logo) | authDragArea | authHideButton | authCloseButton]
    │  └─ center: PanelHost#panelHost 460×588  ← сюда кладётся корень панели (размер как у Scene root)
    └─ Region .auth-window-frame               ← рамка 1 px -border ПОВЕРХ панели (mouseTransparent)
 ```
@@ -26,6 +26,14 @@ auth_window.fxml (AuthWindowController)            ← 460×620, clip со ск�
   область панели 460×588. Это ровно pref-размер панели `auth_panel.fxml` из `redesign/auth-zone`, а её минимум
   420×560 помещается с запасом. Константы: `Theme.AUTH_WINDOW_WIDTH/HEIGHT`, `AUTH_TITLEBAR_HEIGHT`,
   `AUTH_PANEL_WIDTH/HEIGHT`.
+- **Одинаковый размер.** Вход, код из письма и TOTP задают `prefHeight="588"` (как регистрация / возраст /
+  обновление): окно всегда **460×620**. `AuthWindowController.fittedWindowHeight()` для панелей без
+  `prefHeight` по-прежнему умеет компактный режим (`AUTH_WINDOW_MIN_HEIGHT`…`AUTH_WINDOW_HEIGHT`), но zone-панели
+  авторизации его не используют. Ширина и высота меняются вместе; пересчёт через `runLater` только когда панель
+  запросила раскладку (`AuthWindowRefitTest`). `PanelFitTest`: каждая панель заполняет полное окно в ru и en.
+- **Логотип на панели входа.** Вместо заголовка по центру векторный логотип EXBO (`#zoneLoginLogo`, 150 px) на
+  `-card-description`, том же чёрном, что и форма. Если в панели есть `.zone-logo`, маленький `authLogo` в полосе
+  заголовка прячется, чтобы логотип не дублировался.
 - Полоса заголовка: логотип, перетаскивание (без разворачивания), «свернуть», «закрыть». Крестик в покое цвета
   `-titlebar-foreground`, при наведении фон `-window-close` (красный) и белый глиф.
 - Окно не скруглено средствами CSS: панель заполняет его от края до края, поэтому углы режет `clip`

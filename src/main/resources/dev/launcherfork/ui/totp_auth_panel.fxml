@@ -20,7 +20,7 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <VBox styleClass="zone-top">
+        <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
             <Label styleClass="zone-title" text="%fork.totp.title" wrapText="true" minHeight="-Infinity" />
             <TextFlow styleClass="zone-description-flow">
                 <Text styleClass="zone-description-text" text="%fork.totp.info" />
@@ -28,9 +28,9 @@
             </TextFlow>
         </VBox>
 
-        <VBox styleClass="zone-bottom" VBox.vgrow="ALWAYS">
-            <CodeInput fx:id="codeInput" id="zoneTotpCode" cellCount="6" />
-            <Region VBox.vgrow="ALWAYS" styleClass="zone-spacer" />
+        <VBox styleClass="zone-bottom">
+            <CodeInput fx:id="codeInput" id="zoneTotpCode" cellCount="6" alignment="CENTER" />
+            <Region styleClass="zone-spacer" />
             <Button id="zoneTotpSend" fx:id="enterButton" styleClass="zone-light, zone-radius-sm" mnemonicParsing="false" onAction="#enter" text="%fork.totp.send" maxWidth="Infinity" />
             <HBox styleClass="zone-footer">
                 <Label styleClass="zone-footer-text" text="%fork.totp.wrong_account" />

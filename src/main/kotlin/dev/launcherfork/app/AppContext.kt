@@ -1,6 +1,5 @@
 package dev.launcherfork.app
 
-import dev.launcherfork.data.local.AppearanceFileStore
 import dev.launcherfork.data.mock.InMemorySettingsStore
 import dev.launcherfork.data.mock.MockAuthService
 import dev.launcherfork.data.mock.MockGameLauncher
@@ -13,7 +12,6 @@ import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.Services
 import dev.launcherfork.ui.state.ClientStateStore
-import java.nio.file.Path
 import kotlin.random.Random
 
 /**
@@ -45,17 +43,13 @@ class AppContext(val services: Services, val devMode: Boolean = false) {
             /** Second factor after a password login; LauncherApp passes -Dlauncher.mock2fa (default random). */
             mock2fa: MockSecondFactor = MockSecondFactor.NONE,
             random: Random = Random.Default,
-            /** File that keeps the chosen theme across restarts (LauncherApp); null = session only (tests, tour). */
-            settingsFile: Path? = null,
         ): AppContext = AppContext(
             Services(
                 auth = MockAuthService(authDelayMs, mock2fa, random),
                 servers = MockServerRepository(tickMs = onlineTickMs),
                 updates = MockUpdateService(speed),
                 launcher = MockGameLauncher(),
-                settings = InMemorySettingsStore(LauncherSettings(language = language)).let { mem ->
-                    if (settingsFile != null) AppearanceFileStore(mem, settingsFile) else mem
-                },
+                settings = InMemorySettingsStore(LauncherSettings(language = language)),
                 system = MockSystemInfo(),
                 links = links,
                 folders = folders,

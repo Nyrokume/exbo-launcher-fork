@@ -2,7 +2,6 @@ package dev.launcherfork
 
 import dev.launcherfork.app.AppContext
 import dev.launcherfork.app.StageNavigator
-import dev.launcherfork.domain.Appearance
 import dev.launcherfork.theme.Theme
 import javafx.geometry.Bounds
 import javafx.scene.Node
@@ -19,8 +18,8 @@ import javax.imageio.ImageIO
 
 /** Shared helpers of the settings / game-actions UI tests: live main window, theme switch, events, previews. */
 object UiTestKit {
-    /** The dark themes plus the white scheme ("zone-light" = zone + theme-zone-light.css, settings «Тема: Белая»). */
-    val THEMES = listOf("exbo", "shadcn", "zone", Theme.ZONE_LIGHT)
+    /** Dark themes available via -Dlauncher.theme. */
+    val THEMES = listOf("exbo", "shadcn", "zone")
 
     fun Node.sceneBounds(): Bounds = localToScene(layoutBounds)
 
@@ -30,8 +29,7 @@ object UiTestKit {
 
     /** Same stylesheet stack as Theme.apply for [theme] / [lang] (Theme.themeName is fixed per JVM). */
     fun applyTheme(scene: Scene, theme: String, lang: String) {
-        val light = theme == Theme.ZONE_LIGHT
-        scene.stylesheets.setAll(Theme.stylesheets(if (light) "zone" else theme, if (light) Appearance.LIGHT else Appearance.DARK, lang))
+        scene.stylesheets.setAll(Theme.stylesheets(theme, lang))
     }
 
     fun relayout(nav: StageNavigator) = nav.mainStage.scene.root.run { applyCss(); layout(); applyCss(); layout() }

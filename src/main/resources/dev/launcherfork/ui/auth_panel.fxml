@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import dev.launcherfork.ui.components.LogoMark?>
 <?import java.lang.Boolean?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
@@ -7,7 +8,7 @@
 
 <!--
   Login panel for the separate login window, after stalzone.com/login (docs: /workspace/stalzone/site-ref/LOGIN.md).
-  Top block (card): title, social tiles (Steam, Epic Games; no Google: not supported by the auth backend). Bottom block (card description): fields, remember / restore, ВОЙТИ, sign up.
+  Top block: centred EXBO logo on the form colour (no separate card), takes the spare height. Bottom block (card description): fields, remember / restore, a row of other services (Steam, Epic Games; no Google: not supported by the auth backend), ВОЙТИ, sign up.
   Self-contained: own stylesheet, flow layout, same fx:ids and controller as initial_auth.fxml.
   The panel fills the window (pref 460x588 under a 32 px title bar), so the blocks have no rounded corners of their own.
   Explicit ids where the fx:id matches a legacy CSS id (lang_*.css / auth.css paint old PNGs on those).
@@ -25,22 +26,15 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
-            <Label styleClass="zone-title" text="%fork.zone.title" wrapText="true" minHeight="-Infinity" />
-            <Label styleClass="zone-description" text="%fork.zone.social" wrapText="true" minHeight="-Infinity" />
-            <HBox styleClass="zone-socials">
-                <Button id="zoneSteam" fx:id="enterSteamButton" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterSteam" accessibleText="Steam">
-                    <graphic><Region styleClass="zone-social-icon, icon-steam" /></graphic>
-                </Button>
-                <Button id="zoneEpic" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterEpic" accessibleText="Epic Games">
-                    <graphic><Region styleClass="zone-social-icon, icon-epic" /></graphic>
-                </Button>
-            </HBox>
+        <VBox styleClass="zone-top, zone-top-plain" VBox.vgrow="ALWAYS" alignment="CENTER">
+            <!-- EXBO logo instead of the "come on in" heading (user, 2026-10-06), centred on the same black as the form
+                 (no grey card behind it, user 2026-10-07); the title strip hides its small one -->
+            <LogoMark id="zoneLoginLogo" styleClass="zone-logo, zone-login-logo" logoWidth="150" accessibleText="EXBO" />
         </VBox>
 
         <VBox styleClass="zone-bottom">
             <!-- after a registration: "Аккаунт создан…" (zone-steps.css), hidden while empty -->
-            <Label id="zoneNotice" fx:id="noticeLabel" styleClass="zone-notice" wrapText="true" maxWidth="Infinity" minHeight="-Infinity" visible="false" managed="false" />
+            <Label id="zoneNotice" fx:id="noticeLabel" styleClass="zone-notice, zone-radius-sm" wrapText="true" maxWidth="Infinity" minHeight="-Infinity" visible="false" managed="false" />
             <TextField id="zoneLogin" fx:id="loginField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%fork.zone.login_prompt" />
             <StackPane styleClass="zone-password">
                 <PasswordField id="zonePassword" fx:id="passwordField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%auth.password" />
@@ -61,6 +55,18 @@
                     <Button id="zoneRestore" fx:id="restoreButton" styleClass="zone-link-accent" mnemonicParsing="false" onAction="#onRestore" text="%fork.zone.restore" BorderPane.alignment="CENTER_RIGHT" />
                 </right>
             </BorderPane>
+            <!-- other services next to the form (user's sketch 2026-10-06): one row under remember / restore -->
+            <HBox styleClass="zone-social-row" alignment="CENTER_LEFT">
+                <Label styleClass="zone-social-label" text="%fork.zone.social_short" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+                <HBox styleClass="zone-socials">
+                    <Button id="zoneSteam" fx:id="enterSteamButton" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterSteam" accessibleText="Steam">
+                        <graphic><Region styleClass="zone-social-icon, icon-steam" /></graphic>
+                    </Button>
+                    <Button id="zoneEpic" styleClass="zone-social, zone-radius-sm" mnemonicParsing="false" onAction="#onEnterEpic" accessibleText="Epic Games">
+                        <graphic><Region styleClass="zone-social-icon, icon-epic" /></graphic>
+                    </Button>
+                </HBox>
+            </HBox>
             <Region styleClass="zone-spacer" />
             <Button id="zoneEnter" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#onEnter" text="%fork.zone.enter" maxWidth="Infinity" />
             <HBox styleClass="zone-footer">

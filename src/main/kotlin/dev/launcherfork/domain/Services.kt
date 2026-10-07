@@ -99,9 +99,9 @@ fun interface LinkOpener {
 }
 
 /**
- * Opens a local folder in the OS file manager (game-actions menu «Открыть папку игры»). Separate from [LinkOpener],
- * which only takes allowlisted https URLs and must keep refusing file: URLs. Callers pass a directory computed by
- * [GameFolders] from the settings, never a string typed or shown in the UI.
+ * Opens a local folder in the OS file manager (game-actions «Открыть папку игры» / «Открыть папку логов»).
+ * Separate from [LinkOpener], which only takes allowlisted https URLs. Callers pass [GameFolders] or
+ * [ExboPaths.runtimeLogs], never a string typed in the UI.
  */
 fun interface FolderOpener {
     fun open(dir: java.nio.file.Path)

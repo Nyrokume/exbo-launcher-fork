@@ -7,7 +7,6 @@ import javafx.scene.Scene
 import javafx.scene.paint.Color
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.awt.image.BufferedImage
@@ -93,7 +92,8 @@ class ZonePanelsTest {
 
     @Test
     fun socialTilesAreSteamAndEpicOnly() = FxTestSupport.onFx {
-        // Google auth is not supported: only Steam and Epic Games tiles, left-aligned 54x54 with 12 px spacing
+        // Google auth is not supported: only Steam and Epic Games tiles, 44x44 with 10 px spacing, right-aligned in the form
+        // row under remember / restore (user's sketch), the top card keeps only the title
         val panel = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml")
         val scene = Scene(panel.root, 460.0, 588.0, Color.BLACK)
         dev.launcherfork.theme.Theme.apply(scene, "ru")
@@ -109,9 +109,16 @@ class ZonePanelsTest {
         assertTrue(tiles.all { it.isFocusTraversable })
         val row = tiles[0].parent as javafx.scene.layout.HBox
         assertEquals(tiles, row.children.toList())
-        tiles.forEach { assertEquals(54.0, it.width, 0.5); assertEquals(54.0, it.height, 0.5) }
-        assertEquals(0.0, tiles[0].layoutX - row.padding.left, 0.5)
-        assertEquals(54.0 + 12.0, tiles[1].layoutX - tiles[0].layoutX, 0.5)
+        tiles.forEach { assertEquals(44.0, it.width, 0.5); assertEquals(44.0, it.height, 0.5) }
+        assertEquals(44.0 + 10.0, tiles[1].layoutX - tiles[0].layoutX, 0.5)
+        val c = panel.controller
+        val form = c.enterButton.localToScene(c.enterButton.layoutBounds)
+        val epic = tiles[1].localToScene(tiles[1].layoutBounds)
+        val steam = tiles[0].localToScene(tiles[0].layoutBounds)
+        assertEquals(form.maxX, epic.maxX, 1.0, "tiles end at the form's right edge")
+        assertTrue(steam.minY > c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY, "tiles under remember me")
+        assertTrue(steam.maxY < form.minY, "tiles above ВОЙТИ")
+        assertTrue(scene.root.lookupAll(".zone-top .zone-social").isEmpty(), "tiles left in the top card")
     }
 
     @Test
@@ -158,14 +165,91 @@ class ZonePanelsTest {
                 val scene = nav.authStage.scene
                 val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
                 if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+            }
+            Thread.sleep(500) // the window refits to the zone-styled content on the next layout pulse
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
                 scene.root.applyCss(); scene.root.layout()
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
-                // no hole above ВОЙТИ: the spare height of the fixed window goes to the top card, not between the form rows
-                val rememberBottom = c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY
+                // no hole above ВОЙТИ; footer sits near the bottom of the fixed 620 window
+                val socialsBottom = c.enterSteamButton.localToScene(c.enterSteamButton.layoutBounds).maxY
                 val enterTop = c.enterButton.localToScene(c.enterButton.layoutBounds).minY
-                assertTrue(enterTop - rememberBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - rememberBottom}")
+                assertTrue(enterTop - socialsBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - socialsBottom}")
                 assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
+                assertEquals(dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, nav.authStage.height, 0.5, "login window height")
+                // the top card shows the EXBO logo instead of a heading; the title strip drops its small copy
+                val logo = scene.root.lookup(".zone-top .zone-login-logo")
+                assertTrue(logo is dev.launcherfork.ui.components.LogoMark && logo.isVisible, "no EXBO logo in the top card")
+                assertTrue(scene.root.lookupAll(".zone-top .zone-title").isEmpty(), "heading left in the top card")
+                assertFalse(scene.root.lookup("#authLogo").isVisible, "second logo in the title strip")
+                // the disabled ВОЙТИ keeps a readable label (it took the window colour and vanished in the white theme)
+                val off = javafx.css.PseudoClass.getPseudoClass("disabled")
+                c.enterButton.pseudoClassStateChanged(off, true); c.enterButton.applyCss()
+                val txt = c.enterButton.textFill as javafx.scene.paint.Color
+                val btnBg = c.enterButton.background.fills.first().fill as javafx.scene.paint.Color
+                c.enterButton.pseudoClassStateChanged(off, c.enterButton.isDisabled); c.enterButton.applyCss()
+                assertTrue(contrast(txt, btnBg) >= 3.0, "disabled ВОЙТИ label contrast ${contrast(txt, btnBg)}")
+                // red links («Восстановить пароль», «Создать») are AA text on the form black
+                val formBg = (scene.root.lookup(".zone-bottom") as javafx.scene.layout.Region).background.fills.first().fill as javafx.scene.paint.Color
+                val links = scene.root.lookupAll(".zone-link-accent") + scene.root.lookupAll(".zone-link-underline")
+                assertTrue(links.isNotEmpty(), "no red links on the login card")
+                for (l in links.filterIsInstance<javafx.scene.control.Labeled>()) {
+                    val k = contrast(l.textFill as javafx.scene.paint.Color, formBg)
+                    assertTrue(k >= 4.5, "red link «${l.text}» contrast $k")
+                }
+                // centred, on the same black as the form (no grey card behind the logo)
+                val lb = logo.localToScene(logo.layoutBounds)
+                assertEquals(scene.width / 2, (lb.minX + lb.maxX) / 2, 1.0, "logo not centred")
+                val top = scene.root.lookup(".zone-top") as javafx.scene.layout.Region
+                val form = scene.root.lookup(".zone-bottom") as javafx.scene.layout.Region
+                assertEquals(form.background.fills.first().fill, top.background.fills.first().fill, "logo block differs from the form colour")
+                val img = scene.snapshot(null)
+                val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
+                for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))
+                previewDir.mkdirs()
+                ImageIO.write(out, "png", File(previewDir, file))
+            }
+        }
+        FxTestSupport.onFx { nav.close() }
+        app.shutdown()
+    }
+
+    @Test
+    fun renderMailCodeWindow() {
+        val app = dev.launcherfork.app.AppContext.mock(speed = 50.0, authDelayMs = 0, mock2fa = dev.launcherfork.data.mock.MockSecondFactor.EMAIL)
+        val nav = FxTestSupport.onFx {
+            val stage = javafx.stage.Stage(javafx.stage.StageStyle.TRANSPARENT)
+            dev.launcherfork.app.StageNavigator(stage, app, "ru").also { it.exit = {}; it.showAuth(); stage.show() }
+        }
+        assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
+        val loginHeight = FxTestSupport.onFx {
+            val c = nav.panelController as InitialAuthController
+            c.loginField.text = "player"; c.passwordField.text = "secret"; c.onEnter()
+            nav.authStage.height
+        }
+        assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is dev.launcherfork.ui.screens.auth.MailAuthController }, "mail code never shown")
+        listOf("auth_window_mail.png" to false, "auth_window_mail_error.png" to true).forEach { (file, error) ->
+            val c = nav.panelController as dev.launcherfork.ui.screens.auth.MailAuthController
+            if (error) {
+                FxTestSupport.onFx { c.errorFirst.text = "Неверный код" }
+            }
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
+                val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
+                if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
+            }
+            Thread.sleep(500) // the compact window refits to the zone-styled content on the next layout pulse
+            FxTestSupport.onFx {
+                val scene = nav.authStage.scene
+                scene.root.applyCss(); scene.root.layout()
+                val h = nav.authStage.height
+                assertTrue(h < loginHeight, "code window ($h) should be lower than the login window ($loginHeight)")
+                assertTrue(h <= 460.0, "code window too tall: $h")
+                assertTrue(scene.root.lookup("#authLogo").isVisible, "title strip logo missing on the code window")
+                val bottom = c.backButton!!.let { it.localToScene(it.layoutBounds) }.maxY
+                assertTrue(bottom <= scene.height - 16 && bottom >= scene.height - 44, "footer at $bottom of ${scene.height}")
+                if (error) assertTrue(c.errorFirst.localToScene(c.errorFirst.layoutBounds).maxY < c.enterButton.localToScene(c.enterButton.layoutBounds).minY)
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
                 for (y in 0 until out.height) for (x in 0 until out.width) out.setRGB(x, y, img.pixelReader.getArgb(x, y))
@@ -213,8 +297,19 @@ class ZonePanelsTest {
         val out = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
         val reader = img.pixelReader
         for (y in 0 until h) for (x in 0 until w) out.setRGB(x, y, reader.getArgb(x, y))
-        assertNotEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "top and bottom blocks should differ")
+        // one monotone black: the logo block and the form share a colour (user, 2026-10-07)
+        assertEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "logo block and form should be the same black")
         previewDir.mkdirs()
         ImageIO.write(out, "png", File(previewDir, file))
+    }
+
+    /** WCAG contrast of [fg] (alpha blended over [bg]) against [bg]. */
+    private fun contrast(fg: javafx.scene.paint.Color, bg: javafx.scene.paint.Color): Double {
+        fun mix(f: Double, b: Double) = f * fg.opacity + b * (1 - fg.opacity)
+        fun lin(c: Double) = if (c <= 0.03928) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4)
+        fun lum(r: Double, g: Double, b: Double) = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+        val a = lum(mix(fg.red, bg.red), mix(fg.green, bg.green), mix(fg.blue, bg.blue))
+        val b = lum(bg.red, bg.green, bg.blue)
+        return (maxOf(a, b) + 0.05) / (minOf(a, b) + 0.05)
     }
 }

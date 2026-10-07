@@ -6,6 +6,7 @@ import dev.launcherfork.ui.components.CodeInput
 import dev.launcherfork.ui.components.background
 import javafx.application.Platform
 import javafx.fxml.FXML
+import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.layout.VBox
 
@@ -34,6 +35,8 @@ class TotpAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         initChrome()
         codeInput.strings = ctx.strings
         codeInput.cellCount = CODE_LENGTH
+        // 6 cells are narrower than the form; center the row (CodeInput defaults to CENTER_LEFT for the 9-digit e-mail panel)
+        codeInput.alignment = Pos.CENTER
         enterButton.disableProperty().bind(codeInput.completeProperty.not())
         errorFirst.textProperty().addListener { _, _, text -> codeInput.error = !text.isNullOrEmpty() }
         // editing the code hides the error (CodeInput drops :error itself)

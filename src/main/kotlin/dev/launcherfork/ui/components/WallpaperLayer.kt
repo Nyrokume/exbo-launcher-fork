@@ -27,8 +27,8 @@ import javafx.beans.value.WeakChangeListener
  * plain theme background stays. When it is loaded the attached node gets [STATE_CLASS] (`wallpaper-on`), and the
  * stylesheet makes its panels translucent (layout.css, «wallpaper»). Colours: theme tokens only.
  *
- * Reuse (e.g. the login window): `WallpaperLayer.forCurrent(target = root, scrimStyleClass = "my-scrim")?.let { root.children.add(0, it) }`
- * shows this launch's wallpaper ([Wallpapers.current]), the same picture as the main window.
+ * Reuse on another window: `WallpaperLayer.forCurrent(target = root, scrimStyleClass = "my-scrim")?.let { root.children.add(0, it) }`
+ * shows this launch's wallpaper ([Wallpapers.current]). The login window does not use it.
  */
 class WallpaperLayer(scrimStyleClass: String = "wallpaper-scrim") : Region() {
     val imageView = ImageView().apply { isSmooth = true; isPreserveRatio = false; isManaged = false }

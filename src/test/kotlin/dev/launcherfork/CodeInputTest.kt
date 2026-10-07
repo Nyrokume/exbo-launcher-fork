@@ -134,6 +134,11 @@ class CodeInputTest {
             val last = input.cells.last().localToScene(input.cells.last().layoutBounds)
             assertTrue(first.minX >= 20.0, "left edge ${first.minX}")
             assertTrue(last.maxX <= scene.width - 20.0, "cells overflow: right edge ${last.maxX} of ${scene.width}")
+            // 6 cells are narrower than the form — keep the row centered under ОТПРАВИТЬ
+            val button = c.enterButton.localToScene(c.enterButton.layoutBounds)
+            val cellsMid = (first.minX + last.maxX) / 2
+            val buttonMid = (button.minX + button.maxX) / 2
+            assertEquals(buttonMid, cellsMid, 2.0, "cells not centered under ОТПРАВИТЬ")
         }
     }
 
