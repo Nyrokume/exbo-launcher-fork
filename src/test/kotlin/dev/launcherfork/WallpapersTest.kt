@@ -39,9 +39,9 @@ class WallpapersTest {
     // ---- manifest / bundled files ----
 
     @Test
-    fun manifestListsSixBundledJpegsUpTo1920Wide() {
+    fun manifestListsElevenBundledJpegsUpTo1920Wide() {
         val all = Wallpapers.all
-        assertEquals((1..6).toList(), all.map { it.number })
+        assertEquals((1..11).toList(), all.map { it.number })
         all.forEach { wp ->
             assertEquals("%02d.jpg".format(wp.number), wp.resource.substringAfterLast('/'), "file name of #${wp.number}")
             val url = requireNotNull(Wallpapers.url(wp)) { "missing resource ${wp.resource}" }
@@ -77,33 +77,33 @@ class WallpapersTest {
     @Test
     fun pickNeverRepeatsThePreviousLaunch() {
         val random = Random(42)
-        for (previous in 1..6) repeat(2_000) {
-            val n = Wallpapers.pick(6, previous, random)
-            assertTrue(n in 1..6, "out of range: $n")
+        for (previous in 1..11) repeat(2_000) {
+            val n = Wallpapers.pick(11, previous, random)
+            assertTrue(n in 1..11, "out of range: $n")
             assertNotEquals(previous, n, "same wallpaper as the previous launch")
         }
     }
 
     @Test
-    fun consecutiveLaunchesCoverAllSixAndNeverRepeat() {
+    fun consecutiveLaunchesCoverAllElevenAndNeverRepeat() {
         val random = Random(7)
         var previous: Int? = null
         val seen = mutableMapOf<Int, Int>()
-        repeat(600) {
-            val n = Wallpapers.pick(6, previous, random)
+        repeat(1100) {
+            val n = Wallpapers.pick(11, previous, random)
             assertNotEquals(previous, n)
             seen.merge(n, 1, Int::plus)
             previous = n
         }
-        assertEquals((1..6).toSet(), seen.keys, "every wallpaper shows up")
+        assertEquals((1..11).toSet(), seen.keys, "every wallpaper shows up")
         assertTrue(seen.values.all { it > 60 }, "roughly uniform: $seen")
     }
 
     @Test
     fun missingOrCorruptPreviousMeansAnyWallpaper() {
-        for (previous in listOf(null, 0, 7, -3, Int.MAX_VALUE)) {
-            val seen = (1..300).map { Wallpapers.pick(6, previous, Random(it)) }.toSet()
-            assertEquals((1..6).toSet(), seen, "previous=$previous")
+        for (previous in listOf(null, 0, 12, -3, Int.MAX_VALUE)) {
+            val seen = (1..300).map { Wallpapers.pick(11, previous, Random(it)) }.toSet()
+            assertEquals((1..11).toSet(), seen, "previous=$previous")
         }
         assertEquals(1, Wallpapers.pick(1, 1, Random(1)), "a single wallpaper is allowed to repeat")
     }
@@ -112,7 +112,9 @@ class WallpapersTest {
     fun forcedNumberComesFromTheSystemPropertyValue() {
         assertEquals(3, Wallpapers.forcedNumber("3"))
         assertEquals(6, Wallpapers.forcedNumber(" 6 "))
-        for (bad in listOf(null, "", "0", "7", "x", "-1", "2.5")) assertNull(Wallpapers.forcedNumber(bad), "'$bad'")
+        assertEquals(7, Wallpapers.forcedNumber("7"))
+        assertEquals(11, Wallpapers.forcedNumber("11"))
+        for (bad in listOf(null, "", "0", "12", "x", "-1", "2.5")) assertNull(Wallpapers.forcedNumber(bad), "'$bad'")
     }
 
     // ---- once per launch ----

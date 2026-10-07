@@ -28,7 +28,7 @@ import kotlin.random.Random
  * launcher.dev=true (F1-F7 modal shortcuts), launcher.theme=zone|zone-light|exbo|shadcn (zone by default; zone-light: start in the white
  * scheme), launcher.settingsFile=<path> (where the chosen theme and the last wallpaper are kept),
  * launcher.onlineTickMs=<ms> (mock online-count drift; 10 s by default, 0 = fixed, always 0 during the tour),
- * launcher.wallpaper=1..6 (always this main-window wallpaper; the tour uses Wallpapers.TOUR_DEFAULT without it),
+ * launcher.wallpaper=1..11 (always this main-window wallpaper; the tour uses Wallpapers.TOUR_DEFAULT without it),
  * launcher.animations=on|off (interface motion, wins over the saved «Анимации»; ui/motion/Motion),
  * launcher.wallpaper.drift=on (very slow wallpaper zoom, off by default),
  * launcher.showcase=true (looping presentation with mock data that keeps nothing; launcher.showcase.size=WxH,

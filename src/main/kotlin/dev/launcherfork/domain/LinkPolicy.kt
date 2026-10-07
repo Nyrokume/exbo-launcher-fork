@@ -10,7 +10,7 @@ object LinkPolicy {
     /** The ONE allowlist of hosts (exact match or any subdomain). */
     val allowedHosts: Set<String> = setOf(
         "discord.gg", "discord.com", "youtube.com", "reddit.com",
-        "t.me", "telegram.org", "stalzone.com", "exbo.net",
+        "t.me", "telegram.org", "stalzone.com", "exbo.net", "exbo.games",
     )
 
     fun isAllowed(url: String): Boolean {

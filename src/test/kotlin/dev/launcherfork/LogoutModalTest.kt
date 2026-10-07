@@ -184,13 +184,15 @@ class LogoutModalTest {
             assertEquals(1, live.logoutShown, "profile menu 'Выйти из аккаунта' asks once")
             main.logoutPaneController.logoutButtonLeft.fire()
             assertFalse(main.logoutPaneController.isShowing)
-            // "Сменить аккаунт" leaves at once, without the confirmation
+            // cancel then open again and confirm: leaveToAuth
             main.profileBarController.loginButton.fire()
-            main.profileBarController.switchAccount.fire()
+            main.profileBarController.logout.fire()
+            assertEquals(2, live.logoutShown)
+            main.logoutPaneController.logoutButtonRight.fire()
         }
         assertTrue(FxTestSupport.waitFx { live.nav.mainController == null })
         FxTestSupport.onFx {
-            assertEquals(1, live.logoutShown, "switch account must not ask")
+            assertEquals(2, live.logoutShown)
             live.nav.close()
         }
         live.app.shutdown()

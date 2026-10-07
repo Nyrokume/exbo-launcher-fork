@@ -100,7 +100,7 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
             nav.switchLanguage("en")
         }
         step(1.0) { shot("12_settings_en") }
-        step(0.1) { act.switchAccount() } // back to the separate auth window
+        step(0.1) { act.logoutToAuth() } // logout confirm is the only menu path back to auth (switch account removed)
         step(0.6) { shot("13_auth_after_switch_account") }
         step(0.1) { nav.switchLanguage("ru"); act.showAgeGate() }
         registrationAndSecondFactorFlow()
