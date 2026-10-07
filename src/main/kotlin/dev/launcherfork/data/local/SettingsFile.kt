@@ -8,12 +8,12 @@ import java.nio.file.StandardCopyOption
 import java.util.Properties
 
 /**
- * `~/.launcher-fork/settings.properties`: a few independent keys (`appearance`, `wallpaper.last`). Each writer updates
+ * `~/.launcher-fork/settings.properties`: a few independent keys (`appearance`, `animations`, `wallpaper.last`). Each writer updates
  * its own key and keeps the others (read, change, write a temp file next to it, move it over atomically), so a crash
  * mid-write never leaves a truncated file. Read / write errors are logged, never thrown (everything kept here is cosmetic).
  */
 object SettingsFile {
-    const val COMMENT = "launcher-fork settings: appearance = dark | light, wallpaper.last = number of the last wallpaper"
+    const val COMMENT = "launcher-fork settings: appearance = dark | light, animations = on | off, wallpaper.last = number of the last wallpaper"
 
     /** All keys of [file]; empty when it is missing or unreadable. */
     fun load(file: Path): Properties = Properties().apply {

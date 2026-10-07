@@ -1,8 +1,10 @@
 package dev.launcherfork.ui.components
 
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.wallpaper.CoverFit
 import dev.launcherfork.wallpaper.Wallpaper
 import dev.launcherfork.wallpaper.Wallpapers
+import javafx.animation.Animation
 import javafx.beans.property.ReadOnlyBooleanProperty
 import javafx.beans.property.ReadOnlyBooleanWrapper
 import javafx.geometry.Rectangle2D
@@ -10,6 +12,9 @@ import javafx.scene.Node
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.Region
+import javafx.scene.shape.Rectangle
+import javafx.beans.value.ChangeListener
+import javafx.beans.value.WeakChangeListener
 
 /**
  * Window background: a wallpaper ([Wallpaper]) cover-fit to the layer (fills it, keeps the picture's aspect ratio,
@@ -28,6 +33,8 @@ import javafx.scene.layout.Region
 class WallpaperLayer(scrimStyleClass: String = "wallpaper-scrim") : Region() {
     val imageView = ImageView().apply { isSmooth = true; isPreserveRatio = false; isManaged = false }
     val scrim = Region().apply { styleClass += scrimStyleClass; isVisible = false; isManaged = false }
+    /** The previous picture while a newer one crossfades in over it ([show] on a loaded layer). */
+    private val fadeView = ImageView().apply { isSmooth = true; isPreserveRatio = false; isManaged = false; isVisible = false }
 
     /** The wallpaper asked for by the last [show] (also while it loads or when it failed). */
     var wallpaper: Wallpaper? = null
@@ -38,13 +45,49 @@ class WallpaperLayer(scrimStyleClass: String = "wallpaper-scrim") : Region() {
     val loadedProperty: ReadOnlyBooleanProperty get() = loaded.readOnlyProperty
     val isLoaded: Boolean get() = loaded.get()
 
+    // held by the layer; the weak wrapper keeps the global Motion switch from holding layers of closed windows
+    private val motionListener = ChangeListener<Boolean> { _, _, _ -> updateDrift() }
+
+    /**
+     * Very slow zoom of the picture (1.00 -> 1.04 over 40 s and back, ui/motion/Motion.drift): off by default, on with
+     * -Dlauncher.wallpaper.drift=on (and in the showcase); runs only while a picture is shown and animations are on.
+     */
+    var drift: Boolean = Motion.driftRequested
+        set(value) { field = value; updateDrift() }
+
+    /** The running drift (tests), null when still. */
+    var driftAnimation: Animation? = null
+        private set
+
     init {
         id = "wallpaper"
         styleClass += "wallpaper-layer"
         isMouseTransparent = true
         isFocusTraversable = false
-        children.addAll(imageView, scrim)
-        loaded.addListener { _, _, on -> scrim.isVisible = on; imageView.isVisible = on; restyle() }
+        children.addAll(fadeView, imageView, scrim)
+        loaded.addListener { _, _, on ->
+            scrim.isVisible = on
+            imageView.isVisible = on
+            restyle()
+            // the picture fades in over the layer's own plain theme background (layout.css .wallpaper-layer), never
+            // over the scene fill; the scrim is there at once, so text contrast never dips
+            if (on) Motion.fadeIn(imageView, Motion.SLOW)
+            updateDrift()
+        }
+        // the drift may zoom the picture past the layer's edges: cut them (never under the title bar or outside)
+        clip = Rectangle().also {
+            it.widthProperty().bind(widthProperty())
+            it.heightProperty().bind(heightProperty())
+        }
+        Motion.enabledProperty.addListener(WeakChangeListener(motionListener))
+    }
+
+    private fun updateDrift() {
+        val want = drift && isLoaded && Motion.enabled
+        if (want == (driftAnimation != null)) return
+        Motion.stop(imageView, Motion.DRIFT)
+        driftAnimation = if (want) Motion.drift(imageView) else null
+        if (!want) { imageView.scaleX = 1.0; imageView.scaleY = 1.0 }
     }
 
     /**
@@ -87,6 +130,19 @@ class WallpaperLayer(scrimStyleClass: String = "wallpaper-scrim") : Region() {
             if (this.wallpaper !== wallpaper) return // a newer show() won
             if (image.isError || image.width <= 0) fail(wallpaper, image.exception?.toString() ?: "not a picture")
             else {
+                val old = imageView.image
+                if (isLoaded && old != null && old !== image && Motion.enabled) {
+                    // another picture on a shown layer (the showcase): the new one fades in over the old one
+                    fadeView.image = old
+                    fadeView.viewport = imageView.viewport
+                    fadeView.fitWidth = imageView.fitWidth
+                    fadeView.fitHeight = imageView.fitHeight
+                    fadeView.scaleX = imageView.scaleX
+                    fadeView.scaleY = imageView.scaleY
+                    fadeView.isVisible = true
+                    Motion.fadeIn(imageView, Motion.SLOW)
+                    Motion.fadeOut(fadeView, Motion.SLOW.multiply(1.5)) { fadeView.isVisible = false; fadeView.image = null }
+                }
                 imageView.image = image
                 loaded.set(true)
                 restyle() // a new picture of another tone while already loaded

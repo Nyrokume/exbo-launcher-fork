@@ -11,6 +11,7 @@ import dev.launcherfork.ui.components.formatBytes
 import dev.launcherfork.ui.components.loadImage
 import dev.launcherfork.ui.components.setImageBackground
 import dev.launcherfork.ui.components.toggleClass
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.screens.main.modals.DefenderModalController
 import dev.launcherfork.ui.screens.main.modals.DeletionModalController
 import dev.launcherfork.ui.screens.main.modals.DownloadWarnModalController
@@ -95,7 +96,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
 
         serversListController.onServerSelected = { server -> selectServer(server, showHome = true) }
-        serversListController.onSettingsClicked = { setSettingsVisible(!settingsPane.isVisible) }
+        serversListController.onSettingsClicked = { setSettingsVisible(!isSettingsShown) }
 
         val status = defaultStatusPaneController
         status.onPrimaryAction = ::onPrimaryAction
@@ -263,9 +264,19 @@ class MainController(private val ctx: UiContext) : Disposable {
         if (showHome) setSettingsVisible(false)
     }
 
+    /** Logical screen: settings or home (the other pane may still be fading out for a moment). */
+    var isSettingsShown: Boolean = false
+        private set
+
     fun setSettingsVisible(visible: Boolean) {
-        settingsPane.isVisible = visible
-        homePane.isVisible = !visible
+        val changed = visible != isSettingsShown
+        isSettingsShown = visible
+        // home <-> settings crossfade (ui/motion/Motion); a repeated call only makes sure the end state is right
+        if (changed) Motion.crossfade(old = if (visible) homePane else settingsPane, new = if (visible) settingsPane else homePane)
+        else if (!Motion.isAnimating(if (visible) settingsPane else homePane)) {
+            settingsPane.isVisible = visible
+            homePane.isVisible = !visible
+        }
         root.toggleClass("settings-mode", visible)
         serversListController.setSettingsActive(visible)
         if (visible) defaultStatusPaneController.gameActionsController.hide()

@@ -8,6 +8,7 @@ import dev.launcherfork.theme.Theme
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.GameAction
+import dev.launcherfork.ui.motion.Motion
 import javafx.animation.PauseTransition
 import javafx.application.Platform
 import javafx.scene.Scene
@@ -19,11 +20,14 @@ import javax.imageio.ImageIO
 /**
  * Dev tool: walks through the screens automatically and saves Scene snapshots as PNG
  * (`./gradlew run -Dlauncher.screenshots=docs/screenshots/zone`, zone is the default theme). Not used in normal runs.
+ * Animations are switched off for the whole tour ([Motion.override]), so every shot shows the settled end state.
  */
 class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
     private val steps = ArrayDeque<Pair<Double, () -> Unit>>()
 
     fun install() {
+        // deterministic pictures: every transition ends at once (no shot can catch a half-faded menu or a gliding bar)
+        Motion.override = false
         dir.mkdirs()
         var authDone = false
         var mainDone = false

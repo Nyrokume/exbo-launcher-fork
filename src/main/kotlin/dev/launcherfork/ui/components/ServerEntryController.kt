@@ -3,6 +3,7 @@ package dev.launcherfork.ui.components
 import dev.launcherfork.domain.Cancellable
 import dev.launcherfork.domain.Server
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.state.ClientState
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
@@ -48,8 +49,25 @@ class ServerEntryController(private val ctx: UiContext) {
      */
     private var onlineGeneration = 0L
 
+    /**
+     * Hover background that fades (CSS has no transitions): with animations on at load, the row's own :hover fill is
+     * replaced (.motion, layout.css) by this unmanaged layer under the content, painted by the theme (.entry-hover-fill)
+     * and faded by ui/motion/Motion.fadeWith. With animations off the plain CSS :hover stays.
+     */
+    val hoverFill = Region().apply {
+        styleClass += "entry-hover-fill"
+        isManaged = false
+        isMouseTransparent = true
+    }
+
     @FXML
     fun initialize() {
+        if (Motion.enabled) {
+            root.styleClass += "motion"
+            root.children.add(0, hoverFill)
+            root.layoutBoundsProperty().addListener { _, _, b -> hoverFill.resizeRelocate(0.0, 0.0, b.width, b.height) }
+            Motion.fadeWith(hoverFill, root.hoverProperty())
+        }
         downloadingStatus.text = ""
         onlineCount.addListener { _, _, n -> renderOnline(n) }
         renderOnline(null)
@@ -79,7 +97,9 @@ class ServerEntryController(private val ctx: UiContext) {
     }
 
     fun setSelected(selected: Boolean) {
+        val was = "selected" in root.styleClass
         root.toggleClass("selected", selected)
+        if (selected && !was) Motion.markerIn(cursor) // the red marker grows into the newly selected row
     }
 
     private fun renderOnline(n: Int?) {
@@ -98,8 +118,8 @@ class ServerEntryController(private val ctx: UiContext) {
         }
         progress.isVisible = fraction != null
         progress.isManaged = fraction != null
-        progress.progress = fraction ?: 0.0
-        downloadingStatus.text = fraction?.let { "${(it * 100).toInt()}%" } ?: ""
+        Motion.progress(progress, fraction ?: 0.0)
+        downloadingStatus.text = fraction?.let { "${(Motion.safeFraction(it) * 100).toInt()}%" } ?: ""
         liveDot.isVisible = s == ClientState.Running
         icon.toggleClass("icon-download", s == ClientState.NotInstalled)
     }

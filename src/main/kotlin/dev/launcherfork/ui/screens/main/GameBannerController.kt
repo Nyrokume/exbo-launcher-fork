@@ -3,6 +3,7 @@ package dev.launcherfork.ui.screens.main
 import dev.launcherfork.domain.GameDescription
 import dev.launcherfork.domain.Server
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.motion.Motion
 import javafx.fxml.FXML
 import javafx.scene.control.Label
 import javafx.scene.control.ScrollPane
@@ -45,6 +46,9 @@ class GameBannerController(private val ctx: UiContext) {
         body.text = texts.body
         closing.text = texts.closing
         scroll.vvalue = 0.0
+        // a new game's text rises into place (fade + 8 px); only the text column moves, the slot stays where
+        // MainController aligned it, so the title ends exactly on the selected row's line
+        Motion.fadeSlideIn(content, Motion.SLIDE)
     }
 
     /**
@@ -62,7 +66,9 @@ class GameBannerController(private val ctx: UiContext) {
         val lineTop = column.sceneToLocal(line.localToScene(line.layoutBounds)).minY
         val logical = Text(title.text).apply { font = line.font }
         val ink = Text(title.text).apply { font = line.font; boundsType = TextBoundsType.VISUAL }
-        return viewportTop + lineTop + (ink.layoutBounds.minY - logical.layoutBounds.minY)
+        // minus the column's slide (Motion.fadeSlideIn): the offset is that of the settled layout, so the slot does not
+        // follow the text while it rises and the alignment holds at the end of the animation
+        return viewportTop + lineTop - Motion.slideOffset(content) + (ink.layoutBounds.minY - logical.layoutBounds.minY)
     }
 
     private fun resolve(d: GameDescription): GameDescription.Text = when (d) {

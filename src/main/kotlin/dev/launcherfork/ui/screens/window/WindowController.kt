@@ -5,6 +5,7 @@ import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.InputBlock
 import dev.launcherfork.ui.components.WallpaperLayer
 import dev.launcherfork.ui.components.toggleClass
+import dev.launcherfork.ui.motion.Motion
 import javafx.fxml.FXML
 import javafx.scene.Node
 import javafx.scene.control.Button
@@ -43,9 +44,20 @@ class WindowController(private val ctx: UiContext) {
         hideOverlay()
     }
 
-    fun setContent(node: Node) {
-        contentHost.children.setAll(node)
+    /**
+     * Puts [node] into the content host. [animate] (a rebuilt screen in a shown window: language switch) crossfades
+     * the old content into the new one (ui/motion/Motion.snapshotCrossfade); otherwise it is swapped at once.
+     */
+    fun setContent(node: Node, animate: Boolean = true) {
+        if (animate) Motion.snapshotCrossfade(contentHost) { contentHost.children.setAll(node) }
+        else contentHost.children.setAll(node)
     }
+
+    /** The window appears: its content fades in over the plain window / wallpaper background (no white flash). */
+    fun appear() = Motion.fadeIn(contentHost)
+
+    /** Restyle in place (theme switch): the old look crossfades into the new one over the whole window. */
+    fun crossfade(change: () -> Unit) = Motion.snapshotCrossfade(windowRoot, change = change)
 
     val isOverlayShown: Boolean get() = overlayLayer.isVisible
 
@@ -59,7 +71,8 @@ class WindowController(private val ctx: UiContext) {
      */
     fun showOverlay(panel: Node) {
         overlayLayer.children.setAll(panel)
-        overlayLayer.isVisible = true
+        Motion.fadeIn(overlayLayer)
+        Motion.popIn(panel, dy = Motion.SLIDE, scale = Motion.POP_SCALE)
         contentHost.effect = Theme.overlayBackdropEffect()
         contentHost.isMouseTransparent = true
         InputBlock.set(contentHost, true)
@@ -67,6 +80,8 @@ class WindowController(private val ctx: UiContext) {
     }
 
     fun hideOverlay() {
+        Motion.stop(overlayLayer)
+        overlayLayer.opacity = 1.0
         overlayLayer.children.clear()
         overlayLayer.isVisible = false
         contentHost.effect = null

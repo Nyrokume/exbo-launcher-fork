@@ -142,4 +142,6 @@ data class LauncherSettings(
     val language: String = "ru",
     /** «Тема: Тёмная / Белая»; survives a restart (data/local/AppearanceFileStore), the other fields do not. */
     val appearance: Appearance = Appearance.DARK,
+    /** «Анимации» (Поведение): interface motion on / off (ui/motion/Motion); survives a restart like [appearance]. */
+    val animations: Boolean = true,
 )
