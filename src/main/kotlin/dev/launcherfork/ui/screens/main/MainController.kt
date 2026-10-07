@@ -1,6 +1,8 @@
 package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.domain.ClientOperation
+import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.domain.GameFolders
 import dev.launcherfork.domain.Server
 import dev.launcherfork.theme.Theme
@@ -85,11 +87,11 @@ class MainController(private val ctx: UiContext) : Disposable {
     fun initialize() {
         background.effect = Theme.gameArtEffect()
 
-        // profile menu (top-right): both ways back lead to the separate auth window; the navigator disposes
-        // this controller before the auth window shows up
-        profileBarController.onProfile = { notAvailable() }
-        profileBarController.onSwitchAccount = ::leaveToAuth
-        // the ONLY way to the logout confirmation: profile menu "Выйти из аккаунта" (window close never asks)
+        // profile menu (top-right): ЛК / invite / top-up open in the browser; logout confirms then leaveToAuth
+        profileBarController.onTopUp = { ctx.services.links.open(ExternalLinks.TOP_UP) }
+        profileBarController.onInviteFriend = { ctx.services.links.open(ExternalLinks.REFERRAL) }
+        profileBarController.onProfile = { ctx.services.links.open(ExternalLinks.ACCOUNT) }
+        // the ONLY way to the logout confirmation: profile menu «Выйти» (window close never asks)
         profileBarController.onLogout = { logoutPaneController.show() }
         logoutPaneController.onConfirm = ::leaveToAuth
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
@@ -224,7 +226,7 @@ class MainController(private val ctx: UiContext) : Disposable {
     /**
      * A row of the game-actions menu. Verify starts at once (after a confirmation if the game runs: it gets closed);
      * reinstall / delete always ask first and only the confirm button starts them (mock operations, nothing on disk).
-     * The folder is the selected game's folder from the settings (GameFolders), opened through FolderOpener.
+     * Game folder → [GameFolders] + [FolderOpener]; logs → [ExboPaths.runtimeLogs] + [FolderOpener].
      */
     fun onGameAction(action: GameAction) {
         val server = selected ?: return
@@ -233,6 +235,10 @@ class MainController(private val ctx: UiContext) : Disposable {
         val operation = when (action) {
             GameAction.OPEN_FOLDER -> {
                 ctx.services.folders.open(GameFolders.dirOf(ctx.services.settings.load(), server))
+                return
+            }
+            GameAction.OPEN_LOGS -> {
+                ctx.services.folders.open(ExboPaths.runtimeLogs())
                 return
             }
             GameAction.SETTINGS -> { setSettingsVisible(true); return }

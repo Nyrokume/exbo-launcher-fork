@@ -80,7 +80,13 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         }
         fields.forEach { f -> f.textProperty().addListener { _, _, _ -> fields.forEach { it.pseudoClassStateChanged(ERROR, false) } } }
         listOfNotNull(errorFirst, errorSecond, noticeLabel).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
-        noticeLabel?.let { notice -> notice.visibleProperty().bind(notice.textProperty().isNotEmpty) }
+        noticeLabel?.let { notice ->
+            notice.visibleProperty().bind(notice.textProperty().isNotEmpty)
+            // hide the success banner once the user starts entering the password (login stays prefilled)
+            listOfNotNull(passwordField, passwordVisibleField).forEach { f ->
+                f.textProperty().addListener { _, _, text -> if (!text.isNullOrEmpty()) notice.text = "" }
+            }
+        }
         // as on the site: the cursor starts in the first empty field, not on a social tile
         loginField.sceneProperty().addListener { _, _, scene ->
             if (scene != null) javafx.application.Platform.runLater {

@@ -275,6 +275,9 @@ class RegistrationTest {
             assertEquals("", c.passwordField.text)
             assertEquals("Аккаунт newbie создан. Введите пароль, чтобы войти.", c.noticeLabel!!.text)
             assertTrue(c.noticeLabel!!.isVisible && c.noticeLabel!!.isManaged)
+            c.passwordField.text = "secret"
+            assertEquals("", c.noticeLabel!!.text, "notice hides once the password is typed")
+            assertFalse(c.noticeLabel!!.isVisible)
         }
     }
 }

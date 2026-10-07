@@ -13,6 +13,7 @@ import dev.launcherfork.app.AppContext
 import dev.launcherfork.app.StageNavigator
 import dev.launcherfork.domain.ClientOperation
 import dev.launcherfork.domain.CommunityLinks
+import dev.launcherfork.domain.ExboPaths
 import dev.launcherfork.domain.FolderOpener
 import dev.launcherfork.domain.GameFolders
 import dev.launcherfork.domain.LauncherSettings
@@ -142,7 +143,7 @@ class GameActionsMenuTest {
     private operator fun <T> List<T>.component6() = this[5]
 
     private fun token(theme: String, name: String): javafx.scene.paint.Color {
-        val file = mapOf("exbo" to "theme.css", "zone" to "theme-zone.css", "shadcn" to "theme-shadcn.css", "zone-light" to "theme-zone-light.css").getValue(theme)
+        val file = mapOf("exbo" to "theme.css", "zone" to "theme-zone.css", "shadcn" to "theme-shadcn.css").getValue(theme)
         val css = javaClass.getResource("/dev/launcherfork/ui/style/$file")!!.readText()
         val hex = Regex("""(?m)^\s*${Regex.escape(name)}:\s*([^;]+);""").find(css)!!.groupValues[1].trim()
         return javafx.scene.paint.Color.web(hex)
@@ -153,7 +154,7 @@ class GameActionsMenuTest {
         FxTestSupport.onFx {
             val menu = main.menu()
             assertEquals(GameAction.entries, menu.items.keys.toList())
-            assertEquals(listOf("Проверить файлы", "Открыть папку игры", "Настройки игры", "Переустановить", "Удалить игру"),
+            assertEquals(listOf("Проверить файлы", "Открыть папку игры", "Открыть папку логов", "Настройки игры", "Переустановить", "Удалить игру"),
                 menu.items.values.map { it.text })
             assertEquals(listOf(GameAction.REINSTALL, GameAction.DELETE), menu.items.filter { "danger" in it.value.styleClass }.keys.toList())
             assertEquals("STALZONE", menu.gameActionsCaption.text)
@@ -161,13 +162,13 @@ class GameActionsMenuTest {
             assertEquals(ClientState.Ready, main.state())
             assertEquals(GameAction.entries.toSet(), enabled())
             main.store.state(main.selected!!).set(ClientState.NotInstalled)
-            assertEquals(setOf(GameAction.SETTINGS), enabled(), "not installed: only the settings make sense")
+            assertEquals(setOf(GameAction.OPEN_LOGS, GameAction.SETTINGS), enabled(), "not installed: logs + settings")
             main.store.state(main.selected!!).set(ClientState.Running)
-            assertEquals(setOf(GameAction.VERIFY, GameAction.OPEN_FOLDER, GameAction.SETTINGS), enabled())
+            assertEquals(setOf(GameAction.VERIFY, GameAction.OPEN_FOLDER, GameAction.OPEN_LOGS, GameAction.SETTINGS), enabled())
             main.store.state(main.selected!!).set(ClientState.Paused(0.4, 10))
-            assertEquals(setOf(GameAction.OPEN_FOLDER, GameAction.SETTINGS, GameAction.DELETE), enabled())
+            assertEquals(setOf(GameAction.OPEN_FOLDER, GameAction.OPEN_LOGS, GameAction.SETTINGS, GameAction.DELETE), enabled())
             main.store.state(main.selected!!).set(ClientState.Busy(ClientOperation.VERIFY, 0.3))
-            assertEquals(setOf(GameAction.OPEN_FOLDER, GameAction.SETTINGS), enabled())
+            assertEquals(setOf(GameAction.OPEN_FOLDER, GameAction.OPEN_LOGS, GameAction.SETTINGS), enabled())
             main.store.state(main.selected!!).set(ClientState.Ready)
         }
     }
@@ -254,6 +255,17 @@ class GameActionsMenuTest {
             assertTrue(links.isEmpty(), "the folder must not go through LinkOpener: $links")
             assertFalse(main.deletionPaneController.isShowing)
             assertEquals(ClientState.Ready, main.state())
+        }
+    }
+
+    @Test
+    fun openLogsUsesFolderOpenerWithExboRuntimeLogs() = withMain { _, main ->
+        FxTestSupport.onFx {
+            folders.clear()
+            main.item(GameAction.OPEN_LOGS).fire()
+            assertEquals(listOf(ExboPaths.runtimeLogs()), folders)
+            assertTrue(links.isEmpty(), "logs must not go through LinkOpener: $links")
+            assertFalse(main.deletionPaneController.isShowing)
         }
     }
 

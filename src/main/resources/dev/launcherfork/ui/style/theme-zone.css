@@ -118,11 +118,12 @@
     -fx-font-family: "Bebas Neue Regular";
 }
 .font-bold {
-    -fx-font-family: "Roboto Medium";
-    -fx-font-weight: normal;
+    -fx-font-family: "Roboto";
+    -fx-font-weight: 500; /* Medium face (bundled Roboto-Medium.ttf) */
 }
 .font-light {
-    -fx-font-family: "Roboto Light";
+    -fx-font-family: "Roboto";
+    -fx-font-weight: 300; /* Light face (bundled Roboto-Light.ttf) */
 }
 
 /*
@@ -152,8 +153,8 @@
 }
 /* segmented controls (settings): Roboto Medium 14 px, as the site's buttons; same weight for every part (no jumps) */
 .segment {
-    -fx-font-family: "Roboto Medium";
-    -fx-font-weight: normal;
+    -fx-font-family: "Roboto";
+    -fx-font-weight: 500;
 }
 
 /*
@@ -161,7 +162,8 @@
  * uppercase text for now; they will be swapped to SpacedLabel (ui/controls, redesign/auth branch) after merge.
  */
 .zone-caps {
-    -fx-font-family: "Roboto Medium";
+    -fx-font-family: "Roboto";
+    -fx-font-weight: 500;
 }
 /* games list entry: the name is Roboto Medium here, no Manrope lift needed (see theme.css); 8 px name-digits gap */
 .entry-text {

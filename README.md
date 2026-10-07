@@ -9,24 +9,20 @@
 обновления 379×490. Разбор оригинала лежит в `/workspace/stalzone/REPORT.md`.
 
 **Раскладка.** Два окна, как в оригинале (`docs/design/WINDOWS.md`). Обновление, вход
-и код из письма показываются в отдельном окне без рамки шириной 460. Окно подгоняет высоту под панель: вход 526 (576 с
-уведомлением «Аккаунт создан»), код аутентификатора 404, код из письма около 440, обновление и регистрация 620. После входа оно закрывается и открывается
+и код из письма показываются в отдельном окне без рамки **460×620** (вход, почта, TOTP, регистрация — один размер).
+После входа оно закрывается и открывается
 главное окно: без рамки, с ресайзом, 1024×640 (минимум 900×580). Слева колонка фиксированной ширины с векторным
 логотипом EXBO, профиль (ник ▾ и меню) в правом верхнем углу, контент тянется вместе с окном. Эта адаптивная раскладка
 **заменила старую 886×550 для всех тем**. Темы `exbo` и `shadcn` работают на ней через общие токены, пусть и
 скромнее. **Тема по умолчанию — `zone`** (красный стиль сайта STALZONE + раскладка лаунчера STALCRAFT), описание в
-`docs/design/STYLE-ZONE.md`; прежние `exbo` и `shadcn` включаются через `-Dlauncher.theme=exbo|shadcn`. У неё есть **белая тема**:
-в настройках «Тема: Тёмная / Белая» (переключается сразу во всех окнах и сохраняется между запусками) или сразу
-`-Dlauncher.theme=zone-light`.
+`docs/design/STYLE-ZONE.md`; прежние `exbo` и `shadcn` включаются через `-Dlauncher.theme=exbo|shadcn`.
 
 ## Возможности
 
-- **Четыре темы:** `zone` (по умолчанию, красный стиль STALZONE), `zone-light` (белая схема zone: «Тема: Тёмная /
-  Белая» в настройках или `-Dlauncher.theme=zone-light`), `exbo` (исходные цвета EXBO) и `shadcn` (neutral shadcn/ui).
-  Выбор схемы сохраняется между запусками (`appearance` в `~/.launcher-fork/settings.properties`).
+- **Три темы:** `zone` (по умолчанию, красный стиль STALZONE), `exbo` (исходные цвета EXBO) и `shadcn` (neutral shadcn/ui).
 - **Обои главного окна, как в оригинальном лаунчере:** шесть скриншотов STALZONE (`ui/wallpapers/`, манифест
-  `wallpapers.txt`). При каждом запуске случайные обои, но не те же, что в прошлый раз (`wallpaper.last` в том же
-  файле настроек). Конкретные обои: `-Dlauncher.wallpaper=1..6` (такой выбор не сохраняется в `wallpaper.last`). Картинка заполняет окно (cover с точкой фокуса) при
+  `wallpapers.txt`). При каждом запуске случайные обои, но не те же, что в прошлый раз (`wallpaper.last` в
+  `~/.launcher-fork/settings.properties`). Конкретные обои: `-Dlauncher.wallpaper=1..6` (такой выбор не сохраняется в `wallpaper.last`). Картинка заполняет окно (cover с точкой фокуса) при
   любом размере и разворачивании, грузится в фоне только выбранная, при ошибке остаётся однотонный фон. Текст
   читается за счёт полупрозрачных скримов из токенов темы; контраст проверяется тестом по худшему случаю.
 - **Описание игры** в центре главного окна: заголовок STALZONE, вводный абзац, подзаголовок, основной текст и
@@ -53,8 +49,8 @@
 |---|---|
 | `-Dlauncher.lang=ru\|en` | язык интерфейса (по умолчанию `ru`) |
 | `-Dlauncher.mockSpeed=4` | ускоряет фейковые прогрессы во столько раз |
-| `-Dlauncher.theme=zone\|zone-light\|exbo\|shadcn` | тема: STALZONE (`theme-zone.css`, Bebas Neue + Roboto, по умолчанию), исходные цвета EXBO (`theme.css`), тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) или STALZONE сразу в белой схеме (`theme-zone-light.css` поверх `theme-zone.css`; при старте важнее сохранённой настройки) |
-| `-Dlauncher.settingsFile=<путь>` | где хранятся выбранная тема и номер последних обоев (по умолчанию `~/.launcher-fork/settings.properties`: `appearance=light\|dark` и `wallpaper.last=N`; остальные настройки по-прежнему только в памяти). Автотур ничего не сохраняет |
+| `-Dlauncher.theme=zone\|exbo\|shadcn` | тема: STALZONE (`theme-zone.css`, Bebas Neue + Roboto, по умолчанию), исходные цвета EXBO (`theme.css`) или тёмная neutral-тема shadcn/ui (`theme-shadcn.css`) |
+| `-Dlauncher.settingsFile=<путь>` | где хранится номер последних обоев (по умолчанию `~/.launcher-fork/settings.properties`: `wallpaper.last=N`; остальные настройки по-прежнему только в памяти). Автотур ничего не сохраняет |
 | `-Dlauncher.wallpaper=1..6` | всегда эти обои главного окна (без свойства — случайные при каждом запуске, но не те же, что в прошлый раз; автотур без свойства берёт `03`); выбор по свойству не сохраняется в `wallpaper.last` |
 | `-Dlauncher.screenshots=docs/screenshots` | автотур по экранам с сохранением PNG (dev-инструмент) |
 | `-Dlauncher.mock2fa=random\|email\|totp\|none` | второй фактор после пароля: по умолчанию `random` (при каждом входе случайно код из письма или Google Authenticator), `email` / `totp` всегда один из них, `none` сразу на главную. Автотур без явного значения использует `none` |
@@ -119,8 +115,8 @@ src/main/kotlin/dev/launcherfork/
 │  ├─ MockUpdateService.kt  таймерный прогресс самообновления и «скачивания клиента»
 │  ├─ MockGameLauncher.kt   фейковый запуск игры: «запущена» через 1.2 с, «завершилась» через 5 с
 │  └─ MockScheduler.kt      общий таймер фейков (безопасная отмена/завершение)
-├─ data/local/          settings.properties: SettingsFile (атомарная запись, ключи не теряются), AppearanceFileStore
-│                       (`appearance`), WallpaperFileMemory (`wallpaper.last`)
+├─ data/local/          settings.properties: SettingsFile (атомарная запись, ключи не теряются), WallpaperFileMemory
+│                       (`wallpaper.last`)
 ├─ wallpaper/           обои главного окна без FX: Wallpapers (манифест, pick без повтора, один выбор на запуск —
 │                       Wallpapers.current), CoverFit (cover-кадрирование с точкой фокуса)
 ├─ i18n/Strings.kt      ResourceBundle из локальных .properties (ru + en) вместо серверного LangManager
@@ -146,8 +142,7 @@ src/main/kotlin/dev/launcherfork/
 
 src/main/resources/dev/launcherfork/
 ├─ ui/*.fxml, ui/main/*.fxml, ui/main/modals/*.fxml   разметка (спецификация)
-├─ ui/style/theme.css, theme-shadcn.css, theme-zone.css, theme-zone-light.css   токены цветов + шрифты + радиусы
-│                                    (литералы только тут; zone-light переопределяет только цвета zone)
+├─ ui/style/theme.css, theme-shadcn.css, theme-zone.css   токены цветов + шрифты + радиусы (литералы только тут)
 ├─ ui/style/layout.css   стили новой раскладки (окно, главный экран, настройки, модалки; только токены)
 ├─ ui/style/zone-auth.css, zone-steps.css, zone-totp.css   панели окна входа в теме zone
 ├─ ui/style/{common,auth,lang_ru,lang_en}.css   стили legacy-панелей авторизации/обновления
@@ -348,7 +343,6 @@ src/main/resources/dev/launcherfork/
 - `docs/screenshots/zone/` — тема `zone`, по умолчанию (основная цель редизайна);
 - `docs/screenshots/` — тема `exbo` (`-Dlauncher.theme=exbo`) на новой раскладке;
 - `docs/screenshots/shadcn/` — тема shadcn/ui;
-- `docs/screenshots/zone-light/` — белая тема zone (`-Dlauncher.theme=zone-light`).
 
 ## Дистрибутивы: Windows-инсталлятор, portable, Linux
 

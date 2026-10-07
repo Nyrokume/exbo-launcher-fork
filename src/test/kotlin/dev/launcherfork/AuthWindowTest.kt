@@ -94,14 +94,14 @@ class AuthWindowTest {
             assertEquals(authWindow(nav).fittedWindowHeight(), nav.authStage.height, 0.5)
         }
         assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
-        assertTrue(FxTestSupport.waitFx(5_000) { kotlin.math.abs(nav.authStage.scene.height - authWindow(nav).fittedWindowHeight()) < 0.5 }, "scene never took the compact height")
+        assertTrue(FxTestSupport.waitFx(5_000) { kotlin.math.abs(nav.authStage.scene.height - authWindow(nav).fittedWindowHeight()) < 0.5 }, "scene never took the auth window height")
         FxTestSupport.onFx {
             val host = authWindow(nav).panelHost
             nav.authStage.scene.root.applyCss(); nav.authStage.scene.root.layout()
             assertEquals(Theme.AUTH_PANEL_WIDTH, host.width, 0.5)
-            // compact login panel: the window is as tall as its content (title strip + panel), not the full 620
+            // login / mail / TOTP share the full 460×620 auth window (same as register / age gate)
             val fitted = authWindow(nav).fittedWindowHeight()
-            assertTrue(fitted < Theme.AUTH_WINDOW_HEIGHT && fitted >= Theme.AUTH_WINDOW_MIN_HEIGHT, "login window height $fitted")
+            assertEquals(Theme.AUTH_WINDOW_HEIGHT, fitted, 0.5, "login window height $fitted")
             assertEquals(fitted, nav.authStage.height, 0.5)
             assertEquals(fitted - Theme.AUTH_TITLEBAR_HEIGHT, host.height, 0.5)
             assertNotNull(authWindow(nav).panel as? Region)
@@ -207,10 +207,12 @@ class AuthWindowTest {
     }
 
     @Test
-    fun switchAccountDisposesMainAndOpensAuthWindow() = assertBackToAuth { main ->
+    fun confirmedLogoutDisposesMainAndOpensAuthWindowFromMenu() = assertBackToAuth { main ->
         main.profileBarController.loginButton.fire()
         assertTrue(main.profileBarController.isMenuShown)
-        main.profileBarController.switchAccount.fire()
+        main.profileBarController.logout.fire()
+        assertTrue(main.logoutPaneController.isShowing)
+        main.logoutPaneController.logoutButtonRight.fire()
     }
 
     @Test
@@ -229,7 +231,9 @@ class AuthWindowTest {
             nav.mainStage.x = 40.0
             nav.mainStage.y = 30.0
             val mainBounds = Rectangle2D(nav.mainStage.x, nav.mainStage.y, nav.mainStage.width, nav.mainStage.height)
-            nav.mainController!!.profileBarController.switchAccount.fire()
+            nav.mainController!!.profileBarController.loginButton.fire()
+            nav.mainController!!.profileBarController.logout.fire()
+            nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
             val (x, y) = WindowFrame.centeredIn(WindowFrame.screenBoundsOf(mainBounds), Theme.AUTH_WINDOW_WIDTH, authWindow(nav).fittedWindowHeight())
             assertEquals(x, nav.authStage.x, 0.5)
             assertEquals(y, nav.authStage.y, 0.5)
@@ -255,10 +259,12 @@ class AuthWindowTest {
             assertEquals(x, nav.mainStage.x, 0.5)
             assertEquals(y, nav.mainStage.y, 0.5)
             assertSame(nav.mainStage, nav.window)
-            // the user resizes the main window, then switches account
+            // the user resizes the main window, then logs out (ЛК menu «Выйти»)
             nav.mainStage.width = 900.0
             nav.mainStage.height = 600.0
-            nav.mainController!!.profileBarController.switchAccount.fire()
+            nav.mainController!!.profileBarController.loginButton.fire()
+            nav.mainController!!.profileBarController.logout.fire()
+            nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
             assertSame(nav.authStage, nav.window)
             assertEquals(Theme.AUTH_WINDOW_WIDTH, nav.authStage.width, 0.5)
             assertEquals(authWindow(nav).fittedWindowHeight(), nav.authStage.height, 0.5)
@@ -272,7 +278,9 @@ class AuthWindowTest {
             nav.toggleMaximize()
             assertTrue(nav.isMaximized)
             val bounds = Rectangle2D(nav.mainStage.x, nav.mainStage.y, nav.mainStage.width, nav.mainStage.height)
-            nav.mainController!!.profileBarController.switchAccount.fire()
+            nav.mainController!!.profileBarController.loginButton.fire()
+            nav.mainController!!.profileBarController.logout.fire()
+            nav.mainController!!.logoutPaneController.logoutButtonRight.fire()
             bounds
         }
         login(live)

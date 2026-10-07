@@ -124,10 +124,50 @@
     -fx-border-width: 1;
     -fx-padding: 6;
     -fx-spacing: 2;
-    -fx-min-width: 210; -fx-pref-width: 210; -fx-max-width: 210;
+    -fx-min-width: 240; -fx-pref-width: 240; -fx-max-width: 240;
     -fx-translate-y: 6;
     -fx-effect: dropshadow(gaussian, -shadow, 18, 0.2, 0, 4);
 }
+/* stalzone.com .donate card inside the account menu: balance + coin, «Пополнить счет» → /donate */
+.profile-donate {
+    -fx-background-color: -background;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-padding: 14 14 12 14;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+}
+/* site .donate:hover { background:#202020 } — slightly lifted from -background */
+.profile-donate:hover, .profile-donate:focused { -fx-background-color: -fill-strong; }
+.profile-donate-body { -fx-max-width: Infinity; }
+.profile-donate-balance-text {
+    -fx-font-family: "Roboto";
+    -fx-font-weight: 500;
+    -fx-font-size: 18;
+    -fx-text-fill: -foreground;
+}
+.profile-donate-move-text {
+    -fx-font-family: "Roboto";
+    -fx-font-weight: 500;
+    -fx-font-size: 13;
+    -fx-text-fill: -primary;
+}
+.profile-donate:hover .profile-donate-move-text,
+.profile-donate:focused .profile-donate-move-text { -fx-text-fill: -foreground; }
+/* site .icon_arrow_left: small right chevron that nudges on hover */
+.profile-donate-arrow {
+    -fx-shape: "M0,0 L5.5,3.5 L0,7 Z";
+    -fx-background-color: -primary;
+    -fx-min-width: 6; -fx-pref-width: 6; -fx-max-width: 6;
+    -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8;
+    -fx-translate-x: 0;
+}
+.profile-donate:hover .profile-donate-arrow,
+.profile-donate:focused .profile-donate-arrow {
+    -fx-background-color: -foreground;
+    -fx-translate-x: 4;
+}
+.stal-coin .coin-path { -fx-fill: -foreground; }
 .profile-menu-item {
     -fx-background-color: transparent;
     -fx-background-insets: 0;

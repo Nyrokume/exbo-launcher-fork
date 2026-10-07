@@ -14,14 +14,12 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
 /**
- * Every panel of the pre-main window, ru and en, at the window height it gets ([AuthWindowController.fittedWindowHeight]):
- * nothing sticks out (16 px of air right and bottom) and there is no empty strip under the last control (at most 44 px).
- * Compact panels (login, e-mail code, TOTP) are lower than the full 620 window.
+ * Every panel of the pre-main window, ru and en, at the fixed 460×620 auth window
+ * ([AuthWindowController.fittedWindowHeight] → [Theme.AUTH_WINDOW_HEIGHT]): nothing sticks out
+ * (16 px air right and bottom) and the last control sits near the bottom (at most 44 px strip).
  */
 class PanelFitTest {
     companion object {
-        private val compact = setOf("auth_panel.fxml", "mail_auth_panel.fxml", "totp_auth_panel.fxml")
-
         @JvmStatic
         fun panels(): List<Arguments> =
             listOf("auth_panel.fxml", "mail_auth_panel.fxml", "totp_auth_panel.fxml", "register_panel.fxml", "age_gate_panel.fxml", "update_panel.fxml")
@@ -40,8 +38,7 @@ class PanelFitTest {
         if (zone !in scene.stylesheets) scene.stylesheets.add(1, zone)
         root.applyCss(); root.layout()
         val windowHeight = AuthWindowController.fittedWindowHeight(root)
-        if (panel in compact) assertTrue(windowHeight < Theme.AUTH_WINDOW_HEIGHT, "$panel $lang is not compact: $windowHeight")
-        else assertTrue(windowHeight == Theme.AUTH_WINDOW_HEIGHT, "$panel $lang should keep the full window: $windowHeight")
+        assertTrue(windowHeight == Theme.AUTH_WINDOW_HEIGHT, "$panel $lang should keep the full window: $windowHeight")
         val h = windowHeight - Theme.AUTH_TITLEBAR_HEIGHT
         root.resize(Theme.AUTH_PANEL_WIDTH, h); root.layout()
 

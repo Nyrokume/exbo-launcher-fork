@@ -13,7 +13,7 @@ RUNTIME_SIZES = (16, 32, 48, 64, 128, 256)             # = Theme.APP_ICON_SIZES;
 # The old (pre-zone) 54px icon.png for the preview, taken from git history: the commit before the new icon.
 OLD_REV = "ef84a4fc79a0df5910291f5ccc4d82f575fea9da"
 
-# palette (theme-zone.css / exbo-logo.svg)
+# palette (theme-zone.css / exbo-logo.svg) — app icons (icon-*.png).
 BG_TOP, BG_BOT = "#1c1c1c", "#101010"   # around -card #181818 / -sidebar #0f0f0f
 BORDER = "#2e2d2d"                       # -border
 CREAM, CREAM_D = "#ff3b52", "#b4263d"    # -foreground (logo) / shaded warm beige

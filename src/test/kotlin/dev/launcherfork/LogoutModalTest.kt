@@ -110,7 +110,7 @@ class LogoutModalTest {
             assertEquals("Выход из аккаунта", m.logoutTitle.text)
             assertEquals("ВЫЙТИ", m.logoutButtonRight.text)
             assertEquals("ОТМЕНА", m.logoutButtonLeft.text)
-            assertEquals("Выйти из аккаунта", live.nav.mainController!!.profileBarController.logout.text)
+            assertEquals("Выйти", live.nav.mainController!!.profileBarController.logout.text)
             assertTrue("btn-primary" in m.logoutButtonRight.styleClass && "btn-outline" in m.logoutButtonLeft.styleClass)
             assertTrue(listOf(m.logoutTitle, m.logoutButtonRight, m.logoutButtonLeft).all { "font-display" in it.styleClass })
             live.nav.close()
@@ -181,16 +181,13 @@ class LogoutModalTest {
             assertEquals(0, live.logoutShown)
             main.profileBarController.loginButton.fire()
             main.profileBarController.logout.fire()
-            assertEquals(1, live.logoutShown, "profile menu 'Выйти из аккаунта' asks once")
+            assertEquals(1, live.logoutShown, "profile menu «Выйти» asks once")
             main.logoutPaneController.logoutButtonLeft.fire()
             assertFalse(main.logoutPaneController.isShowing)
-            // "Сменить аккаунт" leaves at once, without the confirmation
+            // opening other ЛК items (invite) must not open the confirmation
             main.profileBarController.loginButton.fire()
-            main.profileBarController.switchAccount.fire()
-        }
-        assertTrue(FxTestSupport.waitFx { live.nav.mainController == null })
-        FxTestSupport.onFx {
-            assertEquals(1, live.logoutShown, "switch account must not ask")
+            main.profileBarController.inviteFriend.fire()
+            assertEquals(1, live.logoutShown, "invite must not ask to log out")
             live.nav.close()
         }
         live.app.shutdown()

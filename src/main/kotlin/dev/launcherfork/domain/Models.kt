@@ -119,9 +119,6 @@ enum class P2pMode { ALWAYS, EXCEPT_MOBILE, NEVER }
 /** When the launcher closes itself (settings). */
 enum class ExitMode { ON_GAME_START, ON_GAME_EXIT, NEVER }
 
-/** Colour scheme (settings «Тема»): the dark theme chosen by -Dlauncher.theme, or the white STALZONE scheme. */
-enum class Appearance { DARK, LIGHT }
-
 data class LauncherSettings(
     val runOnStartUp: Boolean = false,
     val startOnDownloaded: Boolean = true,
@@ -140,6 +137,4 @@ data class LauncherSettings(
     val uploadLimitKb: Int = 0,
     val gameRoot: Path = Path.of(System.getProperty("user.home"), "Games", "EXBO"),
     val language: String = "ru",
-    /** «Тема: Тёмная / Белая»; survives a restart (data/local/AppearanceFileStore), the other fields do not. */
-    val appearance: Appearance = Appearance.DARK,
 )

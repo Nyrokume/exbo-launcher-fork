@@ -144,7 +144,7 @@
     -fx-text-fill: -destructive-text;
     -fx-cursor: hand;
 }
-.zone-link-accent { -fx-font-family: "Roboto Medium"; -fx-font-size: 14; }
+.zone-link-accent { -fx-font-family: "Roboto"; -fx-font-weight: 500; -fx-font-size: 14; }
 .zone-link-accent:hover, .zone-link-underline:hover { -fx-text-fill: -primary-hover; }
 /* in the dark zone the hover red equals the text red: the accent link also underlines on hover */
 .zone-link-accent:hover { -fx-underline: true; }
@@ -175,7 +175,7 @@
 /* ---------- footer: "Нет аккаунта? Создать" ---------- */
 .zone-footer { -fx-alignment: center; -fx-spacing: 5; -fx-padding: 4 0 0 0; }
 .zone-footer-text { -fx-font-size: 15; -fx-text-fill: -text-description; }
-.zone-link-underline { -fx-font-family: "Roboto Medium"; -fx-font-size: 15; -fx-underline: true; }
+.zone-link-underline { -fx-font-family: "Roboto"; -fx-font-weight: 500; -fx-font-size: 15; -fx-underline: true; }
 
 .zone-spinner { -fx-progress-color: -primary; -fx-max-width: 64; -fx-max-height: 64; }
 

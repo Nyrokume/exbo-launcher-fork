@@ -27,17 +27,16 @@ import kotlin.math.min
 import kotlin.random.Random
 
 /**
- * Text over the wallpaper, measured on the real main window for EACH bundled picture and EACH theme (exbo, shadcn, zone,
- * zone-light), home screen at 900x580 / 1024x640 / 1366x800 and the settings page: JavaFX itself composites the
- * picture, the theme's scrim layers and the panels (WallpaperLayer + layout.css + theme tokens). Every visible text
- * node is hidden (transparent fill, same layout), the window is snapshotted, and the text's own colour is composed
- * over the pixels behind it: sidebar games list, nav links, banner title / lead / body, status bar, settings.
+ * Text over the wallpaper, measured on the real main window for EACH bundled picture and EACH theme (exbo, shadcn,
+ * zone), home screen at 900x580 / 1024x640 / 1366x800 and the settings page: JavaFX itself composites the picture, the
+ * theme's scrim layers and the panels (WallpaperLayer + layout.css + theme tokens). Every visible text node is hidden
+ * (transparent fill, same layout), the window is snapshotted, and the text's own colour is composed over the pixels
+ * behind it: sidebar games list, nav links, banner title / lead / body, status bar, settings.
  *
- * Worst case, not average: light text (dark themes) is checked against the 95th-percentile BRIGHTEST pixel behind it,
- * dark text (white scheme) against the 5th-percentile DARKEST one; WCAG AA: >= 4.5:1 for body text, >= 3:1 for large
- * text (>= 24 px, or >= 18.66 px bold: the Bebas banner title, ИГРАТЬ). The single most extreme pixel is reported too
- * (build/wallpaper-contrast.txt) and must stay >= 3:1 for every text. Same helpers as [SettingsContrastTest]
- * ([ContrastKit]); no exception list: the scrims are tuned until every case passes.
+ * Worst case, not average: light text is checked against the 95th-percentile BRIGHTEST pixel behind it; WCAG AA:
+ * >= 4.5:1 for body text, >= 3:1 for large text (>= 24 px, or >= 18.66 px bold: the Bebas banner title, ИГРАТЬ). The
+ * single most extreme pixel is reported too (build/wallpaper-contrast.txt) and must stay >= 3:1 for every text. Same
+ * helpers as [SettingsContrastTest] ([ContrastKit]); no exception list: the scrims are tuned until every case passes.
  */
 class WallpaperContrastTest {
     private data class Screen(val name: String, val w: Double, val h: Double, val settings: Boolean)

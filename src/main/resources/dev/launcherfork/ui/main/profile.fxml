@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import dev.launcherfork.ui.components.StalCoinMark?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <!--
-  Profile control in the top-right corner of the main window (stalzone.com menu account row): UPPERCASE nickname
-  + caret; a click opens a small dropdown card (in the scene, not a popup window) with Profile ↗, Switch account
-  (back to the separate auth window) and Log out (confirmation modal, then the auth window).
-  The card is always managed="false": it floats under the button (ProfileController.placeMenu) and never takes
-  part in the top bar's layout, so opening it does not move the Forum / Support links.
-  loginButton / accountName keep the fx:ids of the former sidebar account card.
+  Profile control (stalzone.com account menu): nickname + caret; dropdown with the site donate card
+  (Баланс: 0 + coin / Пополнить счет → → /donate), «Пригласить друга» ↗, «Личный кабинет» ↗, «Выйти».
+  The card floats under the button (ProfileController.placeMenu), managed="false".
 -->
 <VBox fx:id="profileRoot" id="profileRoot" styleClass="profile-root" alignment="TOP_RIGHT" pickOnBounds="false"
       stylesheets="@../style/layout.css"
@@ -25,12 +23,30 @@
         </graphic>
     </Button>
     <VBox fx:id="profileMenu" id="profileMenu" styleClass="profile-menu,zone-radius-md" visible="false" managed="false">
+        <!-- one card like site .donate → /donate: balance + coin, then «Пополнить счет» + arrow -->
+        <Button fx:id="topUp" id="profileMenuTopUp" styleClass="profile-donate,zone-radius-sm" mnemonicParsing="false"
+                contentDisplay="GRAPHIC_ONLY" maxWidth="Infinity" accessibleText="%main.account.top_up">
+            <graphic>
+                <VBox styleClass="profile-donate-body" spacing="5" maxWidth="Infinity">
+                    <HBox styleClass="profile-donate-balance" alignment="CENTER_LEFT" spacing="5">
+                        <Label fx:id="balanceLabel" styleClass="profile-donate-balance-text" text="%main.account.balance"/>
+                        <StalCoinMark coinSize="19"/>
+                    </HBox>
+                    <HBox styleClass="profile-donate-move" alignment="CENTER_LEFT" spacing="5">
+                        <Label styleClass="profile-donate-move-text" text="%main.account.top_up"/>
+                        <Region styleClass="profile-donate-arrow"/>
+                    </HBox>
+                </VBox>
+            </graphic>
+        </Button>
+        <Button fx:id="inviteFriend" id="profileMenuInvite" styleClass="profile-menu-item,zone-radius-sm" text="%main.account.invite"
+                mnemonicParsing="false" contentDisplay="RIGHT" maxWidth="Infinity">
+            <graphic><Region styleClass="external-arrow"/></graphic>
+        </Button>
         <Button fx:id="profile" id="profileMenuProfile" styleClass="profile-menu-item,zone-radius-sm" text="%main.account.profile"
                 mnemonicParsing="false" contentDisplay="RIGHT" maxWidth="Infinity">
             <graphic><Region styleClass="external-arrow"/></graphic>
         </Button>
-        <Button fx:id="switchAccount" id="profileMenuSwitch" styleClass="profile-menu-item,zone-radius-sm" text="%main.account.switch"
-                mnemonicParsing="false" maxWidth="Infinity"/>
         <Region styleClass="profile-menu-rule"/>
         <Button fx:id="logout" id="profileMenuLogout" styleClass="profile-menu-item,danger,zone-radius-sm" text="%main.account.logout"
                 mnemonicParsing="false" maxWidth="Infinity"/>

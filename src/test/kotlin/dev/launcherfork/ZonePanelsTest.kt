@@ -166,18 +166,18 @@ class ZonePanelsTest {
                 val zoneSheet = dev.launcherfork.theme.Theme.stylesheet("theme-zone.css")
                 if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
             }
-            Thread.sleep(500) // the compact window refits to the zone-styled content on the next layout pulse
+            Thread.sleep(500) // the window refits to the zone-styled content on the next layout pulse
             FxTestSupport.onFx {
                 val scene = nav.authStage.scene
                 scene.root.applyCss(); scene.root.layout()
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
-                // no hole above ВОЙТИ, no empty strip under the footer: the compact window fits its content
+                // no hole above ВОЙТИ; footer sits near the bottom of the fixed 620 window
                 val socialsBottom = c.enterSteamButton.localToScene(c.enterSteamButton.layoutBounds).maxY
                 val enterTop = c.enterButton.localToScene(c.enterButton.layoutBounds).minY
                 assertTrue(enterTop - socialsBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - socialsBottom}")
                 assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
-                assertTrue(nav.authStage.height < dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "login window not compact: ${nav.authStage.height}")
+                assertEquals(dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, nav.authStage.height, 0.5, "login window height")
                 // the top card shows the EXBO logo instead of a heading; the title strip drops its small copy
                 val logo = scene.root.lookup(".zone-top .zone-login-logo")
                 assertTrue(logo is dev.launcherfork.ui.components.LogoMark && logo.isVisible, "no EXBO logo in the top card")

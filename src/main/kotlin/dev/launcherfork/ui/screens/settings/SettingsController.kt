@@ -1,11 +1,9 @@
 package dev.launcherfork.ui.screens.settings
 
-import dev.launcherfork.domain.Appearance
 import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.P2pMode
 import dev.launcherfork.domain.RamOptions
-import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.RamBar
 import dev.launcherfork.ui.components.RamScale
@@ -24,8 +22,7 @@ import javafx.scene.layout.VBox
 
 /**
  * settings.fxml: one-screen list (groups ОПЕРАТИВНАЯ ПАМЯТЬ / ПОВЕДЕНИЕ / ОБНОВЛЕНИЕ / ЯЗЫК) bound to [dev.launcherfork.domain.SettingsStore].
- * Every change is saved immediately. The language radio rebuilds the main screen via the navigator; the theme radio
- * (Тёмная / Белая) re-styles all windows via the navigator.
+ * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var settingsRoot: AnchorPane
@@ -39,7 +36,6 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var behaviourCard: VBox
     @FXML lateinit var exitRow: HBox
     @FXML lateinit var p2pRow: HBox
-    @FXML lateinit var themeRow: HBox
     @FXML lateinit var limitsRow: HBox
     @FXML lateinit var languageRow: HBox
     @FXML lateinit var exitLabel: Label
@@ -67,9 +63,6 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var p2pAlways: RadioButton
     @FXML lateinit var p2pNotMobile: RadioButton
     @FXML lateinit var p2pNever: RadioButton
-    @FXML lateinit var themeGroup: ToggleGroup
-    @FXML lateinit var themeDark: RadioButton
-    @FXML lateinit var themeLight: RadioButton
     @FXML lateinit var defenderRow: HBox
     @FXML lateinit var defenderToggle: CheckBox
     @FXML lateinit var startOnDownloadedRow: HBox
@@ -96,18 +89,6 @@ class SettingsController(private val ctx: UiContext) {
         }
         bindRadios(p2pGroup, mapOf(p2pAlways to P2pMode.ALWAYS, p2pNotMobile to P2pMode.EXCEPT_MOBILE, p2pNever to P2pMode.NEVER), s.p2pMode) { v ->
             update { it.copy(p2pMode = v) }
-        }
-
-        // «Тема»: what the windows show now (saved setting or -Dlauncher.theme=zone-light); a change is saved (it survives a
-        // restart) and re-styles every window live. The white scheme is a zone variant: disabled in the exbo / shadcn themes.
-        bindRadios(themeGroup, mapOf(themeDark to Appearance.DARK, themeLight to Appearance.LIGHT), Theme.appearance) { v ->
-            update { it.copy(appearance = v) }
-            ctx.navigator.switchAppearance(v)
-        }
-        if (!Theme.supportsLight) {
-            themeDark.isDisable = true
-            themeLight.isDisable = true
-            Tooltip.install(themeRow, Tooltip(ctx.t("settings.theme.zone_only")))
         }
 
         // the rows of ПОВЕДЕНИЕ carry short captions; the original long wording is the tooltip

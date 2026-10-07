@@ -11,14 +11,13 @@ import org.junit.jupiter.api.Test
 import kotlin.math.abs
 
 /**
- * The compact pre-main window follows its panel's height only when the panel's content changes (StageNavigator
- * watches the panel's layout requests): an idle panel with a focused, blinking field runs no refit at all, while an
- * error line appearing still grows the window.
+ * Fixed 460×620 auth window: an idle panel with a focused, blinking field must not spam refits.
+ * An error line uses the panel's internal VGrow (logo shrinks) — stage height stays [Theme.AUTH_WINDOW_HEIGHT].
  */
 class AuthWindowRefitTest {
 
     @Test
-    fun refitRunsOnContentChangesOnly() {
+    fun idlePanelDoesNotSpamRefit() {
         val nav = FxTestSupport.onFx {
             StageNavigator(Stage(StageStyle.TRANSPARENT), AppContext.mock(authDelayMs = 0), "ru")
                 .also { it.exit = {}; it.showAuth(); it.authStage.show() }
@@ -31,6 +30,7 @@ class AuthWindowRefitTest {
             }
             assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
             assertTrue(fitted(), "the login window did not fit its panel")
+            assertEquals(dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, FxTestSupport.onFx { nav.authStage.height }, 0.5)
             FxTestSupport.onFx { (nav.panelController as InitialAuthController).loginField.requestFocus() }
             Thread.sleep(300)
             val idleStart = FxTestSupport.onFx { nav.authRefitChecks }
@@ -39,9 +39,9 @@ class AuthWindowRefitTest {
 
             val before = FxTestSupport.onFx { nav.authStage.height }
             FxTestSupport.onFx { (nav.panelController as InitialAuthController).onRestore() } // shows an error line
-            assertTrue(FxTestSupport.waitFx { nav.authStage.height > before + 1.0 }, "the error line did not grow the window")
+            assertTrue(FxTestSupport.waitFx { (nav.panelController as InitialAuthController).errorFirst.isVisible })
+            assertEquals(before, FxTestSupport.onFx { nav.authStage.height }, 0.5, "fixed auth window must not grow on error")
             assertTrue(fitted(), "the window does not fit the panel with the error line")
-            assertTrue(FxTestSupport.onFx { nav.authRefitChecks } > idleStart)
         } finally {
             FxTestSupport.onFx { nav.close() }
         }

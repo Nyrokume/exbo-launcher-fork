@@ -22,7 +22,8 @@
 }
 .check-box:focused > .box { -fx-background-color: transparent; }
 
-.text { -fx-font-smoothing-type: gray; }
+/* LCD matches prism.lcdtext=true (Main.kt). Gray AA made body text look soft on Windows ClearType displays. */
+.text { -fx-font-smoothing-type: lcd; }
 
 #close {
     -fx-background-image: url("image/close_button.png");

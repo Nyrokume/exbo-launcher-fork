@@ -1,8 +1,6 @@
 package dev.launcherfork
 
-import dev.launcherfork.data.local.AppearanceFileStore
 import dev.launcherfork.data.local.WallpaperFileMemory
-import dev.launcherfork.domain.Appearance
 import dev.launcherfork.wallpaper.Wallpaper
 import dev.launcherfork.wallpaper.WallpaperMemory
 import dev.launcherfork.wallpaper.Wallpapers
@@ -23,8 +21,8 @@ import kotlin.random.Random
 
 /**
  * Main-window wallpapers: the bundled manifest, the per-launch pick (random, never the previous launch's picture),
- * `wallpaper.last` in settings.properties next to `appearance`, the fixed choice -Dlauncher.wallpaper=N and the
- * once-per-launch holder [Wallpapers.current].
+ * `wallpaper.last` in settings.properties, the fixed choice -Dlauncher.wallpaper=N and the once-per-launch holder
+ * [Wallpapers.current].
  */
 class WallpapersTest {
     @AfterEach
@@ -175,19 +173,16 @@ class WallpapersTest {
     // ---- settings.properties ----
 
     @Test
-    fun lastWallpaperLivesNextToTheAppearance(@TempDir dir: Path) {
+    fun lastWallpaperSurvivesInSettingsFile(@TempDir dir: Path) {
         val file = dir.resolve("settings.properties")
-        AppearanceFileStore.write(file, Appearance.LIGHT)
         val memory = WallpaperFileMemory(file)
         assertNull(memory.last())
         memory.remember(5)
         assertEquals(5, WallpaperFileMemory(file).last())
-        assertEquals(Appearance.LIGHT, AppearanceFileStore.read(file), "the theme survives the wallpaper write")
-        AppearanceFileStore.write(file, Appearance.DARK)
-        assertEquals(5, WallpaperFileMemory(file).last(), "the wallpaper survives a theme switch")
+        memory.remember(3)
+        assertEquals(3, WallpaperFileMemory(file).last())
         val props = Properties().apply { Files.newBufferedReader(file).use { load(it) } }
-        assertEquals("5", props.getProperty("wallpaper.last"))
-        assertEquals("dark", props.getProperty("appearance"))
+        assertEquals("3", props.getProperty("wallpaper.last"))
         assertEquals(listOf("settings.properties"), Files.list(dir).use { s -> s.map { it.fileName.toString() }.toList() }, "leftover temp files")
     }
 
@@ -196,7 +191,7 @@ class WallpapersTest {
         val file = dir.resolve("settings.properties")
         assertNull(WallpaperFileMemory(file).last(), "no file")
         for (bad in listOf("abc", "", "  ", "1.5", "99999999999")) {
-            Files.writeString(file, "appearance=dark\nwallpaper.last=$bad\n")
+            Files.writeString(file, "wallpaper.last=$bad\n")
             assertNull(WallpaperFileMemory(file).last(), "'$bad'")
         }
         Files.writeString(file, "\u0000\u0001garbage=\\u12")
