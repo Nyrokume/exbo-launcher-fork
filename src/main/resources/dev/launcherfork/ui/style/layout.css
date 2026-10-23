@@ -63,11 +63,11 @@
 .app-window.wallpaper-on, .wallpaper-on .content-host { -fx-background-color: transparent; }
 .wallpaper-on .title-bar { -fx-background-color: -wallpaper-titlebar; }
 .wallpaper-on .sidebar { -fx-background-color: -wallpaper-sidebar; }
-/* shades in px, not %: the banner text column (<= 600 px from the sidebar) is covered on every window width, a wide
-   window shows the picture clean on the right; the top fade sits under the nav row */
+/* the banner text fills the content width, so the shade covers that whole area (still translucent: the picture
+   shows through). The top fade sits under the nav row. */
 .wallpaper-on .main-content {
     -fx-background-color:
-        linear-gradient(from 0px 0px to 900px 0px, -wallpaper-shade 0%, -wallpaper-shade 70%, transparent 100%),
+        linear-gradient(to right, -wallpaper-shade, -wallpaper-shade),
         linear-gradient(from 0px 0px to 0px 150px, -wallpaper-shade 0%, -wallpaper-shade 40%, transparent 100%);
 }
 /* the picture replaces the per-game art of the exbo / shadcn themes (zone hides it anyway) */
@@ -288,6 +288,7 @@
 .sidebar-logo { -fx-padding: 34 0 8 40; }
 .logo-path { -fx-fill: -foreground; }
 .sidebar .section-label { -fx-padding: 26 24 14 24; }
+.servers-scroll { -fx-padding: 18 0 0 0; }
 .servers-scroll, .servers-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
 
 .server-entry { -fx-background-color: transparent; -fx-cursor: hand; }
@@ -354,24 +355,91 @@
 }
 
 /* Game banner (main/game_banner.fxml) in the centre slot: plain text on the content background, no card / box / image.
-   Left edge 24 px from the sidebar (like the settings page), text column at most 560 px; title in the display font,
-   lead and subheading 16 px, body and closing 14 px (Roboto, .font-meta, in every theme). Colors: theme tokens only
-   (SettingsContrastTest.gameBannerTextIsReadable). The ScrollPane is invisible: no frame, no fill, slim bar only
-   when the window is too small for the text. */
+   Left edge 24 px from the sidebar (like the settings page). The column fills the slot; the sizes below are the
+   560 px-wide baseline (title in the display font, lead and subheading 15 px, body and closing 13 px, Roboto
+   .font-meta). GameBannerController scales them with the slot and down when a long server text would overflow.
+   Colors: theme tokens only (SettingsContrastTest.gameBannerTextIsReadable). The ScrollPane is invisible: no frame,
+   no fill, slim bar only when the window is too small for the text. */
 .game-banner-scroll, .game-banner-scroll > .viewport, .game-banner-scroll:focused {
     -fx-background-color: transparent; -fx-background: transparent; -fx-background-insets: 0; -fx-padding: 0;
     -fx-border-color: transparent;
 }
-.game-banner { -fx-padding: 4 0 8 9; -fx-spacing: 10; }
+/* left pad keeps Bebas Neue (and body) from clipping against the ScrollPane viewport */
+.game-banner { -fx-padding: 2 4 4 8; -fx-spacing: 6; }
 .game-banner-title { -fx-font-size: 40; -fx-text-fill: -foreground; }
-.game-banner-lead { -fx-font-size: 16; -fx-text-fill: -foreground; -fx-line-spacing: 3; }
-.game-banner-subheading { -fx-font-size: 16; -fx-text-fill: -foreground; -fx-padding: 6 0 0 0; }
-.game-banner-body { -fx-font-size: 14; -fx-text-fill: -secondary-foreground; -fx-line-spacing: 4; }
-.game-banner-closing { -fx-font-size: 14; -fx-text-fill: -foreground; }
+.game-banner-lead { -fx-font-size: 15; -fx-text-fill: -foreground; -fx-line-spacing: 1; }
+.game-banner-subheading { -fx-font-size: 15; -fx-text-fill: -foreground; -fx-padding: 2 0 0 0; }
+.game-banner-body { -fx-font-size: 13; -fx-text-fill: -secondary-foreground; -fx-line-spacing: 1; }
+.game-banner-closing { -fx-font-size: 13; -fx-text-fill: -foreground; -fx-line-spacing: 1; }
+
+/* News / patchnote posters (main/news_panel.fxml): full-bleed winter art, topic opens on click */
+.news-panel { -fx-padding: 0; -fx-background-color: transparent; }
+.news-stage {
+    -fx-background-color: #0a1218;
+    -fx-border-color: rgba(180, 210, 230, 0.18);
+    -fx-border-width: 1;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+.news-stage:hover { -fx-border-color: rgba(180, 210, 230, 0.42); }
+.news-card { -fx-padding: 0; -fx-background-color: transparent; }
+.news-art { -fx-background-color: #0a1218; }
+/* left/bottom fade so white title/date read on busy winter covers (patchnote layout) */
+.news-scrim {
+    -fx-background-color: linear-gradient(to top right,
+        rgba(4, 10, 16, 0.88) 0%,
+        rgba(4, 10, 16, 0.55) 38%,
+        rgba(4, 10, 16, 0.18) 68%,
+        rgba(4, 10, 16, 0.05) 100%);
+}
+.news-card-body { -fx-padding: 16 16 14 16; }
+.news-brand {
+    -fx-font-size: 11;
+    -fx-text-fill: rgba(235, 245, 255, 0.78);
+    -fx-padding: 0;
+}
+.news-title {
+    -fx-font-size: 34;
+    -fx-text-fill: #ffffff;
+    -fx-line-spacing: -4;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 8, 0.2, 0, 1);
+}
+.news-date {
+    -fx-font-size: 13;
+    -fx-text-fill: rgba(235, 245, 255, 0.88);
+    -fx-padding: 2 0 0 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 6, 0.15, 0, 1);
+}
+.news-dots { -fx-padding: 0; }
+.news-dot {
+    -fx-background-color: rgba(255, 255, 255, 0.28);
+    -fx-background-radius: 3;
+}
+.news-dot.active { -fx-background-color: #ffffff; }
 
 .header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
 .header-link:hover { -fx-text-fill: -foreground; }
 .header-link:hover .external-arrow { -fx-background-color: -foreground; }
+/* Separate settings pages in the nav row (header.fxml settingsNav): JVM, tunnel, sensitivity, account swap.
+   One is selected: the theme accent, same red the gear and the segmented controls use (-primary).
+   No fill, so the row stays the height of the profile button. The settings column leaves every item unselected. */
+.header-link.settings-nav-item {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-min-height: 0;
+}
+.header-link.settings-nav-item:hover { -fx-text-fill: -foreground; }
+.header-link.settings-nav-item:focus-visible { -fx-underline: true; }
+.header-link.settings-nav-item.selected,
+.header-link.settings-nav-item.selected:hover,
+.header-link.settings-nav-item.selected:focus-visible {
+    -fx-text-fill: -primary;
+}
 /* «СООБЩЕСТВА ▾»: a focusable Button that looks exactly like the Label links next to it, caret instead of ↗ */
 .header-menu-toggle {
     -fx-background-color: transparent;
@@ -482,24 +550,217 @@
 .game-action-item:disabled { -fx-opacity: 0.38; }
 
 /* ===================== settings ===================== */
-/* One screen at 900x580 (SettingsScreenTest), below the nav row. One tidy list: small Bebas group labels over subtle
-   cards; every row of a card is "label left, control right", 34 px (7 rows in ПОВЕДЕНИЕ since «Тема»; room for the 28 px
-   segmented controls and limit fields: tighter gaps between the groups instead), a thin separator under all but the last. */
+/* One column under the nav row: memory, behaviour, updates, language. It scrolls.
+   JVM, tunnel, sensitivity and account swap replace that column. The tunnel list scrolls inside its page.
+   Small Bebas group labels over subtle cards;
+   every row is "label left, control right", 34 px, a thin separator under all but the last. */
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
-.settings-content { -fx-padding: 4 24 8 24; -fx-max-width: 820; -fx-spacing: 10; }
-.settings-group { -fx-spacing: 5; }
+.settings-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
+.settings-content { -fx-padding: 2 24 18 24; -fx-max-width: 820; -fx-spacing: 4; }
+.settings-page { -fx-spacing: 4; }
+.settings-group { -fx-spacing: 3; }
 .settings-group-label { -fx-font-size: 17; -fx-text-fill: -settings-heading; }
 .settings-columns { -fx-spacing: 14; }
 .settings-card { -fx-padding: 0 14 0 14; }
-.settings-card.ram-card { -fx-padding: 8 14 6 14; -fx-spacing: 8; }
+.settings-card.ram-card { -fx-padding: 4 14 2 14; -fx-spacing: 4; }
 .settings-row {
     -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
     -fx-border-color: transparent transparent -settings-divider transparent;
     -fx-border-width: 0 0 1 0;
 }
 .settings-row.last { -fx-border-color: transparent; }
+.settings-combo {
+    -fx-pref-width: 196; -fx-min-width: 160; -fx-max-width: 196;
+    -fx-pref-height: 26; -fx-min-height: 26; -fx-max-height: 26;
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+.settings-combo-wide { -fx-pref-width: 260; -fx-min-width: 200; -fx-max-width: 280; }
 .settings-label { -fx-font-size: 14; -fx-text-fill: -settings-label; }
+.settings-note { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 0 0 6 0; }
+.settings-mini {
+    -fx-font-size: 13;
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-text-fill: -settings-label;
+    -fx-padding: 0 10;
+    -fx-min-height: 26; -fx-pref-height: 26; -fx-max-height: 26;
+    -fx-cursor: hand;
+}
+.settings-mini:hover { -fx-border-color: -border-hover; -fx-text-fill: -foreground; }
+.settings-mini.primary, .settings-mini.primary:hover {
+    -fx-background-color: -primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -primary-foreground;
+}
+.settings-mini:disabled, .settings-mini:disabled:hover {
+    -fx-opacity: 1;
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-text-fill: -settings-muted;
+    -fx-cursor: default;
+}
+.settings-field.zone-input {
+    -fx-padding: 0 8 0 8;
+    -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28;
+    -fx-min-width: 80;
+    -fx-max-width: Infinity;
+}
+.settings-list {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 2 0 0 0;
+    -fx-border-color: transparent;
+}
+.settings-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -settings-label;
+    -fx-font-size: 13;
+    -fx-padding: 1 4;
+}
+.settings-list .list-cell:filled:selected, .settings-list .list-cell:filled:selected:hover {
+    -fx-background-color: -tile-hover;
+    -fx-text-fill: -foreground;
+}
+.sens-table { -fx-padding: 4 0 2 0; -fx-max-width: infinity; }
+.sens-cell {
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-padding: 0 10 0 10;
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+    -fx-max-width: infinity;
+    -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28;
+}
+.sens-mag { -fx-font-size: 13; -fx-text-fill: -settings-muted; }
+.sens-int, .sens-frac { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-padding: 0; }
+.sens-int { -fx-alignment: center-right; }
+
+/* client tools, stacked under the launcher groups. Same cards and 34 px rows. */
+.client-card { -fx-padding: 10 14 12 14; -fx-spacing: 8; }
+.jvm-preset {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 8 10 8 10;
+    -fx-cursor: hand;
+    -fx-alignment: TOP_LEFT;
+    -fx-content-display: graphic-only;
+    -fx-max-width: infinity;
+}
+.jvm-preset:hover { -fx-border-color: -border-hover; }
+.jvm-preset.selected, .jvm-preset.selected:hover {
+    -fx-border-color: -primary;
+    -fx-background-color: -destructive-soft;
+}
+.jvm-preset:disabled { -fx-opacity: 0.45; }
+.jvm-preset-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
+.jvm-preset-hint { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.session-scroll, .session-scroll > .viewport,
+.tunnel-scroll, .tunnel-scroll > .viewport {
+    -fx-background-color: transparent; -fx-background: transparent;
+}
+.tunnel-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
+.tunnel-pools { -fx-spacing: 10; -fx-padding: 2 0 4 0; }
+.pool { -fx-spacing: 4; -fx-background-color: transparent; -fx-padding: 0; }
+.pool-head { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 6 2 0 2; }
+.pool-title { -fx-font-size: 13; -fx-text-fill: -settings-label; }
+.pool-meta { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.tunnel-list {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+}
+/* one server = one full-width row: lock, name, ping. A locked row is muted, not a red slab. */
+.tunnel-line {
+    -fx-alignment: center-left;
+    -fx-spacing: 8;
+    -fx-padding: 0 14 0 10;
+    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -settings-divider transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-cursor: default;
+}
+.tunnel-line:hover { -fx-background-color: -tile-hover; }
+.tunnel-line.last { -fx-border-color: transparent; }
+.tunnel-line.blocked { -fx-background-color: -fill-subtle; }
+.tunnel-line.blocked:hover { -fx-background-color: -tile-hover; }
+.tunnel-line.first { -fx-background-radius: 10 10 0 0; }
+.tunnel-line.last { -fx-background-radius: 0 0 10 10; }
+.tunnel-line.first.last { -fx-background-radius: 10; }
+.tunnel-line > .tunnel-lock,
+.tunnel-line > .tunnel-lock:hover,
+.tunnel-line > .tunnel-lock:focused,
+.tunnel-line > .tunnel-lock:armed {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.tunnel-line > .tunnel-lock:hover { -fx-background-color: -tile-hover; }
+.tunnel-lock-glyph {
+    -fx-fill: transparent;
+    -fx-stroke: -settings-label;
+    -fx-stroke-width: 1.4;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+.tunnel-line.blocked .tunnel-lock-glyph { -fx-stroke: -settings-muted; }
+.tunnel-row {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-font-size: 14;
+    -fx-text-fill: -settings-label;
+    -fx-alignment: center-left;
+}
+.tunnel-line.blocked .tunnel-row { -fx-text-fill: -settings-muted; }
+.tunnel-line.best .tunnel-row { -fx-text-fill: -status-online; }
+.tunnel-ping { -fx-font-size: 13; -fx-text-fill: -settings-muted; -fx-min-width: 36; -fx-alignment: center-right; }
+.tunnel-ping.good { -fx-text-fill: -status-online; }
+.tunnel-ping.mid { -fx-text-fill: -settings-warning; }
+.tunnel-ping.bad, .tunnel-ping.very-bad, .tunnel-ping.miss { -fx-text-fill: -destructive-text; }
+.tunnel-head { -fx-alignment: center-left; -fx-spacing: 12; }
+.tunnel-count { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 2 0 0 0; }
+.tunnel-count.err { -fx-text-fill: -destructive-text; }
+.tunnel-regions { -fx-alignment: center-left; -fx-padding: 2 0 0 0; }
+.tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 4 0 6 0; }
+
+/* saved EXBO sessions: one card per session, same surface as a tunnel pool, accent border when it is the live account.
+   Name and login take the left; Ключи / Применить / Удалить stay on the right and do not cover the title. */
+.session-cards { -fx-spacing: 8; -fx-padding: 2 0 8 0; }
+.session-card { -fx-padding: 12 14 12 14; -fx-spacing: 10; -fx-max-width: infinity; }
+.session-head { -fx-alignment: center-left; -fx-spacing: 16; }
+.session-text { -fx-spacing: 2; }
+.session-actions { -fx-alignment: center-right; -fx-spacing: 8; }
+.session-card.selected { -fx-border-color: -primary; -fx-background-color: -destructive-soft; }
+.session-current { -fx-font-size: 12; -fx-text-fill: -destructive-text; }
+.session-keys { -fx-spacing: 6; }
+.session-key-name { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.session-key-value { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-wrap-text: true; }
+.session-card .settings-mini:selected, .session-card .settings-mini:selected:hover {
+    -fx-border-color: -primary;
+    -fx-text-fill: -foreground;
+}
 
 /* segmented control (auto-exit, P2P, theme, language): RadioButtons drawn as the parts of one control. Same box as the
    speed-limit fields (-input, 1 px -border, .zone-radius-sm, 28 px tall); every part is 26 px, 14 px text, 13 px side
@@ -669,6 +930,42 @@
     -fx-font-size: 13;
 }
 .modal-layer .text-field:focused { -fx-border-color: -ring; }
+
+/* install modal: one path chip (folder + path + browse), not a field + second CAPS button */
+.install-space { -fx-font-size: 13; }
+.install-path {
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-min-height: 42;
+}
+.install-path:hover { -fx-border-color: -border-hover; -fx-background-color: -tile-hover; }
+.install-path-icon {
+    -fx-background-color: -muted-foreground;
+    /* simple folder glyph */
+    -fx-shape: "M0,4 H6 L7.5,6 H16 V15 H0 Z";
+}
+.install-path-text {
+    -fx-text-fill: -foreground;
+    -fx-font-size: 13;
+    -fx-padding: 0;
+}
+.install-path-browse {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-text-fill: -destructive-text;
+    -fx-font-size: 12;
+    -fx-padding: 4 6;
+    -fx-cursor: hand;
+    -fx-underline: false;
+}
+.install-path-browse:hover, .install-path-browse:focused {
+    -fx-text-fill: -primary-hover;
+    -fx-underline: true;
+    -fx-background-color: transparent;
+}
 
 /* generic check box inside modals: small ring + dot */
 .modal-layer .check-box { -fx-text-fill: -muted-foreground; -fx-font-size: 12; -fx-label-padding: 0 0 0 8; }

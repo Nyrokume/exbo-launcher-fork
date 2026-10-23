@@ -27,9 +27,12 @@
                          only the highest it may go (under the nav row): MainController.alignBanner moves the top down so the
                          title's letters start on the line of the selected game's row in the sidebar -->
                     <StackPane fx:id="centerPane" id="centerPane" styleClass="center-pane" pickOnBounds="false"
-                               AnchorPane.leftAnchor="15" AnchorPane.topAnchor="70" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="82">
+                               AnchorPane.leftAnchor="22" AnchorPane.topAnchor="70" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="82">
                         <fx:include fx:id="gameBanner" source="main/game_banner.fxml"/>
                     </StackPane>
+                    <fx:include fx:id="newsPanel" source="main/news_panel.fxml"
+                                visible="false" managed="false"
+                                AnchorPane.rightAnchor="21" AnchorPane.topAnchor="70" AnchorPane.bottomAnchor="100"/>
                     <fx:include fx:id="defaultStatusPane" source="main/status_pane.fxml"
                                 AnchorPane.leftAnchor="11" AnchorPane.rightAnchor="21" AnchorPane.bottomAnchor="20"/>
                 </AnchorPane>
@@ -66,4 +69,5 @@
     <fx:include fx:id="loadingPane" source="main/modals/loading_pane.fxml"/>
     <fx:include fx:id="deletionPane" source="main/modals/deletion_pane.fxml"/>
     <fx:include fx:id="installPane" source="main/modals/install_pane.fxml"/>
+    <fx:include fx:id="stalzone" source="stalzone_desk.fxml"/>
 </StackPane>

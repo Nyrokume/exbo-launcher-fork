@@ -44,6 +44,7 @@ class MockServicesTest {
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("1234567"))
         assertEquals(AuthResult.Failure(AuthError.SERVER_ERROR), auth.confirmTotp("123456"))   // not the TOTP step
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode("123456"))     // 6 digits: too short now
+        assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), auth.confirmCode(MockAuthService.WRONG_EMAIL_CODE))
         assertTrue(auth.confirmCode("268419249") is AuthResult.Success)
 
         assertEquals(AuthResult.TotpRequired, auth.login("totp", "x", false))

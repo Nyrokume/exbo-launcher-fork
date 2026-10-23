@@ -85,8 +85,9 @@ class MockSecondFactorTest {
             assertEquals(AuthResult.TotpRequired, totp.login("player", "secret", false))
             success(none.login("player", "secret", false))
         }
-        // the same code rules as before: 9 digits for the e-mail, 6 for the app, 000000 is the app's wrong code
+        // 9 digits for e-mail (000000000 rejected), 6 for the app (000000 rejected)
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), email.confirmCode("123456"))
+        assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), email.confirmCode(MockAuthService.WRONG_EMAIL_CODE))
         success(email.confirmCode("268419249"))
         assertEquals(AuthResult.Failure(AuthError.WRONG_CODE), totp.confirmTotp(MockAuthService.WRONG_TOTP_CODE))
         success(totp.confirmTotp("654321"))

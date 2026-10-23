@@ -19,6 +19,7 @@ import javax.imageio.ImageIO
 /** Shared helpers of the settings / game-actions UI tests: live main window, theme switch, events, previews. */
 object UiTestKit {
     /** Dark themes available via -Dlauncher.theme. */
+    /** Stable themes for contrast / layout matrices. Prototype `frost` is covered by ThemeTokensTest only. */
     val THEMES = listOf("exbo", "shadcn", "zone")
 
     fun Node.sceneBounds(): Bounds = localToScene(layoutBounds)

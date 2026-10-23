@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!--
+  Game tools of the new front, opened from the profile menu (JVM / Accounts / Sensitivity).
+  Same modal card as the other dialogs. One section is shown at a time.
+-->
+<AnchorPane fx:id="deskRoot" id="stalzoneDesk" styleClass="modal-layer" visible="false" stylesheets="@style/layout.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dev.launcherfork.ui.screens.stalzone.StalzoneDeskController">
+    <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
+    <StackPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <VBox fx:id="deskCard" id="modal-stalzoneCard" styleClass="modal-box,zone-radius-md" spacing="12" maxWidth="520">
+            <Label fx:id="deskTitle" styleClass="modal-title,font-display" text="%stalzone.jvm.heading"/>
+            <Region styleClass="modal-box-rule"/>
+
+            <VBox fx:id="jvmGroup" spacing="8">
+                <Label fx:id="jvmSummary" styleClass="modal-text" wrapText="true"/>
+                <Button fx:id="activateJvm" styleClass="modal-action,btn-primary,font-display,zone-radius-sm" text="%stalzone.jvm.activate" mnemonicParsing="false"/>
+            </VBox>
+
+            <VBox fx:id="accountsGroup" spacing="8" visible="false" managed="false">
+                <ListView fx:id="sessions" prefHeight="140"/>
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField fx:id="sessionName" promptText="%stalzone.accounts.name" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="captureSession" styleClass="modal-action,btn-outline,zone-radius-sm" text="%stalzone.accounts.capture" mnemonicParsing="false"/>
+                    <Button fx:id="applySession" styleClass="modal-action,btn-primary,zone-radius-sm" text="%stalzone.accounts.apply" mnemonicParsing="false"/>
+                    <Button fx:id="deleteSession" styleClass="modal-action,btn-outline,zone-radius-sm" text="%stalzone.accounts.delete" mnemonicParsing="false"/>
+                </HBox>
+            </VBox>
+
+            <VBox fx:id="sensGroup" spacing="8" visible="false" managed="false">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <TextField fx:id="baseSens" promptText="%stalzone.sens.base" prefWidth="120"/>
+                    <Button fx:id="calcSens" styleClass="modal-action,btn-outline,zone-radius-sm" text="%stalzone.sens.calc" mnemonicParsing="false"/>
+                    <Button fx:id="writeSens" styleClass="modal-action,btn-primary,zone-radius-sm" text="%stalzone.sens.write" mnemonicParsing="false"/>
+                </HBox>
+                <Label fx:id="sensTable" styleClass="modal-text" wrapText="true"/>
+            </VBox>
+
+            <Label fx:id="status" id="deskStatus" styleClass="modal-text" wrapText="true"/>
+            <HBox styleClass="modal-actions" alignment="CENTER_RIGHT">
+                <Button fx:id="closeDesk" styleClass="modal-action,btn-outline,font-display,zone-radius-sm" text="%stalzone.close" mnemonicParsing="false"/>
+            </HBox>
+        </VBox>
+    </StackPane>
+</AnchorPane>

@@ -1,0 +1,6 @@
+# Frost-theme window wallpapers (-Dlauncher.theme=frost). Same row format as ../wallpapers.txt.
+# Winter in-game shots; cover-fit crop uses the focus point.
+01.jpg 0.38 0.52 bright snow road, truck
+02.jpg 0.50 0.42 dark   ice crater
+03.jpg 0.52 0.28 dark   aurora over camp
+04.jpg 0.48 0.55 bright foggy railway

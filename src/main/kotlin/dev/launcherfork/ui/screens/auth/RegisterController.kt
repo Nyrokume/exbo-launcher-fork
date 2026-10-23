@@ -1,5 +1,6 @@
 package dev.launcherfork.ui.screens.auth
 
+import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.domain.RegisterError
 import dev.launcherfork.domain.RegisterResult
 import dev.launcherfork.domain.RegistrationField
@@ -150,8 +151,15 @@ class RegisterController(ctx: UiContext) : AuthScreenBase(ctx) {
         }
     }
 
-    /** License / privacy links: no browser in the fork, a grey note instead. */
-    @FXML fun onDocLink() = showError(null, ctx.t("fork.not_available"))
+    /** License / privacy links. The mock form keeps the grey note; live opens the official documents. */
+    @FXML fun onDocLink(event: javafx.event.ActionEvent? = null) {
+        if (!ctx.liveBackend) {
+            showError(null, ctx.t("fork.not_available"))
+            return
+        }
+        val privacy = (event?.source as? Node)?.id == "zonePrivacyLink"
+        ctx.services.links.open(if (privacy) ExternalLinks.PRIVACY else ExternalLinks.LICENSE)
+    }
 
     @FXML fun onBack() = ctx.navigator.showAgeGate(birthDate)
 

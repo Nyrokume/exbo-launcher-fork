@@ -6,7 +6,7 @@
 
 <!--
   Profile control (stalzone.com account menu): nickname + caret; dropdown with the site donate card
-  (Баланс: 0 + coin / Пополнить счет → → /donate), «Пригласить друга» ↗, «Личный кабинет» ↗, «Выйти».
+  («Баланс» + coin only after sign-in, no amount / Пополнить счет → → /donate), «Пригласить друга» ↗, «Личный кабинет» ↗, «Выйти».
   The card floats under the button (ProfileController.placeMenu), managed="false".
 -->
 <VBox fx:id="profileRoot" id="profileRoot" styleClass="profile-root" alignment="TOP_RIGHT" pickOnBounds="false"
@@ -28,7 +28,8 @@
                 contentDisplay="GRAPHIC_ONLY" maxWidth="Infinity" accessibleText="%main.account.top_up">
             <graphic>
                 <VBox styleClass="profile-donate-body" spacing="5" maxWidth="Infinity">
-                    <HBox styleClass="profile-donate-balance" alignment="CENTER_LEFT" spacing="5">
+                    <HBox fx:id="balanceRow" styleClass="profile-donate-balance" alignment="CENTER_LEFT" spacing="5"
+                          visible="false" managed="false">
                         <Label fx:id="balanceLabel" styleClass="profile-donate-balance-text" text="%main.account.balance"/>
                         <StalCoinMark coinSize="19"/>
                     </HBox>
@@ -47,6 +48,9 @@
                 mnemonicParsing="false" contentDisplay="RIGHT" maxWidth="Infinity">
             <graphic><Region styleClass="external-arrow"/></graphic>
         </Button>
+        <Region styleClass="profile-menu-rule"/>
+        <Button fx:id="toolsAccounts" id="profileMenuAccounts" styleClass="profile-menu-item,zone-radius-sm" text="%stalzone.accounts.heading"
+                mnemonicParsing="false" maxWidth="Infinity"/>
         <Region styleClass="profile-menu-rule"/>
         <Button fx:id="logout" id="profileMenuLogout" styleClass="profile-menu-item,danger,zone-radius-sm" text="%main.account.logout"
                 mnemonicParsing="false" maxWidth="Infinity"/>

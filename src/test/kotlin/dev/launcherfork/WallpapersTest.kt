@@ -70,6 +70,18 @@ class WallpapersTest {
         assertTrue(list[1].resource.endsWith("/wallpapers/02.jpg"))
     }
 
+    @Test
+    fun frostPackIsFourWinterJpegs() {
+        val frost = Wallpapers.frost
+        assertEquals((1..4).toList(), frost.map { it.number })
+        frost.forEach { wp ->
+            assertTrue(wp.resource.contains("/wallpapers/frost/"), wp.resource)
+            assertNotNull(Wallpapers.url(wp), "missing frost wallpaper ${wp.resource}")
+        }
+        assertEquals(frost, Wallpapers.packForTheme("frost"))
+        assertEquals(Wallpapers.all, Wallpapers.packForTheme("zone"))
+    }
+
     // ---- picker ----
 
     @Test

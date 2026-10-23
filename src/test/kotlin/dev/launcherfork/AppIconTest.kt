@@ -20,5 +20,12 @@ class AppIconTest {
         val legacy = loadImage(Theme.IMAGE_ROOT + "icon.png")
         assertFalse(legacy.isError)
         assertEquals(54.0, legacy.width)
+        Theme.APP_ICON_SIZES.forEach { size ->
+            val path = Theme.IMAGE_ROOT + "icon-frost-$size.png"
+            val img = loadImage(path)
+            assertFalse(img.isError, "$path: ${img.exception}")
+            assertEquals(size.toDouble(), img.width, path)
+            assertEquals(size.toDouble(), img.height, path)
+        }
     }
 }

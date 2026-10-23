@@ -1,6 +1,7 @@
 package dev.launcherfork.ui.screens.auth
 
 import dev.launcherfork.domain.AuthError
+import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
 import dev.launcherfork.ui.components.PasswordReveal
@@ -44,6 +45,12 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
             wireZoneForm()
         }
         enterButton.tooltip = Tooltip(ctx.t("fork.hint"))
+        if (ctx.liveBackend) {
+            (root.lookup("#zoneEpic") as? Button)?.apply {
+                isDisable = true
+                tooltip = Tooltip(ctx.t("fork.live.epic"))
+            }
+        }
     }
 
     private fun wirePasswordToggle() {
@@ -95,6 +102,8 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         }
     }
 
+    fun explainNewPlace() = showError(ctx.t("auth.error.new_place"))
+
     @FXML
     fun onEnter() {
         // zone form: Enter in a field must not bypass the grey ВОЙТИ (as on stalzone.com/login)
@@ -119,9 +128,18 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         autoAuthCheckBox.isSelected = !autoAuthCheckBox.isSelected
     }
 
-    /** "Создать" (zone) / "Регистрация" (legacy): registration starts with the age gate. */
-    @FXML fun onRegister() = ctx.navigator.showAgeGate()
-    @FXML fun onRestore() = showError(ctx.t("fork.not_available"))
+    /** "Создать" (zone) / "Регистрация" (legacy): the mock form, or the official site when EXBO is live. */
+    @FXML fun onRegister() {
+        if (ctx.liveBackend) ctx.services.links.open(ExternalLinks.REGISTER)
+        else ctx.navigator.showAgeGate()
+    }
+
+    @FXML fun onRestore() {
+        if (ctx.liveBackend) ctx.services.links.open(ExternalLinks.RESTORE)
+        else showError(ctx.t("fork.not_available"))
+    }
+
+    /** Steam auth in the official client needs a local socket. This fork leaves it unavailable. */
     @FXML fun onEnterSteam() = showError(ctx.t("fork.not_available"))
     @FXML fun onEnterEpic() = showError(ctx.t("fork.not_available"))
 

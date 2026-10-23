@@ -168,7 +168,10 @@ class AuthWindowTest {
             assertFalse(nav.authStage.isShowing, "auth window must be closed")
             assertNull(nav.panelController)
             assertNotNull(nav.mainController)
-            assertEquals("PLAYER", nav.mainController!!.profileBarController.accountName.text)
+            val profile = nav.mainController!!.profileBarController
+            assertEquals("PLAYER", profile.accountName.text)
+            assertTrue(profile.balanceRow.isVisible)
+            assertEquals("Баланс", profile.balanceLabel.text)
             assertSame(nav.mainStage, nav.window)
             nav.close()
         }

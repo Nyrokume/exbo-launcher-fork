@@ -33,8 +33,8 @@ import java.util.Properties
 
 /**
  * The STALZONE banner on the main screen: text from the game model (Server.description -> i18n keys, ru + en), no
- * second online count (it is shown once, in the games list), the layout (left column <= 560 px inside the
- * centre slot, never over the nav row, the status row or ИГРАТЬ; long text scrolls inside the slot) and the title's
+ * second online count (it is shown once, in the games list), the layout (the column fills the centre slot and the
+ * type scales with that width, never over the nav row, the status row or ИГРАТЬ; long text scales down onto one page) and the title's
  * letters starting on the line of the selected game row in the sidebar, at the minimum, the default, 1366x800 and a
  * maximized (1920x1080) window in every theme. Colors: SettingsContrastTest.gameBannerTextIsReadable.
  */
@@ -175,9 +175,11 @@ class GameBannerTest {
                             assertEquals(0.0, b.scroll.vvalue, "$where: banner scrolled")
                             assertEquals(rowTop, inkTop(b.title), 2.0, "$where: title top ${inkTop(b.title)} vs game row top $rowTop")
                             assertTrue(b.title.sceneBounds().minY >= banner.minY - 0.5, "$where: title clipped by the slot top")
-                            // left column, <= 560 px, every text line inside the visible viewport width; no truncation
+                            // the column fills the slot; type is larger on a wide window than at the 560 px baseline. No truncation
                             val content = b.content.sceneBounds()
-                            assertTrue(content.width <= 560.5, "$where: text column ${content.width} px")
+                            assertEquals(banner.width, content.width, 2.0, "$where: text column ${content.width} vs slot ${banner.width}")
+                            val titlePx = (b.title.lookup(".text") as Text).font.size
+                            if (w >= 1900) assertTrue(titlePx >= 52.0, "$where: title stayed $titlePx px")
                             assertEquals(slot.minX + 9, b.title.sceneBounds().minX, 1.0, "$where: title not at the left edge")
                             val labels = listOf(b.title, b.lead, b.subheading, b.body, b.closing)
                             labels.forEach { l: Label ->
@@ -187,8 +189,9 @@ class GameBannerTest {
                                 else assertTrue(l.width >= l.prefWidth(-1.0) - 0.5, "$where: '${l.id}' truncated")
                                 assertTrue(l.sceneBounds().maxX <= banner.maxX + 0.5, "$where: ${l.id} wider than the banner")
                             }
-                            // all of it readable without scrolling at the default size; at the minimum size it may scroll
-                            if (w >= Theme.WINDOW_WIDTH) assertTrue(content.maxY <= banner.maxY + 0.5, "$where: text cut at ${w.toInt()}x${h.toInt()}")
+                            // the whole description is one page at every window size: nothing cut, nothing to scroll
+                            assertTrue(content.maxY <= banner.maxY + 0.5, "$where: text cut at ${w.toInt()}x${h.toInt()}")
+                            assertEquals(0.0, b.scroll.vvalue, "$where: banner scrolled")
                             if (lang == "ru") preview(scene, "banner-$theme-${w.toInt()}")
                         }
                         // when the text is taller than the slot it scrolls inside it: the last line comes into view,
@@ -210,10 +213,42 @@ class GameBannerTest {
                         }
                     }
                 }
-            } finally {
+            }             finally {
                 FxTestSupport.onFx { nav.close() }
                 app.shutdown()
             }
+        }
+    }
+
+    /** A long server description (several paragraphs) still lands on one page at the minimum and the default size. */
+    @Test
+    fun longServerDescriptionStaysOnOnePage() {
+        val app = AppContext.mock(language = "ru", authDelayMs = 0)
+        val nav = mainOnScreen(app, "ru")
+        try {
+            val line = "Исследуй открытый мир, выполняй задания, участвуй в событиях и собирай отряды. "
+            val text = GameDescription.Text("STALZONE", line.repeat(3), line.repeat(2), line.repeat(8), line.repeat(2))
+            listOf(
+                Theme.WINDOW_MIN_WIDTH to Theme.WINDOW_MIN_HEIGHT,
+                Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT,
+            ).forEach { (w, h) ->
+                resize(nav, w, h)
+                FxTestSupport.onFx {
+                    val b = nav.mainController!!.gameBannerController
+                    b.show(stalzone.copy(description = text))
+                    relayout(nav)
+                    val where = "${w.toInt()}x${h.toInt()}"
+                    val banner = b.scroll.sceneBounds()
+                    val content = b.content.sceneBounds()
+                    assertEquals(0.0, b.scroll.vvalue, "$where: scrolled")
+                    assertTrue(content.maxY <= banner.maxY + 0.5, "$where: text ${content.maxY} below the slot ${banner.maxY}")
+                    assertTrue(b.closing.sceneBounds().maxY <= banner.maxY + 0.5, "$where: closing line cut")
+                    assertTrue(b.title.sceneBounds().minY >= banner.minY - 0.5, "$where: title clipped")
+                }
+            }
+        } finally {
+            FxTestSupport.onFx { nav.close() }
+            app.shutdown()
         }
     }
 }

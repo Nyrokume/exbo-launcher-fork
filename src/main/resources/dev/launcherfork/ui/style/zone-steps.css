@@ -1,7 +1,7 @@
 /*
  * zone-steps.css - registration and second-factor panels of the login window, on top of zone-auth.css:
  * age gate (dropdowns), registration form (check rows with inline links), digit cells (CodeInput), the site's error
- * toast, the light ОТПРАВИТЬ button and the success notice of the login panel. Tokens only, radii from FXML classes.
+ * toast, primary CTA and the success notice of the login panel. Tokens only, radii from FXML classes.
  */
 
 /* ---------- shared bits ---------- */

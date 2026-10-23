@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
 
 /**
  * Main window, zone theme: plain content background, Forum / Support next to the profile, STALZONE as the only game,
- * the centre slot holding only the game banner text (no hero / news).
+ * the centre slot holding the game banner; the news prototype is present but hidden.
  */
 class MainZoneLayoutTest {
     private fun Node.sceneBounds(): Bounds = localToScene(layoutBounds)
@@ -53,10 +53,12 @@ class MainZoneLayoutTest {
         val main = nav.mainController!!
         assertEquals(listOf(main.gameBannerController.scroll), main.centerPane.children.toList(), "centre slot: only the game banner")
         assertTrue(main.centerPane.isVisible)
-        // home layer: centre slot and status bar (the game-actions dropdown floats inside the status bar); no hero / news / article
-        assertEquals(2, main.homePane.children.size, "${main.homePane.children}")
-        listOf("#hero", "#news", "#article").forEach { assertTrue(main.root.lookup(it) == null, "$it is still in the main window") }
-        // centre slot sits between the top bar and the status bar
+        // home: banner slot + hidden news prototype + status bar
+        assertEquals(3, main.homePane.children.size, "${main.homePane.children}")
+        assertTrue(main.root.lookup("#news") != null, "news prototype missing from the tree")
+        assertFalse(main.newsPanelController.root.isVisible, "news stack must stay hidden")
+        assertFalse(main.newsPanelController.root.isManaged)
+        listOf("#hero", "#article").forEach { assertTrue(main.root.lookup(it) == null, "$it is still in the main window") }
         val centre = main.centerPane.sceneBounds()
         val status = main.defaultStatusPaneController.downloadButton.sceneBounds()
         val profile = main.profileBarController.loginButton.sceneBounds()
@@ -67,6 +69,7 @@ class MainZoneLayoutTest {
     @Test
     fun headerLinksSitInTheProfileRow() = withZoneMain { nav ->
         val main = nav.mainController!!
+        assertFalse(main.profileBarController.balanceRow.isVisible, "balance caption stays hidden without a session")
         val forum = main.headerController.forum.sceneBounds()
         val support = main.headerController.support.sceneBounds()
         val profile = main.profileBarController.loginButton.sceneBounds()
@@ -90,11 +93,11 @@ class MainZoneLayoutTest {
     }
 
     @Test
-    fun onlyGameIsStalzoneWithTheSiteFavicon() {
+    fun onlyGameIsStalzoneWithTheForkLogo() {
         val game = MockData.servers.single()
         assertEquals("STALZONE", game.caption)
         assertEquals(dev.launcherfork.domain.GameDescription.Keys("game.stalzone"), game.description)
-        assertTrue(game.iconUri.toString().endsWith("/servers/game-stalzone.png"))
+        assertTrue(game.iconUri.toString().endsWith("/image/game-stalzone.png"))
         assertTrue("STALCRAFT" !in game.caption)
     }
 }

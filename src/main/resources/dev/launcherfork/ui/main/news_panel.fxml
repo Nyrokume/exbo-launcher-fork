@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Rectangle?>
+
+<!--
+  Patchnote poster stack (right of the home banner). Full-bleed winter art + left-aligned title/date
+  like the STALCRAFT patchnote cover; click opens the topic URL. Hover flips to the next card.
+-->
+<VBox fx:id="root" id="news" styleClass="news-panel" spacing="0"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dev.launcherfork.ui.screens.main.NewsPanelController"
+      stylesheets="@../style/layout.css" minWidth="248" prefWidth="276" maxWidth="292">
+    <StackPane fx:id="stage" styleClass="news-stage,zone-radius-md" VBox.vgrow="ALWAYS" minHeight="300" prefHeight="340">
+        <clip>
+            <Rectangle fx:id="clip" width="276" height="340" arcWidth="8" arcHeight="8"/>
+        </clip>
+        <StackPane fx:id="card" styleClass="news-card" maxWidth="Infinity" maxHeight="Infinity">
+            <Region fx:id="art" styleClass="news-art" maxWidth="Infinity" maxHeight="Infinity"/>
+            <Region styleClass="news-scrim" maxWidth="Infinity" maxHeight="Infinity" mouseTransparent="true"/>
+            <VBox styleClass="news-card-body" spacing="4" maxWidth="Infinity" maxHeight="Infinity" alignment="TOP_LEFT">
+                <Label fx:id="brand" styleClass="news-brand,font-meta" minHeight="-Infinity"/>
+                <Region VBox.vgrow="ALWAYS" minHeight="12"/>
+                <Label fx:id="title" styleClass="news-title,font-display" wrapText="true" minHeight="-Infinity"/>
+                <Label fx:id="date" styleClass="news-date,font-meta" wrapText="true" minHeight="-Infinity"/>
+                <HBox fx:id="dots" styleClass="news-dots" alignment="CENTER_LEFT" spacing="5">
+                    <VBox.margin>
+                        <Insets top="14"/>
+                    </VBox.margin>
+                </HBox>
+            </VBox>
+        </StackPane>
+    </StackPane>
+</VBox>

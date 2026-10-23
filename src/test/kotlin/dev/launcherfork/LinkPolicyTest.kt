@@ -47,6 +47,13 @@ class LinkPolicyTest {
     }
 
     @Test
+    fun exboRuRegistrationAndRestoreAreAllowed() {
+        assertTrue("exbo.ru" in LinkPolicy.allowedHosts)
+        listOf(ExternalLinks.REGISTER, ExternalLinks.RESTORE, "https://www.exbo.ru/index.php?do=register")
+            .forEach { assertTrue(LinkPolicy.isAllowed(it), it) }
+    }
+
+    @Test
     fun exboGamesAndExboNetAreAllowed() {
         assertTrue("exbo.games" in LinkPolicy.allowedHosts)
         assertTrue("exbo.net" in LinkPolicy.allowedHosts)
@@ -56,7 +63,21 @@ class LinkPolicyTest {
 
     @Test
     fun externalLinksAreAllowed() {
+        assertEquals("https://stalzone.net/referral", ExternalLinks.REFERRAL)
+        assertTrue("stalzone.net" in LinkPolicy.allowedHosts)
         listOf(ExternalLinks.LICENSE, ExternalLinks.PRIVACY, ExternalLinks.ACCOUNT, ExternalLinks.REFERRAL)
             .forEach { assertTrue(LinkPolicy.isAllowed(it), it) }
+        assertFalse(LinkPolicy.isAllowed("https://stalzone.net.evil.com/referral"))
+    }
+
+    @Test
+    fun vkPatchnoteTopicsAreAllowed() {
+        assertTrue("vk.ru" in LinkPolicy.allowedHosts)
+        assertTrue("vk.com" in LinkPolicy.allowedHosts)
+        listOf(
+            "https://vk.ru/@stalcraft_official-patchnout-04022026-wg97538",
+            "https://vk.com/@stalcraft_official-patchnout-04022026-wg97538",
+            "https://m.vk.ru/@stalcraft_official",
+        ).forEach { assertTrue(LinkPolicy.isAllowed(it), it) }
     }
 }

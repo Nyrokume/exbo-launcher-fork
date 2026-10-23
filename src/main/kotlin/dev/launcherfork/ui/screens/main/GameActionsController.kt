@@ -13,6 +13,7 @@ import javafx.scene.Node
 import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.Label
+import javafx.scene.control.Tooltip
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.input.MouseEvent
@@ -76,7 +77,11 @@ class GameActionsController(private val ctx: UiContext) : Disposable {
 
     /** Enables / disables rows for [state]. */
     fun update(state: ClientState) {
-        items.forEach { (action, b) -> b.isDisable = !GameActions.isEnabled(action, state) }
+        items.forEach { (action, b) ->
+            val locked = ctx.liveBackend && action == GameAction.REINSTALL
+            b.isDisable = locked || !GameActions.isEnabled(action, state)
+            if (locked) b.tooltip = Tooltip(ctx.t("fork.live.no_download"))
+        }
     }
 
     /** Logical state (the card may still be fading out for a moment after [hide]). */

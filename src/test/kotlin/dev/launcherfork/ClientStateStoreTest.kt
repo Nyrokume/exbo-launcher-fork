@@ -220,6 +220,31 @@ class ClientStateStoreTest {
     }
 
     @Test
+    fun shutdownDoesNotCancelARunningGame() {
+        updates.installed += server.id
+        store.primaryAction(server)
+        launcher.launches[0].listener.onStarted()
+        assertEquals(ClientState.Running, state())
+        store.shutdown()
+        assertFalse(launcher.launches[0].cancelled)
+        assertEquals(ClientState.Running, state())
+        launcher.launches[0].listener.onExited()
+        assertEquals(ClientState.Running, state())
+    }
+
+    @Test
+    fun failedDownloadRestoresThePreviousState() {
+        updates.installed += server.id
+        assertEquals(ClientState.Ready, state())
+        var failed = false
+        store.onDownloadFailed = { failed = true }
+        store.startDownload(server)
+        updates.jobs.single().listener.onFailed("io")
+        assertTrue(failed)
+        assertEquals(ClientState.Ready, state())
+    }
+
+    @Test
     fun shutdownCancelsAnOperation() {
         updates.installed += server.id
         store.runOperation(server, ClientOperation.VERIFY)

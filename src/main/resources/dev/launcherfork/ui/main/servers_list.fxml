@@ -14,7 +14,8 @@
       fx:controller="dev.launcherfork.ui.screens.main.ServersListController">
     <!-- vector logo (ui/style/image/exbo-logo.svg -> SVGPath nodes), filled with -foreground -->
     <LogoMark fx:id="logo" id="sidebarLogo" styleClass="sidebar-logo" logoWidth="170"/>
-    <HBox fx:id="gamesLabel" styleClass="section-label" alignment="CENTER">
+    <!-- section label kept in FXML for ids/tests but hidden: no chrome captions in the sidebar -->
+    <HBox fx:id="gamesLabel" styleClass="section-label" alignment="CENTER" visible="false" managed="false">
         <Region styleClass="section-line" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
         <Label fx:id="gamesLabelText" styleClass="section-label-text,zone-caps" text="%main.games.title"/>
         <Region styleClass="section-line" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>

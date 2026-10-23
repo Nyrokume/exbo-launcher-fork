@@ -15,8 +15,8 @@
       stylesheets="@style/layout.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.components.ServerEntryController">
     <Region fx:id="cursor" id="entryIndicator" styleClass="entry-indicator" minWidth="4" prefWidth="4" maxWidth="4" maxHeight="Infinity"/>
-    <Pane fx:id="image" id="entryIcon" styleClass="entry-icon" minWidth="24" prefWidth="24" maxWidth="24" minHeight="24" prefHeight="24" maxHeight="24">
-        <HBox.margin><Insets left="34" right="16"/></HBox.margin>
+    <Pane fx:id="image" id="entryIcon" styleClass="entry-icon" minWidth="40" prefWidth="40" maxWidth="40" minHeight="40" prefHeight="40" maxHeight="40">
+        <HBox.margin><Insets left="18" right="16"/></HBox.margin>
     </Pane>
     <VBox styleClass="entry-text" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" maxWidth="Infinity">
         <Text fx:id="name" id="entryName" styleClass="entry-name,zone-caps" text="SERVER NAME"/>

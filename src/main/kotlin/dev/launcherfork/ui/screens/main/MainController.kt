@@ -25,10 +25,13 @@ import dev.launcherfork.ui.screens.main.modals.ModalController
 import dev.launcherfork.ui.screens.main.modals.OfflineModalController
 import dev.launcherfork.ui.screens.main.modals.UpdateModalController
 import dev.launcherfork.ui.screens.settings.SettingsController
+import dev.launcherfork.ui.screens.stalzone.StalzoneDeskController
 import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.ClientStateStore
 import dev.launcherfork.ui.state.GameAction
 import dev.launcherfork.ui.state.GameActions
+import java.nio.file.Files
+import java.nio.file.Path
 import javafx.beans.value.ChangeListener
 import javafx.fxml.FXML
 import javafx.scene.Node
@@ -43,7 +46,7 @@ import javafx.scene.layout.StackPane
  * main.fxml: coordination between the included areas (sidebar, links, profile, status bar, settings, modals).
  * Each area has its own FXML and controller. Layout is adaptive (BorderPane + anchors). [centerPane] holds the
  * selected game's banner text ([GameBannerController]); its top follows the selected game's row in the sidebar
- * ([alignBanner]), so the description starts on the line of its menu item.
+ * ([alignBanner]), so the description starts on the line of its menu item. [newsPanel] is kept in the tree but hidden.
  */
 class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var root: StackPane
@@ -64,7 +67,9 @@ class MainController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var headerController: HeaderController
     @FXML lateinit var defaultStatusPaneController: StatusPaneController
     @FXML lateinit var gameBannerController: GameBannerController
+    @FXML lateinit var newsPanelController: NewsPanelController
     @FXML lateinit var settingsController: SettingsController
+    @FXML lateinit var stalzoneController: StalzoneDeskController
     @FXML lateinit var logoutPaneController: LogoutModalController
     @FXML lateinit var updatePaneController: UpdateModalController
     @FXML lateinit var licensePaneController: LicenseModalController
@@ -91,16 +96,31 @@ class MainController(private val ctx: UiContext) : Disposable {
         profileBarController.onTopUp = { ctx.services.links.open(ExternalLinks.TOP_UP) }
         profileBarController.onInviteFriend = { ctx.services.links.open(ExternalLinks.REFERRAL) }
         profileBarController.onProfile = { ctx.services.links.open(ExternalLinks.ACCOUNT) }
+        profileBarController.onAccounts = { settingsController.showSection("accounts"); setSettingsVisible(true) }
+        settingsController.onSection = { id -> if (settingsPane.isVisible) headerController.selectSection(id) }
+        headerController.onSettingsSection = { id ->
+            settingsController.showSection(id)
+            if (!settingsPane.isVisible) setSettingsVisible(true)
+        }
         // the ONLY way to the logout confirmation: profile menu «Выйти» (window close never asks)
         profileBarController.onLogout = { logoutPaneController.show() }
         logoutPaneController.onConfirm = ::leaveToAuth
         updatePaneController.onConfirm = { ctx.navigator.showLauncherUpdate(afterUpdate = ctx.navigator::showMain) }
 
         serversListController.onServerSelected = { server -> selectServer(server, showHome = true) }
-        serversListController.onSettingsClicked = { setSettingsVisible(!settingsPane.isVisible) }
+        serversListController.onSettingsClicked = {
+            if (settingsPane.isVisible && settingsController.atTop()) setSettingsVisible(false)
+            else {
+                settingsController.showSection("ram")
+                setSettingsVisible(true)
+            }
+        }
 
         val status = defaultStatusPaneController
         status.onPrimaryAction = ::onPrimaryAction
+        store.onDownloadFailed = {
+            exceptionPaneController.show(ctx.t("main.exception.update"), ctx.t("main.exception.update.desc"))
+        }
         // game-actions menu next to ИГРАТЬ: one dropdown at a time with the top-bar menus
         val actions = status.gameActionsController
         actions.onShown = { profileBarController.hideMenu(); headerController.hideCommunityMenu() }
@@ -120,11 +140,14 @@ class MainController(private val ctx: UiContext) : Disposable {
 
         // the banner starts on the line of its game in the sidebar: re-placed whenever the row (followRow), the content
         // area or the title moves, and after every layout of the title (a new font moves its text line inside the label
-        // only then); never higher than the FXML top (under the nav row)
+        // only then); never higher than the FXML top (under the nav row). The news column shares that top.
         bannerMinTop = AnchorPane.getTopAnchor(centerPane) ?: 0.0
         homePane.localToSceneTransformProperty().addListener(alignOnChange)
         gameBannerController.title.localToSceneTransformProperty().addListener(alignOnChange)
         gameBannerController.title.needsLayoutProperty().addListener(alignOnChange)
+        // needsLayout fires before the text line is placed; a scaled font only moves the cap line once layout
+        // has written the label's new bounds, so the row alignment has to run again then
+        gameBannerController.title.layoutBoundsProperty().addListener(alignOnChange)
 
         servers = ctx.services.servers.servers()
         serversListController.setServers(servers, store)
@@ -173,14 +196,17 @@ class MainController(private val ctx: UiContext) : Disposable {
         val bannerTopInSlot = centerPane.sceneToLocal(gameBannerController.scroll.localToScene(0.0, 0.0)).y
         val top = maxOf(bannerMinTop, rowTop - bannerTopInSlot - inkOffset)
         val current = AnchorPane.getTopAnchor(centerPane)
-        if (current == null || Math.abs(top - current) > 0.1) AnchorPane.setTopAnchor(centerPane, top)
+        if (current == null || Math.abs(top - current) > 0.1) {
+            AnchorPane.setTopAnchor(centerPane, top)
+            AnchorPane.setTopAnchor(newsPanelController.root, top)
+        }
     }
 
     private val modals: List<ModalController> by lazy {
         listOf(
             updatePaneController, licensePaneController, offlinePaneController, defenderPaneController,
             downloadWarnPaneController, exceptionPaneController, loadingPaneController, logoutPaneController,
-            deletionPaneController, installPaneController,
+            deletionPaneController, installPaneController, stalzoneController,
         )
     }
 
@@ -234,7 +260,7 @@ class MainController(private val ctx: UiContext) : Disposable {
         if (!GameActions.isEnabled(action, state)) return
         val operation = when (action) {
             GameAction.OPEN_FOLDER -> {
-                ctx.services.folders.open(GameFolders.dirOf(ctx.services.settings.load(), server))
+                ctx.services.folders.open(clientDirectory(server))
                 return
             }
             GameAction.OPEN_LOGS -> {
@@ -246,6 +272,7 @@ class MainController(private val ctx: UiContext) : Disposable {
             GameAction.REINSTALL -> ClientOperation.REINSTALL
             GameAction.DELETE -> ClientOperation.DELETE
         }
+        if (ctx.liveBackend && operation == ClientOperation.REINSTALL) return
         if (!GameActions.needsConfirmation(action, state)) {
             store.runOperation(server, operation)
             return
@@ -277,19 +304,24 @@ class MainController(private val ctx: UiContext) : Disposable {
         homePane.isVisible = !visible
         root.toggleClass("settings-mode", visible)
         serversListController.setSettingsActive(visible)
+        headerController.setSettingsNav(visible, settingsController.currentSection)
         if (visible) defaultStatusPaneController.gameActionsController.hide()
-        headerController.hideCommunityMenu() // a screen switch closes the open dropdown, the links themselves stay
+        headerController.hideCommunityMenu() // a screen switch closes the open dropdown
     }
 
     private fun onPrimaryAction(server: Server) {
         val state = store.state(server).get()
         when {
+            state == ClientState.Ready && ctx.services.servers.needsClientUpdate(server) -> startDownloadChecked(server)
             state == ClientState.NotInstalled -> {
+                if (ctx.liveBackend && !ctx.services.servers.canDownload(server)) return
+                val dir = clientDirectory(server)
                 installPaneController.onConfirm = { startDownloadChecked(server) }
                 installPaneController.show(
-                    ctx.services.settings.load().gameRoot.resolve(server.id).toString(),
+                    dir.toString(),
                     formatBytes(server.clientSizeBytes),
-                    formatBytes(512L * 1024 * 1024 * 1024),
+                    formatBytes(usableSpace(dir)),
+                    canChangeFolder = !ctx.liveBackend,
                 )
             }
             state is ClientState.Paused -> startDownloadChecked(server)
@@ -297,7 +329,24 @@ class MainController(private val ctx: UiContext) : Disposable {
         }
     }
 
+    private fun clientDirectory(server: Server): Path =
+        ctx.services.servers.clientDirectory(server) ?: GameFolders.dirOf(ctx.services.settings.load(), server)
+
+    private fun usableSpace(path: Path): Long {
+        var current = path.toAbsolutePath()
+        while (!Files.exists(current)) {
+            current = current.parent ?: return 0L
+        }
+        return try {
+            Files.getFileStore(current).usableSpace
+        } catch (_: Exception) {
+            0L
+        }
+    }
+
     private fun startDownloadChecked(server: Server) {
+        val updating = ctx.services.servers.needsClientUpdate(server)
+        if (ctx.liveBackend && !updating && !ctx.services.servers.canDownload(server)) return
         if (store.isAnyDownloading(except = server)) {
             downloadWarnPaneController.onConfirm = { store.startDownload(server) }
             downloadWarnPaneController.show()

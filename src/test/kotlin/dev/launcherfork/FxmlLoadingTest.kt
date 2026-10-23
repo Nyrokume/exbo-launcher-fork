@@ -57,7 +57,7 @@ class FxmlLoadingTest {
     fun mainFxmlKeepsStructureIds(): List<DynamicTest> {
         // fx:ids the controllers, the screenshot tour and the docs rely on (main.fxml + every fx:include)
         val ids = listOf(
-            "root", "layout", "main", "background", "backgroundShade", "homePane", "centerPane", "settingsPane",
+            "root", "layout", "main", "background", "backgroundShade", "homePane", "centerPane", "newsPanel", "settingsPane",
             // sidebar + game entries
             "serversList", "sidebar", "logo", "gamesLabel", "serversPane", "settingsButton",
             // profile control (top-right) + dropdown

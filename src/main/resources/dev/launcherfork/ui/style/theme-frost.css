@@ -1,0 +1,114 @@
+/*
+ * theme-frost.css — icy winter look (-Dlauncher.theme=frost), after theme.css.
+ * Cool night blues, frost-white text, cyan ice accent. Same token names as other themes.
+ */
+
+
+
+.root {
+    -background: #061018;
+    -foreground: #e8f4ff;
+    -card: #0e1a24;
+    -card-foreground: #e8f4ff;
+    -popover: rgba(8, 20, 30, 0.97);
+    -popover-foreground: #e8f4ff;
+    -primary: #4db8e8;                        /* ice cyan CTA */
+    -primary-foreground: #041018;
+    -secondary: #0a1620;
+    -secondary-foreground: #e8f4ff;
+    -muted: #0a1620;
+    -muted-foreground: rgba(180, 210, 230, 0.70);
+    -accent: rgba(120, 200, 255, 0.08);
+    -accent-foreground: #e8f4ff;
+    -border: #1e3545;
+    -ring: #7ec8ff;
+    -destructive: #5ec4f0;
+    -destructive-border: rgba(126, 200, 255, 0.40);
+    -destructive-soft: rgba(126, 200, 255, 0.10);
+    -destructive-text: #9fd8ff;
+    -primary-tint: rgba(77, 184, 232, 0.22);
+    -input-foreground: #e8f4ff;
+    -placeholder: rgba(180, 210, 230, 0.68);
+    -overlay: rgba(2, 10, 18, 0.82);
+    -overlay-light: rgba(2, 10, 18, 0.45);
+    -overlay-solid: #020a12;
+    -shadow: rgba(0, 20, 40, 0.65);
+    -shadow-inner: rgba(0, 30, 50, 0.45);
+
+    -text-strong: #e8f4ff;
+    -text-description: rgba(220, 236, 248, 0.88);
+    -text-label: #e8f4ff;
+    -text-status: rgba(160, 200, 220, 0.55);
+    -text-nav: #e8f4ff;
+    -text-dim: rgba(160, 200, 220, 0.50);
+    -text-dim-active: rgba(180, 210, 230, 0.70);
+    -text-link: rgba(180, 210, 230, 0.70);
+    -transparent: transparent;
+
+    -titlebar: #061018;
+    -titlebar-foreground: #e8f4ff;
+    -window-close: #7ec8ff;
+    -window-close-hover: #b8e6ff;
+    -sidebar: #081420;
+    -divider: #1e3545;
+    -divider-light: rgba(160, 210, 240, 0.14);
+    -heading-rule: #c8e6ff;
+    -segment-off: #1e3545;
+    -track: #122230;
+    -icon: rgba(180, 210, 230, 0.70);
+    -primary-hover: #7ec8ff;
+    -input: #0a1620;
+    -scrim: rgba(2, 12, 22, 0.74);
+    -tile: #0a1620;
+    -tile-hover: #122838;
+    -border-hover: #3a6a88;
+    -fill-subtle: rgba(160, 210, 240, 0.05);
+    -fill-strong: rgba(160, 210, 240, 0.14);
+    -card-alt: #081420;
+    -card-description: #081420;
+    -input-border: #1e3545;
+    -error: #7ec8ff;
+    -status-online: #5ee0c0;
+    -status-offline: #3a5568;
+
+    -wallpaper-scrim: rgba(4, 14, 24, 0.28);
+    -wallpaper-scrim-bright: rgba(4, 14, 24, 0.48);
+    -wallpaper-shade: rgba(4, 14, 24, 0.42);
+    -wallpaper-sidebar: rgba(4, 14, 24, 0.60);
+    -wallpaper-titlebar: rgba(4, 14, 24, 0.55);
+    -wallpaper-text-muted: #b8d4e8;
+
+    -settings-heading: #f0f8ff;
+    -settings-label: #e0f0fa;
+    -settings-muted: #a8c4d8;
+    -settings-divider: #243848;
+    -ram-filled: #4db8e8;
+    -ram-filled-hover: #7ec8ff;
+    -switch-on: #4db8e8;
+    -switch-on-hover: #7ec8ff;
+    -ram-free: #4a6880;
+    -switch-off-knob: #9ab8cc;
+    -switch-off-border: #4a6880;
+    -segment-selected: #4db8e8;
+    -segment-text: #c8e0f0;
+    -settings-warning: #8ec8e8;
+
+    -fx-font-family: "Roboto";
+    -fx-font-size: 13;
+}
+
+.font-display { -fx-font-family: "Bebas Neue Regular"; }
+.font-display-strong { -fx-font-family: "Bebas Neue Regular"; }
+.font-bold { -fx-font-family: "Roboto"; -fx-font-weight: 500; }
+.font-light { -fx-font-family: "Roboto"; -fx-font-weight: 300; }
+.game-banner-title.font-display { -fx-font-size: 44; }
+.news-title.font-display { -fx-font-size: 38; }
+
+.button, .text-field, .progress-bar, .progress-bar > .bar, .progress-bar > .track,
+.scroll-bar .thumb, .check-box > .box, .context-button {
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+.zone-radius-sm { -fx-background-radius: 5; -fx-border-radius: 5; }
+.zone-radius-md { -fx-background-radius: 10; -fx-border-radius: 10; }
+

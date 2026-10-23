@@ -5,6 +5,7 @@ import javafx.scene.effect.ColorAdjust
 import javafx.scene.effect.Effect
 import javafx.scene.effect.GaussianBlur
 import javafx.scene.text.Font
+import java.net.URI
 import java.net.URL
 
 /**
@@ -48,8 +49,19 @@ object Theme {
      */
     val APP_ICON_SIZES = listOf(16, 32, 48, 64, 128, 256)
 
-    fun appIconResources(): List<String> =
-        APP_ICON_SIZES.map { size -> IMAGE_ROOT + "icon-$size.png" }
+    fun appIconResources(): List<String> {
+        val prefix = if (themeName == "frost") "icon-frost-" else "icon-"
+        return APP_ICON_SIZES.map { size -> IMAGE_ROOT + "$prefix$size.png" }
+    }
+
+    /**
+     * Stalker helmet for the main STALZONE row when `/listServers` does not send that client its own icon.
+     * A catalog icon (the radiation mark, the OTS atom, any other client) is shown as sent.
+     */
+    const val GAME_ICON = IMAGE_ROOT + "game-stalzone.png"
+
+    fun gameIconUri(): URI =
+        requireNotNull(Theme::class.java.getResource(GAME_ICON)?.toURI()) { "Missing $GAME_ICON" }
 
     // ---- overlay (in-window dialogs over the main screen) ----
     const val OVERLAY_BLUR_RADIUS = 16.0
@@ -95,7 +107,7 @@ object Theme {
     private val requestedTheme: String = System.getProperty("launcher.theme", DEFAULT_THEME).lowercase()
 
     /**
-     * Dark theme: "zone" (STALZONE, default), "exbo" (original EXBO colors) or "shadcn" (shadcn/ui dark neutral).
+     * Dark theme: "zone" (STALZONE, default), "exbo", "shadcn", or "frost" (icy winter + snow overlays).
      * Legacy -Dlauncher.theme=zone-light is treated as "zone".
      */
     var themeName: String = if (requestedTheme == "zone-light") "zone" else requestedTheme
@@ -132,10 +144,12 @@ object Theme {
      */
     fun stylesheets(theme: String, lang: String): List<String> {
         val sheets = mutableListOf(stylesheet("theme.css"))
-        if (theme == "shadcn") sheets += stylesheet("theme-shadcn.css")
-        if (theme == "zone") {
-            zoneFonts // fonts must be registered before the stylesheet names them
-            sheets += stylesheet("theme-zone.css")
+        when (theme) {
+            "shadcn" -> sheets += stylesheet("theme-shadcn.css")
+            "zone", "frost" -> {
+                zoneFonts // Bebas / Roboto before the sheet names them
+                sheets += stylesheet(if (theme == "frost") "theme-frost.css" else "theme-zone.css")
+            }
         }
         sheets += stylesheet(if (lang == "en") "lang_en.css" else "lang_ru.css")
         return sheets

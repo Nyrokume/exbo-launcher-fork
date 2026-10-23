@@ -130,10 +130,21 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
                 ClientOperation.DELETE -> "main.client_button.deleting"
             }
         }
+        val needsUpdate = ctx.services.servers.needsClientUpdate(server)
+        val outdated = s == ClientState.Ready && needsUpdate
+        val awaiting = s == ClientState.NotInstalled || s is ClientState.Paused
+        val downloadLocked = liveDownloadLocked(
+            ctx.liveBackend,
+            needsUpdate,
+            ctx.services.servers.canDownload(server),
+            awaiting,
+        )
         buttonStates.forEach { downloadButton.toggleClass(it, it == cls) }
         // UPPERCASE CTA (.zone-caps) - to be swapped to SpacedLabel after the redesign/auth merge
-        downloadButton.text = ctx.t(textKey).uppercase(Locale.forLanguageTag(ctx.lang))
-        downloadButton.isDisable = s == ClientState.Starting || s is ClientState.Busy
+        val labelKey = if (outdated) "main.client_button.update" else textKey
+        downloadButton.text = ctx.t(labelKey).uppercase(Locale.forLanguageTag(ctx.lang))
+        downloadButton.isDisable = downloadLocked || s == ClientState.Starting || s is ClientState.Busy
+        downloadButton.tooltip = if (downloadLocked) Tooltip(ctx.t("fork.live.no_download")) else null
         gameActionsController.update(s)
         downloadingStatus.text = when (s) {
             ClientState.NotInstalled -> ctx.t("main.status.ready", formatBytes(server.clientSizeBytes))
@@ -143,7 +154,7 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
                 formatBytes(s.progress.bytesPerSecond),
             )
             is ClientState.Paused -> ctx.t("main.status.paused", formatBytes(((1 - Motion.safeFraction(s.fraction)) * s.totalBytes).toLong()))
-            ClientState.Ready -> ctx.t("main.status.ready_to_launch")
+            ClientState.Ready -> if (outdated) ctx.t("main.status.needs_update") else ctx.t("main.status.ready_to_launch")
             ClientState.Starting -> ctx.t("main.status.starting")
             ClientState.Running -> ctx.t("main.status.running")
             is ClientState.Busy -> ctx.t("main.status.busy.${s.operation.name.lowercase()}") // the number is in the percentage slot
@@ -174,3 +185,14 @@ class StatusPaneController(private val ctx: UiContext) : Disposable {
         const val WINDOW_MARGIN = 8.0
     }
 }
+
+/**
+ * Live backend: Загрузить / Продолжить stays disabled only when the catalog cannot be fetched.
+ * An update of an installed client, and a catalog client that has a version and web seeds, stay enabled.
+ */
+internal fun liveDownloadLocked(
+    liveBackend: Boolean,
+    needsUpdate: Boolean,
+    canDownload: Boolean,
+    awaitingDownload: Boolean,
+): Boolean = liveBackend && awaitingDownload && !needsUpdate && !canDownload

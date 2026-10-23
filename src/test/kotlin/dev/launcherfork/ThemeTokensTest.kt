@@ -20,7 +20,7 @@ class ThemeTokensTest {
     @TestFactory
     fun themesDefineAllBaseTokens(): List<DynamicTest> {
         val base = tokens("theme.css")
-        return listOf("theme-shadcn.css", "theme-zone.css").map { file ->
+        return listOf("theme-shadcn.css", "theme-zone.css", "theme-frost.css").map { file ->
             DynamicTest.dynamicTest(file) {
                 val missing = base - tokens(file) - "-transparent" // constant, inherited from theme.css
                 assertTrue(missing.isEmpty(), "$file misses tokens $missing")

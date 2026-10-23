@@ -138,7 +138,9 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         }
     }
 
-    private fun newContext() = UiContext(app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode)
+    private fun newContext() = UiContext(
+        app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode, app.desk, app.liveBackend,
+    )
 
     override fun showLauncherUpdate(afterUpdate: () -> Unit) {
         val loaded = showPanel("update", "update_panel.fxml", "update.fxml", "title.update")
@@ -188,10 +190,11 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
         ctx = newContext()
         Theme.apply(mainScene, lang)
         Theme.apply(authScene, lang)
-        // rebuild the main screen in the new language and keep the settings page open
+        // rebuild the main screen in the new language and keep the language section open
         Platform.runLater {
             if (activeWindow != ActiveWindow.MAIN) return@runLater
             loadMain()
+            mainController?.settingsController?.showSection("language")
             mainController?.setSettingsVisible(true)
             onScreenChanged("main")
         }
@@ -205,7 +208,10 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
 
     /** Showcase / session-only theme switch (`zone` | `exbo` | `shadcn`); not persisted. */
     fun applyLook(theme: String) {
-        Theme.themeName = if (theme == "zone-light") "zone" else theme
+        Theme.themeName = when (theme) {
+            "zone-light" -> "zone"
+            else -> theme
+        }
         restyle()
     }
 

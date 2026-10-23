@@ -12,6 +12,8 @@ interface ProgressListener {
     fun onPhase(phase: UpdatePhase) {}
     fun onProgress(progress: Progress)
     fun onFinished()
+    /** The operation stopped without finishing. The default ignores it. */
+    fun onFailed(reason: String) {}
 }
 
 /** Callbacks of [GameLauncher]; invoked on a background thread. */
@@ -59,6 +61,21 @@ interface ServerRepository {
 
     /** Stops background work (timers, connections) when the app exits. Nothing to stop by default; safe to call twice. */
     fun close() {}
+
+    /**
+     * Installed client directory for [server], when the backend knows one.
+     * Null means the UI uses [LauncherSettings.gameRoot].
+     */
+    fun clientDirectory(server: Server): java.nio.file.Path? = null
+
+    /** True when the installed client's `runtime/<id>.hash` differs from the server list version. */
+    fun needsClientUpdate(server: Server): Boolean = false
+
+    /**
+     * True when [server] can be fetched. The mock always can. A live catalog client can when it has a version
+     * and web seeds. Reinstall stays a separate action.
+     */
+    fun canDownload(server: Server): Boolean = true
 }
 
 interface UpdateService {

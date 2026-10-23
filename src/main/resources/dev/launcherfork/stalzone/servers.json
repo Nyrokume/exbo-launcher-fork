@@ -1,0 +1,113 @@
+{
+  "mode": "roxy",
+  "source": "https://raw.githubusercontent.com/Art3mLapa/unofficial-stalzone-api/main/static/address_list/{EU,NA,SEA}.json",
+  "pools": [
+    {
+      "name": "GAME-EU",
+      "region": "EU",
+      "tunnels": [
+        {
+          "name": "GAME-EU-2",
+          "address": "79.127.241.67:29450"
+        },
+        {
+          "name": "GAME-EU-3",
+          "address": "79.127.241.68:29450"
+        },
+        {
+          "name": "GAME-EU-4",
+          "address": "79.127.241.69:29450"
+        },
+        {
+          "name": "GAME-EU-5XS",
+          "address": "89.222.124.35:29450"
+        },
+        {
+          "name": "GAME-EU-6XS",
+          "address": "89.222.124.36:29450"
+        }
+      ]
+    },
+    {
+      "name": "WAW",
+      "region": "EU",
+      "tunnels": [
+        {
+          "name": "WAW-ROXY3",
+          "address": "57.128.202.23:29450"
+        },
+        {
+          "name": "WAW-ROXY4",
+          "address": "146.59.110.238:29450"
+        },
+        {
+          "name": "WAW-ROXY5",
+          "address": "146.59.111.52:29450"
+        }
+      ]
+    },
+    {
+      "name": "GAME-NA",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "GAME-NA-3",
+          "address": "89.187.175.135:29450"
+        },
+        {
+          "name": "GAME-NA-4",
+          "address": "89.187.175.102:29450"
+        },
+        {
+          "name": "GAME-NA-5",
+          "address": "89.187.175.65:29450"
+        }
+      ]
+    },
+    {
+      "name": "NYC",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "NYC-ROXY1",
+          "address": "89.187.179.170:29450"
+        }
+      ]
+    },
+    {
+      "name": "LAX",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "LAX-ROXY1",
+          "address": "89.187.185.94:29450"
+        }
+      ]
+    },
+    {
+      "name": "GAME-SEA",
+      "region": "SEA",
+      "tunnels": [
+        {
+          "name": "GAME-SEA-2",
+          "address": "169.150.243.166:29450"
+        },
+        {
+          "name": "GAME-SEA-3",
+          "address": "79.127.213.146:29450"
+        }
+      ]
+    },
+    {
+      "name": "SYD",
+      "region": "SEA",
+      "tunnels": [
+        {
+          "name": "SYD-ROXY1",
+          "address": "143.244.63.114:29450"
+        }
+      ]
+    }
+  ],
+  "clientToTunnelRttWeight": 1
+}

@@ -142,9 +142,9 @@ class HeaderMenuLayoutTest {
     }
 
     /**
-     * The nav row is the same on every screen and holds only the nav: links + profile stay on the settings screen,
-     * the row's children are exactly those two, and the page content (home centre slot, status bar, settings) starts
-     * below it.
+     * The nav row holds only the nav (header + profile) on every screen. Home shows the social links; settings
+     * swaps that slot for JVM, tunnel, sensitivity and account swap. The settings column has no tab of its own.
+     * Page content starts below the row. Closing settings restores the social links in the same place.
      */
     @Test
     fun navRowIsTheSameOnEveryScreenAndHoldsOnlyTheNav() = withMain { nav, theme ->
@@ -158,15 +158,42 @@ class HeaderMenuLayoutTest {
         listOf(main.centerPane, main.defaultStatusPaneController.defaultStatusPane).forEach { n ->
             assertTrue(n.sceneBounds().minY >= row.maxY, "$theme: ${n.id} reaches into the nav row")
         }
+        main.settingsController.showSection("ram")
         main.setSettingsVisible(true)
         relayout(nav)
-        assertTrue(header.isVisible && header.isManaged, "$theme: the links stay on the settings screen")
+        assertTrue(header.isVisible && header.isManaged, "$theme: the nav stays on the settings screen")
+        assertTrue(main.headerController.settingsNav.isVisible && main.headerController.settingsNav.isManaged, "$theme: section nav hidden")
+        assertFalse(main.headerController.linksContainer.isManaged, "$theme: social links stay beside the section nav")
         assertEquals(nick, main.profileBarController.loginButton.sceneBounds(), "$theme: nickname moved")
-        assertEquals(links, header.sceneBounds(), "$theme: links moved")
+        val sections = listOf(
+            main.headerController.navJvm,
+            main.headerController.navTunnel,
+            main.headerController.navSens,
+            main.headerController.navAccounts,
+        )
+        assertEquals(sections, main.headerController.settingsNav.children.toList(), "$theme: switch is not the four tools")
+        sections.forEach { assertFalse("selected" in it.styleClass, "$theme: ${it.text} selected on the column") }
+        sections.zipWithNext { a, b ->
+            assertTrue(a.sceneBounds().maxX <= b.sceneBounds().minX + 0.5, "$theme: ${a.text} overlaps ${b.text}")
+        }
+        val settings = main.settingsController
+        assertTrue(
+            settings.gameSection.isManaged && settings.behaviourSection.isManaged && settings.updatesSection.isManaged &&
+                settings.languageSection.isManaged && !settings.tunnelPage.isManaged,
+            "$theme: the column is missing a block or still holds the tunnel",
+        )
+        assertFalse(settings.jvmPage.isManaged, "$theme: JVM is open on the column")
+        main.headerController.navJvm.fire()
+        relayout(nav)
+        assertTrue(settings.jvmPage.isManaged && !settings.gameSection.isManaged, "$theme: JVM did not open")
+        assertTrue("selected" in main.headerController.navJvm.styleClass, "$theme: JVM is not selected")
+        assertFalse("selected" in main.headerController.navSens.styleClass, "$theme: sensitivity selected with JVM")
         assertTrue(main.settingsController.settingsRoot.sceneBounds().minY >= row.maxY, "$theme: settings reach into the nav row")
         main.setSettingsVisible(false)
         relayout(nav)
         assertTrue(header.isVisible && header.isManaged, "$theme: links on the home screen")
+        assertTrue(main.headerController.linksContainer.isManaged && !main.headerController.settingsNav.isManaged, "$theme: social links did not return")
+        assertEquals(links, header.sceneBounds(), "$theme: the social links did not return to their place")
     }
 
     private fun press(scene: Scene, target: Node): MouseEvent {

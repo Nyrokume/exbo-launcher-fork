@@ -1,5 +1,6 @@
 package dev.launcherfork.ui.screens.main.modals
 
+import dev.launcherfork.data.exbo.ExboClients
 import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.motion.Motion
@@ -10,14 +11,18 @@ import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
 import javafx.scene.control.ProgressIndicator
-import javafx.scene.control.TextField
-import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.BorderPane
-import javafx.scene.layout.VBox
+import javafx.scene.control.Tooltip
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
+import javafx.scene.input.MouseButton
+import javafx.scene.layout.AnchorPane
+import javafx.scene.layout.BorderPane
+import javafx.scene.layout.HBox
+import javafx.scene.layout.VBox
 import javafx.scene.text.Text
+import javafx.stage.DirectoryChooser
 import javafx.util.Duration
+import java.nio.file.Path as NioPath
 
 /** Base for the full-window modal layers of main.fxml (each one has its own FXML in main/modals/). */
 abstract class ModalController(protected val ctx: UiContext) {
@@ -168,7 +173,12 @@ class DefenderModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML
     fun initialize() {
         wire(defenderYes, defenderNo)
-        defenderDesc.text = ctx.t("main.modal.defender.desc", "C:\\Games\\EXBO")
+        val folder = if (ctx.liveBackend) {
+            ExboClients.preferredDirectory().toString()
+        } else {
+            "C:\\Games\\EXBO"
+        }
+        defenderDesc.text = ctx.t("main.modal.defender.desc", folder)
     }
 }
 
@@ -228,12 +238,14 @@ class DeletionModalController(ctx: UiContext) : ModalController(ctx) {
     }
 }
 
-/** main/modals/install_pane.fxml */
+/** main/modals/install_pane.fxml: path as one chip (folder + path + «Обзор»), not a field + CAPS button. */
 class InstallModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML lateinit var installPane: AnchorPane
+    @FXML lateinit var installCard: VBox
     @FXML lateinit var installTitle: Label
-    @FXML lateinit var installDir: TextField
+    @FXML lateinit var installDir: Label
     @FXML lateinit var installDirLabel: Label
+    @FXML lateinit var installPathRow: HBox
     @FXML lateinit var installLinkCheckBox: CheckBox
     @FXML lateinit var installChangeFolder: Button
     @FXML lateinit var installYes: Button
@@ -243,12 +255,46 @@ class InstallModalController(ctx: UiContext) : ModalController(ctx) {
     @FXML
     fun initialize() {
         wire(installYes, installNo)
-        installChangeFolder.text = installChangeFolder.text.uppercase(java.util.Locale.forLanguageTag(ctx.lang))
+        val locale = java.util.Locale.forLanguageTag(ctx.lang)
+        installChangeFolder.text = installChangeFolder.text.uppercase(locale)
+        installChangeFolder.setOnAction { pickFolder() }
+        // whole chip opens the picker; skip if the click is already on «Обзор»
+        installPathRow.setOnMouseClicked { e ->
+            if (e.button != MouseButton.PRIMARY) return@setOnMouseClicked
+            var n: Node? = e.pickResult.intersectedNode
+            while (n != null) {
+                if (n === installChangeFolder) return@setOnMouseClicked
+                n = n.parent
+            }
+            pickFolder()
+        }
     }
 
-    fun show(path: String, requiredBytes: String, freeBytes: String) {
+    fun show(path: String, requiredBytes: String, freeBytes: String, canChangeFolder: Boolean = true) {
+        folderLocked = !canChangeFolder
+        installChangeFolder.isDisable = folderLocked
         installDir.text = path
+        installDir.tooltip = Tooltip(path)
         installDirLabel.text = ctx.t("main.modal.install.text", requiredBytes, freeBytes)
         show()
+    }
+
+    /** Live installs stay on the directory the official launcher already maps. */
+    private var folderLocked = false
+
+    /** Mock / demo: pick a directory; the chosen folder becomes the install path shown in the chip. */
+    private fun pickFolder() {
+        if (folderLocked) return
+        val window = installPane.scene?.window ?: return
+        val chooser = DirectoryChooser().apply {
+            title = ctx.t("main.modal.install.change_folder")
+            val current = runCatching { NioPath.of(installDir.text) }.getOrNull()
+            initialDirectory = current?.parent?.toFile()?.takeIf { it.isDirectory }
+                ?: current?.toFile()?.takeIf { it.isDirectory }
+                ?: java.io.File(System.getProperty("user.home"))
+        }
+        val picked = chooser.showDialog(window) ?: return
+        installDir.text = picked.absolutePath
+        installDir.tooltip = Tooltip(picked.absolutePath)
     }
 }

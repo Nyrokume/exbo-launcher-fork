@@ -21,6 +21,9 @@ javafx {
 }
 
 dependencies {
+    // jlibtorrent 1.2.19.0 (frostwire release jars; Maven Central stops at 1.2.0.18).
+    // The windows jar holds the 64-bit DLL. The installed launcher's DLL is 32-bit and is not loaded.
+    implementation(files("libs/jlibtorrent-1.2.19.0.jar", "libs/jlibtorrent-windows-1.2.19.0.jar"))
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

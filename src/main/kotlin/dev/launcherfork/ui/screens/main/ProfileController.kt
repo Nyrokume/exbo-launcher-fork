@@ -10,13 +10,14 @@ import javafx.scene.Scene
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.input.MouseEvent
+import javafx.scene.layout.HBox
 import javafx.scene.layout.Region
 import javafx.scene.layout.VBox
 import java.util.Locale
 
 /**
  * main/profile.fxml: nickname + caret and the dropdown (stalzone.com ЛК menu).
- * Donate card (balance + «Пополнить счет»), invite, personal account, logout.
+ * Donate card («Баланс» only while signed in, no amount), invite, personal account, logout.
  */
 class ProfileController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var profileRoot: VBox
@@ -24,15 +25,18 @@ class ProfileController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var accountName: Label
     @FXML lateinit var profileCaret: Region
     @FXML lateinit var profileMenu: VBox
+    @FXML lateinit var balanceRow: HBox
     @FXML lateinit var balanceLabel: Label
     @FXML lateinit var topUp: Button
     @FXML lateinit var inviteFriend: Button
     @FXML lateinit var profile: Button
+    @FXML lateinit var toolsAccounts: Button
     @FXML lateinit var logout: Button
 
     var onTopUp: () -> Unit = {}
     var onInviteFriend: () -> Unit = {}
     var onProfile: () -> Unit = {}
+    var onAccounts: () -> Unit = {}
     var onLogout: () -> Unit = {}
     /** Fired after the dropdown opened (MainController closes the communities menu: one menu at a time). */
     var onMenuShown: () -> Unit = {}
@@ -49,6 +53,7 @@ class ProfileController(private val ctx: UiContext) : Disposable {
         topUp.setOnAction { hideMenu(); onTopUp() }
         inviteFriend.setOnAction { hideMenu(); onInviteFriend() }
         profile.setOnAction { hideMenu(); onProfile() }
+        toolsAccounts.setOnAction { hideMenu(); onAccounts() }
         logout.setOnAction { hideMenu(); onLogout() }
         profileRoot.sceneProperty().addListener { _, old, new ->
             old?.removeEventFilter(MouseEvent.MOUSE_PRESSED, outsideClick)
@@ -61,6 +66,9 @@ class ProfileController(private val ctx: UiContext) : Disposable {
 
     fun setLogin(login: String?) {
         accountName.text = (login ?: "player").uppercase(Locale.forLanguageTag(ctx.lang))
+        val signedIn = !login.isNullOrBlank()
+        balanceRow.isVisible = signedIn
+        balanceRow.isManaged = signedIn
     }
 
     val isMenuShown: Boolean get() = profileMenu.isVisible

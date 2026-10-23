@@ -40,19 +40,31 @@ object Wallpapers {
     const val PROPERTY = "launcher.wallpaper"
     const val ROOT = "/dev/launcherfork/ui/wallpapers/"
     const val MANIFEST = ROOT + "wallpapers.txt"
+    /** Winter pack used when `-Dlauncher.theme=frost`. */
+    const val FROST_ROOT = ROOT + "frost/"
+    const val FROST_MANIFEST = FROST_ROOT + "wallpapers.txt"
     /** Wallpaper of the screenshot tour (docs/screenshots) when -Dlauncher.wallpaper is not given: 03, watchtower, red sky. */
     const val TOUR_DEFAULT = 3
 
     /** The bundled wallpapers, in manifest order. Empty if the manifest is missing (then no wallpaper is shown). */
     val all: List<Wallpaper> by lazy {
-        Wallpapers::class.java.getResource(MANIFEST)?.readText()?.let(::parseManifest).orEmpty()
+        Wallpapers::class.java.getResource(MANIFEST)?.readText()?.let { parseManifest(it) }.orEmpty()
     }
+
+    /** Winter in-game shots for the frost theme. Empty if the frost manifest is missing. */
+    val frost: List<Wallpaper> by lazy {
+        Wallpapers::class.java.getResource(FROST_MANIFEST)?.readText()?.let { parseManifest(it, FROST_ROOT) }.orEmpty()
+    }
+
+    /** Frost uses the winter pack; every other theme uses [all]. */
+    fun packForTheme(theme: String): List<Wallpaper> =
+        if (theme == "frost" && frost.isNotEmpty()) frost else all
 
     /**
      * Manifest rows: `<file> [focusX focusY] [bright|dark] [title...]`; `#` starts a comment, blank lines are skipped.
      * The number is the row's position (1-based), so the list order is the numbering.
      */
-    fun parseManifest(text: String): List<Wallpaper> = text.lineSequence()
+    fun parseManifest(text: String, root: String = ROOT): List<Wallpaper> = text.lineSequence()
         .map { it.substringBefore('#').trim() }
         .filter { it.isNotEmpty() }
         .mapIndexed { i, line ->
@@ -64,7 +76,7 @@ object Wallpapers {
             if (tone != null) next++
             Wallpaper(
                 number = i + 1,
-                resource = ROOT + parts[0],
+                resource = root + parts[0],
                 focusX = (fx ?: 0.5).coerceIn(0.0, 1.0),
                 focusY = (fy ?: 0.5).coerceIn(0.0, 1.0),
                 title = parts.drop(next).joinToString(" "),

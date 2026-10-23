@@ -6,6 +6,9 @@
 <!-- Header links in one row, left of the profile control in main.fxml's top bar: СООБЩЕСТВА ▾ (dropdown with the
      STALZONE social links), ФОРУМ ↗, ПОДДЕРЖКА ↗ (no browser in the fork for those two: "not available").
      Profile ↗ moved into the profile dropdown (main/profile.fxml).
+     On the settings screen the same row swaps to a small switch for the separate pages only
+     (settingsNav): JVM, Туннель, Чувствительность, Свап аккаунтов. Memory, behaviour, updates and language
+     stay one column and have no tab. The two rows never sit together — the bar is too narrow at 900 px.
      The communities card (communityMenu) is always managed="false": it floats under СООБЩЕСТВА
      (HeaderController.placeMenu) and never takes part in the row's layout, like the profile dropdown.
      Its rows are built from CommunityLinks by the controller. -->
@@ -13,6 +16,17 @@
       stylesheets="@../style/layout.css"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dev.launcherfork.ui.screens.main.HeaderController">
+    <HBox fx:id="settingsNav" id="settingsNav" styleClass="header-links-row,settings-nav" alignment="CENTER_RIGHT"
+          visible="false" managed="false">
+        <Button fx:id="navJvm" id="settingsNavJvm" styleClass="header-link,settings-nav-item,zone-caps"
+                text="%settings.nav.jvm" mnemonicParsing="false"/>
+        <Button fx:id="navTunnel" id="settingsNavTunnel" styleClass="header-link,settings-nav-item,zone-caps"
+                text="%settings.nav.tunnel" mnemonicParsing="false"/>
+        <Button fx:id="navSens" id="settingsNavSens" styleClass="header-link,settings-nav-item,zone-caps"
+                text="%settings.nav.sens" mnemonicParsing="false"/>
+        <Button fx:id="navAccounts" id="settingsNavAccounts" styleClass="header-link,settings-nav-item,zone-caps"
+                text="%settings.nav.accounts" mnemonicParsing="false"/>
+    </HBox>
     <HBox fx:id="linksContainer" styleClass="header-links-row" alignment="CENTER_RIGHT">
         <Button fx:id="communities" id="linkCommunities" styleClass="header-link,header-menu-toggle,menu-item,zone-caps"
                 text="%main.link.communities" contentDisplay="RIGHT" mnemonicParsing="false"

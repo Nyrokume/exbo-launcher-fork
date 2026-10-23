@@ -2,6 +2,7 @@ package dev.launcherfork.ui.state
 
 import dev.launcherfork.domain.Cancellable
 import dev.launcherfork.domain.ClientOperation
+import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.GameLauncher
 import dev.launcherfork.domain.GameListener
 import dev.launcherfork.domain.Progress
@@ -38,7 +39,12 @@ class ClientStateStore(
     private val updates: UpdateService,
     private val launcher: GameLauncher,
     private val ui: (() -> Unit) -> Unit = ::fx,
+    private val startWhenDownloaded: () -> Boolean = { false },
+    private val exitMode: () -> ExitMode = { ExitMode.NEVER },
+    private val exitApp: () -> Unit = {},
 ) {
+    /** Shown by the main window when a client update cannot finish. The reason is not displayed. */
+    var onDownloadFailed: () -> Unit = {}
     private val states = HashMap<String, ObjectProperty<ClientState>>()
     private val jobs = HashMap<String, Cancellable>()
     private val generations = HashMap<String, Long>()
@@ -98,6 +104,7 @@ class ClientStateStore(
 
     fun startDownload(server: Server) {
         val prop = state(server)
+        val previous = prop.get()
         val gen = nextGeneration(server)
         prop.set(ClientState.Downloading(Progress(updates.pausedProgress(server), 0, server.clientSizeBytes, 0)))
         jobs[server.id] = updates.downloadClient(server, object : ProgressListener {
@@ -108,7 +115,14 @@ class ClientStateStore(
             override fun onFinished() = ui {
                 if (!isCurrent(server, gen)) return@ui
                 jobs.remove(server.id)
-                prop.set(ClientState.Ready)
+                if (startWhenDownloaded()) launch(server) else prop.set(ClientState.Ready)
+            }
+
+            override fun onFailed(reason: String) = ui {
+                if (!isCurrent(server, gen)) return@ui
+                jobs.remove(server.id)
+                prop.set(if (previous == ClientState.Ready || previous is ClientState.Paused) previous else ClientState.NotInstalled)
+                onDownloadFailed()
             }
         })
     }
@@ -124,12 +138,18 @@ class ClientStateStore(
         val gen = nextGeneration(server)
         prop.set(ClientState.Starting)
         jobs[server.id] = launcher.launch(server, object : GameListener {
-            override fun onStarted() = ui { if (isCurrent(server, gen)) prop.set(ClientState.Running) }
+            override fun onStarted() = ui {
+                if (!isCurrent(server, gen)) return@ui
+                prop.set(ClientState.Running)
+                if (exitMode() == ExitMode.ON_GAME_START) exitApp()
+            }
 
             override fun onExited() = ui {
                 if (!isCurrent(server, gen)) return@ui
                 jobs.remove(server.id)
+                val mode = exitMode()
                 prop.set(ClientState.Ready)
+                if (mode == ExitMode.ON_GAME_EXIT) exitApp()
             }
         })
     }
@@ -139,16 +159,21 @@ class ClientStateStore(
         state(server).set(ClientState.Ready)
     }
 
-    /** Stops everything (logout / app exit). Downloads stay resumable as Paused. */
+    /**
+     * Stops downloads and maintenance. A running game is left alone: the listener is dropped so a later exit
+     * does not change the button, and only [kill] destroys the process.
+     */
     fun shutdown() {
+        val playing = states.filterValues { it.get() == ClientState.Running || it.get() == ClientState.Starting }.keys
         states.keys.toList().forEach { id ->
             generations[id] = (generations[id] ?: 0) + 1
-            jobs.remove(id)?.cancel()
+            val job = jobs.remove(id)
+            if (id !in playing) job?.cancel()
         }
-        states.forEach { (_, p) ->
+        states.forEach { (id, p) ->
+            if (id in playing) return@forEach
             when (val s = p.get()) {
                 is ClientState.Downloading -> p.set(ClientState.Paused(s.progress.fraction, s.progress.totalBytes))
-                ClientState.Starting, ClientState.Running -> p.set(ClientState.Ready)
                 // TODO(real update service): an interrupted verify / reinstall / delete is shown as Ready here (the mock
                 //  has nothing half-done); the real service must report the client's actual state (Agent.Master, PR #8)
                 is ClientState.Busy -> p.set(ClientState.Ready)

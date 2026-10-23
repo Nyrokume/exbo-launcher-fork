@@ -1,29 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
 
-<!-- Install path dialog shown before the first (fake) download (original installPane). -->
+<!--
+  Install path dialog before the first (fake) download.
+  Path is one selectable chip (folder glyph + path + «Обзор»), not a TextField with a second CAPS button under it.
+  Flow layout (.modal-box) like logout_pane: card sized by content.
+-->
 <AnchorPane fx:id="installPane" styleClass="modal-layer" visible="false" stylesheets="@../../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.modals.InstallModalController">
     <Region styleClass="modal-dim" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0"/>
-    <BorderPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
-        <center>
-            <Pane styleClass="modal-card,zone-radius-md" maxHeight="236" maxWidth="487">
-                <Label fx:id="installTitle" styleClass="modal-title,font-display" text="%main.modal.install.title"/>
-                <Region styleClass="modal-rule" layoutX="0" layoutY="35" prefWidth="440" prefHeight="1"/>
-                <TextField fx:id="installDir" editable="false" focusTraversable="false" layoutY="100.0" prefHeight="25.0" prefWidth="450.0"/>
-                <Label fx:id="installDirLabel" layoutY="55" prefWidth="480" styleClass="modal-text" text="%main.modal.install.text"/>
-                <Region styleClass="modal-rule-light" layoutX="0" layoutY="169" prefWidth="440" prefHeight="1"/>
-                <CheckBox fx:id="installLinkCheckBox" layoutX="0" layoutY="175" selected="true" text="%main.modal.install.link"/>
-                <Button id="installFolder" fx:id="installChangeFolder" layoutY="134" minWidth="160" prefHeight="30" prefWidth="160" styleClass="tile,zone-caps,zone-radius-sm" text="%main.modal.install.change_folder"/>
-                <Button id="modal-installYes" fx:id="installYes" layoutX="60" layoutY="215" prefHeight="46" prefWidth="160" styleClass="modal-button,btn-primary,zone-caps,zone-radius-sm" text="%main.modal.install.confirm"/>
-                <Button id="modal-installNo" fx:id="installNo" layoutX="230" layoutY="215" prefHeight="46" prefWidth="160" styleClass="modal-button,tile,zone-caps,zone-radius-sm" text="%main.modal.install.cancel"/>
-            </Pane>
-        </center>
-    </BorderPane>
+    <StackPane AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
+        <VBox fx:id="installCard" id="modal-installCard" styleClass="modal-box,zone-radius-md"
+              maxWidth="-Infinity" maxHeight="-Infinity">
+            <Label fx:id="installTitle" styleClass="modal-title,font-display" text="%main.modal.install.title"/>
+            <Region styleClass="modal-box-rule"/>
+
+            <Label fx:id="installDirLabel" styleClass="modal-text,install-space" wrapText="true" minHeight="-Infinity"
+                   text="%main.modal.install.text"/>
+
+            <HBox fx:id="installPathRow" styleClass="install-path,zone-radius-sm" alignment="CENTER_LEFT" spacing="10"
+                  maxWidth="Infinity">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="12"/>
+                </padding>
+                <Region styleClass="install-path-icon" minWidth="16" prefWidth="16" maxWidth="16"
+                        minHeight="14" prefHeight="14" maxHeight="14"/>
+                <Label fx:id="installDir" styleClass="install-path-text" maxWidth="Infinity" HBox.hgrow="ALWAYS"
+                       textOverrun="ELLIPSIS" wrapText="false"/>
+                <Button fx:id="installChangeFolder" id="installFolder" mnemonicParsing="false"
+                        styleClass="install-path-browse,zone-caps" text="%main.modal.install.change_folder"/>
+            </HBox>
+
+            <CheckBox fx:id="installLinkCheckBox" selected="true" text="%main.modal.install.link"/>
+
+            <HBox styleClass="modal-actions" alignment="CENTER">
+                <Button id="modal-installYes" fx:id="installYes" mnemonicParsing="false"
+                        styleClass="modal-action,btn-primary,font-display,zone-radius-sm"
+                        text="%main.modal.install.confirm"/>
+                <Button id="modal-installNo" fx:id="installNo" mnemonicParsing="false"
+                        styleClass="modal-action,btn-outline,font-display,zone-radius-sm"
+                        text="%main.modal.install.cancel"/>
+            </HBox>
+        </VBox>
+    </StackPane>
 </AnchorPane>

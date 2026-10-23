@@ -42,6 +42,16 @@ abstract class AuthScreenBase(protected val ctx: UiContext) {
 
     protected fun showError(error: AuthError) = showError(errorText(error))
 
+    private fun showError(result: AuthResult.Failure) {
+        if (result.error != AuthError.BANNED) {
+            showError(result.error)
+            return
+        }
+        val seconds = result.waitSeconds ?: 0
+        val clock = "%2d:%02d".format(seconds / 60, seconds % 60)
+        showError(ctx.t("auth.error.banned", clock))
+    }
+
     /** Localized text of [error]; panels with their own wording (authenticator toast) override it. */
     protected open fun errorText(error: AuthError): String = ctx.t(Messages.key(error))
 
@@ -59,7 +69,7 @@ abstract class AuthScreenBase(protected val ctx: UiContext) {
             is AuthResult.Success -> ctx.navigator.showMain()
             AuthResult.CodeRequired -> ctx.navigator.showMailAuth()
             AuthResult.TotpRequired -> ctx.navigator.showTotpAuth()
-            is AuthResult.Failure -> showError(result.error)
+            is AuthResult.Failure -> showError(result)
         }
     }
 }

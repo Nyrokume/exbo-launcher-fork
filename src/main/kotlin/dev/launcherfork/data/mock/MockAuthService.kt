@@ -14,7 +14,7 @@ import kotlin.random.Random
 /**
  * Fake auth, no network:
  *  - password "wrong" -> wrong credentials error
- *  - login "2fa" -> e-mail code screen, any 9-digit code is accepted
+ *  - login "2fa" -> e-mail code screen: any 9-digit code is accepted except 000000000
  *  - login "totp" -> authenticator-app screen: any 6-digit code is accepted except 000000
  *  - any other non-empty login/password -> the second factor chosen by [secondFactor]: [MockSecondFactor.RANDOM]
  *    picks the e-mail code or the authenticator app per login attempt with [random] (the app's default,
@@ -58,7 +58,7 @@ class MockAuthService(
         MockSecondFactor.RANDOM -> if (random.nextBoolean()) Factor.TOTP else Factor.EMAIL
     }
 
-    override fun confirmCode(code: String): AuthResult = confirm(code, Factor.EMAIL, CODE_LENGTH, wrong = null)
+    override fun confirmCode(code: String): AuthResult = confirm(code, Factor.EMAIL, CODE_LENGTH, WRONG_EMAIL_CODE)
 
     override fun confirmTotp(code: String): AuthResult = confirm(code, Factor.TOTP, TOTP_CODE_LENGTH, WRONG_TOTP_CODE)
 
@@ -99,6 +99,8 @@ class MockAuthService(
         const val CODE_LENGTH = 9
         /** Digits of the authenticator-app code. */
         const val TOTP_CODE_LENGTH = 6
+        /** The only e-mail code the mock rejects (any other 9 digits pass). */
+        const val WRONG_EMAIL_CODE = "000000000"
         /** The only authenticator code the mock rejects (any other 6 digits pass). */
         const val WRONG_TOTP_CODE = "000000"
         /** Username (and e-mail local part) the mock reports as already taken. */

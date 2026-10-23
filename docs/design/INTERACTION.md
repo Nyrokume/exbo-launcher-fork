@@ -1,61 +1,82 @@
-# Диаграмма взаимодействий
+# Маршрут пользователя
 
-Внешние ссылки (меню сообществ, «Личный кабинет», «Пригласить друга», PDF лицензии/политики) идут через
-`LinkOpener` и allowlist `LinkPolicy` (`exbo.net`, `exbo.games`, `stalzone.com`, …). «Сменить аккаунт» убран:
-назад во вход — только подтверждённый «Выйти». Обои выбирает `Wallpapers.choose` один раз за запуск и рисует
-`WallpaperLayer`.
+Два окна: **pre-main** (обновление → вход / регистрация / 2FA, 460×700) и **главное** (игра, настройки, меню).  
+Внешние ссылки (сообщества, ЛК, пригласить) — через `LinkOpener` + allowlist `LinkPolicy`.  
+Назад во вход только через подтверждённый «Выйти» (отдельного «Сменить аккаунт» нет).
 
 Исходник Mermaid: [`interaction.mmd`](interaction.mmd).
 
+## Диаграмма
+
 ```mermaid
 flowchart TB
-  U([Пользователь])
+  Start([Запуск лаунчера]) --> Update[Окно обновления<br/>update_panel]
 
-  subgraph Header["Шапка главного окна"]
-    H[СООБЩЕСТВА / ФОРУМ / ПОДДЕРЖКА]
-    CM[Меню сообществ<br/>Discord · YouTube · Reddit · Telegram]
+  Update --> Auth[Панель входа<br/>auth_panel]
+
+  Auth -->|Создать| Age[Возрастной гейт<br/>age_gate]
+  Age -->|младше 18| AgeErr[Отказ / слишком молод]
+  AgeErr --> Age
+  Age -->|≥ 18 ПРОДОЛЖИТЬ| Reg[Регистрация<br/>register_panel]
+  Reg -->|← Назад| Age
+  Reg -->|ошибка формы| Reg
+  Reg -->|аккаунт создан| AuthOk[Вход с ником<br/>+ notice «создан»]
+  AuthOk --> Auth
+
+  Auth -->|логин / пароль| AuthCheck{Второй фактор?}
+  Auth -->|пустой / wrong| AuthErr[Ошибка на форме]
+  AuthErr --> Auth
+
+  AuthCheck -->|нет mock2fa=none| Main
+  AuthCheck -->|email / 2fa| Mail[Код из письма<br/>mail_auth]
+  AuthCheck -->|totp| Totp[Google Authenticator<br/>totp_auth]
+  Mail -->|назад / Esc| Auth
+  Mail -->|верный код| Main[Главное окно<br/>main 1024×640]
+  Totp -->|назад / Esc| Auth
+  Totp -->|000000| TotpErr[Тост ошибки]
+  TotpErr --> Totp
+  Totp -->|верный код| Main
+
+  subgraph MainWin["Главное окно"]
+    direction TB
+    Home[Баннер STALZONE<br/>+ обои]
+    Home --> Play[ИГРАТЬ / скачать]
+    Play --> States[Состояния клиента<br/>ready · downloading · paused · running · verifying]
+    Home --> Dots[Меню ⋯]
+    Dots --> Actions[Проверить · папки · логи<br/>переустановить · удалить]
+    Actions --> Confirm{Нужно подтверждение?}
+    Confirm -->|да| ModalAsk[Модалка подтверждения]
+    Confirm -->|нет| States
+    ModalAsk -->|да| States
+    ModalAsk -->|отмена| Home
+
+    Home --> Settings[Настройки<br/>RAM · поведение · лимиты · язык]
+    Home --> Communities[СООБЩЕСТВА ▾]
+    Communities --> ExtSoc[Discord · YouTube<br/>Reddit · Telegram]
+    Home --> Profile[Профиль ▾]
+    Profile --> ExtAcc[ЛК · пригласить друга]
+    Profile --> Logout[Выйти]
   end
 
-  subgraph Profile["Меню профиля"]
-    PA[Личный кабинет ↗]
-    INV[Пригласить друга ↗]
-    LO[Выйти]
-  end
+  Main --> MainWin
+  ExtSoc --> Browser[(Браузер)]
+  ExtAcc --> Browser
 
-  subgraph Modals["Модалки"]
-    LM[Модалка лицензии]
-    LC[Подтверждение выхода]
-  end
+  Logout --> LogoutModal[Подтверждение выхода]
+  LogoutModal -->|Отмена| Home
+  LogoutModal -->|Выйти| Auth
 
-  subgraph Settings["Настройки"]
-    ST[Тема / язык / ОЗУ / …]
-  end
-
-  WP[Выбор обоев<br/>Wallpapers.choose]
-  WL[WallpaperLayer]
-  LO_OP[LinkOpener<br/>+ LinkPolicy]
-  BR[(Системный браузер)]
-  AUTH[Окно входа]
-  PDF[PDF: LICENSE / PRIVACY<br/>exbo.games]
-
-  U --> H
-  U --> Profile
-  U --> ST
-  U --> LM
-
-  H -->|▾| CM
-  CM -->|CommunityLinks| LO_OP
-  H -->|Форум / Поддержка| NA[«Недоступно»]
-
-  PA -->|ExternalLinks.ACCOUNT| LO_OP
-  INV -->|ExternalLinks.REFERRAL| LO_OP
-  LO --> LC
-  LC -->|подтвердить| AUTH
-
-  LM -->|licenseRef / confidentialityRef| LO_OP
-  LO_OP --> BR
-  LO_OP -->|LICENSE / PRIVACY| PDF
-
-  WP --> WL
-  WL --> MainWin[Главное окно]
+  Home -->|крестик / Alt+F4| Exit([Выход из приложения])
+  Auth -->|крестик| Exit
 ```
+
+## Кратко по веткам
+
+| Ветка | Шаги |
+|---|---|
+| Счастливый вход | обновление → вход → (опц. 2FA) → главное → ИГРАТЬ |
+| Регистрация | вход → Создать → возраст ≥ 18 → форма → notice на входе → пароль |
+| Ошибки auth | пустой логин / `wrong` / TOTP `000000` → тост или поле с ошибкой, остаёмся в pre-main |
+| Игра | ⋯ или ИГРАТЬ → прогресс / пауза / running / verify / delete с модалками |
+| Выход из аккаунта | профиль → Выйти → подтверждение → снова панель входа |
+| Выход из приложения | крестик любого окна / Alt+F4 → `Platform.exit()` без вопроса про аккаунт |

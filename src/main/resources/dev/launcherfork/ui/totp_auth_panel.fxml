@@ -4,11 +4,11 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
 
 <!--
-  Authenticator-app (TOTP) panel. Wrong code → compact error card in the form flow
-  (under the digit cells, above ОТПРАВИТЬ): left accent, title + message, small X.
+  Authenticator (TOTP) 2FA panel — same layout contract as mail_auth_panel.fxml:
+  top card grows (spare height), bottom form is dense (label → cells → toast → ПОДТВЕРДИТЬ → footer).
+  No growing spacer between cells and CTA (avoids empty mid-form zones).
 -->
 <StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css,@style/zone-steps.css,@style/zone-totp.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="668.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.TotpAuthController">
     <VBox styleClass="zone-frame">
@@ -18,20 +18,17 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <!-- top is content-sized; bottom grows (same as register) so the toast↔button spacer can actually expand -->
-        <VBox styleClass="zone-top" alignment="CENTER_LEFT">
+        <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
             <Label styleClass="zone-title" text="%fork.totp.title" wrapText="true" minHeight="-Infinity" />
-            <TextFlow styleClass="zone-description-flow">
-                <Text styleClass="zone-description-text" text="%fork.totp.info" />
-                <Text styleClass="zone-description-text, zone-strong" text="%fork.totp.info_app" />
-            </TextFlow>
+            <Label styleClass="zone-description" text="%fork.totp.info" wrapText="true" minHeight="-Infinity" />
         </VBox>
 
-        <VBox styleClass="zone-bottom" VBox.vgrow="ALWAYS">
+        <VBox styleClass="zone-bottom, zone-bottom-dense">
+            <Label styleClass="zone-field-label" text="%fork.totp.code_label" />
             <CodeInput fx:id="codeInput" id="zoneTotpCode" cellCount="6" alignment="CENTER" />
             <HBox fx:id="toast" id="zoneToast" styleClass="zone-toast, zone-radius-md" visible="false" managed="false" maxHeight="-Infinity" maxWidth="Infinity">
                 <VBox styleClass="zone-toast-body" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT">
-                    <Label styleClass="zone-toast-title" text="%fork.totp.error_title" wrapText="true" minHeight="-Infinity" />
+                    <Label styleClass="zone-toast-title" text="%fork.2fa.error_title" wrapText="true" minHeight="-Infinity" />
                     <Label id="zoneErrorFirst" fx:id="errorFirst" styleClass="zone-toast-text" wrapText="true" minHeight="-Infinity" />
                     <Label id="zoneErrorSecond" fx:id="errorSecond" styleClass="zone-toast-text" wrapText="true" minHeight="-Infinity" />
                 </VBox>
@@ -39,8 +36,7 @@
                     <graphic><Region styleClass="zone-toast-x" /></graphic>
                 </Button>
             </HBox>
-            <Region VBox.vgrow="ALWAYS" styleClass="zone-spacer" />
-            <Button id="zoneTotpSend" fx:id="enterButton" styleClass="zone-light, zone-radius-sm" mnemonicParsing="false" onAction="#enter" text="%fork.totp.send" maxWidth="Infinity" />
+            <Button id="zoneTotpSend" fx:id="enterButton" styleClass="zone-primary, zone-radius-sm" mnemonicParsing="false" onAction="#enter" text="%fork.zone.confirm" maxWidth="Infinity" />
             <HBox styleClass="zone-footer">
                 <Label styleClass="zone-footer-text" text="%fork.totp.wrong_account" />
                 <Button id="zoneTotpBack" fx:id="backButton" styleClass="zone-link-underline" mnemonicParsing="false" onAction="#onBack" text="%fork.totp.back" />

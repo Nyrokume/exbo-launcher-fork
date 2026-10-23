@@ -121,6 +121,8 @@ class ServerEntryController(private val ctx: UiContext) {
         Motion.progress(progress, fraction ?: 0.0)
         downloadingStatus.text = fraction?.let { "${(Motion.safeFraction(it) * 100).toInt()}%" } ?: ""
         liveDot.isVisible = s == ClientState.Running
-        icon.toggleClass("icon-download", s == ClientState.NotInstalled)
+        val needsFiles = s == ClientState.NotInstalled ||
+            (s == ClientState.Ready && ctx.services.servers.needsClientUpdate(server))
+        icon.toggleClass("icon-download", needsFiles)
     }
 }

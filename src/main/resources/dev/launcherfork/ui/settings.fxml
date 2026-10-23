@@ -6,18 +6,30 @@
 <?import javafx.scene.layout.*?>
 
 <!--
-  Settings page: ONE screen at the minimum window size (Theme.WINDOW_MIN_*, 900x580) in every theme and language, no
-  scrolling (SettingsScreenTest). Bound to SettingsStore by SettingsController, every change is saved.
+  Settings: one scrollable column (Память, Поведение, Обновление, Язык). The header switch opens four
+  pages that replace it: JVM, Туннель, Чувствительность, Аккаунты. Tunnel fills the settings viewport;
+  the server list scrolls inside that page. The gear opens the column and, when the column is already
+  open, closes settings. Profile «Аккаунты» still opens the account-swap page.
 
-  The page starts BELOW the nav row (main.fxml anchors it under the top bar; no page title: the sidebar already marks
-  НАСТРОЙКИ as active). One tidy list: small Bebas group labels, each over a subtle card (.card) whose rows all look
-  the same: label left, control right, 34 px, thin separators between rows; no wrapping labels (long wording in
-  tooltips).
+  Bound to SettingsStore by SettingsController, every change is saved. The page starts BELOW the nav row
+  (main.fxml anchors it under the top bar; no page title: the sidebar already marks НАСТРОЙКИ as active).
+  Small Bebas group labels, each over a subtle card (.card) whose rows all look the same: label left, control
+  right, 34 px, thin separators between rows; no wrapping labels (long wording in tooltips). Full-width rows.
     ОПЕРАТИВНАЯ ПАМЯТЬ  "Выделено: 6 ГБ из 16 ГБ" (+ «Мало памяти останется системе» for the last 2 GB) + the
                         segmented RAM bar (like the original launcher, 2 GB .. the whole memory) + min / max captions
                         under the selectable range (RamScale).
-    ПОВЕДЕНИЕ           auto-exit and P2P as segmented controls (accent on the selected part), four switches.
-    ОБНОВЛЕНИЕ | ЯЗЫК   one row each, side by side: speed limits (download / upload fields) | Русский / English.
+    ПОВЕДЕНИЕ           auto-exit and P2P as segmented controls (accent on the selected part), then switches.
+    ОБНОВЛЕНИЕ          speed limits (download / upload fields). ЯЗЫК: Русский / English.
+    ТУННЕЛЬ             own page, the whole settings viewport. Region switch (same segmented control as the
+                        other settings), then one row: Пинг, Лучшие, Снять, Применить. The header counts
+                        applied blocks, or Авто when none are applied. Применить is the accent only while
+                        locks differ from that applied list. Each pool is a short heading with a count over
+                        full-width rows: lock, name, ping. The lock only marks a pending choice. A locked
+                        row is muted, not a solid red fill. The server list scrolls; the bars do not.
+    JVM                 preset cards (own page).
+    АККАУНТЫ            one card per session (name and login on the left, Ключи / Применить / Удалить on the right).
+                        Cards and the name/save row stay inside the page; extra cards scroll above that row.
+    ЧУВСТВИТЕЛЬНОСТЬ    base value, calculate, write, then the scope table.
 -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -26,12 +38,14 @@
         <ToggleGroup fx:id="exitGroup"/>
         <ToggleGroup fx:id="p2pGroup"/>
         <ToggleGroup fx:id="languageGroup"/>
+        <ToggleGroup fx:id="regionGroup"/>
     </fx:define>
-    <ScrollPane fx:id="scroll" id="settingsScroll" styleClass="settings-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="NEVER"
+    <ScrollPane fx:id="scroll" id="settingsScroll" styleClass="settings-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                 AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
         <VBox fx:id="settingsContent" id="settingsContent" styleClass="settings-content">
+            <VBox fx:id="launcherPage" styleClass="settings-page">
             <!-- ОПЕРАТИВНАЯ ПАМЯТЬ -->
-            <VBox fx:id="gameSection" id="settingsGame" styleClass="settings-group">
+            <VBox fx:id="gameSection" id="settingsGame" styleClass="settings-group" maxWidth="Infinity">
                 <Label fx:id="gameHeading" styleClass="settings-group-label,font-display" text="%settings.heading.ram" minHeight="-Infinity"/>
                 <VBox fx:id="ramCard" styleClass="settings-card,card,zone-radius-md,ram-card">
                     <HBox styleClass="ram-head" alignment="CENTER_LEFT">
@@ -44,7 +58,7 @@
             </VBox>
 
             <!-- ПОВЕДЕНИЕ -->
-            <VBox fx:id="behaviourSection" id="settingsBehaviour" styleClass="settings-group">
+            <VBox fx:id="behaviourSection" id="settingsBehaviour" styleClass="settings-group" maxWidth="Infinity">
                 <Label fx:id="behaviourHeading" styleClass="settings-group-label,font-display" text="%settings.heading.behaviour" minHeight="-Infinity"/>
                 <VBox fx:id="behaviourCard" styleClass="settings-card,card,zone-radius-md">
                     <HBox fx:id="exitRow" styleClass="settings-row" alignment="CENTER_LEFT">
@@ -85,7 +99,7 @@
                         <Region HBox.hgrow="ALWAYS" minWidth="16"/>
                         <CheckBox fx:id="trayToggle" styleClass="switch" accessibleText="%settings.tray"/>
                     </HBox>
-                    <HBox fx:id="autostartRow" styleClass="settings-row,toggle-row,last" alignment="CENTER_LEFT">
+                    <HBox fx:id="autostartRow" styleClass="settings-row,last,toggle-row" alignment="CENTER_LEFT">
                         <Label styleClass="settings-label,row-label" text="%settings.run_on_start" minWidth="-Infinity"/>
                         <Region HBox.hgrow="ALWAYS" minWidth="16"/>
                         <CheckBox fx:id="autostartToggle" styleClass="switch" accessibleText="%settings.run_on_start"/>
@@ -93,47 +107,116 @@
                 </VBox>
             </VBox>
 
-            <HBox fx:id="columns" styleClass="settings-columns">
-                <!-- ОБНОВЛЕНИЕ -->
-                <VBox fx:id="updatesSection" id="settingsUpdates" styleClass="settings-group" HBox.hgrow="ALWAYS" maxWidth="Infinity">
-                    <Label fx:id="updatesHeading" styleClass="settings-group-label,font-display" text="%settings.heading.updates" minHeight="-Infinity"/>
-                    <VBox styleClass="settings-card,card,zone-radius-md">
-                        <HBox fx:id="limitsRow" styleClass="settings-row,last" alignment="CENTER_LEFT">
-                            <Label styleClass="settings-label,row-label" text="%settings.speed_limit" minWidth="-Infinity"/>
-                            <Region HBox.hgrow="ALWAYS" minWidth="16"/>
-                            <HBox styleClass="limit-row" alignment="CENTER_RIGHT" minWidth="-Infinity" maxHeight="-Infinity">
-                                <HBox fx:id="downloadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
-                                    <Region styleClass="icon-download"/>
-                                    <TextField fx:id="downloadLimitField" id="downloadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
-                                               accessibleText="%settings.limit.download"/>
-                                    <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
-                                </HBox>
-                                <HBox fx:id="uploadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
-                                    <Region styleClass="icon-upload"/>
-                                    <TextField fx:id="uploadLimitField" id="uploadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
-                                               accessibleText="%settings.limit.upload"/>
-                                    <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
-                                </HBox>
+            <!-- ОБНОВЛЕНИЕ -->
+            <VBox fx:id="updatesSection" id="settingsUpdates" styleClass="settings-group" maxWidth="Infinity">
+                <Label fx:id="updatesHeading" styleClass="settings-group-label,font-display" text="%settings.heading.updates" minHeight="-Infinity"/>
+                <VBox styleClass="settings-card,card,zone-radius-md">
+                    <HBox fx:id="limitsRow" styleClass="settings-row,last" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.speed_limit" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <HBox styleClass="limit-row" alignment="CENTER_RIGHT" minWidth="-Infinity" maxHeight="-Infinity">
+                            <HBox fx:id="downloadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
+                                <Region styleClass="icon-download"/>
+                                <TextField fx:id="downloadLimitField" id="downloadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
+                                           accessibleText="%settings.limit.download"/>
+                                <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
+                            </HBox>
+                            <HBox fx:id="uploadLimitBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
+                                <Region styleClass="icon-upload"/>
+                                <TextField fx:id="uploadLimitField" id="uploadLimit" styleClass="limit-input" prefColumnCount="4" HBox.hgrow="ALWAYS"
+                                           accessibleText="%settings.limit.upload"/>
+                                <Label styleClass="limit-unit" text="%settings.unit.kbs" minWidth="-Infinity"/>
                             </HBox>
                         </HBox>
-                    </VBox>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <!-- ЯЗЫК -->
+            <VBox fx:id="languageSection" id="settingsLanguage" styleClass="settings-group" maxWidth="Infinity">
+                <Label fx:id="languageHeading" styleClass="settings-group-label,font-display" text="%settings.heading.language" minHeight="-Infinity"/>
+                <VBox styleClass="settings-card,card,zone-radius-md">
+                    <HBox fx:id="languageRow" styleClass="settings-row,last" alignment="CENTER_LEFT">
+                        <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
+                            <RadioButton fx:id="langRu" styleClass="segment,zone-radius-sm" text="Русский" toggleGroup="$languageGroup" minWidth="-Infinity"
+                                         accessibleText="%settings.language.interface"/>
+                            <RadioButton fx:id="langEn" styleClass="segment,zone-radius-sm" text="English" toggleGroup="$languageGroup" minWidth="-Infinity"
+                                         accessibleText="%settings.language.interface"/>
+                        </HBox>
+                    </HBox>
+                </VBox>
+            </VBox>
+            </VBox>
+
+            <!-- JVM, туннель, чувствительность и свап аккаунтов — отдельные страницы на всю область. -->
+            <VBox fx:id="clientContent" id="settingsClient" styleClass="settings-page" VBox.vgrow="ALWAYS">
+                <VBox fx:id="jvmPage" id="settingsJvm" styleClass="settings-group" maxWidth="Infinity">
+                    <Label styleClass="settings-group-label,font-display" text="%settings.heading.jvm" minHeight="-Infinity"/>
+                    <Label fx:id="jvmStatus" styleClass="settings-note" minWidth="-Infinity"/>
+                    <GridPane fx:id="jvmGrid" styleClass="jvm-grid" hgap="8" vgap="8">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="ALWAYS" percentWidth="50" minWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS" percentWidth="50" minWidth="120"/>
+                        </columnConstraints>
+                    </GridPane>
                 </VBox>
 
-                <!-- ЯЗЫК -->
-                <VBox fx:id="languageSection" id="settingsLanguage" styleClass="settings-group" minWidth="-Infinity">
-                    <Label fx:id="languageHeading" styleClass="settings-group-label,font-display" text="%settings.heading.language" minHeight="-Infinity"/>
-                    <VBox styleClass="settings-card,card,zone-radius-md">
-                        <HBox fx:id="languageRow" styleClass="settings-row,last" alignment="CENTER_LEFT">
-                            <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
-                                <RadioButton fx:id="langRu" styleClass="segment,zone-radius-sm" text="Русский" toggleGroup="$languageGroup" minWidth="-Infinity"
-                                             accessibleText="%settings.language.interface"/>
-                                <RadioButton fx:id="langEn" styleClass="segment,zone-radius-sm" text="English" toggleGroup="$languageGroup" minWidth="-Infinity"
-                                             accessibleText="%settings.language.interface"/>
-                            </HBox>
+                <VBox fx:id="tunnelPage" id="settingsTunnel" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                    <HBox styleClass="tunnel-head" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-group-label,font-display" text="%settings.heading.tunnel" minHeight="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="12"/>
+                        <Label fx:id="tunnelNow" styleClass="tunnel-count" minWidth="-Infinity" textOverrun="ELLIPSIS"/>
+                    </HBox>
+                    <HBox styleClass="tunnel-regions" alignment="CENTER_LEFT">
+                        <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
+                            <RadioButton fx:id="regionRu" styleClass="segment,zone-radius-sm" text="RU" toggleGroup="$regionGroup" selected="true" minWidth="-Infinity"/>
+                            <RadioButton fx:id="regionEu" styleClass="segment,zone-radius-sm" text="EU" toggleGroup="$regionGroup" minWidth="-Infinity"/>
+                            <RadioButton fx:id="regionNa" styleClass="segment,zone-radius-sm" text="NA" toggleGroup="$regionGroup" minWidth="-Infinity"/>
+                            <RadioButton fx:id="regionSea" styleClass="segment,zone-radius-sm" text="SEA" toggleGroup="$regionGroup" minWidth="-Infinity"/>
                         </HBox>
+                    </HBox>
+                    <HBox styleClass="tunnel-actions" alignment="CENTER_LEFT">
+                        <Button fx:id="tunnelPing" styleClass="settings-mini" text="%settings.tunnel.ping" mnemonicParsing="false" minWidth="-Infinity"/>
+                        <Button fx:id="tunnelAutoBest" styleClass="settings-mini" text="%settings.tunnel.autobest" mnemonicParsing="false" minWidth="-Infinity"/>
+                        <Button fx:id="tunnelUnblock" styleClass="settings-mini" text="%settings.tunnel.unblock" mnemonicParsing="false" minWidth="-Infinity"/>
+                        <Button fx:id="tunnelApply" styleClass="settings-mini" text="%settings.tunnel.apply" mnemonicParsing="false" minWidth="-Infinity" disable="true"/>
+                    </HBox>
+                    <ScrollPane fx:id="tunnelScroll" styleClass="tunnel-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                minHeight="120" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                        <VBox fx:id="tunnelPools" styleClass="tunnel-pools"/>
+                    </ScrollPane>
+                </VBox>
+
+                <VBox fx:id="accountsPage" id="settingsAccounts" styleClass="settings-group" maxWidth="Infinity">
+                    <Label styleClass="settings-group-label,font-display" text="%settings.heading.accounts" minHeight="-Infinity"/>
+                    <ScrollPane fx:id="sessionScroll" styleClass="session-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                minHeight="96" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                        <VBox fx:id="sessionCards" styleClass="session-cards"/>
+                    </ScrollPane>
+                    <HBox fx:id="accountsRow" alignment="CENTER_LEFT" spacing="8">
+                        <HBox styleClass="settings-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                            <TextField fx:id="sessionName" promptText="%stalzone.accounts.name" styleClass="limit-input" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <Button fx:id="captureSession" styleClass="settings-mini" text="%settings.accounts.save" mnemonicParsing="false" minWidth="-Infinity"/>
+                    </HBox>
+                </VBox>
+
+                <VBox fx:id="sensPage" id="settingsSens" styleClass="settings-group">
+                    <Label styleClass="settings-group-label,font-display" text="%settings.heading.sens" minHeight="-Infinity"/>
+                    <VBox styleClass="client-card,card,zone-radius-md">
+                        <HBox fx:id="sensRow" alignment="CENTER_LEFT" spacing="8">
+                            <HBox styleClass="settings-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT" minWidth="120" prefWidth="140" maxWidth="180">
+                                <TextField fx:id="baseSens" promptText="%stalzone.sens.base" styleClass="limit-input" HBox.hgrow="ALWAYS"/>
+                            </HBox>
+                            <Button fx:id="calcSens" styleClass="settings-mini" text="%stalzone.sens.calc" mnemonicParsing="false" minWidth="-Infinity"/>
+                            <Region HBox.hgrow="ALWAYS" minWidth="8"/>
+                            <Button fx:id="writeSens" styleClass="settings-mini,primary" text="%settings.sens.write" mnemonicParsing="false" minWidth="-Infinity"/>
+                        </HBox>
+                        <GridPane fx:id="sensChips" styleClass="sens-table" hgap="8" vgap="8" minWidth="0" maxWidth="1.7976931348623157E308"/>
                     </VBox>
                 </VBox>
-            </HBox>
+                <Label fx:id="clientStatus" styleClass="settings-note" wrapText="true" visible="false" managed="false"/>
+            </VBox>
         </VBox>
     </ScrollPane>
 </AnchorPane>

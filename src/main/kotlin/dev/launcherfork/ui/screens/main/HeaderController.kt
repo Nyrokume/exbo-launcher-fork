@@ -42,6 +42,11 @@ import kotlin.math.round
 class HeaderController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var headerPane: HBox
     @FXML lateinit var linksContainer: HBox
+    @FXML lateinit var settingsNav: HBox
+    @FXML lateinit var navJvm: Button
+    @FXML lateinit var navTunnel: Button
+    @FXML lateinit var navSens: Button
+    @FXML lateinit var navAccounts: Button
     @FXML lateinit var communities: Button
     @FXML lateinit var communitiesCaret: Region
     @FXML lateinit var communityMenu: VBox
@@ -52,6 +57,8 @@ class HeaderController(private val ctx: UiContext) : Disposable {
     var onLink: (String) -> Unit = {}
     /** Fired after the communities menu opened (MainController closes the profile menu). */
     var onMenuShown: () -> Unit = {}
+    /** Fired with a separate settings page id (`jvm`, `tunnel`, `sens`, `accounts`). */
+    var onSettingsSection: (String) -> Unit = {}
 
     /** Menu rows in [CommunityLinks.all] order; each row's userData is its [CommunityLink]. */
     val communityItems: List<Button> get() = communityMenu.children.filterIsInstance<Button>()
@@ -66,6 +73,7 @@ class HeaderController(private val ctx: UiContext) : Disposable {
         mapOf(forum to "forum", support to "support").forEach { (label, id) ->
             label.setOnMouseClicked { onLink(id) }
         }
+        sectionButtons.forEach { (id, button) -> button.setOnAction { onSettingsSection(id) } }
 
         communityMenu.children.setAll(CommunityLinks.all.map(::menuItem))
         communities.setOnAction { if (isCommunityMenuShown) hideCommunityMenu() else showCommunityMenu() }
@@ -97,6 +105,31 @@ class HeaderController(private val ctx: UiContext) : Disposable {
     /** Logical state (the card may still be fading out for a moment after [hideCommunityMenu]). */
     var isCommunityMenuShown: Boolean = false
         private set
+
+    /**
+     * Settings mode swaps the social links for JVM / tunnel / sensitivity / account swap. [section] gets the
+     * accent (`selected`); the settings column (`ram` and the blocks in it) leaves every button unselected.
+     */
+    fun setSettingsNav(shown: Boolean, section: String) {
+        linksContainer.isVisible = !shown
+        linksContainer.isManaged = !shown
+        settingsNav.isVisible = shown
+        settingsNav.isManaged = shown
+        if (shown) hideCommunityMenu()
+        selectSection(section)
+    }
+
+    fun selectSection(section: String) {
+        sectionButtons.forEach { (id, button) -> button.toggleClass("selected", id == section) }
+    }
+
+    private val sectionButtons: Map<String, Button>
+        get() = linkedMapOf(
+            "jvm" to navJvm,
+            "tunnel" to navTunnel,
+            "sens" to navSens,
+            "accounts" to navAccounts,
+        )
 
     fun showCommunityMenu(focusFirst: Boolean = false) {
         if (!isCommunityMenuShown) {

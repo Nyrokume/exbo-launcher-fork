@@ -47,8 +47,19 @@ enum class AuthError {
     EMPTY_CODE,
     WRONG_CREDENTIALS,
     WRONG_CODE,
+    WRONG_HWID,
     NO_CONNECTION,
     SERVER_ERROR,
+    /** Short cooldown. [AuthResult.Failure.waitSeconds] is the remaining time. */
+    BANNED,
+    /** `BANNED_BOOTSTRAP` / `FORCE_UPDATE`: the installed EXBO launcher has to be updated. */
+    LAUNCHER_UPDATE,
+    /** Password login answered `NEW_PLACE`. The form stays up. */
+    NEW_PLACE,
+    /** The account e-mail is not confirmed. */
+    EMAIL_CONFIRMATION,
+    /** The password was marked compromised. */
+    PASSWORD_COMPROMISED,
 }
 
 sealed interface AuthResult {
@@ -57,7 +68,7 @@ sealed interface AuthResult {
     data object CodeRequired : AuthResult
     /** Second factor (authenticator app / TOTP, 6 digits) is required -> totp_auth screen. */
     data object TotpRequired : AuthResult
-    data class Failure(val error: AuthError) : AuthResult
+    data class Failure(val error: AuthError, val waitSeconds: Int? = null) : AuthResult
 }
 
 /** What the registration form sends (after the age gate). */
@@ -119,6 +130,18 @@ enum class P2pMode { ALWAYS, EXCEPT_MOBILE, NEVER }
 /** When the launcher closes itself (settings). */
 enum class ExitMode { ON_GAME_START, ON_GAME_EXIT, NEVER }
 
+/**
+ * Server blocker selection. [blocked] is the server ids (`pool::name`) the firewall should drop.
+ * Empty [blocked] means nothing is blocked and the game picks (Авто). [mode] is always `blocklist`.
+ */
+data class ServerBlockState(
+    val blocked: List<String> = emptyList(),
+    val region: String = "RU",
+    val pings: Map<String, Int?> = emptyMap(),
+    val preferredByPool: Map<String, String> = emptyMap(),
+    val mode: String = "blocklist",
+)
+
 data class LauncherSettings(
     val runOnStartUp: Boolean = false,
     val startOnDownloaded: Boolean = true,
@@ -137,6 +160,12 @@ data class LauncherSettings(
     val ramFraction: Double? = null,
     val downloadLimitKb: Int = 0,
     val uploadLimitKb: Int = 0,
+    /**
+     * Legacy single tunnel name (empty = Авто). The server blocker does not use it: an empty [serverBlock]
+     * block list is what leaves every tunnel open.
+     */
+    val tunnel: String = "",
+    val serverBlock: ServerBlockState = ServerBlockState(),
     val gameRoot: Path = Path.of(System.getProperty("user.home"), "Games", "EXBO"),
     val language: String = "ru",
 )
