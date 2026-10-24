@@ -20,13 +20,12 @@
                         under the selectable range (RamScale).
     ПОВЕДЕНИЕ           auto-exit and P2P as segmented controls (accent on the selected part), then switches.
     ОБНОВЛЕНИЕ          speed limits (download / upload fields). ЯЗЫК: Русский / English.
-    ТУННЕЛЬ             own page, the whole settings viewport. One toolbar row: region switch (same segmented
-                        control as the other settings), then Пинг, Лучшие, Снять, Применить, then the block
-                        count at the far side (Авто when nothing is applied). Применить stays the filled
-                        accent and is only disabled while nothing is pending. Each pool is a short heading
-                        with a count over full-width rows of one height: lock, name, ping. The lock only
-                        marks a pending choice. A locked row is muted, not a solid red fill. The server
-                        list scrolls; the toolbar does not.
+    ТУННЕЛЬ             own page, the whole settings viewport. Region switch on the first row (same segmented
+                        control as the other settings). The next row is Измерить, Найти лучший сервер,
+                        then the rank mode. Nothing sits to the right of the mode control. The mode
+                        control is an in-theme list, not a native combo. Each pool is one card: name and
+                        count on the left, Исключить on the right of that title, then full-width rows
+                        (name, client RTT, server RTT, sum). The server list scrolls; the toolbar does not.
     JVM                 preset cards (own page).
     АККАУНТЫ            one card per session (name and login on the left, key icon / Применить / Удалить on the right).
                         Cards and the name/save row stay inside the page; extra cards scroll above that row.
@@ -173,16 +172,12 @@
                             <RadioButton fx:id="regionSea" styleClass="segment,zone-radius-sm" text="SEA" toggleGroup="$regionGroup" minWidth="-Infinity"/>
                             <RadioButton fx:id="regionNea" styleClass="segment,zone-radius-sm" text="NEA" toggleGroup="$regionGroup" minWidth="-Infinity"/>
                         </HBox>
-                        <Region HBox.hgrow="ALWAYS" minWidth="12"/>
-                        <Label fx:id="tunnelNow" styleClass="tunnel-count" minWidth="-Infinity" textOverrun="ELLIPSIS"/>
                     </HBox>
                     <HBox styleClass="tunnel-actions" alignment="CENTER_LEFT">
                         <Button fx:id="tunnelMeasure" styleClass="settings-mini" text="%settings.tunnel.measure" mnemonicParsing="false" minWidth="-Infinity"/>
                         <Button fx:id="tunnelFindBest" styleClass="settings-mini,primary" text="%settings.tunnel.find" mnemonicParsing="false" minWidth="-Infinity"/>
-                        <Button fx:id="tunnelGameChoice" styleClass="settings-mini" text="%settings.tunnel.game" mnemonicParsing="false" minWidth="-Infinity"/>
-                        <ComboBox fx:id="tunnelMode" styleClass="settings-combo" minWidth="-Infinity" maxHeight="-Infinity"/>
+                        <VBox fx:id="tunnelMode" styleClass="tunnel-mode" alignment="TOP_LEFT" minWidth="-Infinity" maxHeight="-Infinity"/>
                     </HBox>
-                    <Label styleClass="settings-note" text="%settings.tunnel.legend"/>
                     <ScrollPane fx:id="tunnelScroll" styleClass="tunnel-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                                 minHeight="120" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                         <VBox fx:id="tunnelPools" styleClass="tunnel-pools"/>

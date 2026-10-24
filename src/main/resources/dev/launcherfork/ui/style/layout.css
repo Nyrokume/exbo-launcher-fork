@@ -686,12 +686,58 @@
 }
 .tunnel-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
 .tunnel-pools { -fx-spacing: 10; -fx-padding: 2 0 4 0; }
-.pool { -fx-spacing: 4; -fx-background-color: transparent; -fx-padding: 0; }
-.pool-head { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 6 2 0 2; }
-.pool-title { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-cursor: hand; }
-.tunnel-actions .settings-combo {
+.pool { -fx-spacing: 2; -fx-padding: 8 10 4 10; -fx-max-width: infinity; }
+.pool-head { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 2 0; -fx-max-width: infinity; }
+.pool-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
+.tunnel-mode { -fx-alignment: top-left; -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34; }
+.tunnel-actions .tunnel-mode-button {
     -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
     -fx-pref-width: 168; -fx-min-width: 148; -fx-max-width: 180;
+    -fx-alignment: center-left;
+    -fx-content-display: graphic-only;
+}
+.tunnel-mode-value { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-alignment: center-left; }
+.tunnel-mode-button:disabled .tunnel-mode-value,
+.tunnel-mode-button:disabled:hover .tunnel-mode-value { -fx-text-fill: -settings-muted; }
+.tunnel-mode-caret {
+    -fx-shape: "M0,0 H9 L4.5,5 Z";
+    -fx-background-color: -icon;
+    -fx-min-width: 9; -fx-pref-width: 9; -fx-max-width: 9;
+    -fx-min-height: 5; -fx-pref-height: 5; -fx-max-height: 5;
+}
+.tunnel-mode-button.open .tunnel-mode-caret { -fx-rotate: 180; -fx-background-color: -foreground; }
+.tunnel-mode-button:disabled .tunnel-mode-caret { -fx-background-color: -settings-muted; }
+.tunnel-mode-list {
+    -fx-background-color: -card;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-spacing: 2;
+    -fx-effect: dropshadow(gaussian, -shadow, 16, 0.2, 0, 4);
+}
+.tunnel-mode-list > .tunnel-mode-item {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-text-fill: -settings-label;
+    -fx-font-size: 13;
+    -fx-alignment: center-left;
+    -fx-padding: 6 10;
+    -fx-cursor: hand;
+    -fx-max-width: infinity;
+    -fx-min-height: 28; -fx-pref-height: 28;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.tunnel-mode-list > .tunnel-mode-item:hover,
+.tunnel-mode-list > .tunnel-mode-item:focused {
+    -fx-background-color: -tile-hover;
+    -fx-text-fill: -foreground;
+}
+.tunnel-mode-list > .tunnel-mode-item.selected,
+.tunnel-mode-list > .tunnel-mode-item.selected:hover {
+    -fx-background-color: -destructive-soft;
+    -fx-text-fill: -foreground;
 }
 .tunnel-node {
     -fx-background-color: transparent;
@@ -707,6 +753,7 @@
     -fx-cursor: hand;
     -fx-max-width: infinity;
 }
+.tunnel-node.last { -fx-border-color: transparent; }
 .tunnel-node:hover { -fx-background-color: -tile-hover; }
 .tunnel-node:disabled, .tunnel-node:disabled:hover {
     -fx-opacity: 1;
@@ -726,11 +773,12 @@
 .tunnel-node .tunnel-ping.sum { -fx-text-fill: -foreground; }
 .pool-meta { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
 .tunnel-list {
-    -fx-background-color: -card;
-    -fx-border-color: -border;
-    -fx-border-width: 1;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
     -fx-padding: 0;
     -fx-spacing: 0;
+    -fx-max-width: infinity;
 }
 /* one server = one full-width row: lock, name, ping. A locked row is muted, not a red slab. */
 .tunnel-line {
@@ -789,7 +837,7 @@
 .tunnel-toolbar { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 2 0 6 0; -fx-max-width: infinity; }
 .tunnel-count { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 0; }
 .tunnel-count.err { -fx-text-fill: -destructive-text; }
-.tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; }
+.tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 8 0; -fx-max-width: infinity; }
 
 /* saved EXBO sessions: one card per session, same surface as a tunnel pool, accent border when it is the live account.
    Name and login take the left; the key icon, Применить and Удалить stay on the right and do not cover the title. */

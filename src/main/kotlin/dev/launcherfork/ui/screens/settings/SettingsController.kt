@@ -18,11 +18,9 @@ import dev.launcherfork.stalzone.JvmPresets
 import dev.launcherfork.stalzone.JvmProfile
 import dev.launcherfork.stalzone.ScopeSens
 import dev.launcherfork.stalzone.TunnelRegion
-import dev.launcherfork.stalzone.TunnelSearchMode
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
-import javafx.scene.control.ComboBox
 import javafx.scene.control.ContentDisplay
 import javafx.scene.control.Label
 import javafx.scene.control.RadioButton
@@ -116,12 +114,10 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var regionNa: RadioButton
     @FXML lateinit var regionSea: RadioButton
     @FXML lateinit var regionNea: RadioButton
-    @FXML lateinit var tunnelNow: Label
     @FXML lateinit var tunnelPools: VBox
     @FXML lateinit var tunnelMeasure: Button
     @FXML lateinit var tunnelFindBest: Button
-    @FXML lateinit var tunnelGameChoice: Button
-    @FXML lateinit var tunnelMode: ComboBox<TunnelSearchMode>
+    @FXML lateinit var tunnelMode: VBox
     @FXML lateinit var sessionScroll: ScrollPane
     @FXML lateinit var sessionCards: VBox
     @FXML lateinit var accountsRow: HBox
@@ -467,11 +463,9 @@ class SettingsController(private val ctx: UiContext) {
                 regionSea to TunnelRegion.SEA,
                 regionNea to TunnelRegion.NEA,
             ),
-            tunnelNow,
             tunnelPools,
             tunnelMeasure,
             tunnelFindBest,
-            tunnelGameChoice,
             tunnelMode,
         )
         tunnels.bind()

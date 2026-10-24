@@ -17,21 +17,21 @@ import dev.launcherfork.stalzone.TunnelTarget
 import dev.launcherfork.stalzone.toView
 import dev.launcherfork.ui.UiContext
 import javafx.application.Platform
+import javafx.event.EventHandler
 import javafx.geometry.Pos
+import javafx.scene.Node
 import javafx.scene.control.Button
-import javafx.scene.control.ComboBox
 import javafx.scene.control.ContentDisplay
 import javafx.scene.control.Label
-import javafx.scene.control.ListCell
 import javafx.scene.control.OverrunStyle
 import javafx.scene.control.RadioButton
 import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
+import javafx.scene.input.MouseEvent
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
 import javafx.scene.layout.VBox
-import javafx.util.StringConverter
 import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -61,18 +61,17 @@ internal object TunnelServices {
 
 /**
  * One Roxy node per region. Opening the region loads that list. Opening a group measures its nodes
- * once. «Измерить снова» and «Найти лучший сервер» are the only other measurements.
+ * once. «Измерить» measures the open region and does not write an override. «Найти лучший сервер»
+ * measures when this region has no fresh success, then writes the single best node.
  */
 class TunnelPage(
     private val ctx: UiContext,
     private val regionGroup: ToggleGroup,
     private val regionButtons: Map<RadioButton, TunnelRegion>,
-    private val tunnelNow: Label,
     private val tunnelPools: VBox,
     private val tunnelMeasure: Button,
     private val tunnelFindBest: Button,
-    private val tunnelGameChoice: Button,
-    private val tunnelMode: ComboBox<TunnelSearchMode>,
+    private val tunnelMode: VBox,
 ) {
     private var settings = TunnelSettings()
     private var settingsError: String? = null
@@ -85,43 +84,43 @@ class TunnelPage(
     private var catalogGen = 0
     private var probeGen = 0
     private var measuring = false
-    private var roundTotal = 0
-    private var roundDone = 0
-    private var showBest = false
-    private var bestTargets: List<TunnelTarget> = emptyList()
-    private var again: (() -> Unit)? = null
-    private var suppressMode = false
     private var suppressRegion = false
+    private val modeValue = Label().apply {
+        styleClass.add("tunnel-mode-value")
+        textOverrun = OverrunStyle.ELLIPSIS
+        maxWidth = Double.MAX_VALUE
+    }
+    private val modeButton = Button().apply {
+        styleClass.addAll("settings-mini", "tunnel-mode-button")
+        contentDisplay = ContentDisplay.GRAPHIC_ONLY
+        alignment = Pos.CENTER_LEFT
+        maxWidth = Double.MAX_VALUE
+        graphic = HBox(8.0, modeValue, Region().apply { styleClass.add("tunnel-mode-caret") }).apply {
+            alignment = Pos.CENTER_LEFT
+            maxWidth = Double.MAX_VALUE
+            HBox.setHgrow(modeValue, Priority.ALWAYS)
+        }
+    }
+    private val modeList = VBox().apply {
+        styleClass.addAll("tunnel-mode-list", "zone-radius-sm")
+        isVisible = false
+        isManaged = false
+        maxWidth = Double.MAX_VALUE
+    }
+    private val closeModeOnOutside = EventHandler<MouseEvent> { event ->
+        if (!modeList.isVisible) return@EventHandler
+        val target = event.target as? Node ?: return@EventHandler
+        if (inside(modeButton, target) || inside(modeList, target)) return@EventHandler
+        setModeOpen(false)
+    }
 
     fun bind() {
         reloadFiles()
-        tunnelNow.textOverrun = OverrunStyle.ELLIPSIS
         tunnelMeasure.tooltip = Tooltip(ctx.t("settings.tunnel.measure.hint"))
         tunnelFindBest.tooltip = Tooltip(ctx.t("settings.tunnel.find.hint"))
-        tunnelGameChoice.tooltip = Tooltip(ctx.t("settings.tunnel.game.hint"))
-        tunnelMeasure.setOnAction { again?.invoke() }
-        tunnelFindBest.setOnAction { measureSearch() }
-        tunnelGameChoice.setOnAction { chooseGame() }
-        tunnelMode.converter = object : StringConverter<TunnelSearchMode>() {
-            override fun toString(mode: TunnelSearchMode?): String = mode?.let { modeLabel(it) }.orEmpty()
-            override fun fromString(text: String?): TunnelSearchMode = TunnelSearchMode.PING
-        }
-        tunnelMode.setCellFactory {
-            object : ListCell<TunnelSearchMode>() {
-                override fun updateItem(item: TunnelSearchMode?, empty: Boolean) {
-                    super.updateItem(item, empty)
-                    text = if (empty || item == null) "" else modeLabel(item)
-                }
-            }
-        }
-        tunnelMode.items.setAll(TunnelSearchMode.entries)
-        tunnelMode.valueProperty().addListener { _, _, mode ->
-            if (suppressMode || mode == null || mode == settings.mode) return@addListener
-            val previous = settings
-            settings = settings.withMode(mode)
-            if (!persist()) settings = previous
-            render()
-        }
+        tunnelMeasure.setOnAction { measureOpen() }
+        tunnelFindBest.setOnAction { findBest() }
+        mountModeList()
         regionGroup.selectedToggleProperty().addListener { _, _, toggle ->
             if (suppressRegion) return@addListener
             val region = regionButtons[toggle] ?: return@addListener
@@ -140,10 +139,67 @@ class TunnelPage(
         openRegion(region)
     }
 
+    private fun mountModeList() {
+        tunnelMode.children.setAll(modeButton)
+        modeList.children.setAll(TunnelSearchMode.entries.map { mode ->
+            Button(modeLabel(mode)).apply {
+                styleClass.addAll("tunnel-mode-item", "zone-radius-sm")
+                maxWidth = Double.MAX_VALUE
+                alignment = Pos.CENTER_LEFT
+                userData = mode
+                setOnAction { chooseMode(mode) }
+            }
+        })
+        val page = tunnelMode.parent?.parent as? VBox
+        if (page != null && modeList.parent !== page) page.children.add(modeList)
+        modeButton.setOnAction { setModeOpen(!modeList.isVisible) }
+        modeButton.sceneProperty().addListener { _, previous, scene ->
+            previous?.removeEventFilter(MouseEvent.MOUSE_PRESSED, closeModeOnOutside)
+            scene?.addEventFilter(MouseEvent.MOUSE_PRESSED, closeModeOnOutside)
+        }
+        modeButton.scene?.addEventFilter(MouseEvent.MOUSE_PRESSED, closeModeOnOutside)
+    }
+
+    private fun setModeOpen(open: Boolean) {
+        if (open && modeButton.isDisabled) return
+        modeList.isVisible = open
+        if (open) modeButton.styleClass.add("open") else modeButton.styleClass.remove("open")
+        if (open) {
+            placeModeList()
+            modeList.toFront()
+        }
+    }
+
+    private fun placeModeList() {
+        val page = modeList.parent as? Region ?: return
+        if (modeButton.scene == null || page.scene == null || modeButton.height < 2.0) return
+        val local = page.sceneToLocal(modeButton.localToScene(0.0, modeButton.height))
+        val width = modeButton.width.coerceAtLeast(148.0)
+        modeList.layoutX = local.x
+        modeList.layoutY = local.y + 4.0
+        modeList.minWidth = width
+        modeList.prefWidth = width
+        modeList.maxWidth = width
+        val height = modeList.prefHeight(width)
+        modeList.resize(width, height)
+        modeList.layout()
+    }
+
+    private fun chooseMode(mode: TunnelSearchMode) {
+        setModeOpen(false)
+        if (settingsError != null || mode == settings.mode) return
+        val previous = settings
+        settings = settings.withMode(mode)
+        if (!persist()) settings = previous
+        render()
+    }
+
+    private fun inside(root: Node, target: Node): Boolean =
+        generateSequence(target) { it.parent }.any { it === root }
+
     private fun openRegion(region: TunnelRegion) {
+        setModeOpen(false)
         selected = region
-        showBest = false
-        bestTargets = emptyList()
         cancelRound()
         catalogGen++
         val gen = catalogGen
@@ -186,14 +242,6 @@ class TunnelPage(
         cache.version = cached.first.version
     }
 
-    private fun chooseGame() {
-        if (settingsError != null) return
-        val previous = settings
-        settings = settings.withoutOverride(selected)
-        if (!persist()) settings = previous
-        render()
-    }
-
     private fun select(target: TunnelTarget) {
         if (settingsError != null) return
         val view = probes[target.key()] ?: return
@@ -222,34 +270,72 @@ class TunnelPage(
         false
     }
 
+    /** Every node on the open region, including excluded pools. A test fill only. */
+    private fun regionTargets(catalog: RoxyCatalog): List<TunnelTarget> {
+        val seen = HashSet<String>()
+        val out = ArrayList<TunnelTarget>()
+        for (pool in catalog.pools) {
+            for (endpoint in pool.tunnels) {
+                if (!seen.add(endpoint.address)) continue
+                out += TunnelTarget(selected, pool.name, endpoint)
+            }
+        }
+        return out
+    }
+
     private fun measurePool(poolName: String) {
         val catalog = catalogs[selected] ?: return
         val pool = catalog.pools.firstOrNull { it.name == poolName } ?: return
-        again = { measurePool(poolName) }
-        showBest = false
         startRound(pool.tunnels.map { TunnelTarget(selected, pool.name, it) }) {}
     }
 
-    private fun measureSearch() {
+    private fun measureOpen() {
+        val catalog = catalogs[selected] ?: return
+        startRound(regionTargets(catalog)) {}
+    }
+
+    private fun freshSuccess(target: TunnelTarget): Boolean = probes[target.key()]?.freshSuccess == true
+
+    /**
+     * Ranks the open region and writes one address. Measures first when nothing in the candidate
+     * set has a fresh success, and measures any candidate that has not been probed yet.
+     */
+    private fun findBest() {
         val catalog = catalogs[selected] ?: return
         val targets = catalog.targets(selected) { settings.isExcluded(selected, it) }
-        again = { measureSearch() }
-        if (targets.isEmpty()) {
-            showBest = true
-            bestTargets = emptyList()
-            render()
+        if (targets.isEmpty()) return
+        if (targets.none { freshSuccess(it) }) {
+            startRound(targets) { applyWinner(catalog, targets) }
             return
         }
-        showBest = true
-        bestTargets = targets
-        startRound(targets) {}
+        val pending = targets.filter { probes[it.key()]?.received != true }
+        if (pending.isNotEmpty()) startRound(pending) { applyWinner(catalog, targets) }
+        else applyWinner(catalog, targets)
+    }
+
+    private fun applyWinner(catalog: RoxyCatalog, targets: List<TunnelTarget>) {
+        if (settingsError != null) return
+        val winner = cache.best(
+            targets,
+            probes,
+            settings.mode,
+            catalog.clientToTunnelRttWeight,
+            TunnelServices.clock(),
+            limit = 1,
+        ).firstOrNull() ?: return
+        val target = winner.target
+        if (target.region != selected) return
+        val previous = settings
+        settings = settings.withOverride(
+            TunnelSelection(target.region, target.pool, target.endpoint.name, target.endpoint.address),
+        )
+        if (!persist()) settings = previous
+        render()
     }
 
     private fun cancelRound() {
         probeGen++
         measuring = false
-        roundTotal = 0
-        roundDone = 0
     }
 
     private fun startRound(targets: List<TunnelTarget>, onFinished: () -> Unit) {
@@ -261,8 +347,6 @@ class TunnelPage(
         probeGen++
         val gen = probeGen
         measuring = true
-        roundTotal = targets.size
-        roundDone = 0
         val now = TunnelServices.clock()
         val ordered = cache.prioritize(targets, now)
         val limited = ordered.filter { cache.wasRecentlyLimited(it.region, it.endpoint.address, now) }.map { it.key() }.toSet()
@@ -275,7 +359,6 @@ class TunnelPage(
             val at = TunnelServices.clock()
             cache.record(target, outcome, at)
             probes[target.key()] = outcome.toView()
-            roundDone++
             if (pending.decrementAndGet() == 0) {
                 measuring = false
                 cache.prune(at)
@@ -310,29 +393,31 @@ class TunnelPage(
     }
 
     private fun render() {
-        suppressMode = true
         suppressRegion = true
         try {
             regionButtons.forEach { (button, region) -> button.isSelected = region == selected }
-            if (tunnelMode.value != settings.mode) tunnelMode.value = settings.mode
         } finally {
-            suppressMode = false
             suppressRegion = false
         }
-        val override = settings.override(selected)
-        tunnelNow.text = when {
-            measuring -> ctx.t("settings.tunnel.progress", roundDone, roundTotal)
-            override != null -> listOf(override.pool, override.name).filter { it.isNotBlank() }.joinToString(" / ").ifBlank { override.address }
-            else -> ctx.t("settings.tunnel.game_now")
-        }
-        tunnelNow.styleClass.remove("err")
-        if (settingsError != null || catalogError != null) tunnelNow.styleClass.add("err")
+        syncModeControl()
         val locked = settingsError != null
-        tunnelMeasure.isDisable = again == null || measuring
-        tunnelFindBest.isDisable = measuring || catalogs[selected] == null
-        tunnelGameChoice.isDisable = locked
-        tunnelMode.isDisable = locked
+        val catalogReady = catalogs[selected] != null && loading != selected
+        tunnelMeasure.isDisable = measuring || !catalogReady
+        tunnelFindBest.isDisable = measuring || !catalogReady
+        modeButton.isDisable = locked
+        if (locked) setModeOpen(false)
         paintPools(locked)
+    }
+
+    private fun syncModeControl() {
+        val label = modeLabel(settings.mode)
+        modeValue.text = label
+        modeButton.accessibleText = label
+        modeList.children.filterIsInstance<Button>().forEach { item ->
+            val on = item.userData == settings.mode
+            if (on && "selected" !in item.styleClass) item.styleClass.add("selected")
+            if (!on) item.styleClass.remove("selected")
+        }
     }
 
     private fun paintPools(locked: Boolean) {
@@ -356,28 +441,10 @@ class TunnelPage(
                 }
             }
             else -> {
-                if (showBest) tunnelPools.children += bestBlock(catalog, locked)
                 for (pool in catalog.pools) tunnelPools.children += poolBlock(pool, locked)
             }
         }
         if (scroll != null) scroll.vvalue = saved
-    }
-
-    private fun bestBlock(catalog: RoxyCatalog, locked: Boolean): VBox {
-        val now = TunnelServices.clock()
-        val ranked = cache.best(bestTargets, probes, settings.mode, catalog.clientToTunnelRttWeight, now)
-        val limited = cache.limitedTargets(bestTargets, probes, now)
-        val title = Label(ctx.t("settings.tunnel.best")).apply { styleClass.add("pool-title") }
-        val rows = VBox().apply { styleClass.add("tunnel-list") }
-        ranked.forEachIndexed { index, result ->
-            rows.children += nodeButton(result.target, probes[result.target.key()] ?: NodeProbe(), locked, "${index + 1}. ")
-        }
-        for (target in limited) {
-            if (ranked.any { it.target.key() == target.key() }) continue
-            rows.children += nodeButton(target, probes[target.key()] ?: NodeProbe(), locked, forceLocked = true)
-        }
-        if (rows.children.isEmpty()) rows.children += note(ctx.t("settings.tunnel.none"))
-        return VBox(title, rows).apply { styleClass.addAll("pool", "tunnel-best") }
     }
 
     private fun poolBlock(pool: dev.launcherfork.stalzone.TunnelPool, locked: Boolean): VBox {
@@ -401,12 +468,29 @@ class TunnelPage(
         val head = HBox(title, meta, gap, exclude).apply {
             styleClass.add("pool-head")
             alignment = Pos.CENTER_LEFT
+            maxWidth = Double.MAX_VALUE
         }
-        val list = VBox().apply { styleClass.add("tunnel-list") }
+        val list = VBox().apply {
+            styleClass.add("tunnel-list")
+            maxWidth = Double.MAX_VALUE
+        }
         pool.tunnels.forEach { endpoint ->
-            list.children += nodeButton(TunnelTarget(selected, pool.name, endpoint), probes[TunnelTarget(selected, pool.name, endpoint).key()] ?: NodeProbe(), locked)
+            val target = TunnelTarget(selected, pool.name, endpoint)
+            list.children += nodeButton(target, probes[target.key()] ?: NodeProbe(), locked)
         }
-        return VBox(4.0, head, list).apply { styleClass.add("pool") }
+        markLastNode(list)
+        return poolCard(VBox(2.0, head, list))
+    }
+
+    private fun poolCard(body: VBox) = body.apply {
+        styleClass.addAll("pool", "card", "zone-radius-md")
+        maxWidth = Double.MAX_VALUE
+    }
+
+    private fun markLastNode(list: VBox) {
+        val nodes = list.children.filterIsInstance<Button>().filter { "tunnel-node" in it.styleClass }
+        nodes.forEach { it.styleClass.remove("last") }
+        nodes.lastOrNull()?.styleClass?.add("last")
     }
 
     private fun nodeButton(
@@ -438,8 +522,8 @@ class TunnelPage(
             maxWidth = Double.MAX_VALUE
             userData = target.endpoint.address
             isDisable = locked || forceLocked || !view.selectable
-            accessibleText = "${target.endpoint.name}. ${ctx.t("settings.tunnel.legend")}: $client, $server, $sum"
-            tooltip = Tooltip("${target.endpoint.address}\n${ctx.t("settings.tunnel.legend")}: $client · $server · $sum")
+            accessibleText = "${target.endpoint.name}. $client, $server, $sum"
+            tooltip = Tooltip("${target.endpoint.address}\n$client, $server, $sum")
             setOnAction { select(target) }
         }
     }
