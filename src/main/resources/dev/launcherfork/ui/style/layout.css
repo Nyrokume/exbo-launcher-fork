@@ -582,6 +582,8 @@
 .settings-combo-wide { -fx-pref-width: 260; -fx-min-width: 200; -fx-max-width: 280; }
 .settings-label { -fx-font-size: 14; -fx-text-fill: -settings-label; }
 .settings-note { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 0 0 6 0; }
+/* One settings action: the 34 px row, one horizontal padding, one radius, one font.
+   Primary is the filled accent (Применить, Записать). Disabled primary keeps that fill. */
 .settings-mini {
     -fx-font-size: 13;
     -fx-background-color: -input;
@@ -591,7 +593,7 @@
     -fx-border-radius: 6;
     -fx-text-fill: -settings-label;
     -fx-padding: 0 10;
-    -fx-min-height: 26; -fx-pref-height: 26; -fx-max-height: 26;
+    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
     -fx-cursor: hand;
 }
 .settings-mini:hover { -fx-border-color: -border-hover; -fx-text-fill: -foreground; }
@@ -605,6 +607,13 @@
     -fx-background-color: -input;
     -fx-border-color: -border;
     -fx-text-fill: -settings-muted;
+    -fx-cursor: default;
+}
+.settings-mini.primary:disabled, .settings-mini.primary:disabled:hover {
+    -fx-opacity: 0.55;
+    -fx-background-color: -primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -primary-foreground;
     -fx-cursor: default;
 }
 .settings-field.zone-input {
@@ -629,22 +638,25 @@
     -fx-background-color: -tile-hover;
     -fx-text-fill: -foreground;
 }
-.sens-table { -fx-padding: 4 0 2 0; -fx-max-width: infinity; }
+/* Sensitivity page: one quiet card filling the settings viewport. The scope grid shares that
+   width and the height under the compact base row; cells grow, they are not a chip cluster. */
+.sens-card { -fx-padding: 14 16 12 16; -fx-spacing: 12; -fx-max-width: infinity; }
+.sens-table { -fx-padding: 2 0 0 0; -fx-max-width: infinity; -fx-max-height: infinity; }
 .sens-cell {
-    -fx-background-color: -input;
+    -fx-background-color: -fill-subtle;
     -fx-border-color: -border;
     -fx-border-width: 1;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-padding: 0 10 0 10;
-    -fx-spacing: 8;
+    -fx-padding: 0 16 0 16;
+    -fx-spacing: 12;
     -fx-alignment: center-left;
     -fx-max-width: infinity;
-    -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28;
+    -fx-max-height: infinity;
+    -fx-min-height: 40;
 }
 .sens-mag { -fx-font-size: 13; -fx-text-fill: -settings-muted; }
-.sens-int, .sens-frac { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-padding: 0; }
+.sens-int, .sens-frac { -fx-font-size: 15; -fx-text-fill: -settings-label; -fx-padding: 0; }
 .sens-int { -fx-alignment: center-right; }
+.sens-note { -fx-padding: 2 0 0 0; }
 
 /* client tools, stacked under the launcher groups. Same cards and 34 px rows. */
 .client-card { -fx-padding: 10 14 12 14; -fx-spacing: 8; }
@@ -676,7 +688,42 @@
 .tunnel-pools { -fx-spacing: 10; -fx-padding: 2 0 4 0; }
 .pool { -fx-spacing: 4; -fx-background-color: transparent; -fx-padding: 0; }
 .pool-head { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 6 2 0 2; }
-.pool-title { -fx-font-size: 13; -fx-text-fill: -settings-label; }
+.pool-title { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-cursor: hand; }
+.tunnel-actions .settings-combo {
+    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
+    -fx-pref-width: 168; -fx-min-width: 148; -fx-max-width: 180;
+}
+.tunnel-node {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -settings-divider transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 0 10 0 10;
+    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
+    -fx-font-size: 14;
+    -fx-text-fill: -settings-label;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+    -fx-max-width: infinity;
+}
+.tunnel-node:hover { -fx-background-color: -tile-hover; }
+.tunnel-node:disabled, .tunnel-node:disabled:hover {
+    -fx-opacity: 1;
+    -fx-background-color: transparent;
+    -fx-text-fill: -settings-muted;
+    -fx-cursor: default;
+}
+.tunnel-node.selected, .tunnel-node.selected:hover, .tunnel-node.selected:disabled, .tunnel-node.selected:disabled:hover {
+    -fx-background-color: -destructive-soft;
+    -fx-border-color: -primary;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-text-fill: -foreground;
+}
+.tunnel-node.limited { -fx-background-color: -fill-subtle; }
+.tunnel-node .tunnel-ping.sum { -fx-text-fill: -foreground; }
 .pool-meta { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
 .tunnel-list {
     -fx-background-color: -card;
@@ -739,14 +786,13 @@
 .tunnel-ping.good { -fx-text-fill: -status-online; }
 .tunnel-ping.mid { -fx-text-fill: -settings-warning; }
 .tunnel-ping.bad, .tunnel-ping.very-bad, .tunnel-ping.miss { -fx-text-fill: -destructive-text; }
-.tunnel-head { -fx-alignment: center-left; -fx-spacing: 12; }
-.tunnel-count { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 2 0 0 0; }
+.tunnel-toolbar { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 2 0 6 0; -fx-max-width: infinity; }
+.tunnel-count { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 0; }
 .tunnel-count.err { -fx-text-fill: -destructive-text; }
-.tunnel-regions { -fx-alignment: center-left; -fx-padding: 2 0 0 0; }
-.tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 4 0 6 0; }
+.tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; }
 
 /* saved EXBO sessions: one card per session, same surface as a tunnel pool, accent border when it is the live account.
-   Name and login take the left; Ключи / Применить / Удалить stay on the right and do not cover the title. */
+   Name and login take the left; the key icon, Применить and Удалить stay on the right and do not cover the title. */
 .session-cards { -fx-spacing: 8; -fx-padding: 2 0 8 0; }
 .session-card { -fx-padding: 12 14 12 14; -fx-spacing: 10; -fx-max-width: infinity; }
 .session-head { -fx-alignment: center-left; -fx-spacing: 16; }
@@ -757,9 +803,26 @@
 .session-keys { -fx-spacing: 6; }
 .session-key-name { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
 .session-key-value { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-wrap-text: true; }
+.session-keys-toggle {
+    -fx-padding: 0;
+    -fx-min-width: 34; -fx-pref-width: 34; -fx-max-width: 34;
+}
 .session-card .settings-mini:selected, .session-card .settings-mini:selected:hover {
     -fx-border-color: -primary;
     -fx-text-fill: -foreground;
+}
+/* key glyph tracks the mini-button text: label colour at rest, foreground on hover and when the keys are open */
+.session-key-glyph {
+    -fx-fill: transparent;
+    -fx-stroke: -settings-label;
+    -fx-stroke-width: 1.5;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+.session-keys-toggle:hover .session-key-glyph,
+.session-card .session-keys-toggle:selected .session-key-glyph,
+.session-card .session-keys-toggle:selected:hover .session-key-glyph {
+    -fx-stroke: -foreground;
 }
 
 /* segmented control (auto-exit, P2P, theme, language): RadioButtons drawn as the parts of one control. Same box as the

@@ -4,6 +4,8 @@ import dev.launcherfork.domain.Cancellable
 import dev.launcherfork.domain.GameLauncher
 import dev.launcherfork.domain.GameListener
 import dev.launcherfork.domain.Server
+import dev.launcherfork.stalzone.StalzonePaths
+import dev.launcherfork.stalzone.TunnelOverrides
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.io.path.isDirectory
@@ -36,7 +38,10 @@ class InstalledGameLauncher(
             try {
                 val session = joinGame(name)?.takeIf { it.isNotBlank() }
                 if (session != null) {
-                    val baked = bakeRunCommand(parseRunArgs(command), root, name, session, ramMb())
+                    val baked = TunnelOverrides.commandWithOverrides(
+                        bakeRunCommand(parseRunArgs(command), root, name, session, ramMb()),
+                        StalzonePaths.tunnelOverridesFile(),
+                    )
                     val proc = ProcessBuilder(baked)
                         .directory(root.toFile())
                         .redirectOutput(ProcessBuilder.Redirect.DISCARD)

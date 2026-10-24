@@ -17,9 +17,12 @@ import dev.launcherfork.stalzone.ExboValue
 import dev.launcherfork.stalzone.JvmPresets
 import dev.launcherfork.stalzone.JvmProfile
 import dev.launcherfork.stalzone.ScopeSens
+import dev.launcherfork.stalzone.TunnelRegion
+import dev.launcherfork.stalzone.TunnelSearchMode
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
+import javafx.scene.control.ComboBox
 import javafx.scene.control.ContentDisplay
 import javafx.scene.control.Label
 import javafx.scene.control.RadioButton
@@ -30,11 +33,13 @@ import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.AnchorPane
+import javafx.scene.shape.SVGPath
 import javafx.scene.layout.ColumnConstraints
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
+import javafx.scene.layout.RowConstraints
 import javafx.scene.layout.VBox
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -43,7 +48,8 @@ import java.util.Locale
  * settings.fxml, bound to [dev.launcherfork.domain.SettingsStore].
  * Память, Поведение, Обновление and Язык are one scrollable column.
  * The header switch opens JVM, the tunnel, sensitivity and account swap. The tunnel page fills the
- * settings viewport and scrolls the server list inside itself. The profile menu opens accounts.
+ * settings viewport and scrolls the server list inside itself. Sensitivity fills that same viewport:
+ * a compact base row, then the scope table across the remaining width and height. The profile menu opens accounts.
  * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
@@ -109,12 +115,13 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var regionEu: RadioButton
     @FXML lateinit var regionNa: RadioButton
     @FXML lateinit var regionSea: RadioButton
+    @FXML lateinit var regionNea: RadioButton
     @FXML lateinit var tunnelNow: Label
     @FXML lateinit var tunnelPools: VBox
-    @FXML lateinit var tunnelPing: Button
-    @FXML lateinit var tunnelAutoBest: Button
-    @FXML lateinit var tunnelUnblock: Button
-    @FXML lateinit var tunnelApply: Button
+    @FXML lateinit var tunnelMeasure: Button
+    @FXML lateinit var tunnelFindBest: Button
+    @FXML lateinit var tunnelGameChoice: Button
+    @FXML lateinit var tunnelMode: ComboBox<TunnelSearchMode>
     @FXML lateinit var sessionScroll: ScrollPane
     @FXML lateinit var sessionCards: VBox
     @FXML lateinit var accountsRow: HBox
@@ -124,6 +131,7 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var calcSens: Button
     @FXML lateinit var writeSens: Button
     @FXML lateinit var sensChips: GridPane
+    @FXML lateinit var sensNote: Label
     @FXML lateinit var clientStatus: Label
     @FXML lateinit var languageGroup: ToggleGroup
     @FXML lateinit var langRu: RadioButton
@@ -190,6 +198,7 @@ class SettingsController(private val ctx: UiContext) {
             ctx.navigator.switchLanguage(lang)
         }
         clipToBounds(sessionScroll)
+        sessionCards.minHeight = Region.USE_PREF_SIZE
         scroll.viewportBoundsProperty().addListener { _, _, _ -> applyPageFill() }
         showSection("ram")
     }
@@ -261,7 +270,9 @@ class SettingsController(private val ctx: UiContext) {
         columnNodes.forEach { setShown(it, column) }
         toolNodes.forEach { (key, node) -> setShown(node, !column && key == id) }
         if (column && id != "ram") reveal(columnTarget(id)) else scroll.vvalue = 0.0
+        placeNote()
         applyPageFill()
+        if (id == "tunnel" && ::tunnels.isInitialized) tunnels.onShown()
         onSection(id)
     }
 
@@ -292,17 +303,20 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     /**
-     * Tunnel occupies the settings viewport; the pool list scrolls in [tunnelScroll].
-     * Account cards use the space above the name row. When they fit, the row sits directly under them.
-     * When they do not, the list scrolls and the row stays on screen.
+     * Tunnel and sensitivity occupy the settings viewport. The pool list scrolls in [tunnelScroll];
+     * the scope table grows inside the sensitivity card. Account cards use the space above the name row.
+     * When they fit, the row sits directly under them. When they do not, the list scrolls and the row stays on screen.
+     * Cards are measured after CSS: a card just built by a save has no skin yet, so its pref height is 0
+     * and the list would keep the old height, clipping the new card into the name row.
      */
     private fun applyPageFill() {
-        if (!::tunnelScroll.isInitialized || !::sessionScroll.isInitialized) return
+        if (!::tunnelScroll.isInitialized || !::sessionScroll.isInitialized || !::sensPage.isInitialized) return
         val viewport = scroll.viewportBounds.height
         if (viewport <= 1.0) {
             resetHeight(settingsContent)
             resetHeight(tunnelPage)
             resetHeight(accountsPage)
+            resetHeight(sensPage)
             resetScroll(tunnelScroll, 120.0)
             resetScroll(sessionScroll, 96.0)
             return
@@ -312,6 +326,7 @@ class SettingsController(private val ctx: UiContext) {
         when (currentSection) {
             "tunnel" -> {
                 resetHeight(accountsPage)
+                resetHeight(sensPage)
                 resetScroll(sessionScroll, 96.0)
                 settingsContent.minHeight = viewport
                 settingsContent.prefHeight = viewport
@@ -326,10 +341,10 @@ class SettingsController(private val ctx: UiContext) {
             }
             "accounts" -> {
                 resetHeight(tunnelPage)
+                resetHeight(sensPage)
                 resetScroll(tunnelScroll, 120.0)
                 val available = (inner - accountsChrome()).coerceAtLeast(96.0)
-                val width = sessionScroll.width.takeIf { it > 1.0 } ?: -1.0
-                val wanted = sessionCards.prefHeight(width) + sessionScroll.padding.top + sessionScroll.padding.bottom
+                val wanted = sessionListHeight()
                 sessionScroll.minHeight = 96.0
                 sessionScroll.prefHeight = wanted.coerceIn(96.0, available)
                 sessionScroll.maxHeight = available
@@ -345,10 +360,23 @@ class SettingsController(private val ctx: UiContext) {
                     resetHeight(accountsPage)
                 }
             }
+            "sens" -> {
+                resetHeight(tunnelPage)
+                resetHeight(accountsPage)
+                resetScroll(tunnelScroll, 120.0)
+                resetScroll(sessionScroll, 96.0)
+                settingsContent.minHeight = viewport
+                settingsContent.prefHeight = viewport
+                settingsContent.maxHeight = viewport
+                sensPage.minHeight = inner
+                sensPage.prefHeight = inner
+                sensPage.maxHeight = inner
+            }
             else -> {
                 resetHeight(settingsContent)
                 resetHeight(tunnelPage)
                 resetHeight(accountsPage)
+                resetHeight(sensPage)
                 resetScroll(tunnelScroll, 120.0)
                 resetScroll(sessionScroll, 96.0)
             }
@@ -365,6 +393,13 @@ class SettingsController(private val ctx: UiContext) {
     private fun accountsChrome(): Double {
         val heading = (accountsPage.children.firstOrNull() as? Region)?.prefHeight(-1.0) ?: 0.0
         return heading + accountsRow.prefHeight(-1.0) + accountsPage.spacing * 2
+    }
+
+    /** Pref height of the session list after the new cards have skins. Before CSS a control's pref height is 0. */
+    private fun sessionListHeight(): Double {
+        if (sessionCards.scene != null) sessionCards.applyCss()
+        val width = sessionScroll.width.takeIf { it > 1.0 } ?: -1.0
+        return sessionCards.prefHeight(width) + sessionScroll.padding.top + sessionScroll.padding.bottom
     }
 
     private fun resetHeight(node: Region) {
@@ -423,8 +458,21 @@ class SettingsController(private val ctx: UiContext) {
         refreshJvmStatus()
 
         tunnels = TunnelPage(
-            ctx, store, regionGroup, regionRu, regionEu, regionNa, regionSea,
-            tunnelNow, tunnelPools, tunnelPage, tunnelPing, tunnelAutoBest, tunnelUnblock, tunnelApply,
+            ctx,
+            regionGroup,
+            mapOf(
+                regionRu to TunnelRegion.RU,
+                regionEu to TunnelRegion.EU,
+                regionNa to TunnelRegion.NA,
+                regionSea to TunnelRegion.SEA,
+                regionNea to TunnelRegion.NEA,
+            ),
+            tunnelNow,
+            tunnelPools,
+            tunnelMeasure,
+            tunnelFindBest,
+            tunnelGameChoice,
+            tunnelMode,
         )
         tunnels.bind()
         refreshSessions()
@@ -462,16 +510,11 @@ class SettingsController(private val ctx: UiContext) {
                 textOverrun = javafx.scene.control.OverrunStyle.ELLIPSIS
                 maxWidth = Double.MAX_VALUE
             }
-            val hint = Label(ctx.t(preset.hintKey)).apply {
-                styleClass.add("jvm-preset-hint")
-                textOverrun = javafx.scene.control.OverrunStyle.ELLIPSIS
-                maxWidth = Double.MAX_VALUE
-            }
             val card = Button().apply {
                 styleClass.add("jvm-preset")
                 contentDisplay = ContentDisplay.GRAPHIC_ONLY
                 alignment = Pos.CENTER_LEFT
-                graphic = VBox(2.0, title, hint)
+                graphic = title
                 userData = preset.id
                 isDisable = built == null
                 maxWidth = Double.MAX_VALUE
@@ -510,9 +553,10 @@ class SettingsController(private val ctx: UiContext) {
                 styleClass.add("settings-note")
                 isWrapText = true
             })
-            return
+        } else {
+            sessionCards.children.setAll(saved.map { sessionCard(it, live, it.id in open) })
         }
-        sessionCards.children.setAll(saved.map { sessionCard(it, live, it.id in open) })
+        if (sessionCards.scene != null) sessionCards.applyCss()
         applyPageFill()
     }
 
@@ -582,10 +626,15 @@ class SettingsController(private val ctx: UiContext) {
                 stored.forEach { children.add(keyBlock(it)) }
             }
         }
-        val keysToggle = ToggleButton(ctx.t("settings.accounts.keys")).apply {
+        val keysLabel = ctx.t("settings.accounts.keys")
+        val keysToggle = ToggleButton().apply {
             styleClass.addAll("settings-mini", "session-keys-toggle")
+            graphic = sessionKeyGlyph()
+            contentDisplay = ContentDisplay.GRAPHIC_ONLY
+            alignment = Pos.CENTER
+            accessibleText = keysLabel
+            tooltip = Tooltip(keysLabel)
             isMnemonicParsing = false
-            minWidth = Region.USE_PREF_SIZE
             isSelected = keysOpen
             selectedProperty().addListener { _, _, on ->
                 keysBox.isVisible = on
@@ -630,8 +679,16 @@ class SettingsController(private val ctx: UiContext) {
             styleClass.addAll("session-card", "card", "zone-radius-md")
             if (current) styleClass.add("selected")
             maxWidth = Double.MAX_VALUE
+            minHeight = Region.USE_PREF_SIZE
             userData = session.id
         }
+    }
+
+    /** Key, not the tunnel padlock. About 17 px wide; the hit box is the 34 px settings action. */
+    private fun sessionKeyGlyph(): SVGPath = SVGPath().apply {
+        content = SESSION_KEY
+        styleClass.add("session-key-glyph")
+        isMouseTransparent = true
     }
 
     private fun keyBlock(entry: ExboValue): VBox {
@@ -681,18 +738,29 @@ class SettingsController(private val ctx: UiContext) {
         val parts = values.entries.map { (mag, v) -> sensPart(mag, v, locale) }
         val columns = sensColumnCount()
         val intWidth = sensIntWidth(parts)
+        val rows = (parts.size + columns - 1) / columns
         sensChips.columnConstraints.setAll(List(columns) {
             ColumnConstraints().apply {
                 percentWidth = 100.0 / columns
                 hgrow = Priority.ALWAYS
                 minWidth = 0.0
+                isFillWidth = true
+            }
+        })
+        sensChips.rowConstraints.setAll(List(rows) {
+            RowConstraints().apply {
+                vgrow = Priority.ALWAYS
+                minHeight = 40.0
+                isFillHeight = true
             }
         })
         sensChips.children.clear()
         parts.forEachIndexed { index, part ->
             val cell = sensCell(part, intWidth)
             GridPane.setHgrow(cell, Priority.ALWAYS)
+            GridPane.setVgrow(cell, Priority.ALWAYS)
             GridPane.setFillWidth(cell, true)
+            GridPane.setFillHeight(cell, true)
             sensChips.add(cell, index % columns, index / columns)
         }
         sensChips.accessibleText = ctx.t("stalzone.sens.base_line", String.format(locale, "%.2f", base))
@@ -754,9 +822,10 @@ class SettingsController(private val ctx: UiContext) {
         }
         val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
         return HBox(mag, gap, value).apply {
-            styleClass.add("sens-cell")
+            styleClass.addAll("sens-cell", "zone-radius-md")
             alignment = Pos.CENTER_LEFT
             maxWidth = Double.MAX_VALUE
+            maxHeight = Double.MAX_VALUE
             accessibleText = "${part.mag} ${part.intPart}${part.frac}"
         }
     }
@@ -772,10 +841,29 @@ class SettingsController(private val ctx: UiContext) {
         }
     }
 
+    /** Page that produced the current note. A session line stays on accounts and does not follow JVM. */
+    private var noteSection: String? = null
+
     private fun note(text: String) {
         clientStatus.text = text
-        clientStatus.isVisible = text.isNotEmpty()
-        clientStatus.isManaged = text.isNotEmpty()
+        if (::sensNote.isInitialized) sensNote.text = text
+        noteSection = currentSection
+        placeNote()
+    }
+
+    /** Sensitivity messages sit under the table. Every other note stays on the page that wrote it. */
+    private fun placeNote() {
+        if (!::clientStatus.isInitialized) return
+        val text = clientStatus.text.orEmpty()
+        val here = text.isNotEmpty() && noteSection == currentSection
+        val showSens = here && currentSection == "sens"
+        val showShared = here && currentSection != "sens"
+        clientStatus.isVisible = showShared
+        clientStatus.isManaged = showShared
+        if (::sensNote.isInitialized) {
+            sensNote.isVisible = showSens
+            sensNote.isManaged = showSens
+        }
     }
 
     private fun update(change: (LauncherSettings) -> LauncherSettings) = store.save(change(store.load()))
@@ -810,5 +898,16 @@ class SettingsController(private val ctx: UiContext) {
         field.text = value.toString()
         field.textProperty().addListener { _, _, t -> onChange(t.toIntOrNull() ?: 0) }
         field.focusedProperty().addListener { _, _, focused -> if (!focused && field.text.isEmpty()) field.text = "0" }
+    }
+
+    private companion object {
+        /**
+         * Horizontal key: round bow, shaft, teeth. Longer side is about 17 px before the stroke.
+         * Stroke colour follows the mini-button text (normal, hover, open) in layout.css.
+         */
+        const val SESSION_KEY =
+            "M10.89,8.15 A4.87,4.87 0 1 1 1.15,8.15 A4.87,4.87 0 1 1 10.89,8.15 " +
+            "M8.15,8.15 A2.125,2.125 0 1 1 3.90,8.15 A2.125,2.125 0 1 1 8.15,8.15 " +
+            "M10.89,8.15 H15.94 M12.57,8.15 V11.16 M14.26,8.15 V12.57 M15.94,8.15 V10.80"
     }
 }

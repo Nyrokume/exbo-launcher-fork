@@ -14,10 +14,31 @@ import dev.launcherfork.stalzone.TunnelPing
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import dev.launcherfork.stalzone.NodeProbe
+import dev.launcherfork.stalzone.RoxyCatalog
+import dev.launcherfork.stalzone.TunnelAddresses
+import dev.launcherfork.stalzone.TunnelCache
+import dev.launcherfork.stalzone.TunnelCatalogs
+import dev.launcherfork.stalzone.TunnelEndpoint
+import dev.launcherfork.stalzone.TunnelOverrides
+import dev.launcherfork.stalzone.TunnelPool
+import dev.launcherfork.stalzone.TunnelProbe
+import dev.launcherfork.stalzone.TunnelProbeOutcome
+import dev.launcherfork.stalzone.TunnelRegion
+import dev.launcherfork.stalzone.TunnelSearchMode
+import dev.launcherfork.stalzone.TunnelSelection
+import dev.launcherfork.stalzone.TunnelSettings
+import dev.launcherfork.stalzone.TunnelTarget
+import dev.launcherfork.stalzone.toView
 import java.net.ConnectException
+import java.nio.ByteBuffer
+import java.nio.file.Files
+import java.time.Duration
+import java.time.Instant
 import java.net.NoRouteToHostException
 import java.net.PortUnreachableException
 import java.net.SocketException
@@ -188,6 +209,209 @@ class ServerBlockTest {
         assertEquals(ServerBlock.MODE, loaded.mode)
         assertEquals(ServerBlock.MODE, ServerBlockCodec.readMode("allowlist"))
         assertEquals("RU", ServerBlockCodec.readRegion("ALL"))
+    }
+
+    @Test
+    fun addressValidationRejectsPortsAndKeepsDnsLookingHosts() {
+        assertEquals("85.119.149.7" to 29450, TunnelAddresses.parse("85.119.149.7:29450"))
+        assertEquals("::1" to 1, TunnelAddresses.parse("[::1]:1"))
+        assertEquals("edge.example" to 29450, TunnelAddresses.parse("edge.example:29450"))
+        assertEquals("01.2.3.4" to 29450, TunnelAddresses.parse("01.2.3.4:29450"))
+        assertNull(TunnelAddresses.parse(" 85.119.149.7:29450"))
+        assertNull(TunnelAddresses.parse("85.119.149.7:65535"))
+        assertNull(TunnelAddresses.parse("85.119.149.7:0"))
+        assertNull(TunnelAddresses.parse("not a host:1"))
+        assertNull(TunnelAddresses.parse("-bad.example:29450"))
+    }
+
+    @Test
+    fun flagsFollowRegionOrderAndABadAddressDropsEveryRegion() {
+        val eu = TunnelSelection(TunnelRegion.EU, "GAME-EU", "GAME-EU-2", "79.127.241.67:29450")
+        val ru = TunnelSelection(TunnelRegion.RU, "MSK1", "MSK1-1", "85.119.149.7:29450")
+        val settings = TunnelSettings().withOverride(eu).withOverride(ru)
+        assertEquals(
+            listOf(
+                "-Droxy_address_override.ru=85.119.149.7:29450",
+                "-Droxy_address_override.eu=79.127.241.67:29450",
+            ),
+            settings.jvmFlags(),
+        )
+        assertTrue(settings.withOverride(TunnelSelection(TunnelRegion.RU, "MSK1", "MSK1-1", "85.119.149.7:65535")).jvmFlags().isEmpty())
+    }
+
+    @Test
+    fun clearingRuKeepsEu() {
+        val settings = TunnelSettings(
+            overrides = mapOf(
+                TunnelRegion.RU to TunnelSelection(TunnelRegion.RU, "MSK1", "MSK1-1", "85.119.149.7:29450"),
+                TunnelRegion.EU to TunnelSelection(TunnelRegion.EU, "GAME-EU", "GAME-EU-2", "79.127.241.67:29450"),
+            ),
+        )
+        val cleared = settings.withoutOverride(TunnelRegion.RU)
+        assertNull(cleared.override(TunnelRegion.RU))
+        assertEquals("79.127.241.67:29450", cleared.override(TunnelRegion.EU)!!.address)
+    }
+
+    @Test
+    fun topFiveSkipsExcludedPoolsAndConnectionLimits() {
+        val now = Instant.parse("2026-10-24T00:00:00Z")
+        val cache = TunnelCache()
+        val probes = linkedMapOf<String, NodeProbe>()
+        fun node(pool: String, name: String, host: String, client: Long, server: Long, limited: Boolean): TunnelTarget {
+            val target = TunnelTarget(TunnelRegion.RU, pool, TunnelEndpoint(name, "$host:29450"))
+            val outcome = TunnelProbeOutcome.Reply(Duration.ofMillis(client), Duration.ofMillis(server), limited)
+            cache.record(target, outcome, now)
+            probes[target.key()] = outcome.toView()
+            return target
+        }
+        node("FAST", "n1", "203.0.113.1", 1, 1, false)
+        val limited = node("REST", "n2", "203.0.113.2", 1, 1, true)
+        val rest = (3..7).map { n -> node("REST", "n$n", "203.0.113.$n", n.toLong(), 1, false) }
+        val catalog = RoxyCatalog(
+            "roxy",
+            listOf(
+                TunnelPool("FAST", listOf(TunnelEndpoint("n1", "203.0.113.1:29450"))),
+                TunnelPool("REST", listOf(TunnelEndpoint("n2", "203.0.113.2:29450")) + rest.map { it.endpoint }),
+            ),
+            1.0,
+        )
+        val targets = catalog.targets(TunnelRegion.RU) { it == "FAST" }
+        assertTrue(targets.none { it.pool == "FAST" })
+        assertFalse(probes.getValue(limited.key()).selectable)
+        val ranked = cache.best(targets, probes, TunnelSearchMode.PING, 1.0, now)
+        assertEquals(TunnelOverrides.TOP_N, ranked.size)
+        assertEquals(listOf("n3", "n4", "n5", "n6", "n7"), ranked.map { it.target.endpoint.name })
+        assertFalse(ranked.any { it.target.endpoint.name == "n2" })
+        val cachedOnly = TunnelTarget(TunnelRegion.RU, "REST", TunnelEndpoint("cached", "203.0.113.20:29450"))
+        cache.record(cachedOnly, TunnelProbeOutcome.Reply(Duration.ofMillis(1), Duration.ofMillis(1), false), now)
+        probes[cachedOnly.key()] = NodeProbe()
+        assertFalse(probes.getValue(cachedOnly.key()).selectable)
+        assertTrue(cache.best(targets + cachedOnly, probes, TunnelSearchMode.PING, 1.0, now).none { it.target.endpoint.name == "cached" })
+    }
+
+    @Test
+    fun historyKeepsTwentySamplesForADayAndRanksTheLastHour() {
+        val now = Instant.parse("2026-10-24T12:00:00Z")
+        val cache = TunnelCache()
+        val target = TunnelTarget(TunnelRegion.RU, "MSK1", TunnelEndpoint("h", "203.0.113.50:29450"))
+        repeat(25) {
+            cache.record(target, TunnelProbeOutcome.Reply(Duration.ofMillis(10), Duration.ofMillis(1), false), now.minusSeconds(it.toLong()))
+        }
+        assertEquals(20, cache.endpoints.getValue(target.key()).samples.size)
+        cache.record(target, TunnelProbeOutcome.Reply(Duration.ofMillis(10), Duration.ofMillis(1), false), now.minus(Duration.ofHours(25)))
+        cache.prune(now)
+        assertTrue(cache.endpoints.getValue(target.key()).samples.none { Duration.between(it.measuredAt, now) > TunnelOverrides.CACHE_TTL })
+        cache.record(target, TunnelProbeOutcome.Reply(Duration.ofMillis(10), Duration.ofMillis(1), false), now.minus(Duration.ofHours(2)))
+        val kept = cache.endpoints.getValue(target.key()).samples
+        val recent = cache.metrics(TunnelRegion.RU, target.endpoint.address, now)!!
+        assertTrue(recent.samples < kept.size)
+    }
+
+    @Test
+    fun gameWeightAndPingUseTheMeasuredRtts() {
+        val now = Instant.parse("2026-10-24T00:00:00Z")
+        val cache = TunnelCache()
+        val target = TunnelTarget(TunnelRegion.EU, "GAME-EU", TunnelEndpoint("g", "79.127.241.67:29450"))
+        cache.record(target, TunnelProbeOutcome.Reply(Duration.ofMillis(20), Duration.ofMillis(10), false), now)
+        val metrics = cache.metrics(TunnelRegion.EU, target.endpoint.address, now)!!
+        assertEquals(40.0, metrics.score(TunnelSearchMode.GAME, 1.5)!!, 0.001)
+        assertEquals(30.0, metrics.score(TunnelSearchMode.PING, 1.5)!!, 0.001)
+    }
+
+    @Test
+    fun overridesRoundTripAndLegacyNeaMigrates(@TempDir dir: Path) {
+        val file = dir.resolve("overrides.json")
+        val original = TunnelSettings(
+            overrides = mapOf(
+                TunnelRegion.RU to TunnelSelection(TunnelRegion.RU, "MSK1", "MSK1-1", "85.119.149.7:29450"),
+                TunnelRegion.EU to TunnelSelection(TunnelRegion.EU, "GAME-EU", "GAME-EU-2", "79.127.241.67:29450"),
+            ),
+            mode = TunnelSearchMode.STABILITY,
+            excludedPools = mapOf(TunnelRegion.RU to listOf("MSK1")),
+        )
+        TunnelOverrides.saveSettings(file, original)
+        val loaded = TunnelOverrides.loadSettings(file).first
+        assertEquals(TunnelSearchMode.STABILITY, loaded.mode)
+        assertEquals(listOf("MSK1"), loaded.excludedPools[TunnelRegion.RU])
+        assertEquals("85.119.149.7:29450", loaded.override(TunnelRegion.RU)!!.address)
+        assertEquals("79.127.241.67:29450", loaded.override(TunnelRegion.EU)!!.address)
+
+        Files.writeString(
+            file,
+            """{"version":1,"tunnel_override":{"region":"nea","pool":"NEA1","name":"NEA1-1","address":"203.0.113.10:29450"},"tunnel_search":{"mode":"ping"}}""",
+        )
+        assertEquals(
+            listOf("-Droxy_address_override.nea=203.0.113.10:29450"),
+            TunnelOverrides.loadForLaunch(file).jvmFlags(),
+        )
+    }
+
+    @Test
+    fun launchReadsSavedFlagsAndDoesNotMeasure(@TempDir dir: Path) {
+        val file = dir.resolve("overrides.json")
+        TunnelOverrides.saveSettings(
+            file,
+            TunnelSettings(overrides = mapOf(TunnelRegion.RU to TunnelSelection(TunnelRegion.RU, "MSK1", "MSK1-1", "85.119.149.7:29450"))),
+        )
+        val fetches = TunnelCatalogs.fetchAttempts.get()
+        val probes = TunnelProbe.attempts.get()
+        val args = TunnelOverrides.commandWithOverrides(
+            listOf("java", "-Droxy_address_override.ru=203.0.113.9:1"),
+            file,
+        )
+        assertEquals(fetches, TunnelCatalogs.fetchAttempts.get())
+        assertEquals(probes, TunnelProbe.attempts.get())
+        assertTrue(args.contains("-Droxy_address_override.ru=85.119.149.7:29450"))
+        assertFalse(args.any { it.contains("203.0.113.9") })
+
+        Files.writeString(
+            file,
+            """{"version":1,"tunnel_overrides":{"ru":{"region":"ru","address":"1.2.3.4:65535"},"eu":{"region":"eu","address":"79.127.241.67:29450"}},"tunnel_search":{"mode":"ping"}}""",
+        )
+        assertEquals(listOf("java"), TunnelOverrides.commandWithOverrides(listOf("java"), file))
+
+        Files.writeString(
+            file,
+            """{"version":1,"tunnel_overrides":{"ru":{"region":"ru","address":"85.119.149.7:29450"}},"tunnel_search":{"mode":"not-a-mode"}}""",
+        )
+        assertEquals(
+            listOf("-Droxy_address_override.ru=85.119.149.7:29450"),
+            TunnelOverrides.loadForLaunch(file).jvmFlags(),
+        )
+        assertTrue(TunnelOverrides.loadSettings(file).first.overrides.isEmpty())
+    }
+
+    @Test
+    fun regeneratingAJvmConfigLeavesOverrideFiles(@TempDir dir: Path) {
+        val wrapper = dir.resolve("jvm_wrapper")
+        val overrides = wrapper.resolve("overrides.json")
+        val stats = wrapper.resolve("cache").resolve("tunnel_stats.json")
+        Files.createDirectories(stats.parent)
+        Files.writeString(overrides, "keep-overrides")
+        Files.writeString(stats, "keep-stats")
+        val desk = StalzoneDesk(MemoryRegistry(), dir.resolve("sessions.json"), wrapper.resolve("configs"), dir.resolve("options.json"))
+        desk.activatePreset("v1.1.2/default", """{"heap_size_gb":6}""")
+        assertEquals("keep-overrides", Files.readString(overrides))
+        assertEquals("keep-stats", Files.readString(stats))
+    }
+
+    @Test
+    fun probeCodecRejectsAShortOrNegativeReplyWithoutASocket() {
+        val token = ByteArray(TunnelProbe.REQUEST_SIZE) { it.toByte() }
+        val packet = ByteArray(TunnelProbe.RESPONSE_SIZE)
+        token.copyInto(packet)
+        ByteBuffer.wrap(packet, 16, 4).putInt(8)
+        packet[20] = 1
+        assertEquals(8L to true, TunnelProbe.readReply(token, packet))
+        assertNull(TunnelProbe.readReply(token, ByteArray(20)))
+        val wrong = packet.copyOf()
+        wrong[0] = (wrong[0].toInt() + 1).toByte()
+        assertNull(TunnelProbe.readReply(token, wrong))
+        val negative = packet.copyOf()
+        ByteBuffer.wrap(negative, 16, 4).putInt(-1)
+        assertThrows(IllegalStateException::class.java) { TunnelProbe.readReply(token, negative) }
+        assertFalse(TunnelProbeOutcome.Reply(Duration.ofMillis(5), Duration.ofMillis(4), true).toView().selectable)
+        assertTrue(TunnelProbeOutcome.Reply(Duration.ofMillis(12), Duration.ofMillis(8), false).toView().selectable)
     }
 
     private fun server(region: String, pool: String, name: String, host: String) = TunnelCatalog.Server(

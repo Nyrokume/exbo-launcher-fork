@@ -15,8 +15,9 @@ import dev.launcherfork.data.mock.InMemorySettingsStore
 import dev.launcherfork.data.mock.MockSystemInfo
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.RamOptions
-import dev.launcherfork.domain.ServerBlockState
 import dev.launcherfork.stalzone.ExboSessions
+import dev.launcherfork.stalzone.TunnelOverrides
+import dev.launcherfork.stalzone.TunnelProbeOutcome
 import dev.launcherfork.stalzone.MemoryRegistry
 import dev.launcherfork.stalzone.PingResult
 import dev.launcherfork.stalzone.ServerBlock
@@ -40,12 +41,15 @@ import javafx.scene.input.MouseEvent
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
+import java.time.Duration
 import java.util.Properties
 
 /**
@@ -59,13 +63,13 @@ import java.util.Properties
 class SettingsScreenTest {
     private val gb = 1024L
 
-    /** Settings tests must not open sockets or write firewall rules. */
+    /** Settings tests must not open sockets or write the user's overrides file. */
     @BeforeEach
-    fun stubTunnelIo() {
-        TunnelServices.firewall = { TunnelFirewall(elevated = { true }, shell = { Result.success("0") }) }
-        TunnelServices.ping = { targets, _, onChunk ->
-            onChunk(targets.map { PingResult(it.id, null) }, targets.size, targets.size)
-        }
+    fun stubTunnelIo(@TempDir dir: Path) {
+        TunnelServices.directory = dir
+        TunnelServices.inline = true
+        TunnelServices.fetch = { region -> TunnelFixtures.catalog(region) }
+        TunnelServices.probe = { TunnelProbeOutcome.NoReply }
     }
 
     @AfterEach
@@ -607,9 +611,9 @@ class SettingsScreenTest {
             "settings.sens.write",
             "settings.client.jvm", "settings.client.tunnel", "settings.client.accounts", "settings.client.sens",
             "settings.jvm.saved", "settings.jvm.heap", "settings.preset.v112", "settings.preset.aikar", "settings.tunnel.now",
-            "settings.tunnel.ping", "settings.tunnel.autobest", "settings.tunnel.block", "settings.tunnel.unblock",
-            "settings.tunnel.apply", "settings.tunnel.lock.open", "settings.tunnel.lock.locked",
-            "settings.tunnel.admin", "settings.tunnel.pool_meta")
+            "settings.tunnel.measure", "settings.tunnel.find", "settings.tunnel.game", "settings.tunnel.legend",
+            "settings.tunnel.exclude", "settings.tunnel.no_reply", "settings.tunnel.limit",
+            "settings.tunnel.best", "settings.tunnel.pool_meta")
         listOf("messages.properties", "messages_ru.properties", "messages_en.properties").forEach { file ->
             val props = Properties()
             javaClass.getResourceAsStream("/dev/launcherfork/ui/i18n/$file")!!.reader(Charsets.UTF_8).use(props::load)
@@ -676,55 +680,61 @@ class SettingsScreenTest {
                     val viewH = s.scroll.viewportBounds.height
                     assertTrue(s.tunnelPage.height >= viewH - 28.0, "$where: tunnel page does not fill the settings area")
                     assertTrue(s.scroll.content.layoutBounds.height <= viewH + 2.0, "$where: tunnel still scrolls with the column")
-                    assertEquals("Авто", s.tunnelNow.text, "$where: empty list is not Авто")
+                    assertEquals("Выбор игры", s.tunnelNow.text, "$where: empty choice is not the game default")
                     assertTrue(s.tunnelPage.lookupAll(".tunnel-chip").isEmpty(), "$where: region is still a chip row")
                     assertTrue("segmented" in s.regionRu.parent.styleClass, "$where: region switch is not the segmented control")
                     assertTrue(
                         s.tunnelPage.lookupAll(".button").filterIsInstance<Button>().none { it.text == "Блок" || it.text == "Block" },
                         "$where: the Block action is still on the page",
                     )
-                    assertFalse("primary" in s.tunnelAutoBest.styleClass, "$where: Лучшие is the accent before a choice")
-                    assertFalse("primary" in s.tunnelPing.styleClass, "$where: Ping is a primary action")
-                    assertFalse("primary" in s.tunnelUnblock.styleClass, "$where: Clear is a primary action")
-                    assertFalse("primary" in s.tunnelApply.styleClass, "$where: Применить is accent with nothing pending")
-                    assertTrue(s.tunnelApply.isDisable, "$where: Применить is enabled with nothing pending")
-                    assertEquals("Применить", s.tunnelApply.text)
+                    assertFalse("primary" in s.tunnelMeasure.styleClass, "$where: Measure again is a primary action")
+                    assertTrue("primary" in s.tunnelFindBest.styleClass, "$where: Find best lost the accent")
+                    assertFalse("primary" in s.tunnelGameChoice.styleClass, "$where: Game choice is a primary action")
+                    assertEquals("Измерить снова", s.tunnelMeasure.text)
+                    listOf(s.tunnelMeasure, s.tunnelFindBest, s.tunnelGameChoice).forEach { button ->
+                        assertEquals(34.0, button.height, 0.5, "$where: '${button.text}' is not the settings action height")
+                        assertEquals(s.tunnelMeasure.padding, button.padding, "$where: '${button.text}' padding")
+                        assertEquals(s.tunnelMeasure.font.size, button.font.size, 0.01, "$where: '${button.text}' font")
+                    }
+                    assertNotEquals(
+                        s.tunnelMeasure.background.fills.last().fill,
+                        s.tunnelFindBest.background.fills.last().fill,
+                        "$where: Find best looks like an outline",
+                    )
+                    val toolbar = s.tunnelNow.parent
+                    assertTrue(s.tunnelMeasure.parent !== toolbar, "$where: the long actions are squeezed onto the region row")
+                    assertTrue(s.regionRu.parent.parent === toolbar, "$where: regions are not on the toolbar")
+                    assertEquals(s.tunnelPage.width, (toolbar as javafx.scene.layout.Region).width, 1.0, "$where: toolbar does not span the page")
+                    assertTrue(s.tunnelPage.localToScene(s.tunnelPage.boundsInLocal).maxX - s.tunnelNow.sceneBounds().maxX < 2.0, "$where: status is not at the far side")
+                    val nodes = s.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>()
+                    assertTrue(nodes.size >= 2, "$where: server rows missing")
+                    nodes.forEach { node ->
+                        assertEquals(34.0, node.height, 0.5, "$where: server row height")
+                        assertEquals(3, node.lookupAll(".tunnel-ping").size, "$where: a row is missing a ping figure")
+                    }
                     val pools = s.tunnelPools.lookupAll(".pool-title").map { (it as javafx.scene.control.Label).text }
                     assertTrue("MSK1" in pools && "MSK2" in pools, "$where: RU pools $pools")
                     assertTrue("GAME-EU" !in pools, "$where: EU pool leaked into RU")
-                    val row = s.tunnelPools.lookupAll(".tunnel-row")
-                        .filterIsInstance<Labeled>()
-                        .first { it.text == "MSK1-1" }
-                    val line = row.parent as javafx.scene.layout.Region
-                    val list = line.parent as javafx.scene.layout.Region
+                    val node = nodes.first { (it.lookup(".tunnel-row") as Labeled).text == "MSK1-1" }
+                    val list = node.parent as javafx.scene.layout.Region
                     val inner = list.width - list.snappedLeftInset() - list.snappedRightInset()
-                    assertEquals(inner, line.width, 1.0, "$where: server row does not fill the pool")
-                    val lockOnRow = line.lookup(".tunnel-lock") as Button
-                    val pingOnRow = line.lookup(".tunnel-ping") as javafx.scene.control.Label
-                    val lineB = line.sceneBounds()
-                    val nameB = row.sceneBounds()
-                    val pingB = pingOnRow.sceneBounds()
-                    val lockB = lockOnRow.sceneBounds()
-                    assertTrue(lockOnRow.graphic is javafx.scene.shape.SVGPath, "$where: lock is not a drawn glyph")
-                    assertFalse("locked" in lockOnRow.styleClass, "$where: empty list starts locked")
-                    assertFalse("blocked" in line.styleClass, "$where: empty row is marked blocked")
-                    assertNull(line.onMouseClicked, "$where: the row itself still toggles the block")
-                    assertTrue(lockB.minX < nameB.minX, "$where: lock is not left of the name")
-                    assertTrue(lockB.minX - lineB.minX < 22, "$where: lock not at the left of the row")
-                    assertTrue(nameB.minX < pingB.minX, "$where: name is not left of the ping")
-                    assertTrue(lineB.maxX - pingB.maxX < 22, "$where: ping not at the right of the row")
-                    listOf(s.regionRu, s.regionEu, s.regionNa, s.regionSea, s.tunnelPing, s.tunnelAutoBest, s.tunnelUnblock, s.tunnelApply).forEach { b ->
+                    assertEquals(inner, node.width, 1.0, "$where: server row does not fill the pool")
+                    assertTrue(s.tunnelPage.lookupAll(".tunnel-lock").isEmpty(), "$where: lock buttons are still on the page")
+                    listOf(s.regionRu, s.regionEu, s.regionNa, s.regionSea, s.regionNea, s.tunnelMeasure, s.tunnelFindBest, s.tunnelGameChoice).forEach { b ->
                         assertTrue(b.width >= b.prefWidth(-1.0) - 0.5, "$where: '${b.text}' truncated")
                         assertTrue(contains(window, b.sceneBounds()), "$where: '${b.text}' outside")
                     }
-                    assertTrue(s.tunnelUnblock.sceneBounds().maxY <= s.tunnelScroll.sceneBounds().minY + 1.0, "$where: actions sit in the scrolling list")
-                    assertFalse(generateSequence(s.tunnelPing as javafx.scene.Node) { it.parent }.any { it === s.tunnelScroll }, "$where: ping scrolls away")
+                    assertTrue(s.tunnelGameChoice.sceneBounds().maxY <= s.tunnelScroll.sceneBounds().minY + 1.0, "$where: actions sit in the scrolling list")
+                    assertFalse(generateSequence(s.tunnelMeasure as javafx.scene.Node) { it.parent }.any { it === s.tunnelScroll }, "$where: measure scrolls away")
                     assertTrue(s.tunnelPage.isManaged && !s.jvmPage.isManaged && !s.launcherPage.isManaged, "$where: tunnel fell back into the column")
                     s.showClientSection("accounts")
                     relayout(nav)
                     assertTrue(s.accountsPage.lookupAll(".list-view").isEmpty(), "$where: accounts still a bare list")
                     assertTrue(contains(window, s.sessionScroll.sceneBounds()), "$where: session cards outside")
                     assertTrue(contains(window, s.sessionName.sceneBounds()), "$where: session name outside")
+                    assertEquals(34.0, s.captureSession.height, 0.5, "$where: Сохранить is not the settings action height")
+                    assertFalse("primary" in s.captureSession.styleClass, "$where: Сохранить is a primary action")
+                    assertEquals(s.tunnelMeasure.padding, s.captureSession.padding, "$where: Сохранить padding")
                     assertTrue(s.captureSession.width >= s.captureSession.prefWidth(-1.0) - 0.5, "$where: '${s.captureSession.text}' truncated")
                     assertTrue(contains(window, s.captureSession.sceneBounds()), "$where: '${s.captureSession.text}' outside")
                     assertTrue(s.accountsPage.isManaged && !s.launcherPage.isManaged && !s.tunnelPage.isManaged, "$where: accounts did not replace the column")
@@ -732,9 +742,13 @@ class SettingsScreenTest {
                     s.showClientSection("sens")
                     relayout(nav)
                     listOf(s.calcSens, s.writeSens).forEach { b ->
+                        assertEquals(34.0, b.height, 0.5, "$where: '${b.text}' is not the settings action height")
+                        assertEquals(s.tunnelMeasure.padding, b.padding, "$where: '${b.text}' padding")
                         assertTrue(b.width >= b.prefWidth(-1.0) - 0.5, "$where: '${b.text}' truncated")
                         assertTrue(contains(window, b.sceneBounds()), "$where: '${b.text}' outside")
                     }
+                    assertFalse("primary" in s.calcSens.styleClass, "$where: Посчитать is a primary action")
+                    assertTrue("primary" in s.writeSens.styleClass, "$where: Записать lost the accent")
                     assertTrue(s.sensPage.isManaged && !s.accountsPage.isManaged && !s.launcherPage.isManaged, "$where: sensitivity did not replace accounts")
                     assertTrue("selected" in main.headerController.navSens.styleClass, "$where: sensitivity not selected")
                     if (w == Theme.WINDOW_WIDTH) {
@@ -748,200 +762,62 @@ class SettingsScreenTest {
                 }
             }
             val s = nav.mainController!!.settingsController
-            val store = app.services.settings
-            val scripts = mutableListOf<String>()
-            var beforeDenied = listOf<String>()
-            var winnerName = ""
-            fun allowFirewall() {
-                TunnelServices.firewall = {
-                    TunnelFirewall(elevated = { true }, shell = { body ->
-                        scripts += body
-                        if (body.contains("New-NetFirewallRule")) Result.success("ok") else Result.success("1")
-                    })
+                        TunnelServices.probe = { endpoint ->
+                when (endpoint.name) {
+                    "MSK1-1" -> TunnelProbeOutcome.Reply(java.time.Duration.ofMillis(12), java.time.Duration.ofMillis(8), false)
+                    "MSK1-2" -> TunnelProbeOutcome.Reply(java.time.Duration.ofMillis(5), java.time.Duration.ofMillis(4), true)
+                    "GAME-EU-2" -> TunnelProbeOutcome.Reply(java.time.Duration.ofMillis(15), java.time.Duration.ofMillis(5), false)
+                    else -> TunnelProbeOutcome.NoReply
                 }
             }
-            fun denyFirewall() {
-                TunnelServices.firewall = { TunnelFirewall(elevated = { false }, shell = { error("shell") }) }
+            val fetches = dev.launcherfork.stalzone.TunnelCatalogs.fetchAttempts.get()
+            val probeAttempts = dev.launcherfork.stalzone.TunnelProbe.attempts.get()
+            fun clickPool(name: String) {
+                val title = s.tunnelPools.lookupAll(".pool-title").filterIsInstance<javafx.scene.control.Label>().first { it.text == name }
+                title.onMouseClicked.handle(
+                    MouseEvent(
+                        MouseEvent.MOUSE_CLICKED, 1.0, 1.0, 1.0, 1.0, javafx.scene.input.MouseButton.PRIMARY, 1,
+                        false, false, false, false, true, false, false, true, false, false, null,
+                    ),
+                )
             }
-            fun times(haystack: String, needle: String) = haystack.split(needle).size - 1
-            fun hostOf(name: String) = TunnelCatalog.servers().first { it.name == name }.host
-            fun lockOf(name: String): Button {
-                val line = s.tunnelPools.lookupAll(".tunnel-line")
-                    .filterIsInstance<javafx.scene.layout.Region>()
-                    .first { row ->
-                        row.lookupAll(".tunnel-row").filterIsInstance<Labeled>().any { it.text == name }
-                    }
-                return line.lookup(".tunnel-lock") as Button
+            fun nodeNamed(name: String) = s.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
+                val row = button.graphic as? javafx.scene.Parent
+                row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
             }
-            fun pendingIds(): Set<String> = s.tunnelPools.lookupAll(".tunnel-lock")
-                .filterIsInstance<Button>()
-                .filter { "locked" in it.styleClass }
-                .map { it.userData as String }
-                .toSet()
-            fun blockedIds(): List<String> = store.load().serverBlock.blocked
-            allowFirewall()
+            fun pingText(button: Button, kind: String): String {
+                val row = button.graphic as javafx.scene.Parent
+                return row.childrenUnmodifiable.filterIsInstance<Labeled>().first { kind in it.styleClass }.text
+            }
             FxTestSupport.onFx {
                 s.showClientSection("tunnel")
                 relayout(nav)
-                assertTrue(
-                    s.tunnelPage.lookupAll(".button").filterIsInstance<Button>().none { it.text == "Блок" || it.text == "Block" },
-                    "the Block action is still on the page",
-                )
-                val ping = (lockOf("MSK1-1").parent as javafx.scene.Parent).lookup(".tunnel-ping") as javafx.scene.control.Label
-                assertEquals("—", ping.text)
-                assertNull((lockOf("MSK1-1").parent as javafx.scene.layout.Region).onMouseClicked)
-                lockOf("MSK1-1").fire()
-                assertTrue("locked" in lockOf("MSK1-1").styleClass, "lock does not mark the row")
-                assertEquals(emptyList<String>(), blockedIds(), "lock wrote the firewall list")
-                assertEquals("Авто", s.tunnelNow.text, "header counted a pending lock")
-                assertTrue("primary" in s.tunnelApply.styleClass, "Применить is quiet while the choice is pending")
-                assertFalse(s.tunnelApply.isDisable)
+                assertEquals(probeAttempts, dev.launcherfork.stalzone.TunnelProbe.attempts.get(), "opening the page probed a node")
+                clickPool("MSK1")
+                val first = nodeNamed("MSK1-1")
+                assertEquals("12.0", pingText(first, "client"))
+                assertEquals("8.0", pingText(first, "server"))
+                assertEquals("20.0", pingText(first, "sum"))
+                val limited = nodeNamed("MSK1-2")
+                assertTrue(limited.isDisable, "a node at its connection limit can be selected")
+                first.fire()
+                val saved = java.nio.file.Files.readString(TunnelServices.overridesFile())
+                assertTrue(saved.contains("85.119.149.7:29450"))
+                limited.fire()
+                assertEquals(saved, java.nio.file.Files.readString(TunnelServices.overridesFile()), "a limited node was written")
                 s.regionEu.fire()
-                assertEquals("EU", store.load().serverBlock.region)
-                val euNames = s.tunnelPools.lookupAll(".tunnel-row").filterIsInstance<Labeled>().map { it.text }
-                assertTrue("GAME-EU-2" in euNames, "EU group missing")
-                assertTrue("MSK1-1" !in euNames, "RU tunnel stayed in the EU group")
-                s.regionRu.fire()
-                assertTrue("locked" in lockOf("MSK1-1").styleClass, "pending lock did not survive the region switch")
-                assertEquals(emptyList<String>(), blockedIds())
-                assertTrue(scripts.isEmpty(), "a pending lock touched the firewall")
-                denyFirewall()
-                s.tunnelApply.fire()
-            }
-            assertTrue(FxTestSupport.waitFx { s.tunnelNow.text == "Нужны права администратора" && !s.tunnelPing.isDisable })
-            FxTestSupport.onFx {
-                assertEquals(emptyList<String>(), blockedIds(), "a failed apply changed the saved block list")
-                assertFalse("locked" in lockOf("MSK1-1").styleClass, "a failed apply left the pending lock")
-                assertTrue(s.tunnelApply.isDisable)
-                assertFalse("primary" in s.tunnelApply.styleClass)
-                assertTrue(scripts.none { "New-NetFirewallRule" in it || "Remove-NetFirewallRule" in it || "Start-Process" in it || "RunAs" in it })
-                allowFirewall()
-                lockOf("MSK1-1").fire()
-                s.tunnelApply.fire()
-            }
-            assertTrue(FxTestSupport.waitFx { !s.tunnelPing.isDisable && blockedIds() == listOf("MSK1::MSK1-1") })
-            FxTestSupport.onFx {
-                assertEquals("1 блок", s.tunnelNow.text)
-                assertTrue(s.tunnelApply.isDisable, "Применить stays armed after a clean apply")
-                assertFalse("primary" in s.tunnelApply.styleClass)
-                assertTrue("locked" in lockOf("MSK1-1").styleClass)
-                val line = lockOf("MSK1-1").parent as javafx.scene.layout.Region
-                line.applyCss()
-                assertTrue("blocked" in line.styleClass, "blocked row is not marked")
-                val fills = line.background?.fills.orEmpty()
-                assertTrue(fills.all { it.insets.left < 1.0 && it.insets.right < 1.0 }, "locked row is painted as a bar")
-                val wrote = scripts.last { "New-NetFirewallRule" in it }
-                val host = hostOf("MSK1-1")
-                assertEquals(1, times(wrote, "-DisplayName '${TunnelFirewall.ruleName("TCP", host)}'"), "TCP rule duplicated")
-                assertEquals(1, times(wrote, "-DisplayName '${TunnelFirewall.ruleName("UDP", host)}'"), "UDP rule duplicated")
-                val again = scripts.size
-                s.tunnelApply.fire()
-                assertEquals(again, scripts.size, "a second Apply with no changes wrote rules again")
-                lockOf("MSK1-1").fire()
-                assertEquals(listOf("MSK1::MSK1-1"), blockedIds(), "unlocking wrote the list before Apply")
-                assertEquals("1 блок", s.tunnelNow.text)
-                s.regionEu.fire()
-                s.regionRu.fire()
-                assertFalse("locked" in lockOf("MSK1-1").styleClass, "pending unlock did not survive the region switch")
-                s.tunnelApply.fire()
-            }
-            assertTrue(FxTestSupport.waitFx { !s.tunnelPing.isDisable && blockedIds().isEmpty() }, "Apply did not clear the saved block")
-            FxTestSupport.onFx {
-                assertEquals("Авто", s.tunnelNow.text)
-                assertTrue(scripts.last().contains("Remove-NetFirewallRule"))
-                assertFalse(scripts.last().contains("New-NetFirewallRule"), "clearing recreated rules")
-                lockOf("MSK1-1").fire()
-                s.regionEu.fire()
-                lockOf("GAME-EU-2").fire()
-                s.tunnelApply.fire()
-            }
-            assertTrue(FxTestSupport.waitFx {
-                !s.tunnelPing.isDisable && blockedIds().toSet() == setOf("MSK1::MSK1-1", "GAME-EU::GAME-EU-2")
-            })
-            FxTestSupport.onFx {
-                s.regionRu.fire()
-                assertFalse(s.tunnelUnblock.isDisable)
-                val beforeClear = scripts.size
-                s.tunnelUnblock.fire()
-                assertEquals(beforeClear, scripts.size, "Снять touched the firewall")
-                assertEquals(setOf("MSK1::MSK1-1", "GAME-EU::GAME-EU-2"), blockedIds().toSet(), "Снять wrote the list")
-                assertFalse("locked" in lockOf("MSK1-1").styleClass)
-                assertEquals("2 блок", s.tunnelNow.text, "header followed the pending clear")
-                s.regionEu.fire()
-                assertTrue("locked" in lockOf("GAME-EU-2").styleClass, "Снять unlocked another region")
-                s.regionRu.fire()
-                s.tunnelApply.fire()
-            }
-            assertTrue(FxTestSupport.waitFx { !s.tunnelPing.isDisable && blockedIds() == listOf("GAME-EU::GAME-EU-2") }, "Apply kept a block outside the region: ${blockedIds()}")
-            FxTestSupport.onFx {
-                assertEquals("1 блок", s.tunnelNow.text)
-                val wrote = scripts.last { "New-NetFirewallRule" in it }
-                assertTrue(wrote.contains(hostOf("GAME-EU-2")), "Apply did not block the remaining host")
-                assertFalse(wrote.contains(hostOf("MSK1-1")), "Apply left a rule for the unlocked host")
-                assertEquals(1, times(wrote, "-DisplayName '${TunnelFirewall.ruleName("TCP", hostOf("GAME-EU-2"))}'"))
-                val applyAt = scripts.indexOfLast { "New-NetFirewallRule" in it }
-                assertTrue(scripts[applyAt - 1].contains("Remove-NetFirewallRule"), "Apply did not drop the previous rules first")
-                s.tunnelPing.fire()
-            }
-            assertTrue(FxTestSupport.waitFx { !s.tunnelPing.isDisable && s.tunnelNow.text != "Применяю…" })
-            FxTestSupport.onFx {
-                assertEquals(listOf("GAME-EU::GAME-EU-2"), blockedIds(), "ping changed blocks")
-                assertFalse("locked" in lockOf("MSK1-1").styleClass, "ping locked a server")
-                val shown = (lockOf("MSK1-1").parent as javafx.scene.Parent).lookup(".tunnel-ping") as javafx.scene.control.Label
-                assertEquals("нет", shown.text)
-                TunnelServices.ping = { targets, _, onChunk ->
-                    onChunk(targets.map { target ->
-                        val name = target.id.substringAfter("::")
-                        val ms = when {
-                            name.endsWith("-1") -> 30
-                            name.endsWith("-2") -> null
-                            else -> 250
-                        }
-                        PingResult(target.id, ms)
-                    }, targets.size, targets.size)
-                }
-                val beforeBest = scripts.size
-                s.tunnelAutoBest.fire()
-                assertEquals(beforeBest, scripts.size)
-            }
-            assertTrue(FxTestSupport.waitFx(8_000) {
-                !s.tunnelPing.isDisable && !s.tunnelApply.isDisable && blockedIds() == listOf("GAME-EU::GAME-EU-2") && pendingIds().size > 1
-            })
-            FxTestSupport.onFx {
-                val ru = TunnelCatalog.servers().filter { it.region == "RU" }
-                val pings = ru.associate { server ->
-                    server.id to when {
-                        server.name.endsWith("-1") -> 30
-                        server.name.endsWith("-2") -> null
-                        else -> 250
-                    }
-                }
-                val picked = ServerBlock.pickBestPerRegionTopN(pings, ru)
-                assertTrue(picked.allowed.isNotEmpty())
-                assertTrue(picked.allowed.all { ServerBlock.isAcceptablePing(pings[it]) }, "a miss or a slow ping won")
-                val expected = ServerBlock.blockedExcept(ru, picked.allowed).toSet()
-                assertEquals(expected, pendingIds(), "Лучшие did not mark the rest of the region")
-                assertEquals(listOf("GAME-EU::GAME-EU-2"), blockedIds(), "Лучшие wrote the firewall list")
-                assertTrue("primary" in s.tunnelApply.styleClass)
-                winnerName = picked.allowed.first().substringAfter("::")
-                s.tunnelApply.fire()
-            }
-            assertTrue(FxTestSupport.waitFx(8_000) {
-                !s.tunnelPing.isDisable && blockedIds().toSet() == pendingIds() + "GAME-EU::GAME-EU-2"
-            })
-            FxTestSupport.onFx {
-                assertTrue("GAME-EU::GAME-EU-2" in blockedIds(), "best apply cleared another region")
-                assertFalse("locked" in lockOf(winnerName).styleClass)
-                lockOf(winnerName).fire()
-                assertTrue("locked" in lockOf(winnerName).styleClass)
-                denyFirewall()
-                beforeDenied = blockedIds()
-                s.tunnelApply.fire()
-            }
-            assertTrue(FxTestSupport.waitFx { s.tunnelNow.text == "Нужны права администратора" && !s.tunnelPing.isDisable })
-            FxTestSupport.onFx {
-                assertEquals(beforeDenied, blockedIds(), "a failed apply changed the saved block list")
-                assertFalse("locked" in lockOf(winnerName).styleClass, "a failed apply kept the pending lock")
+                clickPool("GAME-EU")
+                nodeNamed("GAME-EU-2").fire()
+                s.tunnelGameChoice.fire()
+                val after = java.nio.file.Files.readString(TunnelServices.overridesFile())
+                assertTrue(after.contains("85.119.149.7:29450"), "game choice cleared RU")
+                assertFalse(after.contains("79.127.241.67"), "game choice kept EU")
+                val args = TunnelOverrides.commandWithOverrides(listOf("java"), TunnelServices.overridesFile())
+                assertEquals(fetches, dev.launcherfork.stalzone.TunnelCatalogs.fetchAttempts.get(), "launch fetched a catalog")
+                assertEquals(probeAttempts, dev.launcherfork.stalzone.TunnelProbe.attempts.get(), "launch probed a node")
+                assertTrue(args.any { it == "-Droxy_address_override.ru=85.119.149.7:29450" })
+                assertFalse(args.any { it.startsWith("-Droxy_address_override.eu=") })
+                assertFalse(java.nio.file.Files.readString(TunnelServices.overridesFile()).contains("STALZONE-SB"))
                 s.showClientSection("jvm")
                 val card = s.jvmGrid.children.filterIsInstance<Button>()
                     .first { it.userData == dev.launcherfork.stalzone.JvmPresets.CURRENT }
@@ -960,36 +836,36 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun savedBlocksLoadAsLocksAndAreNotCleared() {
-        val scripts = mutableListOf<String>()
-        TunnelServices.firewall = {
-            TunnelFirewall(elevated = { false }, shell = { body ->
-                scripts += body
-                Result.success("0")
-            })
-        }
-        val seeded = listOf("MSK1::MSK1-1", "GAME-EU::GAME-EU-2")
-        val (c, store) = settingsWith(LauncherSettings(serverBlock = ServerBlockState(blocked = seeded, region = "RU")))
+    fun savedOverrideStaysOnItsRegion() {
+        TunnelOverrides.saveSettings(
+            TunnelServices.overridesFile(),
+            dev.launcherfork.stalzone.TunnelSettings(
+                overrides = mapOf(
+                    dev.launcherfork.stalzone.TunnelRegion.RU to dev.launcherfork.stalzone.TunnelSelection(
+                        dev.launcherfork.stalzone.TunnelRegion.RU, "MSK1", "MSK1-1", "85.119.149.7:29450",
+                    ),
+                    dev.launcherfork.stalzone.TunnelRegion.EU to dev.launcherfork.stalzone.TunnelSelection(
+                        dev.launcherfork.stalzone.TunnelRegion.EU, "GAME-EU", "GAME-EU-2", "79.127.241.67:29450",
+                    ),
+                ),
+            ),
+        )
+        val (c, _) = settingsWith(LauncherSettings())
         FxTestSupport.onFx {
             c.showClientSection("tunnel")
             c.settingsRoot.applyCss()
             c.settingsRoot.layout()
-            assertEquals(seeded, store.load().serverBlock.blocked, "opening the page cleared sbBlocked")
-            assertEquals("2 блок", c.tunnelNow.text)
-            assertTrue(c.tunnelApply.isDisable, "Применить is live for a list that is already applied")
-            assertFalse("primary" in c.tunnelApply.styleClass)
-            val ru = c.tunnelPools.lookupAll(".tunnel-lock").filterIsInstance<Button>().first { it.userData == "MSK1::MSK1-1" }
-            assertTrue("locked" in ru.styleClass, "saved block did not load as a lock")
+            val ru = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>()
+                .first { (it.lookup(".tunnel-row") as Labeled).text == "MSK1-1" }
+            assertTrue("selected" in ru.styleClass)
+            assertTrue(ru.isDisable, "a saved choice is selectable before a fresh measurement")
             c.regionEu.fire()
-            val eu = c.tunnelPools.lookupAll(".tunnel-lock").filterIsInstance<Button>().first { it.userData == "GAME-EU::GAME-EU-2" }
-            assertTrue("locked" in eu.styleClass, "saved block in another region did not load")
-            c.regionRu.fire()
-            val again = c.tunnelPools.lookupAll(".tunnel-lock").filterIsInstance<Button>().first { it.userData == "MSK1::MSK1-1" }
-            assertTrue("locked" in again.styleClass)
-            assertEquals(seeded, store.load().serverBlock.blocked)
-            assertTrue(c.tunnelApply.isDisable)
+            c.tunnelGameChoice.fire()
+            val text = java.nio.file.Files.readString(TunnelServices.overridesFile())
+            assertTrue(text.contains("85.119.149.7:29450"))
+            assertFalse(text.contains("79.127.241.67"))
+            assertFalse(text.contains("New-NetFirewallRule") || text.contains("RunAs"))
         }
-        assertTrue(scripts.none { "New-NetFirewallRule" in it || "Remove-NetFirewallRule" in it || "Start-Process" in it || "RunAs" in it })
     }
 
     @Test
@@ -1029,7 +905,15 @@ class SettingsScreenTest {
                 assertFalse("selected" in first.styleClass)
                 val keys = first.lookupAll(".session-keys").single()
                 assertFalse(keys.isVisible)
-                (first.lookupAll(".session-keys-toggle").single() as ToggleButton).fire()
+                val keysToggle = first.lookupAll(".session-keys-toggle").single() as ToggleButton
+                assertEquals(34.0, keysToggle.height, 0.5, "key hit box height")
+                val apply = first.lookup(".session-apply") as Button
+                val delete = first.lookup(".session-delete") as Button
+                assertEquals(34.0, apply.height, 0.5, "Применить height")
+                assertEquals(apply.height, delete.height, 0.5, "Удалить height")
+                assertTrue("primary" in apply.styleClass)
+                assertFalse("primary" in delete.styleClass)
+                keysToggle.fire()
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 assertTrue(keys.isVisible)
@@ -1054,9 +938,76 @@ class SettingsScreenTest {
                 (after[1].lookupAll(".session-delete").single() as Button).fire()
                 assertEquals(1, c.sessionCards.children.count { "session-card" in it.styleClass })
                 assertEquals("Сессия удалена", c.clientStatus.text)
+                assertTrue(c.clientStatus.isVisible)
+                c.showClientSection("jvm")
+                assertFalse(c.clientStatus.isVisible, "a session note followed the JVM page")
+                assertFalse(c.clientStatus.isManaged)
+                c.showClientSection("accounts")
+                assertTrue(c.clientStatus.isVisible)
+                assertEquals("Сессия удалена", c.clientStatus.text)
                 assertTrue(contains(BoundingBox(0.0, 0.0, scene.width, scene.height), c.captureSession.sceneBounds()))
             }
         } finally {
+            app.shutdown()
+        }
+    }
+
+    /** Saving a session rebuilds the list. Every card stays full height and the name row stays under the cards. */
+    @Test
+    fun savingASessionKeepsEveryCardFullHeight(@TempDir dir: Path) {
+        val registry = MemoryRegistry()
+        registry.writeValues(ExboSessions.KEY_PATH, mapOf("EXBO_LOGIN" to "zlyk_zlykov"))
+        val desk = StalzoneDesk(registry, dir.resolve("sessions.json"), dir.resolve("jvm"), dir.resolve("options.json"))
+        desk.captureCurrent("Zlyka")
+        registry.writeValues(ExboSessions.KEY_PATH, mapOf("EXBO_LOGIN" to "huska"))
+        val store = InMemorySettingsStore(LauncherSettings())
+        val base = AppContext.mock(language = "ru", speed = 50.0, authDelayMs = 0)
+        val app = AppContext(base.services.copy(settings = store, system = MockSystemInfo(16 * gb)), desk = desk)
+        val nav = mainOnScreen(app, "ru")
+        try {
+            resize(nav, Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
+            FxTestSupport.onFx {
+                val main = nav.mainController!!
+                val c = main.settingsController
+                main.setSettingsVisible(true)
+                c.showClientSection("accounts")
+                relayout(nav)
+                val before = c.sessionCards.children.filter { "session-card" in it.styleClass }
+                assertEquals(1, before.size)
+                val beforeHeight = (before[0] as javafx.scene.layout.Region).height
+                assertTrue(beforeHeight >= 48.0, "card was already short ($beforeHeight)")
+                c.sessionName.text = "Хуська"
+                c.captureSession.fire()
+                relayout(nav)
+                val cards = c.sessionCards.children.filter { "session-card" in it.styleClass }
+                assertEquals(2, cards.size, "save did not add a card")
+                val row = c.accountsRow.sceneBounds()
+                val name = c.sessionName.sceneBounds()
+                val save = c.captureSession.sceneBounds()
+                assertEquals("Сессия сохранена", c.clientStatus.text)
+                assertTrue(c.clientStatus.sceneBounds().minY >= row.maxY - 0.5, "status overlaps the name row")
+                cards.forEach { node ->
+                    val card = node as javafx.scene.layout.Region
+                    val bounds = card.sceneBounds()
+                    assertEquals(beforeHeight, card.height, 1.0, "saved card height ${card.height} vs $beforeHeight")
+                    assertTrue(card.height >= 48.0, "card collapsed to ${card.height}")
+                    assertTrue(bounds.maxY <= row.minY + 0.5, "card overlaps the name row $bounds vs $row")
+                    assertTrue(bounds.maxY <= name.minY + 0.5, "card overlaps the name field")
+                    assertTrue(bounds.maxY <= save.minY + 0.5, "card overlaps Сохранить")
+                }
+                val apply = cards[0].lookup(".session-apply") as Button
+                val delete = cards[0].lookup(".session-delete") as Button
+                val keys = cards[0].lookup(".session-keys-toggle") as ToggleButton
+                assertEquals(34.0, apply.height, 0.5, "Применить height")
+                assertEquals(apply.height, delete.height, 0.5, "Удалить height")
+                assertEquals(apply.height, c.captureSession.height, 0.5, "Сохранить height")
+                assertEquals(apply.height, keys.height, 0.5, "key hit box height")
+                assertTrue("primary" in apply.styleClass)
+                assertFalse("primary" in delete.styleClass)
+                assertFalse("primary" in c.captureSession.styleClass)
+            }
+        } finally {
+            FxTestSupport.onFx { nav.close() }
             app.shutdown()
         }
     }

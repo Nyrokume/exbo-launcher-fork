@@ -5,7 +5,13 @@ import java.nio.file.Path
 object StalzonePaths {
     fun sessionsFile(): Path = local("stalcraft-nyrokume").resolve("sessions.json")
 
-    fun jvmConfigsDir(): Path = roaming("EXBO").resolve("jvm_wrapper").resolve("configs")
+    fun jvmWrapperDir(): Path = roaming("EXBO").resolve("jvm_wrapper")
+
+    fun jvmConfigsDir(): Path = jvmWrapperDir().resolve("configs")
+
+    fun tunnelOverridesFile(): Path = jvmWrapperDir().resolve("overrides.json")
+
+    fun tunnelStatsFile(): Path = jvmWrapperDir().resolve("cache").resolve("tunnel_stats.json")
 
     fun optionsFile(): Path = roaming("EXBO").resolve("runtime").resolve("stalcraft").resolve("config").resolve("options.json")
 
