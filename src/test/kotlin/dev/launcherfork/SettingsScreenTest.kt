@@ -753,7 +753,9 @@ class SettingsScreenTest {
                         msk1.lookupAll(".tunnel-row").map { (it as Labeled).text },
                         "$where: MSK1 does not hold its own servers",
                     )
-                    val exclude = msk1.lookupAll(".button").filterIsInstance<Button>().first { it.text == "Исключить" }
+                    val exclude = msk1.lookupAll(".tunnel-pool-lock").filterIsInstance<Button>().single()
+                    assertTrue(exclude.text.isNullOrBlank(), "$where: exclude is still a caption")
+                    assertTrue(exclude.lookupAll(".tunnel-state.open").isNotEmpty(), "$where: an open pool has no open lock")
                     val poolBox = msk1.localToScene(msk1.boundsInLocal)
                     val excludeBox = exclude.localToScene(exclude.boundsInLocal)
                     assertTrue(
@@ -763,15 +765,14 @@ class SettingsScreenTest {
                     )
                     val legend = s.tunnelPools.lookupAll(".tunnel-legend").filterIsInstance<Labeled>()
                     assertEquals(listOf("До вас", "До игры", "Пинг"), legend.map { it.text }, "$where: value legend")
-                    val metrics = s.tunnelPools.lookup(".tunnel-metrics") as Labeled
-                    assertTrue(metrics.isWrapText && metrics.text.contains("До вас") && metrics.text.contains("Пинг"), "$where: metrics legend")
-                    assertTrue(contains(window, metrics.sceneBounds()), "$where: metrics legend outside")
-                    assertEquals(
-                        listOf("до 50 мс", "до 100", "выше 100"),
-                        s.tunnelPools.lookupAll(".tunnel-scale").filterIsInstance<Labeled>().map { it.text },
-                        "$where: color scale",
-                    )
+                    assertTrue(s.tunnelPools.lookupAll(".tunnel-metrics").isEmpty(), "$where: the metrics paragraph is still on the page")
+                    assertTrue(s.tunnelPools.lookupAll(".tunnel-scale").isEmpty(), "$where: the color caption row is still on the page")
                     assertTrue("decision" in legend.last().styleClass, "$where: ping is not the column find-best uses")
+                    nodes.forEach { row ->
+                        val mark = (row.graphic as? Parent)?.childrenUnmodifiable?.firstOrNull { "tunnel-state" in it.styleClass }
+                        assertNotNull(mark, "$where: a server row has no lock")
+                        assertTrue("open" in mark!!.styleClass, "$where: an available server looks locked")
+                    }
                     val node = nodes.first { (it.lookup(".tunnel-row") as Labeled).text == "MSK1-1" }
                     val pings = node.lookupAll(".tunnel-ping").filterIsInstance<Labeled>()
                     legend.zip(pings).forEach { (caption, ping) ->
@@ -909,8 +910,12 @@ class SettingsScreenTest {
                 assertTrue("best" in winner.styleClass, "find best did not mark the recommendation")
                 val winnerRow = winner.graphic as javafx.scene.Parent
                 val winnerLabels = winnerRow.childrenUnmodifiable.filterIsInstance<Labeled>()
-                assertEquals("лучший", winnerLabels.first { "tunnel-pick" in it.styleClass }.text)
+                val dot = winnerRow.childrenUnmodifiable.first { "tunnel-best-dot" in it.styleClass }
+                assertFalse("idle" in dot.styleClass, "find best did not mark the recommendation")
+                assertTrue("open" in winnerRow.childrenUnmodifiable.first { "tunnel-state" in it.styleClass }.styleClass)
                 assertTrue("good" in winnerLabels.last { "tunnel-ping" in it.styleClass }.styleClass)
+                val limitedMark = (limited.graphic as javafx.scene.Parent).childrenUnmodifiable.first { "tunnel-state" in it.styleClass }
+                assertTrue("limit" in limitedMark.styleClass, "a node at its limit looks open")
                 val winnerPool = generateSequence(winner as javafx.scene.Node) { it.parent }.first { "pool" in it.styleClass }
                 assertEquals("MSK1", winnerPool.lookupAll(".pool-title").filterIsInstance<Labeled>().first().text)
                 assertTrue(

@@ -254,6 +254,7 @@ class TunnelPage(
 
     private fun select(target: TunnelTarget) {
         if (settingsError != null) return
+        if (settings.isExcluded(target.region, target.pool)) return
         val view = probes[target.key()] ?: return
         if (!view.selectable) return
         val previous = settings
@@ -512,53 +513,12 @@ class TunnelPage(
                 val blocks = catalog.pools.mapNotNull { poolBlock(it, locked, best?.target?.endpoint?.address) }
                 if (blocks.isEmpty()) tunnelPools.children += note(ctx.t("settings.tunnel.no_working"))
                 else {
-                    tunnelPools.children += metricsLegend(best)
-                    tunnelPools.children += scaleLegend()
                     tunnelPools.children += columnLegend()
                     tunnelPools.children.addAll(blocks)
                 }
             }
         }
         if (scroll != null) scroll.vvalue = saved
-    }
-
-    /** What the three columns are, which one the current mode minimizes, and who would win now. */
-    private fun metricsLegend(best: RankedTarget?): Label {
-        val how = when (settings.mode) {
-            TunnelSearchMode.PING -> "settings.tunnel.metrics.ping"
-            TunnelSearchMode.CLIENT_RTT -> "settings.tunnel.metrics.client"
-            TunnelSearchMode.SERVER_RTT -> "settings.tunnel.metrics.server"
-            TunnelSearchMode.STABILITY -> "settings.tunnel.metrics.stability"
-        }
-        val text = buildString {
-            append(ctx.t("settings.tunnel.metrics"))
-            append(' ')
-            append(ctx.t(how))
-            if (best != null) {
-                append(' ')
-                append(ctx.t("settings.tunnel.winner", best.target.endpoint.name))
-            }
-        }
-        return Label(text).apply {
-            styleClass.add("tunnel-metrics")
-            isWrapText = true
-            maxWidth = Double.MAX_VALUE
-        }
-    }
-
-    /** Green under 50 ms, amber under 100, red above. */
-    private fun scaleLegend(): HBox {
-        fun chip(key: String, kind: String) = Label(ctx.t(key)).apply { styleClass.addAll("tunnel-scale", kind) }
-        return HBox(
-            12.0,
-            chip("settings.tunnel.scale.good", "good"),
-            chip("settings.tunnel.scale.mid", "mid"),
-            chip("settings.tunnel.scale.bad", "bad"),
-        ).apply {
-            styleClass.add("tunnel-scale-row")
-            alignment = Pos.CENTER_LEFT
-            maxWidth = Double.MAX_VALUE
-        }
     }
 
     /** Column names over the three figures: hop to the tunnel, hop to the game, their sum. */
@@ -587,7 +547,7 @@ class TunnelPage(
         }
     }
 
-    /** The column [findBest] minimizes. Stability still reads the ping column; the note says why. */
+    /** The column [findBest] minimizes. Stability still reads the ping column. */
     private fun decisionKind(): String = when (settings.mode) {
         TunnelSearchMode.CLIENT_RTT -> "client"
         TunnelSearchMode.SERVER_RTT -> "server"
@@ -620,13 +580,16 @@ class TunnelPage(
             tooltip = Tooltip(ctx.t("settings.tunnel.open"))
             setOnMouseClicked { measurePool(pool.name) }
         }
-        val meta = Label(
-            if (excluded) ctx.t("settings.tunnel.pool_excluded", visible.size)
-            else ctx.t("settings.tunnel.pool_meta", visible.size),
-        ).apply { styleClass.add("pool-meta") }
-        val exclude = Button(if (excluded) ctx.t("settings.tunnel.excluded") else ctx.t("settings.tunnel.exclude")).apply {
-            styleClass.add("settings-mini")
+        val meta = Label(ctx.t("settings.tunnel.pool_meta", visible.size)).apply { styleClass.add("pool-meta") }
+        val exclude = Button().apply {
+            styleClass.add("tunnel-pool-lock")
+            if (excluded) styleClass.add("locked")
+            contentDisplay = ContentDisplay.GRAPHIC_ONLY
+            graphic = lockMark(if (excluded) "shut" else "open")
             isDisable = locked
+            val state = if (excluded) "settings.tunnel.excluded" else "settings.tunnel.exclude"
+            accessibleText = ctx.t(state)
+            tooltip = Tooltip(ctx.t(if (excluded) "settings.tunnel.pool_lock.shut" else "settings.tunnel.pool_lock.open"))
             setOnAction { toggleExclusion(pool.name) }
         }
         val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
@@ -646,6 +609,7 @@ class TunnelPage(
                 probes[target.key()] ?: NodeProbe(),
                 locked,
                 recommended = endpoint.address == bestAddress && !excluded,
+                excluded = excluded,
             )
         }
         markLastNode(list)
@@ -670,8 +634,10 @@ class TunnelPage(
         prefix: String = "",
         forceLocked: Boolean = false,
         recommended: Boolean = false,
+        excluded: Boolean = false,
     ): Button {
         val shown = figures(target, view)
+        val blocked = excluded || shown.limitReached || forceLocked
         val name = Label(prefix + target.endpoint.name).apply {
             styleClass.add("tunnel-row")
             textOverrun = OverrunStyle.ELLIPSIS
@@ -680,15 +646,24 @@ class TunnelPage(
         HBox.setHgrow(name, Priority.ALWAYS)
         val (client, server, sum) = rttText(shown)
         val decision = decisionKind()
-        val parts = ArrayList<javafx.scene.Node>()
-        parts += name
-        if (recommended) {
-            parts += Label(ctx.t("settings.tunnel.pick")).apply { styleClass.add("tunnel-pick") }
+        val kind = when {
+            excluded -> "shut"
+            shown.limitReached || forceLocked -> "limit"
+            else -> "open"
         }
-        parts += rtt(client, "client", if (shown.received && !shown.failed) shown.clientMs else null, decision)
-        parts += rtt(server, "server", if (shown.received && !shown.failed) shown.serverMs else null, decision)
-        parts += rtt(sum, "sum", if (shown.received && !shown.failed && !shown.limitReached) shown.totalMs else null, decision)
-        val row = HBox(8.0, *parts.toTypedArray()).apply {
+        val dot = Region().apply {
+            styleClass.add("tunnel-best-dot")
+            if (!recommended) styleClass.add("idle")
+        }
+        val parts = arrayOf<javafx.scene.Node>(
+            lockMark(kind),
+            dot,
+            name,
+            rtt(client, "client", if (shown.received && !shown.failed) shown.clientMs else null, decision),
+            rtt(server, "server", if (shown.received && !shown.failed) shown.serverMs else null, decision),
+            rtt(sum, "sum", if (shown.received && !shown.failed && !shown.limitReached) shown.totalMs else null, decision),
+        )
+        val row = HBox(8.0, *parts).apply {
             alignment = Pos.CENTER_LEFT
             maxWidth = Double.MAX_VALUE
         }
@@ -697,21 +672,35 @@ class TunnelPage(
         val serverName = ctx.t("settings.tunnel.col.server")
         val sumName = ctx.t("settings.tunnel.col.sum")
         val quality = qualityText(target, shown)
+        val stateName = ctx.t(
+            when (kind) {
+                "shut" -> "settings.tunnel.lock.locked"
+                "limit" -> "settings.tunnel.limit"
+                else -> "settings.tunnel.lock.open"
+            },
+        )
         return Button().apply {
             styleClass.add("tunnel-node")
             if (chosen) styleClass.add("selected")
             if (recommended) styleClass.add("best")
+            if (excluded) styleClass.add("blocked")
             if (view.limitReached || forceLocked) styleClass.add("limited")
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             alignment = Pos.CENTER_LEFT
             graphic = row
             maxWidth = Double.MAX_VALUE
             userData = target.endpoint.address
-            isDisable = locked || forceLocked || !view.selectable
-            accessibleText = "${target.endpoint.name}. $clientName $client, $serverName $server, $sumName $sum"
-            tooltip = Tooltip("${target.endpoint.address}\n$clientName $client, $serverName $server, $sumName $sum$quality")
+            isDisable = locked || blocked || !view.selectable
+            accessibleText = "${target.endpoint.name}. $stateName. $clientName $client, $serverName $server, $sumName $sum"
+            tooltip = Tooltip("${target.endpoint.address}\n$stateName\n$clientName $client, $serverName $server, $sumName $sum$quality")
             setOnAction { select(target) }
         }
+    }
+
+    /** Closed when the pool is excluded, amber when the node is at its limit, open otherwise. */
+    private fun lockMark(kind: String) = Region().apply {
+        styleClass.addAll("tunnel-state", kind)
+        isMouseTransparent = true
     }
 
     /** The row shows the same hour average that ranking uses. One fresh sample is that sample. */
@@ -733,7 +722,11 @@ class TunnelPage(
     private fun rttText(view: NodeProbe): Triple<String, String, String> = when {
         !view.received -> Triple("—", "—", "—")
         view.failed -> Triple("—", "—", ctx.t("settings.tunnel.no_reply"))
-        view.limitReached -> Triple(TunnelOverrides.formatMs(view.clientMs), TunnelOverrides.formatMs(view.serverMs), ctx.t("settings.tunnel.limit"))
+        view.limitReached -> Triple(
+            TunnelOverrides.formatMs(view.clientMs),
+            TunnelOverrides.formatMs(view.serverMs),
+            TunnelOverrides.formatMs(view.totalMs),
+        )
         else -> Triple(TunnelOverrides.formatMs(view.clientMs), TunnelOverrides.formatMs(view.serverMs), TunnelOverrides.formatMs(view.totalMs))
     }
 
