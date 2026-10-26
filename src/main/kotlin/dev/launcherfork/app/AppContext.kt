@@ -10,6 +10,7 @@ import dev.launcherfork.data.exbo.InstalledGameLauncher
 import dev.launcherfork.data.exbo.LiveUpdateService
 import dev.launcherfork.domain.ExboPaths
 import dev.launcherfork.domain.ExitMode
+import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.stalzone.MemoryRegistry
 import dev.launcherfork.stalzone.StalzoneDesk
 import dev.launcherfork.stalzone.StalzonePaths
@@ -110,12 +111,13 @@ class AppContext(
                 StalzonePaths.optionsFile(),
             )
             val auth = ExboAuthService(api)
+            val system = HostSystemInfo()
             val settings = ExboSettingsStore(
                 initial = LauncherSettings(language = language),
                 desk = desk,
                 file = settingsFile,
                 exboJson = ExboPaths.roamingRoot().resolve("runtime").resolve("settings.json"),
-                totalRamMb = HostSystemInfo().totalRamMb(),
+                totalRamMb = system.totalRamMb(),
             )
             val servers = ExboServerRepository(api)
             return AppContext(
@@ -126,13 +128,18 @@ class AppContext(
                     launcher = InstalledGameLauncher(
                         login = { auth.currentSession?.login },
                         token = { api.token },
-                        ramMb = { settings.load().ramMb ?: 4096 },
+                        ramMb = {
+                            val loaded = settings.load()
+                            val gb = RamOptions.selectedGb(loaded, system.totalRamMb())
+                            if (loaded.ramMb != null) runCatching { desk.syncHeap(gb) }
+                            gb * RamOptions.MB_PER_GB
+                        },
                         joinGame = { name -> api.joinGame(name) },
                         runCommand = { id -> servers.runCommand(id) },
                         clientDir = { id -> ExboClients.directory(id).takeIf { path -> path.isDirectory() } },
                     ),
                     settings = settings,
-                    system = HostSystemInfo(),
+                    system = system,
                     links = links,
                     folders = folders,
                 ),

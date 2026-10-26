@@ -1,5 +1,6 @@
 package dev.launcherfork.ui.screens.stalzone
 
+import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.stalzone.ExboSession
 import dev.launcherfork.stalzone.JvmProfile
 import dev.launcherfork.stalzone.ScopeSens
@@ -57,8 +58,8 @@ class StalzoneDeskController(ctx: UiContext) : ModalController(ctx) {
         activateJvm.setOnAction {
             runAction {
                 desk.activateTunedProfile()
-                val gb = ctx.services.settings.load().ramMb?.div(1024)
-                if (gb != null) desk.syncHeap(gb)
+                val mb = ctx.services.settings.load().ramMb
+                if (mb != null) desk.syncHeap(RamOptions.fromMb(mb, ctx.services.system.totalRamMb()))
                 ctx.t("stalzone.jvm.done")
             }
         }

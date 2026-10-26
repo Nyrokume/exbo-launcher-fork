@@ -638,24 +638,66 @@
     -fx-background-color: -tile-hover;
     -fx-text-fill: -foreground;
 }
-/* Sensitivity page: one quiet card filling the settings viewport. The scope grid shares that
-   width and the height under the compact base row; cells grow, they are not a chip cluster. */
+/* Sensitivity page: one quiet card. Under the base row, one line per scope, like the game:
+   name, value, thin slider, two step buttons. The list scrolls inside the card. */
 .sens-card { -fx-padding: 14 16 12 16; -fx-spacing: 12; -fx-max-width: infinity; }
-.sens-table { -fx-padding: 2 0 0 0; -fx-max-width: infinity; -fx-max-height: infinity; }
-.sens-cell {
-    -fx-background-color: -fill-subtle;
-    -fx-border-color: -border;
-    -fx-border-width: 1;
-    -fx-padding: 0 16 0 16;
-    -fx-spacing: 12;
+.sens-scroll, .sens-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
+.sens-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
+.sens-list { -fx-spacing: 0; -fx-max-width: infinity; }
+.sens-line {
     -fx-alignment: center-left;
+    -fx-spacing: 12;
+    -fx-padding: 0 2 0 0;
+    -fx-min-height: 36;
+    -fx-pref-height: 36;
+    -fx-max-height: 36;
     -fx-max-width: infinity;
-    -fx-max-height: infinity;
-    -fx-min-height: 40;
+    -fx-border-color: transparent transparent -settings-divider transparent;
+    -fx-border-width: 0 0 1 0;
 }
-.sens-mag { -fx-font-size: 13; -fx-text-fill: -settings-muted; }
-.sens-int, .sens-frac { -fx-font-size: 15; -fx-text-fill: -settings-label; -fx-padding: 0; }
-.sens-int { -fx-alignment: center-right; }
+.sens-name { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-min-width: 0; }
+.sens-value {
+    -fx-font-size: 13;
+    -fx-text-fill: -settings-label;
+    -fx-alignment: center-right;
+    -fx-min-width: 44;
+    -fx-pref-width: 44;
+    -fx-max-width: 44;
+}
+.sens-slider { -fx-padding: 0 2 0 2; -fx-background-color: transparent; }
+.sens-slider .track {
+    -fx-background-color: -border;
+    -fx-background-radius: 1;
+    -fx-background-insets: 0;
+    -fx-pref-height: 2;
+    -fx-max-height: 2;
+}
+.sens-slider .thumb {
+    -fx-background-color: -settings-label;
+    -fx-background-radius: 1;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-pref-width: 4;
+    -fx-pref-height: 14;
+    -fx-effect: null;
+}
+.sens-steps { -fx-alignment: center; -fx-spacing: 2; }
+.sens-step {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4;
+    -fx-padding: 0;
+    -fx-min-width: 22; -fx-pref-width: 22; -fx-max-width: 22;
+    -fx-min-height: 22; -fx-pref-height: 22; -fx-max-height: 22;
+    -fx-cursor: hand;
+}
+.sens-step:hover, .sens-step:focused { -fx-background-color: -tile-hover; }
+.sens-chevron-left, .sens-chevron-right {
+    -fx-min-width: 6; -fx-pref-width: 6; -fx-max-width: 6;
+    -fx-min-height: 8; -fx-pref-height: 8; -fx-max-height: 8;
+    -fx-background-color: -settings-muted;
+}
+.sens-chevron-left { -fx-shape: "M5.5,0 L0,3.5 L5.5,7 Z"; }
+.sens-chevron-right { -fx-shape: "M0,0 L5.5,3.5 L0,7 Z"; }
 .sens-note { -fx-padding: 2 0 0 0; }
 
 /* client tools, stacked under the launcher groups. Same cards and 34 px rows. */
@@ -686,6 +728,25 @@
 }
 .tunnel-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
 .tunnel-pools { -fx-spacing: 10; -fx-padding: 2 0 4 0; }
+.tunnel-legend-row { -fx-padding: 0 21 0 0; -fx-alignment: center-right; }
+.tunnel-legend {
+    -fx-font-size: 11;
+    -fx-text-fill: -settings-muted;
+    -fx-alignment: center-right;
+}
+.tunnel-legend.decision { -fx-text-fill: -foreground; }
+.tunnel-metrics {
+    -fx-font-size: 12;
+    -fx-text-fill: -settings-muted;
+    -fx-wrap-text: true;
+    -fx-padding: 0 2 2 0;
+}
+.tunnel-scale-row { -fx-alignment: center-left; -fx-spacing: 12; -fx-padding: 0 0 2 0; }
+.tunnel-scale { -fx-font-size: 11; -fx-text-fill: -settings-muted; }
+.tunnel-scale.good { -fx-text-fill: -status-online; }
+.tunnel-scale.mid { -fx-text-fill: -settings-warning; }
+.tunnel-scale.bad { -fx-text-fill: -destructive-text; }
+.tunnel-pick { -fx-font-size: 11; -fx-text-fill: -status-online; }
 .pool { -fx-spacing: 2; -fx-padding: 8 10 4 10; -fx-max-width: infinity; }
 .pool-head { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 2 0; -fx-max-width: infinity; }
 .pool-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
@@ -761,6 +822,11 @@
     -fx-text-fill: -settings-muted;
     -fx-cursor: default;
 }
+.tunnel-node.best {
+    -fx-border-color: transparent transparent -settings-divider -status-online;
+    -fx-border-width: 0 0 1 2;
+}
+.tunnel-node.best .tunnel-row { -fx-text-fill: -status-online; }
 .tunnel-node.selected, .tunnel-node.selected:hover, .tunnel-node.selected:disabled, .tunnel-node.selected:disabled:hover {
     -fx-background-color: -destructive-soft;
     -fx-border-color: -primary;
@@ -769,8 +835,14 @@
     -fx-border-radius: 6;
     -fx-text-fill: -foreground;
 }
+.tunnel-node.selected .tunnel-row { -fx-text-fill: -foreground; }
 .tunnel-node.limited { -fx-background-color: -fill-subtle; }
+.tunnel-node .tunnel-ping.decision { -fx-font-weight: bold; }
 .tunnel-node .tunnel-ping.sum { -fx-text-fill: -foreground; }
+.tunnel-node .tunnel-ping.sum.good { -fx-text-fill: -status-online; }
+.tunnel-node .tunnel-ping.sum.mid { -fx-text-fill: -settings-warning; }
+.tunnel-node .tunnel-ping.sum.bad,
+.tunnel-node .tunnel-ping.sum.very-bad { -fx-text-fill: -destructive-text; }
 .pool-meta { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
 .tunnel-list {
     -fx-background-color: transparent;

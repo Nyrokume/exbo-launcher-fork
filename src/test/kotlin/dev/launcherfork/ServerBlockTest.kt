@@ -278,7 +278,7 @@ class ServerBlockTest {
         val targets = catalog.targets(TunnelRegion.RU) { it == "FAST" }
         assertTrue(targets.none { it.pool == "FAST" })
         assertFalse(probes.getValue(limited.key()).selectable)
-        val ranked = cache.best(targets, probes, TunnelSearchMode.PING, 1.0, now)
+        val ranked = cache.best(targets, probes, TunnelSearchMode.PING, now)
         assertEquals(TunnelOverrides.TOP_N, ranked.size)
         assertEquals(listOf("n3", "n4", "n5", "n6", "n7"), ranked.map { it.target.endpoint.name })
         assertFalse(ranked.any { it.target.endpoint.name == "n2" })
@@ -286,7 +286,7 @@ class ServerBlockTest {
         cache.record(cachedOnly, TunnelProbeOutcome.Reply(Duration.ofMillis(1), Duration.ofMillis(1), false), now)
         probes[cachedOnly.key()] = NodeProbe()
         assertFalse(probes.getValue(cachedOnly.key()).selectable)
-        assertTrue(cache.best(targets + cachedOnly, probes, TunnelSearchMode.PING, 1.0, now).none { it.target.endpoint.name == "cached" })
+        assertTrue(cache.best(targets + cachedOnly, probes, TunnelSearchMode.PING, now).none { it.target.endpoint.name == "cached" })
     }
 
     @Test
@@ -308,14 +308,34 @@ class ServerBlockTest {
     }
 
     @Test
-    fun gameWeightAndPingUseTheMeasuredRtts() {
+    fun equalPingPrefersTheSteadierNode() {
+        val now = Instant.parse("2026-10-24T00:00:00Z")
+        val cache = TunnelCache()
+        val jumpy = TunnelTarget(TunnelRegion.RU, "MSK1", TunnelEndpoint("jumpy", "203.0.113.1:29450"))
+        val steady = TunnelTarget(TunnelRegion.RU, "MSK1", TunnelEndpoint("steady", "203.0.113.2:29450"))
+        cache.record(jumpy, TunnelProbeOutcome.Reply(Duration.ofMillis(10), Duration.ofMillis(10), false), now.minusSeconds(2))
+        cache.record(jumpy, TunnelProbeOutcome.Reply(Duration.ofMillis(30), Duration.ofMillis(10), false), now.minusSeconds(1))
+        cache.record(steady, TunnelProbeOutcome.Reply(Duration.ofMillis(20), Duration.ofMillis(10), false), now.minusSeconds(2))
+        cache.record(steady, TunnelProbeOutcome.Reply(Duration.ofMillis(20), Duration.ofMillis(10), false), now.minusSeconds(1))
+        val ranked = cache.rank(listOf(jumpy, steady), TunnelSearchMode.PING, now)
+        assertEquals(30.0, ranked[0].score, 0.001)
+        assertEquals(30.0, ranked[1].score, 0.001)
+        assertEquals(listOf("steady", "jumpy"), ranked.map { it.target.endpoint.name })
+        assertEquals("good", TunnelOverrides.latencyBand(49.9))
+        assertEquals("mid", TunnelOverrides.latencyBand(50.0))
+        assertEquals("mid", TunnelOverrides.latencyBand(99.9))
+        assertEquals("bad", TunnelOverrides.latencyBand(100.0))
+        assertEquals("very-bad", TunnelOverrides.latencyBand(150.0))
+    }
+
+    @Test
+    fun pingUsesTheMeasuredRtts() {
         val now = Instant.parse("2026-10-24T00:00:00Z")
         val cache = TunnelCache()
         val target = TunnelTarget(TunnelRegion.EU, "GAME-EU", TunnelEndpoint("g", "79.127.241.67:29450"))
         cache.record(target, TunnelProbeOutcome.Reply(Duration.ofMillis(20), Duration.ofMillis(10), false), now)
         val metrics = cache.metrics(TunnelRegion.EU, target.endpoint.address, now)!!
-        assertEquals(40.0, metrics.score(TunnelSearchMode.GAME, 1.5)!!, 0.001)
-        assertEquals(30.0, metrics.score(TunnelSearchMode.PING, 1.5)!!, 0.001)
+        assertEquals(30.0, metrics.score(TunnelSearchMode.PING)!!, 0.001)
     }
 
     @Test
@@ -344,6 +364,11 @@ class ServerBlockTest {
             listOf("-Droxy_address_override.nea=203.0.113.10:29450"),
             TunnelOverrides.loadForLaunch(file).jvmFlags(),
         )
+
+        Files.writeString(file, """{"version":1,"tunnel_search":{"mode":"game_weighted"}}""")
+        val retired = TunnelOverrides.loadSettings(file)
+        assertEquals(TunnelSearchMode.PING, retired.first.mode)
+        assertNull(retired.second)
     }
 
     @Test

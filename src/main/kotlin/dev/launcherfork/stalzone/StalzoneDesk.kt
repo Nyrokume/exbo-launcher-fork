@@ -38,13 +38,30 @@ class StalzoneDesk(
         registry.writeValues(JvmProfile.ACTIVE_KEY, mapOf(JvmProfile.ACTIVE_VALUE to id))
     }
 
-    /** Keeps the active 8 kHz file's heap in step with the RAM chosen in settings. No-op otherwise. */
+    /**
+     * The RAM bar, in whole GB, written into the profile `service.exe` injects on the next start.
+     * The wrapper removes the client's `-Xmx` and uses `heap_size_gb`, so a value that lives only in
+     * the launch command never reaches the game while a profile is active.
+     * An active file is updated in place. With no active file, the wrapper's `default.json` is the fallback.
+     * Nothing is created: a machine without the wrapper is left alone.
+     */
     fun syncHeap(gb: Int) {
-        if (gb <= 0 || activeProfile() != JvmProfile.RECOMMENDED) return
-        val file = configsDir.resolve("${JvmProfile.RECOMMENDED}.json")
-        if (!Files.isRegularFile(file)) return
+        if (gb <= 0) return
+        val active = activeProfile()
+        if (active != null) {
+            val file = configsDir.resolve("$active.json")
+            if (Files.isRegularFile(file)) {
+                writeHeap(active, file, gb)
+                return
+            }
+        }
+        val fallback = configsDir.resolve("default.json")
+        if (Files.isRegularFile(fallback)) writeHeap("default", fallback, gb)
+    }
+
+    private fun writeHeap(id: String, file: Path, gb: Int) {
         val text = Files.readString(file)
-        val next = text.replace(Regex(""""heap_size_gb"\s*:\s*\d+"""), """"heap_size_gb": $gb""")
+        val next = JvmPresets.applyHeapToJson(id, text, gb)
         if (next != text) Files.writeString(file, next)
     }
 
@@ -70,9 +87,9 @@ class StalzoneDesk(
         SessionFile.save(sessionsFile, sessions().filter { it.id != id })
     }
 
-    fun writeSensitivity(base: Double): Map<Double, Double> {
+    /** [values] defaults to the wiki table for [base]. A shown table is passed through as the player left it. */
+    fun writeSensitivity(base: Double, values: Map<Double, Double> = ScopeSens.snapshot(base)): Map<Double, Double> {
         require(base > 0) { "base" }
-        val values = ScopeSens.snapshot(base)
         require(Files.exists(optionsFile)) { "options.json is missing" }
         val patched = OptionsSens.patch(Files.readString(optionsFile), base, values)
         val tmp = optionsFile.resolveSibling("options.json.tmp")

@@ -46,7 +46,9 @@ cp "$ICO_SRC" "$WORK/$APP.ico"
 
 readme() { # $1 = platform notes
     cat <<TXT
-$APP $VERSION - visual-only fork of the EXBO launcher UI (mock data, no network).
+$APP $VERSION
+
+Own program, separate from ExboLauncher. It signs in, updates and starts the game client already stored under %APPDATA%\EXBO. It does not replace ExboLauncher.exe.
 INTERNAL USE ONLY: contains EXBO-owned images and the commercial "Europe" font. Do not redistribute.
 
 $1
@@ -61,8 +63,8 @@ jlink --module-path "$WIN_JDK/jmods:$WIN_JFX" "${JLINK_OPTS[@]}" --output "$WIN/
 test -f "$WIN/runtime/bin/javaw.exe"
 mkdir -p "$WIN/app" && cp "$LIB"/*.jar "$WIN/app/"
 cp "$WORK/$APP.ico" "$WIN/"
-makensis -V2 -DOUTFILE="$WIN/$APP.exe" -DICON="$WORK/$APP.ico" -DVERSION="$VERSION" -DVERSION_QUAD="$VERSION_QUAD" packaging/launcher.nsi
-printf '@echo off\r\nrem Fallback launcher (same as LauncherFork.exe), no console window stays open.\r\nstart "" "%%~dp0runtime\\bin\\javaw.exe" -Dprism.lcdtext=false %%* -cp "%%~dp0app\\*" %s\r\n' "$MAIN" > "$WIN/$APP.cmd"
+makensis -V2 -DOUTFILE="$WIN/$APP.exe" -DICON="$WORK/$APP.ico" -DVERSION="$VERSION" -DVERSION_QUAD="$VERSION_QUAD" -DADD_MODULES="$MODULES" packaging/launcher.nsi
+printf '@echo off\r\nrem Fallback launcher (same as LauncherFork.exe), no console window stays open.\r\nstart "" "%%~dp0runtime\\bin\\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --add-modules %s %%* -cp "%%~dp0app\\*" %s\r\n' "$MODULES" "$MAIN" > "$WIN/$APP.cmd"
 readme "Run LauncherFork.exe (or LauncherFork.cmd). The bundled Java runtime is in runtime\\." | sed 's/$/\r/' > "$WIN/README.txt"
 
 echo "== uninstall list (exactly the files/dirs the installer ships)"

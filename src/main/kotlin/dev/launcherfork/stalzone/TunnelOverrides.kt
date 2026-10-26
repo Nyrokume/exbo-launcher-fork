@@ -38,7 +38,6 @@ enum class TunnelSearchMode(val id: String) {
     CLIENT_RTT("client_rtt"),
     SERVER_RTT("server_rtt"),
     STABILITY("stability"),
-    GAME("game_weighted"),
     ;
 
     companion object {
@@ -197,7 +196,7 @@ data class TunnelMetrics(
     val p90: Double,
     val jitter: Double,
 ) {
-    fun score(mode: TunnelSearchMode, clientWeight: Double): Double? {
+    fun score(mode: TunnelSearchMode): Double? {
         if (successes == 0) return null
         val values = listOf(lossRate, clientRtt, serverRtt, ping, p90, jitter)
         if (values.any { it < 0.0 || it.isNaN() || it.isInfinite() }) return null
@@ -205,10 +204,6 @@ data class TunnelMetrics(
             TunnelSearchMode.CLIENT_RTT -> clientRtt
             TunnelSearchMode.SERVER_RTT -> serverRtt
             TunnelSearchMode.STABILITY -> p90 + 2.0 * jitter + 500.0 * lossRate
-            TunnelSearchMode.GAME -> {
-                if (clientWeight < 0.0 || clientWeight.isNaN() || clientWeight.isInfinite()) return null
-                clientRtt * clientWeight + serverRtt
-            }
             TunnelSearchMode.PING -> ping
         }
         if (score < 0.0 || score.isNaN() || score.isInfinite()) return null
@@ -271,14 +266,25 @@ class TunnelCache {
         return calculateMetrics(history.samples, now, TunnelOverrides.RECENT_TTL)
     }
 
-    fun rank(targets: List<TunnelTarget>, mode: TunnelSearchMode, clientWeight: Double, now: Instant): List<RankedTarget> {
+    /**
+     * Lowest score wins. A tie prefers the steadier recent hour, then the shorter hop to the
+     * tunnel, then the name. The score is the mode: ping is the sum, client and server are one hop,
+     * stability is the worst recent ping plus jitter and loss.
+     */
+    fun rank(targets: List<TunnelTarget>, mode: TunnelSearchMode, now: Instant): List<RankedTarget> {
         val ranked = ArrayList<RankedTarget>()
         for (target in targets) {
             val metrics = metrics(target.region, target.endpoint.address, now) ?: continue
-            val score = metrics.score(mode, clientWeight) ?: continue
+            val score = metrics.score(mode) ?: continue
             ranked += RankedTarget(target, metrics, score)
         }
-        ranked.sortWith(compareBy<RankedTarget> { it.score }.thenBy { it.target.endpoint.name })
+        ranked.sortWith(
+            compareBy<RankedTarget> { it.score }
+                .thenBy { it.metrics.jitter }
+                .thenBy { it.metrics.lossRate }
+                .thenBy { it.metrics.clientRtt }
+                .thenBy { it.target.endpoint.name },
+        )
         return ranked
     }
 
@@ -290,12 +296,11 @@ class TunnelCache {
         targets: List<TunnelTarget>,
         probes: Map<String, NodeProbe>,
         mode: TunnelSearchMode,
-        clientWeight: Double,
         now: Instant,
         limit: Int = TunnelOverrides.TOP_N,
     ): List<RankedTarget> {
         val available = targets.filter { probes[it.key()]?.selectable == true }
-        return rank(available, mode, clientWeight, now).take(limit)
+        return rank(available, mode, now).take(limit)
     }
 
     /** Limited nodes stay visible in the result list and are not selectable. */
@@ -431,6 +436,14 @@ object TunnelOverrides {
         else -> String.format(Locale.US, "%.0f", value)
     }
 
+    /** Green under 50 ms, amber under 100, red under 150, worse after that. */
+    fun latencyBand(ms: Double): String = when {
+        ms < 50.0 -> "good"
+        ms < 100.0 -> "mid"
+        ms < 150.0 -> "bad"
+        else -> "very-bad"
+    }
+
     fun loadSettings(path: Path): Pair<TunnelSettings, String?> = load(path, overridesOnly = false)
 
     fun loadForLaunch(path: Path): TunnelSettings = load(path, overridesOnly = true).first
@@ -531,8 +544,9 @@ internal object TunnelJson {
         if (legacy != null && legacy.region !in overrides) overrides[legacy.region] = legacy
         val search = root["tunnel_search"] as? Map<*, *>
         val rawMode = search?.get("mode") as? String ?: ""
+        val retiredGameWeight = rawMode == "game_weighted"
         val mode = TunnelSearchMode.fromId(rawMode) ?: TunnelSearchMode.PING
-        if (rawMode.isNotEmpty() && TunnelSearchMode.fromId(rawMode) == null && !lenientSearch) error("mode")
+        if (rawMode.isNotEmpty() && TunnelSearchMode.fromId(rawMode) == null && !retiredGameWeight && !lenientSearch) error("mode")
         val excluded = linkedMapOf<TunnelRegion, List<String>>()
         val rawExcluded = search?.get("excluded_pools") as? Map<*, *>
         rawExcluded?.forEach { (key, value) ->

@@ -22,7 +22,7 @@
     ОБНОВЛЕНИЕ          speed limits (download / upload fields). ЯЗЫК: Русский / English.
     ТУННЕЛЬ             own page, the whole settings viewport. Region switch on the first row (same segmented
                         control as the other settings). The next row is Измерить, Найти лучший сервер,
-                        then the rank mode. Nothing sits to the right of the mode control. The mode
+                        Обновить, then the rank mode. Nothing sits to the right of the mode control. The mode
                         control is an in-theme list, not a native combo. Each pool is one card: name and
                         count on the left, Исключить on the right of that title, then full-width rows
                         (name, client RTT, server RTT, sum). The server list scrolls; the toolbar does not.
@@ -30,7 +30,8 @@
     АККАУНТЫ            one card per session (name and login on the left, key icon / Применить / Удалить on the right).
                         Cards and the name/save row stay inside the page; extra cards scroll above that row.
     ЧУВСТВИТЕЛЬНОСТЬ    own page, the whole settings viewport. One compact row (base, Посчитать, Записать),
-                        then the scope table across the remaining width and height. The status line sits in that card.
+                        then one game-style line per scope: name, value, slider, step buttons. The list scrolls.
+                        The status line sits in that card.
 -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -176,6 +177,7 @@
                     <HBox styleClass="tunnel-actions" alignment="CENTER_LEFT">
                         <Button fx:id="tunnelMeasure" styleClass="settings-mini" text="%settings.tunnel.measure" mnemonicParsing="false" minWidth="-Infinity"/>
                         <Button fx:id="tunnelFindBest" styleClass="settings-mini,primary" text="%settings.tunnel.find" mnemonicParsing="false" minWidth="-Infinity"/>
+                        <Button fx:id="tunnelRefresh" styleClass="settings-mini" text="%settings.tunnel.refresh" mnemonicParsing="false" minWidth="-Infinity"/>
                         <VBox fx:id="tunnelMode" styleClass="tunnel-mode" alignment="TOP_LEFT" minWidth="-Infinity" maxHeight="-Infinity"/>
                     </HBox>
                     <ScrollPane fx:id="tunnelScroll" styleClass="tunnel-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
@@ -209,8 +211,10 @@
                             <Region HBox.hgrow="ALWAYS" minWidth="8"/>
                             <Button fx:id="writeSens" styleClass="settings-mini,primary" text="%settings.sens.write" mnemonicParsing="false" minWidth="-Infinity"/>
                         </HBox>
-                        <GridPane fx:id="sensChips" styleClass="sens-table" hgap="12" vgap="12" minWidth="0" minHeight="0"
-                                  maxWidth="Infinity" maxHeight="Infinity" VBox.vgrow="ALWAYS"/>
+                        <ScrollPane fx:id="sensScroll" styleClass="sens-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                    minHeight="0" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                            <VBox fx:id="sensList" styleClass="sens-list" maxWidth="Infinity"/>
+                        </ScrollPane>
                         <Label fx:id="sensNote" styleClass="settings-note,sens-note" wrapText="true" visible="false" managed="false"/>
                     </VBox>
                 </VBox>

@@ -23,7 +23,9 @@ import dev.launcherfork.stalzone.PingResult
 import dev.launcherfork.stalzone.ServerBlock
 import dev.launcherfork.stalzone.StalzoneDesk
 import dev.launcherfork.stalzone.TunnelCatalog
+import dev.launcherfork.stalzone.TunnelCatalogs
 import dev.launcherfork.stalzone.TunnelFirewall
+import dev.launcherfork.stalzone.TunnelRegion
 import dev.launcherfork.ui.screens.settings.TunnelServices
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Fxml
@@ -608,12 +610,17 @@ class SettingsScreenTest {
             "settings.page.launcher", "settings.page.client", "settings.heading.jvm", "settings.heading.tunnel",
             "settings.heading.accounts", "settings.heading.sens", "settings.jvm.active", "settings.accounts.save",
             "settings.accounts.keys", "settings.accounts.login", "settings.accounts.current", "settings.accounts.empty", "settings.accounts.no_keys",
-            "settings.sens.write",
+            "settings.sens.write", "settings.sens.row", "settings.sens.down", "settings.sens.up",
             "settings.client.jvm", "settings.client.tunnel", "settings.client.accounts", "settings.client.sens",
             "settings.jvm.saved", "settings.jvm.heap", "settings.preset.v112", "settings.preset.aikar", "settings.tunnel.now",
-            "settings.tunnel.measure", "settings.tunnel.find",
+            "settings.tunnel.measure", "settings.tunnel.find", "settings.tunnel.refresh",
             "settings.tunnel.exclude", "settings.tunnel.no_reply", "settings.tunnel.limit",
-            "settings.tunnel.best", "settings.tunnel.pool_meta")
+            "settings.tunnel.best", "settings.tunnel.pool_meta", "settings.tunnel.no_working",
+            "settings.tunnel.col.client", "settings.tunnel.col.server", "settings.tunnel.col.sum",
+            "settings.tunnel.metrics", "settings.tunnel.metrics.ping", "settings.tunnel.metrics.client",
+            "settings.tunnel.metrics.server", "settings.tunnel.metrics.stability", "settings.tunnel.winner",
+            "settings.tunnel.scale.good", "settings.tunnel.scale.mid", "settings.tunnel.scale.bad",
+            "settings.tunnel.pick", "settings.tunnel.quality")
         listOf("messages.properties", "messages_ru.properties", "messages_en.properties").forEach { file ->
             val props = Properties()
             javaClass.getResourceAsStream("/dev/launcherfork/ui/i18n/$file")!!.reader(Charsets.UTF_8).use(props::load)
@@ -630,6 +637,7 @@ class SettingsScreenTest {
             assertNull(props.getProperty("settings.tunnel.game_now"), "$file: game choice status")
             assertNull(props.getProperty("settings.tunnel.game.hint"), "$file: game choice hint")
             assertNull(props.getProperty("settings.tunnel.legend"), "$file: RTT legend")
+            assertNull(props.getProperty("settings.tunnel.mode.game"), "$file: game weight mode")
             val measure = props.getProperty("settings.tunnel.measure")
             assertFalse(measure.contains("снова") || measure.contains("again"), "$file: measure is still a repeat caption")
         }
@@ -702,7 +710,7 @@ class SettingsScreenTest {
                     assertFalse("primary" in s.tunnelMeasure.styleClass, "$where: Measure is a primary action")
                     assertTrue("primary" in s.tunnelFindBest.styleClass, "$where: Find best lost the accent")
                     assertEquals("Измерить", s.tunnelMeasure.text)
-                    listOf(s.tunnelMeasure, s.tunnelFindBest).forEach { button ->
+                    listOf(s.tunnelMeasure, s.tunnelFindBest, s.tunnelRefresh).forEach { button ->
                         assertEquals(34.0, button.height, 0.5, "$where: '${button.text}' is not the settings action height")
                         assertEquals(s.tunnelMeasure.padding, button.padding, "$where: '${button.text}' padding")
                         assertEquals(s.tunnelMeasure.font.size, button.font.size, 0.01, "$where: '${button.text}' font")
@@ -719,10 +727,12 @@ class SettingsScreenTest {
                     assertEquals(s.tunnelPage.width, toolbar.width, 1.0, "$where: toolbar does not span the page")
                     val actions = s.tunnelMeasure.parent as Parent
                     assertEquals(
-                        listOf(s.tunnelMeasure, s.tunnelFindBest, s.tunnelMode),
+                        listOf(s.tunnelMeasure, s.tunnelFindBest, s.tunnelRefresh, s.tunnelMode),
                         actions.childrenUnmodifiable,
-                        "$where: the action row is not Measure, Find best, mode",
+                        "$where: the action row is not Measure, Find best, Refresh, mode",
                     )
+                    assertEquals("Обновить", s.tunnelRefresh.text)
+                    assertFalse("primary" in s.tunnelRefresh.styleClass, "$where: Refresh is a primary action")
                     val nodes = s.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>()
                     assertTrue(nodes.size >= 2, "$where: server rows missing")
                     nodes.forEach { node ->
@@ -751,7 +761,26 @@ class SettingsScreenTest {
                             excludeBox.minY >= poolBox.minY - 1.0 && excludeBox.maxY <= poolBox.maxY + 1.0,
                         "$where: exclude sits outside the MSK1 section",
                     )
+                    val legend = s.tunnelPools.lookupAll(".tunnel-legend").filterIsInstance<Labeled>()
+                    assertEquals(listOf("До вас", "До игры", "Пинг"), legend.map { it.text }, "$where: value legend")
+                    val metrics = s.tunnelPools.lookup(".tunnel-metrics") as Labeled
+                    assertTrue(metrics.isWrapText && metrics.text.contains("До вас") && metrics.text.contains("Пинг"), "$where: metrics legend")
+                    assertTrue(contains(window, metrics.sceneBounds()), "$where: metrics legend outside")
+                    assertEquals(
+                        listOf("до 50 мс", "до 100", "выше 100"),
+                        s.tunnelPools.lookupAll(".tunnel-scale").filterIsInstance<Labeled>().map { it.text },
+                        "$where: color scale",
+                    )
+                    assertTrue("decision" in legend.last().styleClass, "$where: ping is not the column find-best uses")
                     val node = nodes.first { (it.lookup(".tunnel-row") as Labeled).text == "MSK1-1" }
+                    val pings = node.lookupAll(".tunnel-ping").filterIsInstance<Labeled>()
+                    legend.zip(pings).forEach { (caption, ping) ->
+                        val capBox = caption.localToScene(caption.boundsInLocal)
+                        val pingBox = ping.localToScene(ping.boundsInLocal)
+                        assertEquals(pingBox.centerX, capBox.centerX, 1.0, "$where: '${caption.text}' is not over its column")
+                        assertTrue(capBox.maxY <= pingBox.minY + 1.0, "$where: '${caption.text}' is not above the values")
+                        assertTrue(contains(window, capBox), "$where: '${caption.text}' outside")
+                    }
                     val list = node.parent as javafx.scene.layout.Region
                     val inner = list.width - list.snappedLeftInset() - list.snappedRightInset()
                     assertEquals(inner, node.width, 1.0, "$where: server row does not fill the pool")
@@ -768,7 +797,7 @@ class SettingsScreenTest {
                     val menu = s.tunnelPage.lookup(".tunnel-mode-list") as javafx.scene.layout.Region
                     assertTrue(menu.isVisible, "$where: mode list did not open")
                     val items = menu.lookupAll(".tunnel-mode-item").filterIsInstance<Button>()
-                    assertEquals(listOf("Пинг", "RTT клиента", "RTT сервера", "Стабильность", "Вес игры"), items.map { it.text })
+                    assertEquals(listOf("Пинг", "RTT клиента", "RTT сервера", "Стабильность"), items.map { it.text })
                     val regionBottom = s.regionRu.localToScene(s.regionRu.boundsInLocal).maxY
                     val cardFill = (msk1 as javafx.scene.layout.Region).background.fills.last().fill
                     assertEquals(cardFill, menu.background.fills.last().fill, "$where: mode list is not the card surface")
@@ -779,7 +808,7 @@ class SettingsScreenTest {
                     }
                     items.first { it.text == "Пинг" }.fire()
                     assertFalse(menu.isVisible, "$where: mode list stayed open")
-                    listOf(s.regionRu, s.regionEu, s.regionNa, s.regionSea, s.regionNea, s.tunnelMeasure, s.tunnelFindBest, modeButton).forEach { b ->
+                    listOf(s.regionRu, s.regionEu, s.regionNa, s.regionSea, s.regionNea, s.tunnelMeasure, s.tunnelFindBest, s.tunnelRefresh, modeButton).forEach { b ->
                         assertTrue(b.width >= b.prefWidth(-1.0) - 0.5, "$where: '${b.text}' truncated")
                         assertTrue(contains(window, b.sceneBounds()), "$where: '${b.text}' outside")
                     }
@@ -877,6 +906,11 @@ class SettingsScreenTest {
                 assertFalse(picked.contains("85.119.149.8:29450"), "find best wrote the limited node")
                 val winner = nodeNamed("MSK1-3")
                 assertTrue("selected" in winner.styleClass, "find best did not mark the winner")
+                assertTrue("best" in winner.styleClass, "find best did not mark the recommendation")
+                val winnerRow = winner.graphic as javafx.scene.Parent
+                val winnerLabels = winnerRow.childrenUnmodifiable.filterIsInstance<Labeled>()
+                assertEquals("лучший", winnerLabels.first { "tunnel-pick" in it.styleClass }.text)
+                assertTrue("good" in winnerLabels.last { "tunnel-ping" in it.styleClass }.styleClass)
                 val winnerPool = generateSequence(winner as javafx.scene.Node) { it.parent }.first { "pool" in it.styleClass }
                 assertEquals("MSK1", winnerPool.lookupAll(".pool-title").filterIsInstance<Labeled>().first().text)
                 assertTrue(
@@ -908,7 +942,14 @@ class SettingsScreenTest {
                 s.showClientSection("sens")
                 s.baseSens.text = "5"
                 s.calcSens.fire()
-                assertTrue(s.sensChips.children.isNotEmpty(), "sensitivity table empty")
+                assertEquals(dev.launcherfork.stalzone.ScopeSens.MAGNIFICATIONS.size, s.sensList.children.size, "sensitivity rows")
+                val sensRow = s.sensList.children[0] as javafx.scene.Parent
+                assertEquals("Чувствительность в прицелах кратностью 1x", (sensRow.lookup(".sens-name") as Labeled).text)
+                assertEquals("5.00", (sensRow.lookup(".sens-value") as Labeled).text)
+                assertNotNull(sensRow.lookup(".sens-slider"))
+                assertEquals(2, sensRow.lookupAll(".sens-step").size)
+                val zoomRow = s.sensList.children[1] as javafx.scene.Parent
+                assertEquals("Чувствительность в прицелах кратностью 1.25x", (zoomRow.lookup(".sens-name") as Labeled).text)
                 assertTrue(s.clientStatus.text.isNotBlank())
             }
         } finally {
@@ -958,6 +999,56 @@ class SettingsScreenTest {
             assertTrue(text.contains("79.127.241.68:29450"), "find best did not write the EU winner")
             assertFalse(text.contains("79.127.241.67"), "find best left the previous EU node")
             assertFalse(text.contains("New-NetFirewallRule") || text.contains("RunAs"))
+        }
+    }
+
+    @Test
+    fun refreshDropsSilentServersAndKeepsOnlyNewOnesThatReply() {
+        val (c, _) = settingsWith(LauncherSettings())
+        FxTestSupport.onFx {
+            c.showClientSection("tunnel")
+            c.settingsRoot.applyCss()
+            c.settingsRoot.layout()
+            fun names(): List<String> = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().mapNotNull { button ->
+                val row = button.graphic as? javafx.scene.Parent ?: return@mapNotNull null
+                row.childrenUnmodifiable.filterIsInstance<Labeled>().firstOrNull { "tunnel-row" in it.styleClass }?.text
+            }
+            assertTrue("MSK1-1" in names())
+            assertTrue("MSK1-5" in names())
+            TunnelServices.probe = { endpoint ->
+                when (endpoint.name) {
+                    "MSK1-1", "NEW-1" -> TunnelProbeOutcome.Reply(java.time.Duration.ofMillis(10), java.time.Duration.ofMillis(5), false)
+                    else -> TunnelProbeOutcome.NoReply
+                }
+            }
+            c.tunnelMeasure.fire()
+            val measured = names()
+            assertTrue("MSK1-1" in measured, "measured=$measured")
+            assertFalse("MSK1-5" in measured)
+            assertFalse(measured.any { it.startsWith("SPB3") })
+            TunnelServices.fetch = { region ->
+                if (region != TunnelRegion.RU) TunnelFixtures.catalog(region)
+                else TunnelCatalogs.parse(
+                    """
+                    {"mode":"roxy","clientToTunnelRttWeight":1,"pools":[
+                      {"name":"MSK1","tunnels":[
+                        {"name":"MSK1-1","address":"85.119.149.7:29450"},
+                        {"name":"MSK1-2","address":"85.119.149.8:29450"}
+                      ]},
+                      {"name":"NEW","tunnels":[
+                        {"name":"NEW-1","address":"203.0.113.50:29450"},
+                        {"name":"NEW-2","address":"203.0.113.51:29450"}
+                      ]}
+                    ]}
+                    """.trimIndent(),
+                )
+            }
+            c.tunnelRefresh.fire()
+            assertEquals(setOf("MSK1-1", "NEW-1"), names().toSet())
+            assertEquals(
+                setOf("MSK1", "NEW"),
+                c.tunnelPools.lookupAll(".pool-title").filterIsInstance<Labeled>().map { it.text }.toSet(),
+            )
         }
     }
 

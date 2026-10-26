@@ -10,7 +10,7 @@
 ;  - an existing folder with runtime\ or app\ but without the marker is refused;
 ;  - the uninstaller deletes exactly the files/dirs the installer shipped (UNINSTALL_LIST) and removes
 ;    directories, including $INSTDIR, only if they are empty.
-Target amd64-unicode  ; x64-only app; 64-bit stub (also lets it run without WoW64)
+Target x86-unicode  ; 32-bit stub, runs on 64-bit Windows. The bundled runtime is 64-bit.
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 

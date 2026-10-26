@@ -4,6 +4,7 @@ import dev.launcherfork.data.local.SettingsFile
 import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.P2pMode
+import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.domain.SettingsStore
 import dev.launcherfork.domain.ServerBlockState
 import dev.launcherfork.stalzone.ServerBlockCodec
@@ -16,7 +17,7 @@ import java.util.Properties
 /**
  * Settings of the new front, kept in `~/.launcher-fork/settings.properties`.
  * On the first run the official `runtime/settings.json` is read and never written.
- * The RAM choice is also copied into the active 8 kHz profile.
+ * A stored RAM choice is also written into the active JVM profile, so the wrapper's heap matches the bar.
  */
 class ExboSettingsStore(
     initial: LauncherSettings = LauncherSettings(),
@@ -32,6 +33,7 @@ class ExboSettingsStore(
         val imported = if (!hasOwnKeys(props)) readOfficial(exboJson, totalRamMb, initial.language) else null
         current = fromProperties(props, imported ?: initial)
         if (imported != null) persist(current)
+        publishHeap(current)
     }
 
     override fun load(): LauncherSettings = current
@@ -39,13 +41,16 @@ class ExboSettingsStore(
     override fun save(settings: LauncherSettings) {
         current = settings
         persist(settings)
-        val gb = settings.ramMb?.div(1024)
-        if (gb != null) {
-            try {
-                desk.syncHeap(gb)
-            } catch (_: Exception) {
-                // the bar still keeps the value
-            }
+        publishHeap(settings)
+    }
+
+    /** Whole GB of a stored choice, clamped the same way as the bar. No stored choice leaves the profile alone. */
+    private fun publishHeap(settings: LauncherSettings) {
+        val mb = settings.ramMb ?: return
+        try {
+            desk.syncHeap(RamOptions.fromMb(mb, totalRamMb))
+        } catch (_: Exception) {
+            // the bar still keeps the value
         }
     }
 

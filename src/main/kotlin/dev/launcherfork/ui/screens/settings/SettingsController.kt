@@ -25,6 +25,7 @@ import javafx.scene.control.ContentDisplay
 import javafx.scene.control.Label
 import javafx.scene.control.RadioButton
 import javafx.scene.control.ScrollPane
+import javafx.scene.control.Slider
 import javafx.scene.control.TextField
 import javafx.scene.control.TextFormatter
 import javafx.scene.control.ToggleButton
@@ -32,14 +33,11 @@ import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.AnchorPane
 import javafx.scene.shape.SVGPath
-import javafx.scene.layout.ColumnConstraints
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
-import javafx.scene.layout.RowConstraints
 import javafx.scene.layout.VBox
-import java.text.DecimalFormatSymbols
 import java.util.Locale
 
 /**
@@ -47,7 +45,7 @@ import java.util.Locale
  * Память, Поведение, Обновление and Язык are one scrollable column.
  * The header switch opens JVM, the tunnel, sensitivity and account swap. The tunnel page fills the
  * settings viewport and scrolls the server list inside itself. Sensitivity fills that same viewport:
- * a compact base row, then the scope table across the remaining width and height. The profile menu opens accounts.
+ * a compact base row, then one game-style line per scope (name, value, slider, steps). The profile menu opens accounts.
  * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
@@ -117,6 +115,7 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var tunnelPools: VBox
     @FXML lateinit var tunnelMeasure: Button
     @FXML lateinit var tunnelFindBest: Button
+    @FXML lateinit var tunnelRefresh: Button
     @FXML lateinit var tunnelMode: VBox
     @FXML lateinit var sessionScroll: ScrollPane
     @FXML lateinit var sessionCards: VBox
@@ -126,7 +125,8 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var baseSens: TextField
     @FXML lateinit var calcSens: Button
     @FXML lateinit var writeSens: Button
-    @FXML lateinit var sensChips: GridPane
+    @FXML lateinit var sensScroll: ScrollPane
+    @FXML lateinit var sensList: VBox
     @FXML lateinit var sensNote: Label
     @FXML lateinit var clientStatus: Label
     @FXML lateinit var languageGroup: ToggleGroup
@@ -194,6 +194,7 @@ class SettingsController(private val ctx: UiContext) {
             ctx.navigator.switchLanguage(lang)
         }
         clipToBounds(sessionScroll)
+        clipToBounds(sensScroll)
         sessionCards.minHeight = Region.USE_PREF_SIZE
         scroll.viewportBoundsProperty().addListener { _, _, _ -> applyPageFill() }
         showSection("ram")
@@ -241,7 +242,10 @@ class SettingsController(private val ctx: UiContext) {
         show(ramBar.value)
         // the labels always follow the bar (user moves and programmatic changes alike)
         ramBar.valueProperty.addListener { _, _, gb -> show(gb.toInt()) }
-        ramBar.onChange = { gb -> update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) } }
+        ramBar.onChange = { gb ->
+            update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) }
+            refreshPresetHeapLabels()
+        }
     }
 
     /** Gear home is the settings column. `true` opens JVM. */
@@ -300,7 +304,7 @@ class SettingsController(private val ctx: UiContext) {
 
     /**
      * Tunnel and sensitivity occupy the settings viewport. The pool list scrolls in [tunnelScroll];
-     * the scope table grows inside the sensitivity card. Account cards use the space above the name row.
+     * the scope lines scroll in [sensScroll]. Account cards use the space above the name row.
      * When they fit, the row sits directly under them. When they do not, the list scrolls and the row stays on screen.
      * Cards are measured after CSS: a card just built by a save has no skin yet, so its pref height is 0
      * and the list would keep the old height, clipping the new card into the name row.
@@ -466,6 +470,7 @@ class SettingsController(private val ctx: UiContext) {
             tunnelPools,
             tunnelMeasure,
             tunnelFindBest,
+            tunnelRefresh,
             tunnelMode,
         )
         tunnels.bind()
@@ -483,21 +488,29 @@ class SettingsController(private val ctx: UiContext) {
         writeSens.tooltip = Tooltip(ctx.t("stalzone.sens.write"))
         calcSens.setOnAction { showSens(parseBase()) }
         writeSens.setOnAction {
-            val base = parseBase() ?: return@setOnAction
+            val shown = sensValues()
+            val base = shown?.get(1.0) ?: parseBase() ?: return@setOnAction
             runClient {
-                val values = ctx.desk.writeSensitivity(base)
+                val values = if (shown != null) ctx.desk.writeSensitivity(base, shown) else ctx.desk.writeSensitivity(base)
                 fillSens(base, values)
                 ctx.t("stalzone.sens.written")
             }
         }
     }
 
-    private fun buildPresets() {
+    /** Stored bar value, in whole GB. Null until the user (or an official import) has chosen one. */
+    private fun chosenHeapGb(): Int? = store.load().ramMb?.let { RamOptions.fromMb(it, totalRamMb) }
+
+    private fun presetBuilt(id: String): JvmPresets.Built? {
         val totalGb = RamOptions.totalGb(totalRamMb)
         val threads = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
+        return JvmPresets.build(id, totalGb, totalGb, threads, threads, chosenHeapGb())
+    }
+
+    private fun buildPresets() {
         jvmGrid.children.clear()
         JvmPresets.all.forEachIndexed { index, preset ->
-            val built = JvmPresets.build(preset.id, totalGb, totalGb, threads, threads)
+            val built = presetBuilt(preset.id)
             val heap = if (built == null) ctx.t("settings.jvm.unavailable") else ctx.t("settings.jvm.heap", built.heapGb)
             val title = Label("${preset.version} · $heap").apply {
                 styleClass.add("jvm-preset-title")
@@ -517,8 +530,8 @@ class SettingsController(private val ctx: UiContext) {
                 maxHeight = 58.0
                 accessibleText = "${preset.version}. ${ctx.t(preset.hintKey)}"
                 setOnAction {
-                    if (built == null) return@setOnAction
-                    runCatching { ctx.desk.activatePreset(preset.id, built.json) }
+                    val fresh = presetBuilt(preset.id) ?: return@setOnAction
+                    runCatching { ctx.desk.activatePreset(preset.id, fresh.json) }
                         .onSuccess {
                             refreshJvmStatus()
                             note(ctx.t("settings.jvm.saved", preset.version))
@@ -529,6 +542,18 @@ class SettingsController(private val ctx: UiContext) {
             GridPane.setHgrow(card, Priority.ALWAYS)
             GridPane.setFillWidth(card, true)
             jvmGrid.add(card, index % 2, index / 2)
+        }
+    }
+
+    /** The bar moved: every enabled preset card names the heap the click will write. */
+    private fun refreshPresetHeapLabels() {
+        if (!::jvmGrid.isInitialized) return
+        jvmGrid.children.filterIsInstance<Button>().forEach { card ->
+            if (card.isDisable) return@forEach
+            val id = card.userData as? String ?: return@forEach
+            val built = presetBuilt(id) ?: return@forEach
+            val version = JvmPresets.all.firstOrNull { it.id == id }?.version ?: return@forEach
+            (card.graphic as? Label)?.text = "$version · ${ctx.t("settings.jvm.heap", built.heapGb)}"
         }
     }
 
@@ -728,103 +753,129 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     private fun fillSens(base: Double, values: Map<Double, Double>) {
-        val locale = Locale.forLanguageTag(ctx.lang)
-        val parts = values.entries.map { (mag, v) -> sensPart(mag, v, locale) }
-        val columns = sensColumnCount()
-        val intWidth = sensIntWidth(parts)
-        val rows = (parts.size + columns - 1) / columns
-        sensChips.columnConstraints.setAll(List(columns) {
-            ColumnConstraints().apply {
-                percentWidth = 100.0 / columns
-                hgrow = Priority.ALWAYS
-                minWidth = 0.0
-                isFillWidth = true
-            }
-        })
-        sensChips.rowConstraints.setAll(List(rows) {
-            RowConstraints().apply {
-                vgrow = Priority.ALWAYS
-                minHeight = 40.0
-                isFillHeight = true
-            }
-        })
-        sensChips.children.clear()
-        parts.forEachIndexed { index, part ->
-            val cell = sensCell(part, intWidth)
-            GridPane.setHgrow(cell, Priority.ALWAYS)
-            GridPane.setVgrow(cell, Priority.ALWAYS)
-            GridPane.setFillWidth(cell, true)
-            GridPane.setFillHeight(cell, true)
-            sensChips.add(cell, index % columns, index / columns)
+        val peak = values.values.maxOrNull() ?: 0.0
+        val max = maxOf(SLIDER_MAX, peak)
+        sensLock = true
+        try {
+            sensList.children.setAll(ScopeSens.MAGNIFICATIONS.map { mag ->
+                sensLine(mag, values[mag] ?: base, max)
+            })
+        } finally {
+            sensLock = false
         }
-        sensChips.accessibleText = ctx.t("stalzone.sens.base_line", String.format(locale, "%.2f", base))
+        baseSens.text = formatSens(base)
+        sensList.accessibleText = ctx.t("stalzone.sens.base_line", formatSens(base))
     }
 
-    /** Equal columns that stay inside the card: four at the 900-wide window, fewer only if the card is narrower. */
-    private fun sensColumnCount(): Int {
-        val width = when {
-            sensChips.width > 1 -> sensChips.width
-            sensPage.width > 1 -> (sensPage.width - 28).coerceAtLeast(0.0)
-            else -> 0.0
-        }
-        return when {
-            width <= 1 || width >= 520 -> 4
-            width >= 380 -> 3
-            else -> 2
-        }
-    }
+    /** True while rows are being built or moved together, so a slider does not rewrite the table under itself. */
+    private var sensLock = false
 
-    private fun sensPart(mag: Double, value: Double, locale: Locale): SensPart {
-        val sep = DecimalFormatSymbols.getInstance(locale).decimalSeparator
-        val shown = ScopeSens.magKey(mag).replace('.', sep)
-        val text = String.format(locale, "%.2f", value)
-        val cut = text.lastIndexOf(sep)
-        return if (cut < 0) SensPart("$shown×", text, "")
-        else SensPart("$shown×", text.substring(0, cut), text.substring(cut))
-    }
-
-    /** Width of the widest integer part, in the theme font, so the decimals share one vertical line. */
-    private fun sensIntWidth(parts: List<SensPart>): Double {
-        if (parts.isEmpty()) return 0.0
-        val probes = parts.map { part ->
-            Label(part.intPart).apply {
-                styleClass.add("sens-int")
-                alignment = Pos.CENTER_RIGHT
-            }
+    /** One game row: «Чувствительность в прицелах кратностью 1x», the number, the slider, the two steps. */
+    private fun sensLine(mag: Double, value: Double, max: Double): HBox {
+        val name = Label(ctx.t("settings.sens.row", magCaption(mag))).apply {
+            styleClass.add("sens-name")
+            textOverrun = javafx.scene.control.OverrunStyle.ELLIPSIS
+            minWidth = 0.0
         }
-        sensChips.children.setAll(probes)
-        sensChips.applyCss()
-        val width = probes.maxOf { it.prefWidth(-1.0) }
-        sensChips.children.clear()
-        return width.takeIf { it.isFinite() && it > 0.0 } ?: 0.0
-    }
-
-    private fun sensCell(part: SensPart, intWidth: Double): HBox {
-        val mag = Label(part.mag).apply { styleClass.add("sens-mag") }
-        val intLabel = Label(part.intPart).apply {
-            styleClass.add("sens-int")
+        val valueLabel = Label(formatSens(value)).apply {
+            styleClass.add("sens-value")
             alignment = Pos.CENTER_RIGHT
-            if (intWidth > 0.0) {
-                minWidth = intWidth
-                prefWidth = intWidth
-            }
         }
-        val frac = Label(part.frac).apply { styleClass.add("sens-frac") }
-        val value = HBox(intLabel, frac).apply {
-            alignment = Pos.CENTER_RIGHT
-            spacing = 0.0
-        }
-        val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
-        return HBox(mag, gap, value).apply {
-            styleClass.addAll("sens-cell", "zone-radius-md")
-            alignment = Pos.CENTER_LEFT
+        val slider = Slider(0.0, max, value.coerceIn(0.0, max)).apply {
+            styleClass.add("sens-slider")
+            isShowTickMarks = false
+            isShowTickLabels = false
+            blockIncrement = STEP
             maxWidth = Double.MAX_VALUE
-            maxHeight = Double.MAX_VALUE
-            accessibleText = "${part.mag} ${part.intPart}${part.frac}"
+            minWidth = 72.0
+            HBox.setHgrow(this, Priority.ALWAYS)
+        }
+        lateinit var line: HBox
+        fun applyValue(next: Double, fromSlider: Boolean) {
+            if (sensLock) return
+            val snapped = ScopeSens.round2(next.coerceIn(STEP, slider.max))
+            valueLabel.text = formatSens(snapped)
+            line.accessibleText = "${name.text}. ${valueLabel.text}"
+            if (!fromSlider) {
+                sensLock = true
+                slider.value = snapped
+                sensLock = false
+            }
+            if (mag == 1.0) {
+                baseSens.text = formatSens(snapped)
+                applyBase(snapped)
+            }
+        }
+        slider.valueProperty().addListener { _, _, next -> applyValue(next.toDouble(), fromSlider = true) }
+        val steps = HBox(2.0, sensStep(left = true) { applyValue(slider.value - STEP, fromSlider = false) }, sensStep(left = false) {
+            applyValue(slider.value + STEP, fromSlider = false)
+        }).apply { styleClass.add("sens-steps") }
+        line = HBox(12.0, name, valueLabel, slider, steps).apply {
+            styleClass.add("sens-line")
+            alignment = Pos.CENTER_LEFT
+            userData = mag
+            maxWidth = Double.MAX_VALUE
+            accessibleText = "${name.text}. ${valueLabel.text}"
+        }
+        return line
+    }
+
+    /** 1x moved: the other scopes follow the wiki table. Their own nudges stay until the next 1x change. */
+    private fun applyBase(base: Double) {
+        val table = ScopeSens.snapshot(base)
+        sensLock = true
+        try {
+            sensList.children.filterIsInstance<HBox>().forEach { row ->
+                val mag = row.userData as? Double ?: return@forEach
+                if (mag == 1.0) return@forEach
+                val next = table[mag] ?: return@forEach
+                val label = row.lookup(".sens-value") as? Label ?: return@forEach
+                val slider = row.lookup(".sens-slider") as? Slider ?: return@forEach
+                label.text = formatSens(next)
+                slider.value = next.coerceIn(slider.min, slider.max)
+                row.accessibleText = "${(row.lookup(".sens-name") as? Label)?.text.orEmpty()}. ${label.text}"
+            }
+        } finally {
+            sensLock = false
         }
     }
 
-    private data class SensPart(val mag: String, val intPart: String, val frac: String)
+    private fun sensValues(): Map<Double, Double>? {
+        if (!::sensList.isInitialized || sensList.children.isEmpty()) return null
+        val out = linkedMapOf<Double, Double>()
+        sensList.children.filterIsInstance<HBox>().forEach { row ->
+            val mag = row.userData as? Double ?: return@forEach
+            val text = (row.lookup(".sens-value") as? Label)?.text ?: return@forEach
+            val value = text.trim().replace(',', '.').toDoubleOrNull() ?: return@forEach
+            out[mag] = value
+        }
+        return out.takeIf { it.size == ScopeSens.MAGNIFICATIONS.size }
+    }
+
+    private fun sensStep(left: Boolean, onClick: () -> Unit): Button {
+        val glyph = Region().apply {
+            styleClass.add(if (left) "sens-chevron-left" else "sens-chevron-right")
+            isMouseTransparent = true
+        }
+        return Button().apply {
+            styleClass.add("sens-step")
+            graphic = glyph
+            contentDisplay = ContentDisplay.GRAPHIC_ONLY
+            isMnemonicParsing = false
+            accessibleText = ctx.t(if (left) "settings.sens.down" else "settings.sens.up")
+            tooltip = Tooltip(accessibleText)
+            setOnAction { onClick() }
+        }
+    }
+
+    /** `1`, `1.25`, `2` plus `x`, the same wording as the game rows. */
+    private fun magCaption(mag: Double): String {
+        val key = ScopeSens.magKey(mag)
+        val short = if (key.endsWith(".0")) key.dropLast(2) else key
+        return "${short}x"
+    }
+
+    private fun formatSens(value: Double): String = String.format(Locale.US, "%.2f", ScopeSens.round2(value))
 
     private fun runClient(block: () -> String) {
         try {
@@ -903,5 +954,9 @@ class SettingsController(private val ctx: UiContext) {
             "M10.89,8.15 A4.87,4.87 0 1 1 1.15,8.15 A4.87,4.87 0 1 1 10.89,8.15 " +
             "M8.15,8.15 A2.125,2.125 0 1 1 3.90,8.15 A2.125,2.125 0 1 1 8.15,8.15 " +
             "M10.89,8.15 H15.94 M12.57,8.15 V11.16 M14.26,8.15 V12.57 M15.94,8.15 V10.80"
+
+        /** Game-style track: 5 sits near the middle. A larger table stretches every row together. */
+        const val SLIDER_MAX = 10.0
+        const val STEP = 0.01
     }
 }

@@ -13,7 +13,8 @@ import kotlin.io.path.isDirectory
 /**
  * Starts the installed client with the official `runCommand`: `GET /joinGame` supplies `<sess>`,
  * then [bakeRunCommand] fills the placeholders. The command line and the join response are not logged.
- * The waiter follows the process tree, because `ExensLauncher.exe` exits while the game is still running.
+ * `ExensLauncher.exe` exits while the game is still running, and Image File Execution Options starts the
+ * JVM outside that process tree. The waiter keeps every live executable under the client `java/bin`.
  */
 class InstalledGameLauncher(
     private val login: () -> String?,
@@ -29,6 +30,10 @@ class InstalledGameLauncher(
         val command = runCommand(server.id)?.takeIf { it.isNotBlank() }
         val root = clientDir(server.id)?.takeIf { it.isDirectory() }
         if (name == null || sessionToken == null || command == null || root == null) {
+            System.err.println(
+                "[launcher-fork] launch_skip login=${name != null} token=${sessionToken != null} " +
+                    "command=${command != null} client=${root != null}",
+            )
             listener.onExited()
             return Cancellable {}
         }
@@ -37,22 +42,26 @@ class InstalledGameLauncher(
         val waiter = Thread {
             try {
                 val session = joinGame(name)?.takeIf { it.isNotBlank() }
-                if (session != null) {
+                if (session == null) {
+                    System.err.println("[launcher-fork] launch_skip session=false")
+                } else {
                     val baked = TunnelOverrides.commandWithOverrides(
                         bakeRunCommand(parseRunArgs(command), root, name, session, ramMb()),
                         StalzonePaths.tunnelOverridesFile(),
                     )
                     val proc = ProcessBuilder(baked)
                         .directory(root.toFile())
+                        .redirectInput(ProcessBuilder.Redirect.INHERIT)
                         .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                         .redirectError(ProcessBuilder.Redirect.DISCARD)
                         .start()
                     process.set(proc)
                     listener.onStarted()
-                    waitForTree(proc, seen)
+                    waitForTree(proc, seen, root)
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 // the button returns to Play; the command line is not logged
+                System.err.println("[launcher-fork] launch_failed=${e.javaClass.simpleName}")
             } finally {
                 listener.onExited()
             }
@@ -66,20 +75,28 @@ class InstalledGameLauncher(
         }
     }
 
-    private fun waitForTree(process: Process, seen: MutableSet<Long>) {
+    private fun waitForTree(process: Process, seen: MutableSet<Long>, root: Path) {
+        val bin = root.resolve(clientArchFolder()).resolve("java").resolve("bin")
         synchronized(seen) { seen += process.toHandle().pid() }
+        var emptySince = 0L
         while (!Thread.currentThread().isInterrupted) {
+            adoptClientProcesses(bin, seen)
             val alive = ArrayList<ProcessHandle>()
             val snapshot = synchronized(seen) { seen.toList() }
             for (pid in snapshot) {
                 val handle = ProcessHandle.of(pid).orElse(null) ?: continue
                 if (handle.isAlive) alive += handle
             }
-            if (alive.isEmpty()) return
-            synchronized(seen) {
-                for (handle in alive) {
-                    handle.children().forEach { seen += it.pid() }
-                    handle.descendants().forEach { seen += it.pid() }
+            if (alive.isEmpty()) {
+                if (emptySince == 0L) emptySince = System.nanoTime()
+                if (System.nanoTime() - emptySince >= EMPTY_GRACE_NS) return
+            } else {
+                emptySince = 0L
+                synchronized(seen) {
+                    for (handle in alive) {
+                        handle.children().forEach { seen += it.pid() }
+                        handle.descendants().forEach { seen += it.pid() }
+                    }
                 }
             }
             try {
@@ -89,6 +106,16 @@ class InstalledGameLauncher(
                 return
             }
         }
+    }
+
+    /** JVM the IFEO wrapper spawns is not a child of `ExensLauncher.exe`, but its exe stays in this folder. */
+    private fun adoptClientProcesses(bin: Path, seen: MutableSet<Long>) {
+        val found = ArrayList<Long>()
+        ProcessHandle.allProcesses().forEach { handle ->
+            val command = handle.info().command().orElse(null)
+            if (handle.isAlive && isClientRuntimeProcess(command, bin)) found += handle.pid()
+        }
+        if (found.isNotEmpty()) synchronized(seen) { seen += found }
     }
 
     /** Descendants recorded while the starter was alive, including ones Windows reparented after it exited. */
@@ -103,4 +130,20 @@ class InstalledGameLauncher(
         for (handle in handles.asReversed()) runCatching { handle.destroy() }
         for (handle in handles) if (handle.isAlive) runCatching { handle.destroyForcibly() }
     }
+
+    private companion object {
+        /** How long an empty tree is tolerated so the wrapper can publish the real JVM. */
+        const val EMPTY_GRACE_NS = 3_000_000_000L
+    }
+}
+
+internal fun clientArchFolder(): String =
+    if (System.getProperty("os.arch").contains("64")) "win64" else "win32"
+
+/** True when [command] is an executable inside the client JRE `bin` (Exens, stalzone, java). */
+internal fun isClientRuntimeProcess(command: String?, bin: Path): Boolean {
+    if (command.isNullOrBlank()) return false
+    val exe = command.trim().trim('"').replace('/', '\\').lowercase()
+    val root = bin.toAbsolutePath().toString().trimEnd('\\').replace('/', '\\').lowercase()
+    return exe == root || exe.startsWith("$root\\")
 }

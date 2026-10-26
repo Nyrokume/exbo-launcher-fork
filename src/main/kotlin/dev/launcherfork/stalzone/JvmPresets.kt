@@ -7,6 +7,10 @@ package dev.launcherfork.stalzone
  * Heap rules follow those generators. Installed RAM is passed in as both total and free: the launcher does not
  * sample available memory. Large pages and the big-cache / slow-RAM branches stay off.
  * A preset whose generator would allocate no heap (too little RAM) is omitted (`null`).
+ *
+ * `heapGb` passed to [build] is the settings bar. When it is set, that heap replaces the generator's, and the
+ * fields the generator derives from the heap are retuned (region size; on v1.0.x also metaspace, soft-ref and
+ * code cache). GC and JIT flags stay, so the client's `-Xmx` and the wrapper's injected heap are the same number.
  */
 object JvmPresets {
     data class Preset(val id: String, val version: String, val hintKey: String)
@@ -28,8 +32,11 @@ object JvmPresets {
 
     const val CURRENT = "v1.1.2/default"
 
-    fun build(id: String, totalGb: Int, freeGb: Int, threads: Int, cores: Int): Built? {
-        if (id == "aikar") return Built(6, AIKAR)
+    fun build(id: String, totalGb: Int, freeGb: Int, threads: Int, cores: Int, heapGb: Int? = null): Built? {
+        if (id == "aikar") {
+            val heap = heapGb?.takeIf { it > 0 } ?: 6
+            return Built(heap, applyHeapToJson(id, AIKAR, heap))
+        }
         val cfg = when (id) {
             "v1.1.2/default", "v1.1.1/default" -> v111(totalGb, threads)
             "v1.1.0/default" -> v110(totalGb, threads)
@@ -40,8 +47,57 @@ object JvmPresets {
             else -> null
         } ?: return null
         if (cfg.heap <= 0) return null
+        val chosen = heapGb?.takeIf { it > 0 }
+        if (chosen != null && chosen != cfg.heap) applyHeap(id, cfg, chosen)
         return Built(cfg.heap, cfg.json())
     }
+
+    /**
+     * Writes [heapGb] into a profile `service.exe` already has on disk.
+     * Region size follows the preset; v1.0.x also retunes metaspace, soft-ref and (v1.0.4–v1.0.6) the code cache.
+     * Every other flag stays, including the hand-tuned 8 kHz region. A file without `heap_size_gb` is unchanged.
+     */
+    fun applyHeapToJson(id: String, json: String, heapGb: Int): String {
+        if (heapGb <= 0 || !Regex(""""heap_size_gb"\s*:""").containsMatchIn(json)) return json
+        var text = replaceNum(json, "heap_size_gb", heapGb)
+        regionMb(id, heapGb)?.let { text = replaceNum(text, "g1_heap_region_size_mb", it) }
+        if (id.startsWith("v1.0.")) {
+            text = replaceNum(text, "metaspace_mb", legacyMetaspace(heapGb))
+            text = replaceNum(text, "soft_ref_lru_policy_ms_per_mb", legacySoftRef(heapGb))
+            if (id == "v1.0.6/default" || id == "v1.0.5/default" || id == "v1.0.4/default") {
+                text = replaceNum(text, "reserved_code_cache_size_mb", legacyCodeCache(heapGb))
+            }
+        }
+        return text
+    }
+
+    private fun applyHeap(id: String, cfg: Cfg, heap: Int) {
+        cfg.heap = heap
+        regionMb(id, heap)?.let { cfg.regionMb = it }
+        if (id.startsWith("v1.0.")) {
+            cfg.metaspace = legacyMetaspace(heap)
+            cfg.softRef = legacySoftRef(heap)
+            if (id == "v1.0.6/default" || id == "v1.0.5/default" || id == "v1.0.4/default") {
+                cfg.codeCache = legacyCodeCache(heap)
+            }
+        }
+    }
+
+    /** Region the generator would pick for [heap]. Null for presets whose region is not a function of the heap. */
+    private fun regionMb(id: String, heap: Int): Int? = when (id) {
+        "v1.1.2/default", "v1.1.1/default", "default" -> if (heap <= 3) 4 else 8
+        "v1.1.0/default" -> when {
+            heap <= 3 -> 4
+            heap <= 5 -> 8
+            else -> 16
+        }
+        "v1.0.8/default", "v1.0.7/default" -> legacyRegionV107(heap)
+        "v1.0.6/default", "v1.0.5/default", "v1.0.4/default" -> legacyRegionV104(heap)
+        else -> null
+    }
+
+    private fun replaceNum(json: String, key: String, value: Int): String =
+        json.replace(Regex(""""$key"\s*:\s*\d+"""), """"$key": $value""")
 
     private fun v111(totalGb: Int, threads: Int): Cfg {
         val heap = when {
