@@ -3,7 +3,7 @@ title: Path
 description: Branches from launch to exit, from INTERACTION.md and the current menu.
 ---
 
-Two windows. Pre-main on `main` is 460×700. The main window is 1024×640. The source diagram is `docs/design/interaction.mmd`. The same branches are written out here: this site has no diagram plugin.
+Two windows. Pre-main is 460 px wide and as tall as its panel (launcher update is 460×316, ceiling 700). The main window is 1024×640. The source diagram is `docs/design/interaction.mmd`. The same branches are written out here: this site has no diagram plugin.
 
 ## Happy login
 

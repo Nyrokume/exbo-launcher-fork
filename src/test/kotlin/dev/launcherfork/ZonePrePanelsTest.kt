@@ -141,13 +141,35 @@ class ZonePrePanelsTest {
             val stage = Stage(StageStyle.TRANSPARENT)
             StageNavigator(stage, app, "ru").also { it.exit = {}; it.showLauncherUpdate {}; stage.show() }
         }
-        // update panel, frozen mid-download for the picture
+        // update panel, frozen mid-download for the picture (803.2 KB of 4.5 MB)
         assertTrue(FxTestSupport.waitFx { nav.panelController is LauncherUpdateController })
         FxTestSupport.onFx {
             val c = nav.panelController as LauncherUpdateController
             c.stop()
-            c.progressBar!!.progress = 0.42
-            c.statusLabel.text = "Загрузка обновления 4.2 MB / 10 MB"
+            c.progressBar!!.progress = 803.2 / (4.5 * 1024.0)
+            c.statusLabel.text = "Скачивание обновления: 803.2 KB / 4.5 MB"
+        }
+        Thread.sleep(500) // the compact window refits to the zone-styled content on the next layout pulse
+        FxTestSupport.onFx {
+            val c = nav.panelController as LauncherUpdateController
+            val scene = nav.authStage.scene
+            scene.root.applyCss(); scene.root.layout()
+            val h = nav.authStage.height
+            assertEquals(316.0, h, 0.5, "update window should hug its content")
+            assertTrue(h < Theme.AUTH_WINDOW_HEIGHT, "update window should hug its content: $h")
+            val desc = scene.root.lookup(".zone-description")
+            val descBox = desc.localToScene(desc.layoutBounds)
+            val statusBox = c.statusLabel.localToScene(c.statusLabel.layoutBounds)
+            val bar = requireNotNull(c.progressBar)
+            val barBox = bar.localToScene(bar.layoutBounds)
+            val gap = statusBox.minY - descBox.maxY
+            assertTrue(gap in 12.0..72.0, "void between description and status: $gap px in a $h window")
+            assertTrue(barBox.minY + 0.5 >= statusBox.maxY, "progress overlaps the status")
+            assertTrue(statusBox.maxX <= scene.width - 16.0 && barBox.maxX <= scene.width - 16.0, "status or bar sticks out")
+            assertTrue(barBox.maxY <= scene.height - 16.0, "progress sticks out at the bottom (${barBox.maxY} of ${scene.height})")
+            assertTrue(scene.height - barBox.maxY <= 44.0, "blank band under the progress bar (${scene.height - barBox.maxY} px) in a $h window")
+            assertFalse(c.errorFirst.isManaged, "empty error line still takes space")
+            assertEquals("Скачивание обновления: 803.2 KB / 4.5 MB", c.statusLabel.text)
         }
         snap(nav, "update_window_ru.png")
 

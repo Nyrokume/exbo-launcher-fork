@@ -7,17 +7,11 @@ Launch opens the update window, then login, a code, or registration in the same 
 
 ## Sizes on main
 
-`Theme.AUTH_WINDOW_HEIGHT` is 700. Zone panels in FXML use `prefHeight="668"` at width 460. The title strip is 32 px, so the window is **460×700**. It does not resize. The stage style is `TRANSPARENT`. A 10 px clip rounds the corners (`Theme.AUTH_WINDOW_RADIUS`, the same as `.zone-radius-md`).
+The pre-main window is 460 px wide and does not resize. `fittedWindowHeight()` is the 32 px title strip plus the panel content, clamped to `AUTH_WINDOW_MIN_HEIGHT` **280** … `AUTH_WINDOW_HEIGHT` **700**. The stage style is `TRANSPARENT`. A 10 px clip rounds the corners (`Theme.AUTH_WINDOW_RADIUS`, the same as `.zone-radius-md`).
+
+Panels with no `prefHeight` fit their content: login **460×506**, email code **460×438** (with an error **460×526**), authenticator code **460×444** (with an error **460×532**), launcher update **460×316** (panel area **460×284**). Registration and age set `prefHeight="668"` and keep the full **460×700** window.
 
 The main window is `StageStyle.UNDECORATED`, **1024×640**, resizable from the edges, minimum **900×580**.
-
-:::note[WINDOWS.md disagrees]
-`docs/design/WINDOWS.md` still describes height 620 and `prefHeight` 588. FXML and `Theme.kt` on `main` use 668 and 700. The README, `INTERACTION.md`, and `SHOWCASE.md` say 460×700, which matches the code.
-:::
-
-:::note[Open PR #20]
-Branch `ui/auth-compact` is not merged. There the login window is **460×506**. The email code is **460×438** without an error and **460×526** with one. The authenticator code is **460×444** and **460×532**. Registration, age, and update stay **460×700**. The Steam / Epic row is hidden (`visible=false`, `managed=false`): the nodes and handlers stay, and the row collapses. On `main` that row is still on the login panel.
-:::
 
 ## What each window holds
 
