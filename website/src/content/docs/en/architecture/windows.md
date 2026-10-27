@@ -5,6 +5,8 @@ description: The borderless pre-main window and the 1024×640 main window.
 
 Launch opens the update window, then login, a code, or registration in the same window. After a successful login that window hides and the main window opens. Zero windows would quit JavaFX, so the main window is shown before the login window hides.
 
+A rejected update stays in this window and shows “The launcher update was rejected: it has no trusted signature.” (`auth.update.rejected`): the file is not downloaded and not written.
+
 ## Sizes on main
 
 The pre-main window is 460 px wide and does not resize. `fittedWindowHeight()` is the 32 px title strip plus the panel content, clamped to `AUTH_WINDOW_MIN_HEIGHT` **280** … `AUTH_WINDOW_HEIGHT` **700**. The stage style is `TRANSPARENT`. A 10 px clip rounds the corners (`Theme.AUTH_WINDOW_RADIUS`, the same as `.zone-radius-md`).

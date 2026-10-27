@@ -11,11 +11,15 @@ Update → login → an email code or an authenticator code when needed → main
 
 `-Dlauncher.mock2fa=none` skips the second factor. On live, the EXBO client response decides the second factor, not this property.
 
+On live, an offered launcher update is rejected until a release public key is pinned: the file is not written, and the window shows “The launcher update was rejected: it has no trusted signature.” With no offer, the check finishes and login opens. The mock still runs its timer and continues to login.
+
 ## Registration
 
-Login → **Create** → age of at least 18 → form → login again with the nickname and the “created” notice → password.
+Login → **Create** → age of at least 18 → form → login again with the nickname and the “created” notice → password. That is the mock branch.
 
 A form error keeps you on registration. **← Back** returns to the age gate with the same date. Under 18 shows a refusal and stays on the gate.
+
+On live the same steps reach the form and stop: `RegisterError.NOT_SUPPORTED`, and the text “This launcher cannot create an account. Create it on the STALZONE site.” There is no registration request. The mock branch above is unchanged.
 
 ## Login errors
 
