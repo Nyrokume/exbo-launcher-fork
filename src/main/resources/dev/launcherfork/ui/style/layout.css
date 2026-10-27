@@ -898,7 +898,7 @@
     -fx-spacing: 0;
     -fx-max-width: infinity;
 }
-/* one server = one full-width row: name, the three figures, then «Блок». The block control is not a lock icon. */
+/* one server = one full-width row: name, the three figures, then the block switch (on = blocked). */
 .tunnel-line {
     -fx-alignment: center-left;
     -fx-spacing: 8;
@@ -944,33 +944,8 @@
     -fx-background-radius: 0;
     -fx-border-radius: 0;
 }
-.tunnel-node-block {
-    -fx-font-size: 12;
-    -fx-background-color: transparent;
-    -fx-background-insets: 0;
-    -fx-border-color: -destructive-border;
-    -fx-border-width: 1;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-    -fx-text-fill: -destructive-text;
-    -fx-padding: 0 8;
-    -fx-alignment: center;
-    -fx-min-height: 26; -fx-pref-height: 26; -fx-max-height: 26;
-    -fx-min-width: 118; -fx-pref-width: 118; -fx-max-width: 118;
-    -fx-cursor: hand;
-    -fx-focus-color: transparent;
-    -fx-faint-focus-color: transparent;
-}
-.tunnel-node-block:hover { -fx-background-color: -destructive-soft; -fx-text-fill: -foreground; }
-.tunnel-node-block.blocked, .tunnel-node-block.blocked:hover {
-    -fx-background-color: -destructive-soft;
-    -fx-border-color: -primary;
-    -fx-text-fill: -foreground;
-}
-.tunnel-node-block:disabled, .tunnel-node-block:disabled:hover {
-    -fx-opacity: 0.45;
-    -fx-cursor: default;
-}
+.tunnel-line.node-blocked .tunnel-row,
+.tunnel-line.node-blocked .tunnel-ping { -fx-text-fill: -settings-muted; }
 .tunnel-confirm {
     -fx-alignment: center-left;
     -fx-spacing: 8;
@@ -1015,10 +990,19 @@
 .tunnel-ping.good { -fx-text-fill: -status-online; }
 .tunnel-ping.mid { -fx-text-fill: -settings-warning; }
 .tunnel-ping.bad, .tunnel-ping.very-bad, .tunnel-ping.miss { -fx-text-fill: -destructive-text; }
-.tunnel-toolbar { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 2 0 6 0; -fx-max-width: infinity; }
+#settingsTunnel { -fx-spacing: 8; }
+.tunnel-head { -fx-alignment: center-left; -fx-spacing: 12; -fx-padding: 0; -fx-max-width: infinity; }
+.tunnel-heading { -fx-font-size: 20; -fx-padding: 1 0 0 0; }
 .tunnel-count { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 0; }
 .tunnel-count.err { -fx-text-fill: -destructive-text; }
-.tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 8 0; -fx-max-width: infinity; }
+.tunnel-actions {
+    -fx-alignment: center-left;
+    -fx-spacing: 6;
+    -fx-padding: 4 6;
+    -fx-background-color: -fill-subtle;
+    -fx-background-radius: 8;
+    -fx-max-width: infinity;
+}
 
 /* saved EXBO sessions: one card per session, same surface as a tunnel pool, accent border when it is the live account.
    Name and login take the left; the key icon, Применить and Удалить stay on the right and do not cover the title. */
@@ -1108,6 +1092,41 @@
 .switch:selected > .box { -fx-background-color: -switch-on, -switch-on; -fx-padding: 3 3 3 17; }
 .switch:selected > .box > .mark { -fx-background-color: -primary-foreground; }
 .switch:selected:hover > .box { -fx-background-color: -switch-on-hover, -switch-on-hover; }
+
+/* Block switch on a tunnel row: same zone switch, a little larger. On (red track) means the node is blocked. */
+.tunnel-line > .tunnel-block-switch {
+    -fx-padding: 0;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-min-width: 36; -fx-pref-width: 36; -fx-max-width: 36;
+    -fx-min-height: 20; -fx-pref-height: 20; -fx-max-height: 20;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.tunnel-line > .tunnel-block-switch > .box {
+    -fx-background-color: -switch-off-border, -segment-off;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 10, 8;
+    -fx-padding: 3 19 3 3;
+}
+.tunnel-line > .tunnel-block-switch > .box > .mark {
+    -fx-padding: 6;
+    -fx-background-color: -settings-label;
+}
+.tunnel-line > .tunnel-block-switch:hover > .box {
+    -fx-background-color: -settings-muted, -segment-off;
+}
+.tunnel-line > .tunnel-block-switch:selected > .box,
+.tunnel-line > .tunnel-block-switch:selected:hover > .box {
+    -fx-background-color: -switch-on, -switch-on;
+    -fx-padding: 3 3 3 19;
+}
+.tunnel-line > .tunnel-block-switch:selected > .box > .mark,
+.tunnel-line > .tunnel-block-switch:selected:hover > .box > .mark {
+    -fx-background-color: -primary-foreground;
+}
+.tunnel-line > .tunnel-block-switch:disabled,
+.tunnel-line > .tunnel-block-switch:disabled:hover { -fx-opacity: 0.45; }
 
 /* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb. Two
    states: accent up to the value (:filled), mid grey = available (-ram-free); every segment from the min (2 GB) to the

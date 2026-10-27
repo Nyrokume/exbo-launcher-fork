@@ -3,15 +3,6 @@
   "source": "https://backend.stalcraftx.ru/address_list?login=User",
   "pools": [
     {
-      "name": "CLOUD-RU-7",
-      "tunnels": [
-        {
-          "name": "SRVMGR-ACCESSOR-OFT-RU-7A",
-          "address": "176.114.88.147:29450"
-        }
-      ]
-    },
-    {
       "name": "MSK1",
       "tunnels": [
         {

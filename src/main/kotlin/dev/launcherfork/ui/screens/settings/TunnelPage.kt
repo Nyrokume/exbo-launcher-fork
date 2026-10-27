@@ -28,6 +28,7 @@ import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.Node
 import javafx.scene.control.Button
+import javafx.scene.control.CheckBox
 import javafx.scene.control.ContentDisplay
 import javafx.scene.control.Label
 import javafx.scene.control.OverrunStyle
@@ -89,8 +90,9 @@ internal object TunnelServices {
  * «Обновить» reloads the catalog. A node that was already listed stays after a miss. A node that
  * was not in the previous list stays hidden until it answers.
  * «Исключить группу» asks «Заблокировать N нод группы?» and only then writes the group's addresses
- * through [ServerBlock.uniqueValidIpv4] and the existing firewall apply. «Блок» toggles one server
- * on the blocklist immediately and syncs that same firewall path, with no dialog.
+ * through [ServerBlock.uniqueValidIpv4] and the existing firewall apply. The row switch toggles one
+ * server on the blocklist immediately (on = blocked) and syncs that same firewall path, with no dialog.
+ * [TunnelPresentation] drops known-dead pools such as CLOUD-RU-7 before the list, Measure, or Find best.
  */
 class TunnelPage(
     private val ctx: UiContext,
@@ -319,7 +321,7 @@ class TunnelPage(
             if (gen != catalogGen || selected != region) return@deliver
             loading = null
             result.onSuccess {
-                catalogs[region] = it
+                catalogs[region] = TunnelPresentation.present(it)
                 catalogError = null
             }
             result.onFailure { catalogError = ctx.t("settings.tunnel.load_failed") }
@@ -479,7 +481,9 @@ class TunnelPage(
         val seen = HashSet<String>()
         val out = ArrayList<TunnelTarget>()
         for (pool in catalog.pools) {
+            if (TunnelPresentation.unlistedPool(pool.name)) continue
             for (endpoint in pool.tunnels) {
+                if (ipv4Host(endpoint.address) == null) continue
                 if (!seen.add(endpoint.address)) continue
                 out += TunnelTarget(selected, pool.name, endpoint)
             }
@@ -563,10 +567,11 @@ class TunnelPage(
             }
             refreshing = false
             result.onSuccess { fresh ->
+                val shown = TunnelPresentation.present(fresh)
                 val known = catalogs[region]?.pools.orEmpty().flatMap { it.tunnels }.map { it.address }.toSet()
-                catalogs[region] = fresh
+                catalogs[region] = shown
                 catalogError = null
-                val targets = regionTargets(fresh)
+                val targets = regionTargets(shown)
                 for (target in targets) {
                     if (target.endpoint.address !in known) awaiting += target.key()
                 }
@@ -733,9 +738,9 @@ class TunnelPage(
         }
         val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
         val trail = Region().apply {
-            minWidth = BLOCK_BUTTON
-            prefWidth = BLOCK_BUTTON
-            maxWidth = BLOCK_BUTTON
+            minWidth = BLOCK_SWITCH
+            prefWidth = BLOCK_SWITCH
+            maxWidth = BLOCK_SWITCH
         }
         return HBox(
             8.0,
@@ -764,9 +769,9 @@ class TunnelPage(
         return cache.best(targets, probes, settings.mode, TunnelServices.clock(), limit = 1).firstOrNull()
     }
 
-    /** Find-best and the recommendation skip excluded pools, blocked nodes and addresses with no IPv4. */
+    /** Find-best and the recommendation skip excluded pools, dead fixtures, blocked nodes and addresses with no IPv4. */
     private fun candidates(catalog: RoxyCatalog): List<TunnelTarget> =
-        catalog.targets(selected) { settings.isExcluded(selected, it) }
+        catalog.targets(selected) { settings.isExcluded(selected, it) || TunnelPresentation.unlistedPool(it) }
             .filter { ipv4Host(it.endpoint.address) != null && !nodeBlocked(it) }
 
     /**
@@ -867,16 +872,22 @@ class TunnelPage(
         blocked: Boolean,
     ): HBox {
         val select = nodeButton(target, view, locked, recommended = recommended, excluded = excluded, blocked = blocked)
-        val block = Button(ctx.t(if (blocked) "settings.tunnel.unblock_node" else "settings.tunnel.block_node")).apply {
-            styleClass.add("tunnel-node-block")
-            if (blocked) styleClass.add("blocked")
-            isMnemonicParsing = false
+        val block = CheckBox().apply {
+            styleClass.addAll("switch", "tunnel-block-switch")
+            isSelected = blocked
             isDisable = locked
-            minWidth = BLOCK_BUTTON
-            prefWidth = BLOCK_BUTTON
-            maxWidth = BLOCK_BUTTON
+            minWidth = BLOCK_SWITCH
+            prefWidth = BLOCK_SWITCH
+            maxWidth = BLOCK_SWITCH
+            minHeight = BLOCK_SWITCH_HEIGHT
+            prefHeight = BLOCK_SWITCH_HEIGHT
+            maxHeight = BLOCK_SWITCH_HEIGHT
+            accessibleText = ctx.t(if (blocked) "settings.tunnel.unblock_node" else "settings.tunnel.block_node")
             tooltip = Tooltip(ctx.t(if (blocked) "settings.tunnel.unblock_node.hint" else "settings.tunnel.block_node.hint"))
-            setOnAction { toggleNodeBlock(target) }
+            selectedProperty().addListener { _, was, on ->
+                if (was == on || on == nodeBlocked(target)) return@addListener
+                toggleNodeBlock(target)
+            }
         }
         return HBox(8.0, select, block).apply {
             styleClass.add("tunnel-line")
@@ -1006,6 +1017,33 @@ class TunnelPage(
 
     private companion object {
         const val VALUE_COLUMN = 64.0
-        const val BLOCK_BUTTON = 118.0
+        const val BLOCK_SWITCH = 36.0
+        const val BLOCK_SWITCH_HEIGHT = 20.0
+    }
+}
+
+/**
+ * Catalog the tunnel page is willing to show. Known-dead mock pools (CLOUD-RU-7 and any CLOUD-* pool)
+ * and addresses with no valid IPv4 are removed before rows, Measure, or Find best see them.
+ */
+internal object TunnelPresentation {
+    fun present(catalog: RoxyCatalog): RoxyCatalog {
+        val pools = catalog.pools.mapNotNull { pool ->
+            if (unlistedPool(pool.name)) return@mapNotNull null
+            val tunnels = pool.tunnels.filter { endpoint -> listedAddress(endpoint.address) }
+            if (tunnels.isEmpty()) null else dev.launcherfork.stalzone.TunnelPool(pool.name, tunnels)
+        }
+        return RoxyCatalog(catalog.mode, pools, catalog.clientToTunnelRttWeight)
+    }
+
+    /** CLOUD-RU-7 and the same CLOUD-* fixture shape never answer. */
+    fun unlistedPool(name: String): Boolean {
+        val key = name.trim()
+        return key.equals("CLOUD-RU-7", ignoreCase = true) || key.startsWith("CLOUD-", ignoreCase = true)
+    }
+
+    private fun listedAddress(address: String): Boolean {
+        val host = TunnelAddresses.parse(address)?.first ?: return false
+        return ServerBlock.isValidIpv4(host)
     }
 }
