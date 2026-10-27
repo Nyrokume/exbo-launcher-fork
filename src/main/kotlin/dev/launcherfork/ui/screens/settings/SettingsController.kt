@@ -517,7 +517,7 @@ class SettingsController(private val ctx: UiContext) {
         JvmPresets.all.forEachIndexed { index, preset ->
             val built = presetBuilt(preset.id)
             val heap = if (built == null) ctx.t("settings.jvm.unavailable") else ctx.t("settings.jvm.heap", built.heapGb)
-            val title = Label("$preset.version, $heap").apply {
+            val title = Label(presetCaption(preset.version, heap)).apply {
                 styleClass.add("jvm-preset-title")
                 textOverrun = OverrunStyle.ELLIPSIS
                 isWrapText = false
@@ -582,7 +582,7 @@ class SettingsController(private val ctx: UiContext) {
             val id = card.userData as? String ?: return@forEach
             val built = presetBuilt(id) ?: return@forEach
             val version = JvmPresets.all.firstOrNull { it.id == id }?.version ?: return@forEach
-            presetTitle(card)?.text = "$version, ${ctx.t("settings.jvm.heap", built.heapGb)}"
+            presetTitle(card)?.text = presetCaption(version, ctx.t("settings.jvm.heap", built.heapGb))
         }
         if (::jvmSummary.isInitialized) refreshJvmStatus()
     }
@@ -831,7 +831,7 @@ class SettingsController(private val ctx: UiContext) {
             jvmStatusKicker.text = ctx.t("settings.jvm.chosen")
             val heap = preset?.let { presetBuilt(it.id) }?.heapGb
             val name = jvmCaption(active)
-            jvmStatus.text = if (heap != null) "$name, ${ctx.t("settings.jvm.heap", heap)}" else name
+            jvmStatus.text = if (heap != null) presetCaption(name, ctx.t("settings.jvm.heap", heap)) else name
             jvmStatusHint.text = when {
                 preset != null -> ctx.t(preset.hintKey)
                 active == JvmProfile.RECOMMENDED -> ctx.t("settings.jvm.profile.hint")
@@ -854,6 +854,13 @@ class SettingsController(private val ctx: UiContext) {
             }
         }
     }
+
+    /**
+     * Version and the heap this click will write, e.g. `v1.1.2, 6 ГБ`.
+     * Pass [JvmPresets.Preset.version] in as its own argument. A template of `$preset.version`
+     * prints [JvmPresets.Preset.toString] and leaves `.version` as literal text.
+     */
+    private fun presetCaption(version: String, heapLabel: String): String = "$version, $heapLabel"
 
     /** Registry id → a label. `8khz` is the tuned profile, preset ids show their version (v1.1.2), anything else is kept as-is. */
     private fun jvmCaption(active: String?): String = when {

@@ -16,6 +16,7 @@ import dev.launcherfork.data.mock.MockSystemInfo
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.stalzone.ExboSessions
+import dev.launcherfork.stalzone.JvmPresets
 import dev.launcherfork.stalzone.TunnelOverrides
 import dev.launcherfork.stalzone.TunnelProbeOutcome
 import dev.launcherfork.stalzone.MemoryRegistry
@@ -653,6 +654,55 @@ class SettingsScreenTest {
 
     /** Tunnel is its own page. JVM, account swap and sensitivity each replace the column too. Tunnels stay grouped by pool. */
     @Test
+    fun jvmPresetCardTitlesUseVersionAndHeap() {
+        val app = AppContext.mock(language = "ru", speed = 50.0, authDelayMs = 0)
+        val totalMb = app.services.system.totalRamMb()
+        val totalGb = RamOptions.totalGb(totalMb)
+        val threads = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
+        fun expected(id: String, heapGb: Int?): String {
+            val preset = JvmPresets.all.first { it.id == id }
+            val built = JvmPresets.build(id, totalGb, totalGb, threads, threads, heapGb)
+            val heap = if (built == null) "Мало памяти для этого профиля" else "${built.heapGb} ГБ"
+            return "${preset.version}, $heap"
+        }
+        FxTestSupport.onFx {
+            val c = Fxml.load<SettingsController>(FxTestSupport.context("ru", app), "settings.fxml").controller
+            val scene = javafx.scene.Scene(c.settingsRoot, Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
+            applyTheme(scene, "zone", "ru")
+            c.showClientSection("jvm")
+            c.settingsRoot.applyCss()
+            c.settingsRoot.layout()
+            assertEquals("Сейчас", c.jvmStatusKicker.text)
+            assertEquals("не выбран", c.jvmStatus.text)
+            val cards = c.jvmGrid.children.filterIsInstance<Button>()
+            assertEquals(JvmPresets.all.size, cards.size)
+            cards.forEach { card ->
+                val id = card.userData as String
+                val title = (card.graphic as Parent).lookup(".jvm-preset-title") as Labeled
+                assertEquals(expected(id, null), title.text)
+                assertFalse(title.text.contains("Preset("), title.text)
+                assertFalse(title.text.contains("hintKey"), title.text)
+            }
+            val card = cards.first { it.userData == JvmPresets.CURRENT }
+            card.fire()
+            val selected = (card.graphic as Parent).lookup(".jvm-preset-title") as Labeled
+            assertEquals("Выбран для запуска", c.jvmStatusKicker.text)
+            assertEquals(expected(JvmPresets.CURRENT, null), c.jvmStatus.text)
+            assertEquals(selected.text, c.jvmStatus.text)
+            assertEquals("Спокойные паузы G1, heap до 6 ГБ", c.jvmStatusHint.text)
+            assertTrue("selected" in c.jvmSummary.styleClass)
+            assertTrue("selected" in card.styleClass)
+            assertEquals(8, c.ramBar.setValue(8, user = true))
+            cards.filter { !it.isDisable }.forEach { button ->
+                val id = button.userData as String
+                val title = (button.graphic as Parent).lookup(".jvm-preset-title") as Labeled
+                assertEquals(expected(id, 8), title.text, "heap refresh rewrote the title differently")
+            }
+            assertEquals(expected(JvmPresets.CURRENT, 8), c.jvmStatus.text, "summary stayed on the old heap")
+        }
+    }
+
+    @Test
     fun clientPageFitsAndKeepsTheTools() {
         val app = AppContext.mock(language = "ru", authDelayMs = 0)
         val nav = mainOnScreen(app, "ru")
@@ -698,6 +748,10 @@ class SettingsScreenTest {
                     assertTrue(s.jvmGrid.children.filterIsInstance<Button>().none { "selected" in it.styleClass }, "$where: a config is marked chosen before a click")
                     s.jvmGrid.children.filterIsInstance<Button>().forEach { preset ->
                         assertNotNull((preset.graphic as? Parent)?.lookup(".jvm-radio"), "$where: a config has no radio")
+                        val version = JvmPresets.all.first { it.id == preset.userData }.version
+                        val title = (preset.graphic as Parent).lookup(".jvm-preset-title") as Labeled
+                        assertFalse(title.text.contains("Preset("), "$where: title is the data-class dump: ${title.text}")
+                        assertTrue(title.text.startsWith("$version, "), "$where: title is not version and heap: ${title.text}")
                         val mark = (preset.graphic as? Parent)?.lookup(".jvm-chosen") as? Labeled
                         assertNotNull(mark, "$where: a config has no chosen label")
                         assertFalse(mark!!.isVisible, "$where: an unpicked config says it will launch")
@@ -981,7 +1035,10 @@ class SettingsScreenTest {
                 assertEquals(dev.launcherfork.stalzone.JvmPresets.CURRENT, app.desk.activeProfile())
                 assertTrue("selected" in card.styleClass, "the launch config card is not marked")
                 assertEquals("Выбран для запуска", s.jvmStatusKicker.text)
-                assertTrue(s.jvmStatus.text.startsWith("v1.1.2"), "summary does not name the launch config: ${s.jvmStatus.text}")
+                val selectedTitle = (card.graphic as Parent).lookup(".jvm-preset-title") as Labeled
+                assertEquals(selectedTitle.text, s.jvmStatus.text, "summary did not take the card title")
+                assertTrue(s.jvmStatus.text.matches(Regex("v1\\.1\\.2, \\d+ ГБ")), "summary does not name the launch config: ${s.jvmStatus.text}")
+                assertFalse(s.jvmStatus.text.contains("Preset("), "summary dumped the preset: ${s.jvmStatus.text}")
                 assertFalse(s.jvmStatus.text.contains("не выбран"), "a picked config still reads as none")
                 assertTrue("selected" in s.jvmSummary.styleClass, "the launch summary is not the selected card")
                 val chosen = (card.graphic as Parent).lookup(".jvm-chosen") as Labeled
