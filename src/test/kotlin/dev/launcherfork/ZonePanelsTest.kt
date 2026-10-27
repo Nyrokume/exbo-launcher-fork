@@ -92,34 +92,18 @@ class ZonePanelsTest {
     }
 
     @Test
-    fun socialTilesAreSteamAndEpicOnly() = FxTestSupport.onFx {
-        // Google auth is not supported: only Steam and Epic Games tiles, 44x44 with 10 px spacing, right-aligned in the form
-        // row under remember / restore (user's sketch), the top card keeps only the title
+    fun socialLoginIsHidden() = FxTestSupport.onFx {
+        // Steam / Epic Games login hidden on the user's request (2026-10-27): the row is invisible and unmanaged, so the
+        // form collapses; the nodes stay for the controller. No Google tile either.
         val panel = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml")
         val scene = Scene(panel.root, Theme.AUTH_PANEL_WIDTH, Theme.AUTH_PANEL_HEIGHT, Color.BLACK)
         Theme.apply(scene, "ru")
-        val zoneSheet = Theme.stylesheet("theme-zone.css")
-        if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
         scene.root.applyCss(); scene.root.layout()
-        val tiles = scene.root.lookupAll(".zone-social").map { it as javafx.scene.control.Button }
-        assertEquals(listOf("Steam", "Epic Games"), tiles.map { it.accessibleText })
+        val row = scene.root.lookup(".zone-social-row")!!
+        assertFalse(row.isVisible, "social row is shown")
+        assertFalse(row.isManaged, "social row still takes space")
+        assertFalse(generateSequence(panel.controller.enterSteamButton as javafx.scene.Node) { it.parent }.all { it.isVisible })
         assertTrue(scene.root.lookup("#zoneGoogle") == null, "Google tile is back")
-        assertTrue(scene.root.lookupAll(".icon-google").isEmpty())
-        // Tab order: Steam -> Epic (document order, both traversable), Steam is the controller's enterSteamButton
-        assertTrue(tiles[0] === panel.controller.enterSteamButton)
-        assertTrue(tiles.all { it.isFocusTraversable })
-        val row = tiles[0].parent as javafx.scene.layout.HBox
-        assertEquals(tiles, row.children.toList())
-        tiles.forEach { assertEquals(44.0, it.width, 0.5); assertEquals(44.0, it.height, 0.5) }
-        assertEquals(44.0 + 10.0, tiles[1].layoutX - tiles[0].layoutX, 0.5)
-        val c = panel.controller
-        val form = c.enterButton.localToScene(c.enterButton.layoutBounds)
-        val epic = tiles[1].localToScene(tiles[1].layoutBounds)
-        val steam = tiles[0].localToScene(tiles[0].layoutBounds)
-        assertEquals(form.maxX, epic.maxX, 1.0, "tiles end at the form's right edge")
-        assertTrue(steam.minY > c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY, "tiles under remember me")
-        assertTrue(steam.maxY < form.minY, "tiles above ВОЙТИ")
-        assertTrue(scene.root.lookupAll(".zone-top .zone-social").isEmpty(), "tiles left in the top card")
     }
 
     @Test
@@ -173,12 +157,13 @@ class ZonePanelsTest {
                 scene.root.applyCss(); scene.root.layout()
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
-                // no hole above ВОЙТИ; footer sits near the bottom of the fixed 620 window
-                val socialsBottom = c.enterSteamButton.localToScene(c.enterSteamButton.layoutBounds).maxY
+                // no hole above ВОЙТИ (social row hidden): it follows remember / restore; footer near the bottom
+                val rowBottom = c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY
                 val enterTop = c.enterButton.localToScene(c.enterButton.layoutBounds).minY
-                assertTrue(enterTop - socialsBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - socialsBottom}")
+                assertTrue(enterTop - rowBottom <= 48.0, "gap above ВОЙТИ: ${enterTop - rowBottom}")
                 assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
-                assertEquals(dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, nav.authStage.height, 0.5, "login window height")
+                // compact login window (user 2026-10-27): fits its content, below the full pre-main height
+                assertTrue(nav.authStage.height < dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "login window height ${nav.authStage.height}")
                 // the top card shows the EXBO logo instead of a heading; the title strip drops its small copy
                 val logo = scene.root.lookup(".zone-top .zone-login-logo")
                 assertTrue(logo is dev.launcherfork.ui.components.LogoMark && logo.isVisible, "no EXBO logo in the top card")
@@ -245,11 +230,14 @@ class ZonePanelsTest {
                 val scene = nav.authStage.scene
                 scene.root.applyCss(); scene.root.layout()
                 val h = nav.authStage.height
-                assertTrue(h < loginHeight, "code window ($h) should be lower than the login window ($loginHeight)")
-                assertTrue(h <= 460.0, "code window too tall: $h")
+                // compact: idle lower than the login window; the error toast grows it, within the full pre-main height
+                if (!error) assertTrue(h < loginHeight, "code window ($h) should be lower than the login window ($loginHeight)")
+                if (!error) assertTrue(h <= 460.0, "code window too tall: $h")
+                assertTrue(h <= dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "code window too tall: $h")
                 assertTrue(scene.root.lookup("#authLogo").isVisible, "title strip logo missing on the code window")
                 val bottom = c.backButton!!.let { it.localToScene(it.layoutBounds) }.maxY
                 assertTrue(bottom <= scene.height - 16 && bottom >= scene.height - 44, "footer at $bottom of ${scene.height}")
+                if (error) assertTrue(c.toast!!.let { !it.isVisible || it.localToScene(it.layoutBounds).maxY <= c.enterButton.localToScene(c.enterButton.layoutBounds).minY }, "error toast clipped / overlaps ПОДТВЕРДИТЬ")
                 if (error) assertTrue(c.errorFirst.localToScene(c.errorFirst.layoutBounds).maxY < c.enterButton.localToScene(c.enterButton.layoutBounds).minY)
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
@@ -299,7 +287,9 @@ class ZonePanelsTest {
         val reader = img.pixelReader
         for (y in 0 until h) for (x in 0 until w) out.setRGB(x, y, reader.getArgb(x, y))
         // one monotone black: the logo block and the form share a colour (user, 2026-10-07)
-        assertEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "logo block and form should be the same black")
+        // the compact panel is shorter than this scene: sample the form just under the footer, not the scene bottom
+        val formY = (bottom + 8).toInt().coerceAtMost(h - 1)
+        assertEquals(out.getRGB(10, 10), out.getRGB(10, formY), "logo block and form should be the same black")
         previewDir.mkdirs()
         ImageIO.write(out, "png", File(previewDir, file))
     }
