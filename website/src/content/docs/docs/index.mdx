@@ -1,0 +1,55 @@
+---
+title: Документация
+description: Разделы сайта и куда идти за конкретной темой.
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Форк лаунчера EXBO на Kotlin и JavaFX. Ниже те же группы, что в боковой колонке.
+
+## Начало работы
+
+Запуск, демо-логин и переключение тем.
+
+<CardGrid>
+	<LinkCard title="Обзор" description="Стек, два окна и где лежит исходная правда." href="../getting-started/overview/" />
+	<LinkCard title="Установка и запуск" description="Gradle, скриншоты и дистрибутивы." href="../getting-started/install-run/" />
+	<LinkCard title="Демо-вход" description="Любой пароль, коды и регистрация на моках." href="../getting-started/mock-login/" />
+	<LinkCard title="Темы" description="zone, exbo, shadcn, frost и обои." href="../getting-started/themes/" />
+</CardGrid>
+
+## Архитектура
+
+Кто показывает окна и кто выбирает mock или live.
+
+<CardGrid>
+	<LinkCard title="Окна" description="Pre-main 460×700 и главное 1024×640." href="../architecture/windows/" />
+	<LinkCard title="AppContext" description="Единственное место выбора реализаций." href="../architecture/app-context/" />
+	<LinkCard title="Навигация" description="Поток экранов, оверлеи и меню профиля." href="../architecture/navigation/" />
+</CardGrid>
+
+## Дизайн
+
+Палитра STALZONE и сценарий игрока.
+
+<CardGrid>
+	<LinkCard title="Стиль zone" description="Токены, радиусы и шрифты лаунчера." href="../design/style-zone/" />
+	<LinkCard title="Маршрут" description="Вход, регистрация, игра и выход." href="../design/interaction/" />
+</CardGrid>
+
+## Настройки
+
+Что делает интерфейс страниц клиента.
+
+<CardGrid>
+	<LinkCard title="Туннель" description="Регионы, замер и overrides.json." href="../settings/tunnel/" />
+	<LinkCard title="JVM" description="Карточки пресетов и активный профиль." href="../settings/jvm/" />
+	<LinkCard title="Аккаунты" description="Снимок сессии, ключ и применение." href="../settings/accounts/" />
+</CardGrid>
+
+## Справочник
+
+<CardGrid>
+	<LinkCard title="Флаги запуска" description="Свойства -Dlauncher и витрина." href="../reference/gradle-flags/" />
+	<LinkCard title="История изменений" description="Файл docs/CHANGELOG.md и коммиты после него." href="../reference/changelog/" />
+</CardGrid>
