@@ -93,11 +93,13 @@ h1.sl-heading-wrapper,
   color: #efeae4;
 }
 
-.sl-markdown-content pre {
+.sl-markdown-content pre,
+.expressive-code pre {
   background: var(--zone-card) !important;
   border: 1px solid var(--sl-color-hairline);
   border-radius: var(--zone-radius-md);
   font-family: var(--sl-font-system-mono);
+  overflow-x: auto;
 }
 
 .sl-markdown-content blockquote {
@@ -107,8 +109,21 @@ h1.sl-heading-wrapper,
   border-radius: 0 var(--zone-radius) var(--zone-radius) 0;
 }
 
+/* Starlight renders the table as display:block (the scrollport). Fixed columns live on thead/tbody. */
 .sl-markdown-content table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
   border-color: var(--sl-color-hairline);
+}
+.sl-markdown-content table :is(thead, tbody) {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.sl-markdown-content :is(th, td) {
+  overflow-wrap: anywhere;
 }
 .sl-markdown-content th {
   background: var(--zone-card-alt);
@@ -119,23 +134,123 @@ h1.sl-heading-wrapper,
 }
 
 .sidebar a[aria-current='page'],
-.sidebar a[aria-current='true'] {
-  color: var(--sl-color-accent-high);
-  border-inline-start-color: var(--sl-color-accent);
+.sidebar a[aria-current='page']:hover,
+.sidebar a[aria-current='page']:focus {
+  color: #ffffff;
+  background-color: var(--sl-color-accent);
+}
+.sidebar a[aria-current='page'] span {
+  color: inherit;
 }
 
-.sl-link-button,
-a.action-button {
-  background: var(--sl-color-accent);
-  color: #ffffff !important;
+.sl-link-button {
   border-radius: var(--zone-radius);
+}
+.sl-link-button.primary {
+  background: var(--sl-color-accent);
+  color: #ffffff;
   border: 1px solid transparent;
 }
-.sl-link-button:hover,
-a.action-button:hover {
+.sl-link-button.primary:hover {
   background: var(--sl-color-accent-high);
+  color: #ffffff;
+}
+.sl-link-button.minimal,
+.sl-link-button.secondary {
+  background: transparent;
+  color: var(--sl-color-text);
+  border: 1px solid var(--sl-color-hairline);
+  padding-inline: 1.25rem;
+}
+.sl-link-button.minimal:hover,
+.sl-link-button.secondary:hover {
+  background: transparent;
+  color: var(--sl-color-white);
+  border-color: var(--sl-color-accent);
 }
 
 .zone-ok { color: var(--zone-success); }
 .zone-warn { color: var(--zone-warning); }
 .zone-err { color: var(--zone-error); }
+
+.hero {
+  padding-block: 2.5rem 1.25rem;
+  gap: 1rem;
+}
+.hero .stack {
+  gap: 1rem;
+}
+.hero .copy {
+  gap: 0.65rem;
+}
+.hero .tagline {
+  max-width: 36rem;
+}
+.hero .actions {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.card-grid {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+@media (min-width: 50rem) {
+  .card-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+}
+.sl-link-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 100%;
+  min-height: 7.5rem;
+  background: var(--zone-card);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--zone-radius-md);
+  box-shadow: none;
+  padding: 0.85rem 1rem;
+}
+.sl-link-card .stack {
+  flex: 1;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.sl-link-card .title,
+.sl-link-card .description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sl-link-card .title {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.sl-link-card .description {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.sl-link-card:hover {
+  background: var(--zone-card);
+  border-color: var(--sl-color-accent);
+  box-shadow: none;
+}
+
+.starlight-aside {
+  background: var(--zone-card);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--zone-radius-md);
+}
+
+.sl-markdown-content :not(h1, h2, h3, h4, h5, h6, .sl-heading-wrapper) + .sl-heading-wrapper {
+  margin-top: 1.25rem;
+}
+.sl-markdown-content .sl-heading-wrapper + * {
+  margin-top: 0.5rem;
+}
+.sl-markdown-content p + .card-grid {
+  margin-top: 0.75rem;
+}
