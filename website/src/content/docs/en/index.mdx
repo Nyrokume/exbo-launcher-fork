@@ -1,0 +1,29 @@
+---
+title: EXBO Launcher Fork documentation
+description: Windows, themes, settings, and how to run the EXBO launcher fork.
+template: splash
+hero:
+  tagline: Read how the fork is put together — from launch to the settings pages
+  actions:
+    - text: Open the docs
+      link: ./docs/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/Nyrokume/exbo-launcher-fork
+      icon: seti:github
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## What this site covers
+
+The pages describe current `main` and mark open pull requests when they change the login window or the tunnel page. The notes under `docs/` in the repository stay where they are.
+
+<CardGrid>
+	<LinkCard title="Getting started" description="What the fork is, how to run it, the demo login, and themes." href="./getting-started/overview/" />
+	<LinkCard title="Architecture" description="Two windows, AppContext, and the navigator." href="./architecture/windows/" />
+	<LinkCard title="Design" description="Zone tokens and the player path." href="./design/style-zone/" />
+	<LinkCard title="Settings" description="Tunnel, JVM presets, and session cards." href="./settings/tunnel/" />
+	<LinkCard title="Reference" description="Launcher properties and the changelog." href="./reference/gradle-flags/" />
+</CardGrid>
