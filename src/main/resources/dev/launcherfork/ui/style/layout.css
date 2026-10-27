@@ -702,6 +702,22 @@
 
 /* client tools, stacked under the launcher groups. Same cards and 34 px rows. */
 .client-card { -fx-padding: 10 14 12 14; -fx-spacing: 8; }
+#settingsJvm { -fx-spacing: 8; }
+.jvm-summary { -fx-padding: 10 12; -fx-spacing: 2; -fx-max-width: infinity; }
+.jvm-summary.empty { -fx-border-color: -border; -fx-background-color: -card; }
+.jvm-summary.selected, .jvm-summary.selected:hover {
+    -fx-border-color: -primary;
+    -fx-background-color: -destructive-soft;
+}
+.jvm-summary-kicker { -fx-font-size: 11; -fx-text-fill: -settings-muted; }
+.jvm-summary.selected .jvm-summary-kicker {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 15;
+    -fx-text-fill: -destructive-text;
+}
+.jvm-summary-name { -fx-font-size: 16; -fx-text-fill: -foreground; }
+.jvm-summary-hint { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.jvm-list-label { -fx-font-size: 11; -fx-text-fill: -settings-muted; -fx-padding: 2 0 0 0; }
 .jvm-preset {
     -fx-background-color: -card;
     -fx-border-color: -border;
@@ -710,7 +726,7 @@
     -fx-border-radius: 8;
     -fx-padding: 8 10 8 10;
     -fx-cursor: hand;
-    -fx-alignment: TOP_LEFT;
+    -fx-alignment: CENTER_LEFT;
     -fx-content-display: graphic-only;
     -fx-max-width: infinity;
 }
@@ -722,6 +738,26 @@
 .jvm-preset:disabled { -fx-opacity: 0.45; }
 .jvm-preset-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
 .jvm-preset-hint { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.jvm-preset-text { -fx-spacing: 1; }
+.jvm-radio {
+    -fx-min-width: 16; -fx-pref-width: 16; -fx-max-width: 16;
+    -fx-min-height: 16; -fx-pref-height: 16; -fx-max-height: 16;
+    -fx-background-color: transparent, transparent;
+    -fx-background-insets: 0, 4;
+    -fx-background-radius: 8, 4;
+    -fx-border-color: -settings-muted;
+    -fx-border-radius: 8;
+    -fx-border-width: 1.5;
+}
+.jvm-preset.selected .jvm-radio, .jvm-preset.selected:hover .jvm-radio {
+    -fx-background-color: transparent, -primary;
+    -fx-border-color: -primary;
+}
+.jvm-chosen {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 13;
+    -fx-text-fill: -destructive-text;
+}
 .session-scroll, .session-scroll > .viewport,
 .tunnel-scroll, .tunnel-scroll > .viewport {
     -fx-background-color: transparent; -fx-background: transparent;
@@ -749,23 +785,35 @@
 .tunnel-best-dot {
     -fx-min-width: 6; -fx-pref-width: 6; -fx-max-width: 6;
     -fx-min-height: 6; -fx-pref-height: 6; -fx-max-height: 6;
-    -fx-background-color: -status-online;
+    -fx-background-color: -primary;
     -fx-background-radius: 3;
 }
 .tunnel-best-dot.idle { -fx-background-color: transparent; }
 .tunnel-pool-lock {
+    -fx-font-size: 12;
     -fx-background-color: transparent;
     -fx-background-insets: 0;
-    -fx-border-color: transparent;
-    -fx-padding: 0;
-    -fx-min-width: 28; -fx-pref-width: 28; -fx-max-width: 28;
+    -fx-border-color: -destructive-border;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-text-fill: -destructive-text;
+    -fx-padding: 0 12;
     -fx-min-height: 28; -fx-pref-height: 28; -fx-max-height: 28;
     -fx-cursor: hand;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
-.tunnel-pool-lock:hover { -fx-background-color: -tile-hover; -fx-background-radius: 6; }
-.tunnel-pool-lock.locked { -fx-background-color: -destructive-soft; -fx-background-radius: 6; }
+.tunnel-pool-lock:hover { -fx-background-color: -destructive-soft; -fx-text-fill: -foreground; }
+.tunnel-pool-lock.locked, .tunnel-pool-lock.locked:hover {
+    -fx-background-color: -primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -primary-foreground;
+}
+.tunnel-pool-lock:disabled, .tunnel-pool-lock:disabled:hover {
+    -fx-opacity: 0.45;
+    -fx-cursor: default;
+}
 .pool { -fx-spacing: 2; -fx-padding: 8 10 4 10; -fx-max-width: infinity; }
 .pool-head { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 2 0; -fx-max-width: infinity; }
 .pool-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
@@ -841,11 +889,12 @@
     -fx-text-fill: -settings-muted;
     -fx-cursor: default;
 }
-.tunnel-node.best {
-    -fx-border-color: transparent transparent -settings-divider -status-online;
-    -fx-border-width: 0 0 1 2;
+.tunnel-line > .tunnel-node.best, .tunnel-node.best {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
 }
-.tunnel-node.best .tunnel-row { -fx-text-fill: -status-online; }
+.tunnel-line.best .tunnel-row, .tunnel-node.best .tunnel-row { -fx-text-fill: -destructive-text; }
 .tunnel-node.selected, .tunnel-node.selected:hover, .tunnel-node.selected:disabled, .tunnel-node.selected:disabled:hover {
     -fx-background-color: -destructive-soft;
     -fx-border-color: -primary;
@@ -868,7 +917,15 @@
 .tunnel-node .tunnel-ping.sum.mid { -fx-text-fill: -settings-warning; }
 .tunnel-node .tunnel-ping.sum.bad,
 .tunnel-node .tunnel-ping.sum.very-bad { -fx-text-fill: -destructive-text; }
-.pool-meta { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.pool-meta {
+    -fx-font-size: 11;
+    -fx-text-fill: -settings-muted;
+    -fx-background-color: -fill-strong;
+    -fx-background-radius: 8;
+    -fx-padding: 0 6;
+    -fx-min-height: 16; -fx-pref-height: 16; -fx-max-height: 16;
+    -fx-alignment: center;
+}
 .tunnel-list {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -877,11 +934,11 @@
     -fx-spacing: 0;
     -fx-max-width: infinity;
 }
-/* one server = one full-width row: lock, name, ping. A locked row is muted, not a red slab. */
+/* one server = one full-width row: name, the three figures, then the block switch (on = blocked). */
 .tunnel-line {
     -fx-alignment: center-left;
     -fx-spacing: 8;
-    -fx-padding: 0 14 0 10;
+    -fx-padding: 0 10 0 10;
     -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
     -fx-background-color: transparent;
     -fx-border-color: transparent transparent -settings-divider transparent;
@@ -890,11 +947,49 @@
 }
 .tunnel-line:hover { -fx-background-color: -tile-hover; }
 .tunnel-line.last { -fx-border-color: transparent; }
-.tunnel-line.blocked { -fx-background-color: -fill-subtle; }
-.tunnel-line.blocked:hover { -fx-background-color: -tile-hover; }
-.tunnel-line.first { -fx-background-radius: 10 10 0 0; }
-.tunnel-line.last { -fx-background-radius: 0 0 10 10; }
-.tunnel-line.first.last { -fx-background-radius: 10; }
+.tunnel-line.best {
+    -fx-background-color: -destructive-soft;
+    -fx-border-color: transparent transparent -settings-divider -primary;
+    -fx-border-width: 0 0 1 3;
+}
+.tunnel-line.best:hover { -fx-background-color: -destructive-soft; }
+.tunnel-line.selected, .tunnel-line.selected:hover {
+    -fx-background-color: -destructive-soft;
+    -fx-border-color: -primary;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+.tunnel-line > .tunnel-node {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
+}
+.tunnel-line > .tunnel-node:hover,
+.tunnel-line > .tunnel-node:disabled,
+.tunnel-line > .tunnel-node:disabled:hover,
+.tunnel-line > .tunnel-node.selected,
+.tunnel-line > .tunnel-node.selected:hover,
+.tunnel-line > .tunnel-node.selected:disabled,
+.tunnel-line > .tunnel-node.selected:disabled:hover {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+}
+.tunnel-line.node-blocked .tunnel-row,
+.tunnel-line.node-blocked .tunnel-ping { -fx-text-fill: -settings-muted; }
+.tunnel-confirm {
+    -fx-alignment: center-left;
+    -fx-spacing: 8;
+    -fx-padding: 8 10;
+    -fx-border-color: -destructive-border;
+    -fx-border-width: 1;
+}
+.tunnel-confirm-text { -fx-font-size: 13; -fx-text-fill: -settings-label; }
 .tunnel-line > .tunnel-lock,
 .tunnel-line > .tunnel-lock:hover,
 .tunnel-line > .tunnel-lock:focused,
@@ -926,15 +1021,24 @@
     -fx-alignment: center-left;
 }
 .tunnel-line.blocked .tunnel-row { -fx-text-fill: -settings-muted; }
-.tunnel-line.best .tunnel-row { -fx-text-fill: -status-online; }
+.tunnel-line.best .tunnel-row { -fx-text-fill: -destructive-text; }
 .tunnel-ping { -fx-font-size: 13; -fx-text-fill: -settings-muted; -fx-min-width: 36; -fx-alignment: center-right; }
 .tunnel-ping.good { -fx-text-fill: -status-online; }
 .tunnel-ping.mid { -fx-text-fill: -settings-warning; }
 .tunnel-ping.bad, .tunnel-ping.very-bad, .tunnel-ping.miss { -fx-text-fill: -destructive-text; }
-.tunnel-toolbar { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 2 0 6 0; -fx-max-width: infinity; }
+#settingsTunnel { -fx-spacing: 8; }
+.tunnel-head { -fx-alignment: center-left; -fx-spacing: 12; -fx-padding: 0; -fx-max-width: infinity; }
+.tunnel-heading { -fx-font-size: 20; -fx-padding: 1 0 0 0; }
 .tunnel-count { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 0; }
 .tunnel-count.err { -fx-text-fill: -destructive-text; }
-.tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 8 0; -fx-max-width: infinity; }
+.tunnel-actions {
+    -fx-alignment: center-left;
+    -fx-spacing: 6;
+    -fx-padding: 4 6;
+    -fx-background-color: -fill-subtle;
+    -fx-background-radius: 8;
+    -fx-max-width: infinity;
+}
 
 /* saved EXBO sessions: one card per session, same surface as a tunnel pool, accent border when it is the live account.
    Name and login take the left; the key icon, Применить and Удалить stay on the right and do not cover the title. */
@@ -1024,6 +1128,41 @@
 .switch:selected > .box { -fx-background-color: -switch-on, -switch-on; -fx-padding: 3 3 3 17; }
 .switch:selected > .box > .mark { -fx-background-color: -primary-foreground; }
 .switch:selected:hover > .box { -fx-background-color: -switch-on-hover, -switch-on-hover; }
+
+/* Block switch on a tunnel row: same zone switch, a little larger. On (red track) means the node is blocked. */
+.tunnel-line > .tunnel-block-switch {
+    -fx-padding: 0;
+    -fx-label-padding: 0;
+    -fx-graphic-text-gap: 0;
+    -fx-min-width: 36; -fx-pref-width: 36; -fx-max-width: 36;
+    -fx-min-height: 20; -fx-pref-height: 20; -fx-max-height: 20;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.tunnel-line > .tunnel-block-switch > .box {
+    -fx-background-color: -switch-off-border, -segment-off;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 10, 8;
+    -fx-padding: 3 19 3 3;
+}
+.tunnel-line > .tunnel-block-switch > .box > .mark {
+    -fx-padding: 6;
+    -fx-background-color: -settings-label;
+}
+.tunnel-line > .tunnel-block-switch:hover > .box {
+    -fx-background-color: -settings-muted, -segment-off;
+}
+.tunnel-line > .tunnel-block-switch:selected > .box,
+.tunnel-line > .tunnel-block-switch:selected:hover > .box {
+    -fx-background-color: -switch-on, -switch-on;
+    -fx-padding: 3 3 3 19;
+}
+.tunnel-line > .tunnel-block-switch:selected > .box > .mark,
+.tunnel-line > .tunnel-block-switch:selected:hover > .box > .mark {
+    -fx-background-color: -primary-foreground;
+}
+.tunnel-line > .tunnel-block-switch:disabled,
+.tunnel-line > .tunnel-block-switch:disabled:hover { -fx-opacity: 0.45; }
 
 /* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb. Two
    states: accent up to the value (:filled), mid grey = available (-ram-free); every segment from the min (2 GB) to the

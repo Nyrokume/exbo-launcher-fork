@@ -30,6 +30,7 @@ import javafx.scene.control.TextField
 import javafx.scene.control.TextFormatter
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
+import javafx.scene.control.OverrunStyle
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.AnchorPane
 import javafx.scene.shape.SVGPath
@@ -104,7 +105,10 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var tunnelScroll: ScrollPane
     @FXML lateinit var accountsPage: VBox
     @FXML lateinit var sensPage: VBox
+    @FXML lateinit var jvmSummary: VBox
+    @FXML lateinit var jvmStatusKicker: Label
     @FXML lateinit var jvmStatus: Label
+    @FXML lateinit var jvmStatusHint: Label
     @FXML lateinit var jvmGrid: GridPane
     @FXML lateinit var regionGroup: ToggleGroup
     @FXML lateinit var regionRu: RadioButton
@@ -514,20 +518,37 @@ class SettingsController(private val ctx: UiContext) {
             val heap = if (built == null) ctx.t("settings.jvm.unavailable") else ctx.t("settings.jvm.heap", built.heapGb)
             val title = Label("${preset.version} · $heap").apply {
                 styleClass.add("jvm-preset-title")
-                textOverrun = javafx.scene.control.OverrunStyle.ELLIPSIS
+                textOverrun = OverrunStyle.ELLIPSIS
+                maxWidth = Double.MAX_VALUE
+            }
+            val hint = Label(ctx.t(preset.hintKey)).apply {
+                styleClass.add("jvm-preset-hint")
+                textOverrun = OverrunStyle.ELLIPSIS
+                maxWidth = Double.MAX_VALUE
+            }
+            val chosen = Label(ctx.t("settings.jvm.chosen")).apply {
+                styleClass.add("jvm-chosen")
+                isVisible = false
+                isManaged = false
+            }
+            val text = VBox(title, hint, chosen).apply {
+                styleClass.add("jvm-preset-text")
+                maxWidth = Double.MAX_VALUE
+            }
+            HBox.setHgrow(text, Priority.ALWAYS)
+            val row = HBox(10.0, Region().apply { styleClass.add("jvm-radio") }, text).apply {
+                alignment = Pos.CENTER_LEFT
                 maxWidth = Double.MAX_VALUE
             }
             val card = Button().apply {
                 styleClass.add("jvm-preset")
                 contentDisplay = ContentDisplay.GRAPHIC_ONLY
                 alignment = Pos.CENTER_LEFT
-                graphic = title
+                graphic = row
                 userData = preset.id
                 isDisable = built == null
                 maxWidth = Double.MAX_VALUE
-                prefHeight = 58.0
-                minHeight = 58.0
-                maxHeight = 58.0
+                minHeight = Region.USE_PREF_SIZE
                 accessibleText = "${preset.version}. ${ctx.t(preset.hintKey)}"
                 setOnAction {
                     val fresh = presetBuilt(preset.id) ?: return@setOnAction
@@ -553,9 +574,13 @@ class SettingsController(private val ctx: UiContext) {
             val id = card.userData as? String ?: return@forEach
             val built = presetBuilt(id) ?: return@forEach
             val version = JvmPresets.all.firstOrNull { it.id == id }?.version ?: return@forEach
-            (card.graphic as? Label)?.text = "$version · ${ctx.t("settings.jvm.heap", built.heapGb)}"
+            presetTitle(card)?.text = "$version · ${ctx.t("settings.jvm.heap", built.heapGb)}"
         }
+        if (::jvmSummary.isInitialized) refreshJvmStatus()
     }
+
+    private fun presetTitle(card: Button): Label? =
+        (card.graphic as? javafx.scene.Parent)?.lookupAll(".jvm-preset-title")?.filterIsInstance<Label>()?.firstOrNull()
 
     private fun refreshClient() {
         refreshJvmStatus()
@@ -722,11 +747,39 @@ class SettingsController(private val ctx: UiContext) {
 
     private fun refreshJvmStatus() {
         val active = runCatching { ctx.desk.activeProfile() }.getOrNull()
-        jvmStatus.text = ctx.t("settings.jvm.active", jvmCaption(active))
+        val preset = JvmPresets.all.firstOrNull { it.id == active }
+        val chosen = !active.isNullOrBlank()
+        jvmSummary.styleClass.removeAll(listOf("selected", "empty"))
+        jvmSummary.styleClass.add(if (chosen) "selected" else "empty")
+        if (!chosen) {
+            jvmStatusKicker.text = ctx.t("settings.jvm.now")
+            jvmStatus.text = ctx.t("settings.jvm.none")
+            jvmStatusHint.text = ctx.t("settings.jvm.none.hint")
+        } else {
+            jvmStatusKicker.text = ctx.t("settings.jvm.chosen")
+            val heap = preset?.let { presetBuilt(it.id) }?.heapGb
+            val name = jvmCaption(active)
+            jvmStatus.text = if (heap != null) "$name · ${ctx.t("settings.jvm.heap", heap)}" else name
+            jvmStatusHint.text = when {
+                preset != null -> ctx.t(preset.hintKey)
+                active == JvmProfile.RECOMMENDED -> ctx.t("settings.jvm.profile.hint")
+                else -> ""
+            }
+        }
+        jvmStatusHint.isVisible = jvmStatusHint.text.isNotBlank()
+        jvmStatusHint.isManaged = jvmStatusHint.isVisible
         jvmGrid.children.filterIsInstance<Button>().forEach { card ->
             val on = card.userData == active
             if (on && "selected" !in card.styleClass) card.styleClass.add("selected")
             if (!on) card.styleClass.remove("selected")
+            val mark = (card.graphic as? javafx.scene.Parent)?.lookupAll(".jvm-chosen")?.filterIsInstance<Label>()?.firstOrNull()
+            mark?.isVisible = on
+            mark?.isManaged = on
+            val item = JvmPresets.all.firstOrNull { it.id == card.userData }
+            if (item != null) {
+                val state = if (on) ctx.t("settings.jvm.chosen") else ""
+                card.accessibleText = listOf(item.version, ctx.t(item.hintKey), state).filter { it.isNotBlank() }.joinToString(". ")
+            }
         }
     }
 

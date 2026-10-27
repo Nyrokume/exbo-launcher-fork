@@ -1,12 +1,18 @@
 package dev.launcherfork.ui.screens.settings
 
+import dev.launcherfork.domain.ServerBlockState
+import dev.launcherfork.stalzone.FirewallNotElevated
 import dev.launcherfork.stalzone.NodeProbe
 import dev.launcherfork.stalzone.RankedTarget
 import dev.launcherfork.stalzone.RoxyCatalog
+import dev.launcherfork.stalzone.ServerBlock
 import dev.launcherfork.stalzone.StalzonePaths
+import dev.launcherfork.stalzone.TunnelAddresses
 import dev.launcherfork.stalzone.TunnelCache
+import dev.launcherfork.stalzone.TunnelCatalog
 import dev.launcherfork.stalzone.TunnelCatalogs
 import dev.launcherfork.stalzone.TunnelEndpoint
+import dev.launcherfork.stalzone.TunnelFirewall
 import dev.launcherfork.stalzone.TunnelOverrides
 import dev.launcherfork.stalzone.TunnelProbe
 import dev.launcherfork.stalzone.TunnelProbeOutcome
@@ -22,6 +28,7 @@ import javafx.event.EventHandler
 import javafx.geometry.Pos
 import javafx.scene.Node
 import javafx.scene.control.Button
+import javafx.scene.control.CheckBox
 import javafx.scene.control.ContentDisplay
 import javafx.scene.control.Label
 import javafx.scene.control.OverrunStyle
@@ -47,6 +54,13 @@ internal object TunnelServices {
     var probe: (TunnelEndpoint) -> TunnelProbeOutcome = { endpoint -> TunnelProbe.measure(endpoint) }
     var clock: () -> Instant = { Instant.now() }
 
+    /**
+     * Firewall write used by the tunnel page. The list is reduced with [ServerBlock.uniqueValidIpv4]
+     * again inside [defaultApply]. Tests replace this; production calls [TunnelFirewall.apply].
+     */
+    var applyBlocks: (List<String>) -> Result<String> = { ips -> defaultApply(ips) }
+    var clearBlocks: () -> Result<Int> = { TunnelFirewall.system().clear() }
+
     fun overridesFile(): Path = (directory ?: StalzonePaths.jvmWrapperDir()).resolve("overrides.json")
 
     fun statsFile(): Path = (directory ?: StalzonePaths.jvmWrapperDir()).resolve("cache").resolve("tunnel_stats.json")
@@ -57,6 +71,15 @@ internal object TunnelServices {
         fetch = { region -> TunnelCatalogs.fetch(region) }
         probe = { endpoint -> TunnelProbe.measure(endpoint) }
         clock = { Instant.now() }
+        applyBlocks = { ips -> defaultApply(ips) }
+        clearBlocks = { TunnelFirewall.system().clear() }
+    }
+
+    /** Existing firewall entry: invalid addresses never become rules. */
+    private fun defaultApply(ips: List<String>): Result<String> {
+        val unique = ServerBlock.uniqueValidIpv4(ips)
+        if (unique.isEmpty()) return Result.failure(IllegalArgumentException("No valid IPv4 addresses to block"))
+        return TunnelFirewall.system().apply(unique)
     }
 }
 
@@ -64,8 +87,12 @@ internal object TunnelServices {
  * One Roxy node per region. Opening the region loads that list. Opening a group measures its nodes
  * once. «Измерить» measures the open region and does not write an override. «Найти лучший сервер»
  * measures when this region has no fresh success, then writes the single best node.
- * «Обновить» reloads the catalog and keeps only nodes that answer. A node that does not answer
- * leaves the pool; a later answer puts it back.
+ * «Обновить» reloads the catalog. A node that was already listed stays after a miss. A node that
+ * was not in the previous list stays hidden until it answers.
+ * «Исключить группу» asks «Заблокировать N нод группы?» and only then writes the group's addresses
+ * through [ServerBlock.uniqueValidIpv4] and the existing firewall apply. The row switch toggles one
+ * server on the blocklist immediately (on = blocked) and syncs that same firewall path, with no dialog.
+ * [TunnelPresentation] drops known-dead pools such as CLOUD-RU-7 before the list, Measure, or Find best.
  */
 class TunnelPage(
     private val ctx: UiContext,
@@ -78,7 +105,10 @@ class TunnelPage(
     private val tunnelMode: VBox,
 ) {
     private var settings = TunnelSettings()
+    private var blockState = ServerBlockState()
     private var settingsError: String? = null
+    private var firewallError: String? = null
+    private var firewallGen = 0
     private val cache = TunnelCache()
     private val catalogs = linkedMapOf<TunnelRegion, RoxyCatalog>()
     private val probes = HashMap<String, NodeProbe>()
@@ -120,6 +150,37 @@ class TunnelPage(
         if (inside(modeButton, target) || inside(modeList, target)) return@EventHandler
         setModeOpen(false)
     }
+    private val confirmText = Label().apply {
+        styleClass.add("tunnel-confirm-text")
+        isWrapText = true
+        maxWidth = Double.MAX_VALUE
+    }
+    private val confirmYes = Button().apply {
+        styleClass.addAll("settings-mini", "primary", "tunnel-confirm-yes")
+        isMnemonicParsing = false
+    }
+    private val confirmNo = Button().apply {
+        styleClass.addAll("settings-mini", "tunnel-confirm-no")
+        isMnemonicParsing = false
+    }
+    private val confirmBar = HBox(8.0).apply {
+        styleClass.addAll("tunnel-confirm", "card", "zone-radius-md")
+        alignment = Pos.CENTER_LEFT
+        isVisible = false
+        isManaged = false
+        maxWidth = Double.MAX_VALUE
+        val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
+        HBox.setHgrow(confirmText, Priority.ALWAYS)
+        children.addAll(confirmText, gap, confirmYes, confirmNo)
+    }
+    private val firewallNote = Label().apply {
+        styleClass.addAll("settings-note", "tunnel-firewall-note")
+        isWrapText = true
+        isVisible = false
+        isManaged = false
+        maxWidth = Double.MAX_VALUE
+    }
+    private var confirmAction: (() -> Unit)? = null
 
     fun bind() {
         reloadFiles()
@@ -130,6 +191,7 @@ class TunnelPage(
         tunnelFindBest.setOnAction { findBest() }
         tunnelRefresh.setOnAction { refreshServers() }
         mountModeList()
+        mountConfirm()
         regionGroup.selectedToggleProperty().addListener { _, _, toggle ->
             if (suppressRegion) return@addListener
             val region = regionButtons[toggle] ?: return@addListener
@@ -206,8 +268,41 @@ class TunnelPage(
     private fun inside(root: Node, target: Node): Boolean =
         generateSequence(target) { it.parent }.any { it === root }
 
+    private fun mountConfirm() {
+        if (confirmBar.parent != null && firewallNote.parent != null) return
+        confirmYes.setOnAction {
+            val action = confirmAction
+            closeConfirm()
+            action?.invoke()
+        }
+        confirmNo.setOnAction { closeConfirm() }
+        val page = tunnelMode.parent?.parent as? VBox ?: return
+        val scroll = page.children.filterIsInstance<javafx.scene.control.ScrollPane>().firstOrNull() ?: return
+        val index = page.children.indexOf(scroll)
+        if (index >= 0 && confirmBar.parent !== page) page.children.add(index, confirmBar)
+        val noteAt = page.children.indexOf(scroll)
+        if (noteAt >= 0 && firewallNote.parent !== page) page.children.add(noteAt, firewallNote)
+    }
+
+    /** Short in-page confirm. [action] runs only from the yes button, never from opening the bar. */
+    private fun askConfirm(message: String, yes: String, action: () -> Unit) {
+        mountConfirm()
+        confirmAction = action
+        confirmText.text = message
+        confirmYes.text = yes
+        confirmBar.isVisible = true
+        confirmBar.isManaged = true
+    }
+
+    private fun closeConfirm() {
+        confirmAction = null
+        confirmBar.isVisible = false
+        confirmBar.isManaged = false
+    }
+
     private fun openRegion(region: TunnelRegion) {
         setModeOpen(false)
+        closeConfirm()
         refreshing = false
         selected = region
         cancelRound()
@@ -226,7 +321,7 @@ class TunnelPage(
             if (gen != catalogGen || selected != region) return@deliver
             loading = null
             result.onSuccess {
-                catalogs[region] = it
+                catalogs[region] = TunnelPresentation.present(it)
                 catalogError = null
             }
             result.onFailure { catalogError = ctx.t("settings.tunnel.load_failed") }
@@ -246,6 +341,7 @@ class TunnelPage(
         val loaded = TunnelOverrides.loadSettings(TunnelServices.overridesFile())
         settings = loaded.first
         settingsError = loaded.second
+        blockState = ctx.services.settings.load().serverBlock
         val cached = TunnelOverrides.loadCache(TunnelServices.statsFile())
         cache.endpoints.clear()
         cache.endpoints.putAll(cached.first.endpoints)
@@ -255,6 +351,7 @@ class TunnelPage(
     private fun select(target: TunnelTarget) {
         if (settingsError != null) return
         if (settings.isExcluded(target.region, target.pool)) return
+        if (nodeBlocked(target)) return
         val view = probes[target.key()] ?: return
         if (!view.selectable) return
         val previous = settings
@@ -265,12 +362,110 @@ class TunnelPage(
         render()
     }
 
-    private fun toggleExclusion(pool: String) {
+    /**
+     * Group exclude always confirms. Yes is the only caller that adds every node in the pool and
+     * then writes the firewall. Cancel leaves exclusions, the blocklist and the firewall alone.
+     */
+    private fun requestGroupExclusion(pool: dev.launcherfork.stalzone.TunnelPool) {
         if (settingsError != null) return
+        val nodes = pool.tunnels.filter { ipv4Host(it.address) != null }
+        if (nodes.isEmpty()) return
+        val excluding = !settings.isExcluded(selected, pool.name)
+        val message = ctx.t(if (excluding) "settings.tunnel.exclude.confirm" else "settings.tunnel.include.confirm", nodes.size)
+        val yes = ctx.t(if (excluding) "settings.tunnel.exclude.confirm_yes" else "settings.tunnel.include.confirm_yes")
+        askConfirm(message, yes) { applyGroupExclusion(pool.name, nodes, excluding) }
+    }
+
+    private fun applyGroupExclusion(pool: String, nodes: List<TunnelEndpoint>, excluding: Boolean) {
         val previous = settings
-        settings = settings.withExclusion(selected, pool, excluded = !settings.isExcluded(selected, pool))
-        if (!persist()) settings = previous
+        settings = settings.withExclusion(selected, pool, excluded = excluding)
+        if (!persist()) {
+            settings = previous
+            return
+        }
+        val ids = nodes.map { nodeId(pool, it.name) }.toSet()
+        val next = if (excluding) (blockState.blocked + ids).distinct() else blockState.blocked.filter { it !in ids }
+        if (!saveBlock(next)) {
+            settings = previous
+            persist()
+            return
+        }
         render()
+        commitFirewall(next)
+    }
+
+    /** One server, no dialog. Membership changes immediately; the firewall sync uses the same host filter. */
+    private fun toggleNodeBlock(target: TunnelTarget) {
+        if (settingsError != null) return
+        val id = nodeId(target.pool, target.endpoint.name)
+        val next = if (id in blockState.blocked) blockState.blocked.filter { it != id } else (blockState.blocked + id).distinct()
+        if (!saveBlock(next)) return
+        render()
+        commitFirewall(next)
+    }
+
+    private fun saveBlock(ids: List<String>): Boolean = try {
+        val next = blockState.copy(blocked = ids.distinct(), mode = ServerBlock.MODE)
+        ctx.services.settings.save(ctx.services.settings.load().copy(serverBlock = next))
+        blockState = ctx.services.settings.load().serverBlock
+        true
+    } catch (_: Exception) {
+        false
+    }
+
+    /**
+     * Full blocklist, not a hand-built script. Hosts come from [ServerBlock.resolveBlockedHosts]
+     * (which keeps [ServerBlock.uniqueValidIpv4] only) and [TunnelFirewall.apply] filters again.
+     * An empty list clears the existing rules. A group call reaches this only after confirm.
+     */
+    private fun commitFirewall(ids: List<String>) {
+        val unique = ServerBlock.uniqueValidIpv4(ServerBlock.resolveBlockedHosts(knownServers(), ids))
+        val gen = ++firewallGen
+        val run = {
+            if (unique.isEmpty()) TunnelServices.clearBlocks().map { "" }
+            else TunnelServices.applyBlocks(unique)
+        }
+        val deliver = deliver@{ result: Result<String> ->
+            if (gen != firewallGen) return@deliver
+            firewallError = result.fold(
+                onSuccess = { null },
+                onFailure = { error ->
+                    if (error is FirewallNotElevated) ctx.t("settings.tunnel.admin")
+                    else ctx.t("settings.tunnel.failed", error.message ?: "")
+                },
+            )
+            render()
+        }
+        if (TunnelServices.inline) {
+            deliver(run())
+        } else {
+            thread(name = "tunnel-firewall", isDaemon = true) {
+                val result = run()
+                Platform.runLater { deliver(result) }
+            }
+        }
+    }
+
+    private fun knownServers(): List<TunnelCatalog.Server> {
+        val live = ArrayList<TunnelCatalog.Server>()
+        for ((region, catalog) in catalogs) {
+            for (pool in catalog.pools) {
+                for (endpoint in pool.tunnels) {
+                    val parsed = TunnelAddresses.parse(endpoint.address) ?: continue
+                    live += TunnelCatalog.Server(
+                        id = nodeId(pool.name, endpoint.name),
+                        pool = pool.name,
+                        name = endpoint.name,
+                        address = endpoint.address,
+                        host = parsed.first,
+                        port = parsed.second,
+                        region = region.name,
+                    )
+                }
+            }
+        }
+        val seen = live.map { it.id }.toSet()
+        return live + TunnelCatalog.servers().filter { it.id !in seen }
     }
 
     private fun persist(): Boolean = try {
@@ -286,7 +481,9 @@ class TunnelPage(
         val seen = HashSet<String>()
         val out = ArrayList<TunnelTarget>()
         for (pool in catalog.pools) {
+            if (TunnelPresentation.unlistedPool(pool.name)) continue
             for (endpoint in pool.tunnels) {
+                if (ipv4Host(endpoint.address) == null) continue
                 if (!seen.add(endpoint.address)) continue
                 out += TunnelTarget(selected, pool.name, endpoint)
             }
@@ -313,7 +510,7 @@ class TunnelPage(
      */
     private fun findBest() {
         val catalog = catalogs[selected] ?: return
-        val targets = catalog.targets(selected) { settings.isExcluded(selected, it) }
+        val targets = candidates(catalog)
         if (targets.isEmpty()) return
         if (targets.none { freshSuccess(it) }) {
             startRound(targets) { applyWinner(targets) }
@@ -352,7 +549,7 @@ class TunnelPage(
 
     /**
      * Reloads the open region. Servers that were not in the previous list stay hidden until they
-     * answer. A miss, this round or the last saved sample, drops the node from the pool.
+     * answer. A miss on a server that was already listed leaves the row in place.
      */
     private fun refreshServers() {
         if (measuring || refreshing || catalogs[selected] == null) return
@@ -370,10 +567,11 @@ class TunnelPage(
             }
             refreshing = false
             result.onSuccess { fresh ->
+                val shown = TunnelPresentation.present(fresh)
                 val known = catalogs[region]?.pools.orEmpty().flatMap { it.tunnels }.map { it.address }.toSet()
-                catalogs[region] = fresh
+                catalogs[region] = shown
                 catalogError = null
-                val targets = regionTargets(fresh)
+                val targets = regionTargets(shown)
                 for (target in targets) {
                     if (target.endpoint.address !in known) awaiting += target.key()
                 }
@@ -418,7 +616,8 @@ class TunnelPage(
                     awaiting.remove(target.key())
                 }
                 TunnelProbeOutcome.NoReply -> {
-                    hidden.add(target.key())
+                    // A miss hides a server only when this refresh had not shown it yet.
+                    if (target.key() in awaiting) hidden.add(target.key())
                     awaiting.remove(target.key())
                 }
             }
@@ -474,6 +673,10 @@ class TunnelPage(
         tunnelRefresh.isDisable = busy
         modeButton.isDisable = locked
         if (locked) setModeOpen(false)
+        firewallNote.text = firewallError.orEmpty()
+        firewallNote.isVisible = firewallError != null
+        firewallNote.isManaged = firewallError != null
+        mountConfirm()
         paintPools(locked)
     }
 
@@ -534,12 +737,18 @@ class TunnelPage(
             maxWidth = VALUE_COLUMN
         }
         val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
+        val trail = Region().apply {
+            minWidth = BLOCK_SWITCH
+            prefWidth = BLOCK_SWITCH
+            maxWidth = BLOCK_SWITCH
+        }
         return HBox(
             8.0,
             gap,
             caption("settings.tunnel.col.client", "client"),
             caption("settings.tunnel.col.server", "server"),
             caption("settings.tunnel.col.sum", "sum"),
+            trail,
         ).apply {
             styleClass.add("tunnel-legend-row")
             alignment = Pos.CENTER_RIGHT
@@ -556,44 +765,69 @@ class TunnelPage(
 
     /** The node [findBest] would write: lowest score among replies that are not at the limit. */
     private fun recommendation(catalog: RoxyCatalog): RankedTarget? {
-        val targets = catalog.targets(selected) { settings.isExcluded(selected, it) }
+        val targets = candidates(catalog)
         return cache.best(targets, probes, settings.mode, TunnelServices.clock(), limit = 1).firstOrNull()
     }
 
-    /** A miss this session, a node still waiting on refresh, or a saved timeout. */
-    private fun inactive(address: String): Boolean {
-        val key = TunnelOverrides.cacheKey(selected, address)
+    /** Find-best and the recommendation skip excluded pools, dead fixtures, blocked nodes and addresses with no IPv4. */
+    private fun candidates(catalog: RoxyCatalog): List<TunnelTarget> =
+        catalog.targets(selected) { settings.isExcluded(selected, it) || TunnelPresentation.unlistedPool(it) }
+            .filter { ipv4Host(it.endpoint.address) != null && !nodeBlocked(it) }
+
+    /**
+     * Shown when the address has a valid IPv4. A closed or limit status without that address is not
+     * shown. A failed measure of a node that was already listed does not remove the row. A server
+     * that appeared in this refresh and has not answered yet stays hidden.
+     */
+    private fun showNode(endpoint: TunnelEndpoint): Boolean {
+        val host = ipv4Host(endpoint.address)
+        val key = TunnelOverrides.cacheKey(selected, endpoint.address)
         val view = probes[key]
-        if (view != null && view.received) return view.failed
-        if (key in hidden || key in awaiting) return true
-        val last = cache.endpoints[key]?.samples?.maxByOrNull { it.measuredAt } ?: return false
-        return last.timedOut
+        val history = cache.endpoints[key]
+        val limited = view?.limitReached == true || history?.limitReached == true
+        val closed = (view != null && view.received && view.failed) ||
+            history?.samples?.maxByOrNull { it.measuredAt }?.timedOut == true
+        if (host == null && (limited || closed)) return false
+        if (host == null) return false
+        if (key in hidden || key in awaiting) return false
+        return true
     }
 
+    private fun ipv4Host(address: String): String? {
+        val host = TunnelAddresses.parse(address)?.first ?: return null
+        return host.takeIf { ServerBlock.isValidIpv4(it) }
+    }
+
+    private fun nodeId(pool: String, name: String): String = "$pool::$name"
+
+    private fun nodeBlocked(target: TunnelTarget): Boolean =
+        nodeId(target.pool, target.endpoint.name) in blockState.blocked
+
     private fun poolBlock(pool: dev.launcherfork.stalzone.TunnelPool, locked: Boolean, bestAddress: String?): VBox? {
-        val visible = pool.tunnels.filter { !inactive(it.address) }
+        val visible = pool.tunnels.filter { showNode(it) }
         if (visible.isEmpty()) return null
         val excluded = settings.isExcluded(selected, pool.name)
         val title = Label(pool.name).apply {
             styleClass.add("pool-title")
+            minWidth = 0.0
+            textOverrun = OverrunStyle.ELLIPSIS
             cursor = javafx.scene.Cursor.HAND
             tooltip = Tooltip(ctx.t("settings.tunnel.open"))
             setOnMouseClicked { measurePool(pool.name) }
         }
         val meta = Label(ctx.t("settings.tunnel.pool_meta", visible.size)).apply { styleClass.add("pool-meta") }
-        val exclude = Button().apply {
+        val excludeLabel = if (excluded) "settings.tunnel.excluded_group" else "settings.tunnel.exclude_group"
+        val exclude = Button(ctx.t(excludeLabel)).apply {
             styleClass.add("tunnel-pool-lock")
             if (excluded) styleClass.add("locked")
-            contentDisplay = ContentDisplay.GRAPHIC_ONLY
-            graphic = lockMark(if (excluded) "shut" else "open")
+            isMnemonicParsing = false
             isDisable = locked
-            val state = if (excluded) "settings.tunnel.excluded" else "settings.tunnel.exclude"
-            accessibleText = ctx.t(state)
+            accessibleText = text
             tooltip = Tooltip(ctx.t(if (excluded) "settings.tunnel.pool_lock.shut" else "settings.tunnel.pool_lock.open"))
-            setOnAction { toggleExclusion(pool.name) }
+            setOnAction { requestGroupExclusion(pool) }
         }
         val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
-        val head = HBox(title, meta, gap, exclude).apply {
+        val head = HBox(8.0, title, meta, gap, exclude).apply {
             styleClass.add("pool-head")
             alignment = Pos.CENTER_LEFT
             maxWidth = Double.MAX_VALUE
@@ -604,12 +838,14 @@ class TunnelPage(
         }
         visible.forEach { endpoint ->
             val target = TunnelTarget(selected, pool.name, endpoint)
-            list.children += nodeButton(
+            val blocked = nodeBlocked(target)
+            list.children += nodeLine(
                 target,
                 probes[target.key()] ?: NodeProbe(),
                 locked,
-                recommended = endpoint.address == bestAddress && !excluded,
+                recommended = endpoint.address == bestAddress && !excluded && !blocked,
                 excluded = excluded,
+                blocked = blocked,
             )
         }
         markLastNode(list)
@@ -622,9 +858,47 @@ class TunnelPage(
     }
 
     private fun markLastNode(list: VBox) {
-        val nodes = list.children.filterIsInstance<Button>().filter { "tunnel-node" in it.styleClass }
-        nodes.forEach { it.styleClass.remove("last") }
-        nodes.lastOrNull()?.styleClass?.add("last")
+        val lines = list.children.filter { "tunnel-line" in it.styleClass }
+        lines.forEach { it.styleClass.remove("last") }
+        lines.lastOrNull()?.styleClass?.add("last")
+    }
+
+    private fun nodeLine(
+        target: TunnelTarget,
+        view: NodeProbe,
+        locked: Boolean,
+        recommended: Boolean,
+        excluded: Boolean,
+        blocked: Boolean,
+    ): HBox {
+        val select = nodeButton(target, view, locked, recommended = recommended, excluded = excluded, blocked = blocked)
+        val block = CheckBox().apply {
+            styleClass.addAll("switch", "tunnel-block-switch")
+            isSelected = blocked
+            isDisable = locked
+            minWidth = BLOCK_SWITCH
+            prefWidth = BLOCK_SWITCH
+            maxWidth = BLOCK_SWITCH
+            minHeight = BLOCK_SWITCH_HEIGHT
+            prefHeight = BLOCK_SWITCH_HEIGHT
+            maxHeight = BLOCK_SWITCH_HEIGHT
+            accessibleText = ctx.t(if (blocked) "settings.tunnel.unblock_node" else "settings.tunnel.block_node")
+            tooltip = Tooltip(ctx.t(if (blocked) "settings.tunnel.unblock_node.hint" else "settings.tunnel.block_node.hint"))
+            selectedProperty().addListener { _, was, on ->
+                if (was == on || on == nodeBlocked(target)) return@addListener
+                toggleNodeBlock(target)
+            }
+        }
+        return HBox(8.0, select, block).apply {
+            styleClass.add("tunnel-line")
+            if ("selected" in select.styleClass) styleClass.add("selected")
+            if ("best" in select.styleClass) styleClass.add("best")
+            if ("limited" in select.styleClass) styleClass.add("limited")
+            if (blocked) styleClass.add("node-blocked")
+            alignment = Pos.CENTER_LEFT
+            maxWidth = Double.MAX_VALUE
+            HBox.setHgrow(select, Priority.ALWAYS)
+        }
     }
 
     private fun nodeButton(
@@ -635,28 +909,29 @@ class TunnelPage(
         forceLocked: Boolean = false,
         recommended: Boolean = false,
         excluded: Boolean = false,
+        blocked: Boolean = false,
     ): Button {
         val shown = figures(target, view)
-        val blocked = excluded || shown.limitReached || forceLocked
         val name = Label(prefix + target.endpoint.name).apply {
             styleClass.add("tunnel-row")
             textOverrun = OverrunStyle.ELLIPSIS
+            minWidth = 0.0
             maxWidth = Double.MAX_VALUE
         }
         HBox.setHgrow(name, Priority.ALWAYS)
         val (client, server, sum) = rttText(shown)
         val decision = decisionKind()
-        val kind = when {
-            excluded -> "shut"
-            shown.limitReached || forceLocked -> "limit"
-            else -> "open"
+        val stateKey = when {
+            blocked -> "settings.tunnel.unblock_node"
+            shown.limitReached || forceLocked -> "settings.tunnel.limit"
+            excluded -> "settings.tunnel.excluded_group"
+            else -> "settings.tunnel.block_node"
         }
         val dot = Region().apply {
             styleClass.add("tunnel-best-dot")
             if (!recommended) styleClass.add("idle")
         }
         val parts = arrayOf<javafx.scene.Node>(
-            lockMark(kind),
             dot,
             name,
             rtt(client, "client", if (shown.received && !shown.failed) shown.clientMs else null, decision),
@@ -672,35 +947,23 @@ class TunnelPage(
         val serverName = ctx.t("settings.tunnel.col.server")
         val sumName = ctx.t("settings.tunnel.col.sum")
         val quality = qualityText(target, shown)
-        val stateName = ctx.t(
-            when (kind) {
-                "shut" -> "settings.tunnel.lock.locked"
-                "limit" -> "settings.tunnel.limit"
-                else -> "settings.tunnel.lock.open"
-            },
-        )
+        val stateName = ctx.t(stateKey)
         return Button().apply {
             styleClass.add("tunnel-node")
             if (chosen) styleClass.add("selected")
             if (recommended) styleClass.add("best")
-            if (excluded) styleClass.add("blocked")
+            if (blocked) styleClass.add("node-blocked")
             if (view.limitReached || forceLocked) styleClass.add("limited")
             contentDisplay = ContentDisplay.GRAPHIC_ONLY
             alignment = Pos.CENTER_LEFT
             graphic = row
             maxWidth = Double.MAX_VALUE
             userData = target.endpoint.address
-            isDisable = locked || blocked || !view.selectable
+            isDisable = locked || excluded || blocked || shown.limitReached || forceLocked || !view.selectable
             accessibleText = "${target.endpoint.name}. $stateName. $clientName $client, $serverName $server, $sumName $sum"
             tooltip = Tooltip("${target.endpoint.address}\n$stateName\n$clientName $client, $serverName $server, $sumName $sum$quality")
             setOnAction { select(target) }
         }
-    }
-
-    /** Closed when the pool is excluded, amber when the node is at its limit, open otherwise. */
-    private fun lockMark(kind: String) = Region().apply {
-        styleClass.addAll("tunnel-state", kind)
-        isMouseTransparent = true
     }
 
     /** The row shows the same hour average that ranking uses. One fresh sample is that sample. */
@@ -754,5 +1017,33 @@ class TunnelPage(
 
     private companion object {
         const val VALUE_COLUMN = 64.0
+        const val BLOCK_SWITCH = 36.0
+        const val BLOCK_SWITCH_HEIGHT = 20.0
+    }
+}
+
+/**
+ * Catalog the tunnel page is willing to show. Known-dead mock pools (CLOUD-RU-7 and any CLOUD-* pool)
+ * and addresses with no valid IPv4 are removed before rows, Measure, or Find best see them.
+ */
+internal object TunnelPresentation {
+    fun present(catalog: RoxyCatalog): RoxyCatalog {
+        val pools = catalog.pools.mapNotNull { pool ->
+            if (unlistedPool(pool.name)) return@mapNotNull null
+            val tunnels = pool.tunnels.filter { endpoint -> listedAddress(endpoint.address) }
+            if (tunnels.isEmpty()) null else dev.launcherfork.stalzone.TunnelPool(pool.name, tunnels)
+        }
+        return RoxyCatalog(catalog.mode, pools, catalog.clientToTunnelRttWeight)
+    }
+
+    /** CLOUD-RU-7 and the same CLOUD-* fixture shape never answer. */
+    fun unlistedPool(name: String): Boolean {
+        val key = name.trim()
+        return key.equals("CLOUD-RU-7", ignoreCase = true) || key.startsWith("CLOUD-", ignoreCase = true)
+    }
+
+    private fun listedAddress(address: String): Boolean {
+        val host = TunnelAddresses.parse(address)?.first ?: return false
+        return ServerBlock.isValidIpv4(host)
     }
 }
