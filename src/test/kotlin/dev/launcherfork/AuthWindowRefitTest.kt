@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test
 import kotlin.math.abs
 
 /**
- * Fixed 460×620 auth window: an idle panel with a focused, blinking field must not spam refits.
- * An error line uses the panel's internal VGrow (logo shrinks) — stage height stays [Theme.AUTH_WINDOW_HEIGHT].
+ * Compact login window: an idle panel with a focused, blinking field must not spam refits.
+ * An error line refits the window to the panel, within [Theme.AUTH_WINDOW_HEIGHT].
  */
 class AuthWindowRefitTest {
 
@@ -30,7 +30,7 @@ class AuthWindowRefitTest {
             }
             assertTrue(FxTestSupport.waitFx(10_000) { nav.panelController is InitialAuthController })
             assertTrue(fitted(), "the login window did not fit its panel")
-            assertEquals(dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, FxTestSupport.onFx { nav.authStage.height }, 0.5)
+            assertTrue(FxTestSupport.onFx { nav.authStage.height } < dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "login window is compact")
             FxTestSupport.onFx { (nav.panelController as InitialAuthController).loginField.requestFocus() }
             Thread.sleep(300)
             val idleStart = FxTestSupport.onFx { nav.authRefitChecks }
@@ -40,7 +40,8 @@ class AuthWindowRefitTest {
             val before = FxTestSupport.onFx { nav.authStage.height }
             FxTestSupport.onFx { (nav.panelController as InitialAuthController).onRestore() } // shows an error line
             assertTrue(FxTestSupport.waitFx { (nav.panelController as InitialAuthController).errorFirst.isVisible })
-            assertEquals(before, FxTestSupport.onFx { nav.authStage.height }, 0.5, "fixed auth window must not grow on error")
+            assertTrue(FxTestSupport.waitFx { nav.authStage.height >= before - 0.5 }, "the login window shrank on error")
+            assertTrue(FxTestSupport.onFx { nav.authStage.height } <= dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT + 0.5)
             assertTrue(fitted(), "the window does not fit the panel with the error line")
         } finally {
             FxTestSupport.onFx { nav.close() }

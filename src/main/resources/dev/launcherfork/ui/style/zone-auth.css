@@ -196,6 +196,8 @@
 .zone-logo .logo-path { -fx-fill: -foreground; }
 /* login card: the logo stands alone, no gap under it */
 .zone-login-logo { -fx-padding: 0; }
+/* login: compact logo block, the window fits its content (user 2026-10-27) */
+.zone-top.zone-login-top { -fx-padding: 34 28 26 28; }
 /* login: one monotone black, the logo block takes the form colour instead of the grey card */
 .zone-top.zone-top-plain { -fx-background-color: -card-description; }
 .zone-bottom-status { -fx-spacing: 12; -fx-padding: 26 28 30 28; }

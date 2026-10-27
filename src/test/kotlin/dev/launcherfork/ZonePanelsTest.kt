@@ -92,34 +92,18 @@ class ZonePanelsTest {
     }
 
     @Test
-    fun socialTilesAreSteamAndEpicOnly() = FxTestSupport.onFx {
-        // Google auth is not supported: only Steam and Epic Games tiles, 44x44 with 10 px spacing, right-aligned in the form
-        // row under remember / restore (user's sketch), the top card keeps only the title
+    fun socialLoginIsHidden() = FxTestSupport.onFx {
+        // Steam / Epic Games login hidden on the user's request (2026-10-27): the row is invisible and unmanaged, so the
+        // form collapses; the nodes stay for the controller. No Google tile either.
         val panel = Fxml.load<InitialAuthController>(FxTestSupport.context("ru"), "auth_panel.fxml")
         val scene = Scene(panel.root, Theme.AUTH_PANEL_WIDTH, Theme.AUTH_PANEL_HEIGHT, Color.BLACK)
         Theme.apply(scene, "ru")
-        val zoneSheet = Theme.stylesheet("theme-zone.css")
-        if (zoneSheet !in scene.stylesheets) scene.stylesheets.add(1, zoneSheet)
         scene.root.applyCss(); scene.root.layout()
-        val tiles = scene.root.lookupAll(".zone-social").map { it as javafx.scene.control.Button }
-        assertEquals(listOf("Steam", "Epic Games"), tiles.map { it.accessibleText })
+        val row = scene.root.lookup(".zone-social-row")!!
+        assertFalse(row.isVisible, "social row is shown")
+        assertFalse(row.isManaged, "social row still takes space")
+        assertFalse(generateSequence(panel.controller.enterSteamButton as javafx.scene.Node) { it.parent }.all { it.isVisible })
         assertTrue(scene.root.lookup("#zoneGoogle") == null, "Google tile is back")
-        assertTrue(scene.root.lookupAll(".icon-google").isEmpty())
-        // Tab order: Steam -> Epic (document order, both traversable), Steam is the controller's enterSteamButton
-        assertTrue(tiles[0] === panel.controller.enterSteamButton)
-        assertTrue(tiles.all { it.isFocusTraversable })
-        val row = tiles[0].parent as javafx.scene.layout.HBox
-        assertEquals(tiles, row.children.toList())
-        tiles.forEach { assertEquals(44.0, it.width, 0.5); assertEquals(44.0, it.height, 0.5) }
-        assertEquals(44.0 + 10.0, tiles[1].layoutX - tiles[0].layoutX, 0.5)
-        val c = panel.controller
-        val form = c.enterButton.localToScene(c.enterButton.layoutBounds)
-        val epic = tiles[1].localToScene(tiles[1].layoutBounds)
-        val steam = tiles[0].localToScene(tiles[0].layoutBounds)
-        assertEquals(form.maxX, epic.maxX, 1.0, "tiles end at the form's right edge")
-        assertTrue(steam.minY > c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY, "tiles under remember me")
-        assertTrue(steam.maxY < form.minY, "tiles above ВОЙТИ")
-        assertTrue(scene.root.lookupAll(".zone-top .zone-social").isEmpty(), "tiles left in the top card")
     }
 
     @Test
