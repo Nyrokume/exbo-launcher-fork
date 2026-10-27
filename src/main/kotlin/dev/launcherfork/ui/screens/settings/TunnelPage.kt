@@ -770,44 +770,69 @@ class TunnelPage(
                 val best = recommendation(catalog)
                 val blocks = catalog.pools.mapNotNull { poolBlock(it, locked, best?.target?.endpoint?.address) }
                 if (blocks.isEmpty()) tunnelPools.children += note(ctx.t("settings.tunnel.no_working"))
-                else {
-                    tunnelPools.children += columnLegend()
-                    tunnelPools.children.addAll(blocks)
-                }
+                else tunnelPools.children.addAll(blocks)
             }
         }
         if (scroll != null) scroll.vvalue = saved
     }
 
-    /** Column names over the two figures: hop to the tunnel, then their sum. The hop to the game stays in the tooltip. */
+    /**
+     * Column captions for one pool: name | До вас | Пинг | toggle.
+     * The same shell as each server row, inside the card, so the captions sit on the value cells.
+     * The hop to the game stays in the tooltip.
+     */
     private fun columnLegend(): HBox {
         val decision = decisionKind()
         fun caption(key: String, kind: String) = Label(ctx.t(key)).apply {
             styleClass.addAll("tunnel-legend", kind)
             if (kind == decision) styleClass.add("decision")
             alignment = Pos.CENTER_RIGHT
+            textOverrun = OverrunStyle.ELLIPSIS
             tooltip = Tooltip(ctx.t("$key.hint"))
-            minWidth = VALUE_COLUMN
-            prefWidth = VALUE_COLUMN
-            maxWidth = VALUE_COLUMN
         }
-        val gap = Region().apply { HBox.setHgrow(this, Priority.ALWAYS) }
-        val trail = Region().apply {
-            minWidth = BLOCK_SWITCH
-            prefWidth = BLOCK_SWITCH
-            maxWidth = BLOCK_SWITCH
-        }
-        return HBox(
-            8.0,
-            gap,
-            caption("settings.tunnel.col.client", "client"),
-            caption("settings.tunnel.col.sum", "sum"),
-            trail,
+        return columnRow(
+            valueStrip(
+                Region(),
+                caption("settings.tunnel.col.client", "client"),
+                caption("settings.tunnel.col.sum", "sum"),
+            ),
+            Region().apply { styleClass.add("tunnel-toggle-slot") },
         ).apply {
             styleClass.add("tunnel-legend-row")
-            alignment = Pos.CENTER_RIGHT
+        }
+    }
+
+    /** Growing name cell plus two fixed value columns. */
+    private fun valueStrip(name: Node, client: Node, sum: Node): HBox {
+        if (name is Region) {
+            name.minWidth = 0.0
+            name.maxWidth = Double.MAX_VALUE
+        }
+        if (client is Region) pinWidth(client, VALUE_COLUMN)
+        if (sum is Region) pinWidth(sum, VALUE_COLUMN)
+        HBox.setHgrow(name, Priority.ALWAYS)
+        return HBox(COLUMN_GAP, name, client, sum).apply {
+            styleClass.add("tunnel-values")
+            alignment = Pos.CENTER_LEFT
             maxWidth = Double.MAX_VALUE
         }
+    }
+
+    /** Shared row: the value strip, then [TOGGLE_GAP], then the block-switch column. */
+    private fun columnRow(values: Node, toggle: Node): HBox {
+        if (toggle is Region) pinWidth(toggle, BLOCK_SWITCH)
+        HBox.setHgrow(values, Priority.ALWAYS)
+        return HBox(TOGGLE_GAP, values, toggle).apply {
+            styleClass.add("tunnel-columns")
+            alignment = Pos.CENTER_LEFT
+            maxWidth = Double.MAX_VALUE
+        }
+    }
+
+    private fun pinWidth(node: Region, width: Double) {
+        node.minWidth = width
+        node.prefWidth = width
+        node.maxWidth = width
     }
 
     /** The column [findBest] minimizes. Stability still reads the ping column. */
@@ -890,6 +915,7 @@ class TunnelPage(
             styleClass.add("tunnel-list")
             maxWidth = Double.MAX_VALUE
         }
+        list.children += columnLegend()
         visible.forEach { endpoint ->
             val target = TunnelTarget(selected, pool.name, endpoint)
             val blocked = nodeBlocked(target)
@@ -930,9 +956,6 @@ class TunnelPage(
             styleClass.addAll("switch", "tunnel-block-switch")
             isSelected = blocked
             isDisable = locked
-            minWidth = BLOCK_SWITCH
-            prefWidth = BLOCK_SWITCH
-            maxWidth = BLOCK_SWITCH
             minHeight = BLOCK_SWITCH_HEIGHT
             prefHeight = BLOCK_SWITCH_HEIGHT
             maxHeight = BLOCK_SWITCH_HEIGHT
@@ -943,15 +966,12 @@ class TunnelPage(
                 toggleNodeBlock(target)
             }
         }
-        return HBox(16.0, select, block).apply {
+        return columnRow(select, block).apply {
             styleClass.add("tunnel-line")
             if ("selected" in select.styleClass) styleClass.add("selected")
             if ("best" in select.styleClass) styleClass.add("best")
             if ("limited" in select.styleClass) styleClass.add("limited")
             if (blocked) styleClass.add("node-blocked")
-            alignment = Pos.CENTER_LEFT
-            maxWidth = Double.MAX_VALUE
-            HBox.setHgrow(select, Priority.ALWAYS)
         }
     }
 
@@ -972,7 +992,6 @@ class TunnelPage(
             minWidth = 0.0
             maxWidth = Double.MAX_VALUE
         }
-        HBox.setHgrow(name, Priority.ALWAYS)
         val (client, server, sum) = rttText(shown)
         val decision = decisionKind()
         val stateKey = when {
@@ -981,15 +1000,11 @@ class TunnelPage(
             excluded -> "settings.tunnel.excluded_group"
             else -> "settings.tunnel.block_node"
         }
-        val parts = arrayOf<javafx.scene.Node>(
+        val row = valueStrip(
             name,
             rtt(client, "client", if (shown.received && !shown.failed) shown.clientMs else null, decision),
             rtt(sum, "sum", if (shown.received && !shown.failed && !shown.limitReached) shown.totalMs else null, decision),
         )
-        val row = HBox(8.0, *parts).apply {
-            alignment = Pos.CENTER_LEFT
-            maxWidth = Double.MAX_VALUE
-        }
         val chosen = settings.override(target.region)?.address == target.endpoint.address
         val clientName = ctx.t("settings.tunnel.col.client")
         val serverName = ctx.t("settings.tunnel.col.server")
@@ -1046,9 +1061,6 @@ class TunnelPage(
         if (ms != null && ms >= 0.0) styleClass.add(TunnelOverrides.latencyBand(ms))
         if (kind == decision) styleClass.add("decision")
         alignment = Pos.CENTER_RIGHT
-        minWidth = VALUE_COLUMN
-        prefWidth = VALUE_COLUMN
-        maxWidth = VALUE_COLUMN
     }
 
     private fun note(text: String) = Label(text).apply {
@@ -1064,6 +1076,8 @@ class TunnelPage(
     }
 
     private companion object {
+        const val COLUMN_GAP = 8.0
+        const val TOGGLE_GAP = 16.0
         const val VALUE_COLUMN = 64.0
         const val BLOCK_SWITCH = 36.0
         const val BLOCK_SWITCH_HEIGHT = 20.0

@@ -766,16 +766,33 @@
 }
 .tunnel-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
 .tunnel-pools { -fx-spacing: 10; -fx-padding: 2 0 4 0; }
-/* Right inset lines the captions up with the value columns.
-   1 px card border + 10 px pool padding + 10 px row padding, plus 8 px so the 16 px
-   gap before the block switch (was 8) does not pull «Пинг» off its column. */
-.tunnel-legend-row { -fx-padding: 0 29 0 0; -fx-alignment: center-right; }
+/* Header and server rows share this shell inside the pool card: name | value | value | switch.
+   The 16 px gap before the switch is the row spacing, not a legend inset. */
+.tunnel-columns {
+    -fx-alignment: center-left;
+    -fx-padding: 0 10 0 10;
+    -fx-max-width: infinity;
+}
+.tunnel-values {
+    -fx-alignment: center-left;
+    -fx-max-width: infinity;
+}
+.tunnel-legend-row {
+    -fx-background-color: transparent;
+    -fx-cursor: default;
+}
 .tunnel-legend {
     -fx-font-size: 12;
     -fx-text-fill: -settings-muted;
     -fx-alignment: center-right;
+    -fx-padding: 2 0 2 0;
 }
 .tunnel-legend.decision { -fx-text-fill: -foreground; }
+.tunnel-toggle-slot {
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+}
 .tunnel-state {
     -fx-min-width: 14; -fx-pref-width: 14; -fx-max-width: 14;
     -fx-min-height: 14; -fx-pref-height: 14; -fx-max-height: 14;
@@ -932,11 +949,9 @@
     -fx-spacing: 0;
     -fx-max-width: infinity;
 }
-/* one server = one full-width row: name, the figures, then 16 px, then the block switch (on = blocked). */
+/* one server = one full-width row on the shared column shell: name, the figures, 16 px, then the block switch (on = blocked). */
 .tunnel-line {
     -fx-alignment: center-left;
-    -fx-spacing: 16;
-    -fx-padding: 0 10 0 10;
     -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
     -fx-background-color: transparent;
     -fx-border-color: transparent transparent -settings-divider transparent;

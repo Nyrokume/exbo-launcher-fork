@@ -862,12 +862,71 @@ class SettingsScreenTest {
                             excludeBox.minY >= poolBox.minY - 1.0 && excludeBox.maxY <= poolBox.maxY + 1.0,
                         "$where: exclude sits outside the MSK1 section",
                     )
-                    val legend = s.tunnelPools.lookupAll(".tunnel-legend").filterIsInstance<Labeled>()
-                    assertEquals(listOf("До вас", "Пинг"), legend.map { it.text }, "$where: value legend")
-                    assertTrue(legend.none { it.text == "До игры" || it.text == "To game" }, "$where: server RTT caption is still in the legend")
                     assertTrue(s.tunnelPools.lookupAll(".tunnel-metrics").isEmpty(), "$where: the metrics paragraph is still on the page")
                     assertTrue(s.tunnelPools.lookupAll(".tunnel-scale").isEmpty(), "$where: the color caption row is still on the page")
-                    assertTrue("decision" in legend.last().styleClass, "$where: ping is not the column find-best uses")
+                    assertTrue(
+                        s.tunnelPools.children.none { "tunnel-legend-row" in it.styleClass },
+                        "$where: column header floats above the pool cards",
+                    )
+                    val cards = s.tunnelPools.children.filter { "pool" in it.styleClass }
+                    assertTrue(cards.size >= 2, "$where: expected a couple of pools")
+                    cards.forEach { card ->
+                        val cardBox = (card as javafx.scene.layout.Region).localToScene(card.boundsInLocal)
+                        val header = (card as Parent).lookupAll(".tunnel-legend-row").single() as javafx.scene.layout.Region
+                        assertTrue("tunnel-columns" in header.styleClass, "$where: header left the shared column shell")
+                        assertEquals(10.0, header.padding.right, 0.01, "$where: column shell padding")
+                        val captions = header.lookupAll(".tunnel-legend").filterIsInstance<Labeled>()
+                        assertEquals(listOf("До вас", "Пинг"), captions.map { it.text }, "$where: value columns")
+                        assertTrue(captions.none { it.text == "До игры" || it.text == "To game" }, "$where: server RTT caption is still in the legend")
+                        assertTrue("decision" in captions.last().styleClass, "$where: ping is not the column find-best uses")
+                        val headerValues = header.childrenUnmodifiable[0] as Parent
+                        assertTrue("tunnel-values" in (headerValues as javafx.scene.Node).styleClass, "$where: header values left the shared strip")
+                        assertEquals(3, headerValues.childrenUnmodifiable.size, "$where: header is not name | До вас | Пинг")
+                        val slot = header.childrenUnmodifiable[1] as javafx.scene.layout.Region
+                        captions.forEach { caption ->
+                            val textW = javafx.scene.text.Text(caption.text).apply { font = caption.font }.layoutBounds.width
+                            assertTrue(textW <= caption.width + 0.5, "$where: '${caption.text}' overflows its column")
+                            val capBox = caption.localToScene(caption.boundsInLocal)
+                            assertTrue(
+                                capBox.minX >= cardBox.minX - 1.0 && capBox.maxX <= cardBox.maxX + 1.0,
+                                "$where: '${caption.text}' leaves the pool card",
+                            )
+                        }
+                        if (card === cards.first()) {
+                            captions.forEach { caption ->
+                                assertTrue(contains(window, caption.localToScene(caption.boundsInLocal)), "$where: '${caption.text}' outside")
+                            }
+                        }
+                        val lines = card.lookupAll(".tunnel-line").filterIsInstance<javafx.scene.layout.Region>()
+                        assertTrue(lines.isNotEmpty(), "$where: pool has a header and no rows")
+                        lines.forEach { line ->
+                            assertTrue("tunnel-columns" in line.styleClass, "$where: server row left the shared column shell")
+                            assertEquals(header.padding.left, line.padding.left, 0.01, "$where: header inset drifted from the row")
+                            assertEquals(header.padding.right, line.padding.right, 0.01, "$where: header inset drifted from the row")
+                            val rowButton = line.childrenUnmodifiable[0] as Button
+                            val graphic = rowButton.graphic as Parent
+                            assertTrue("tunnel-values" in (graphic as javafx.scene.Node).styleClass, "$where: row values left the shared strip")
+                            val pings = graphic.childrenUnmodifiable.filterIsInstance<Labeled>().filter { "tunnel-ping" in it.styleClass }
+                            assertEquals(2, pings.size, "$where: a row is missing a ping figure")
+                            captions.zip(pings).forEach { (caption, ping) ->
+                                val capBox = caption.localToScene(caption.boundsInLocal)
+                                val pingBox = ping.localToScene(ping.boundsInLocal)
+                                assertEquals(pingBox.centerX, capBox.centerX, 1.0, "$where: '${caption.text}' is not over its column")
+                                assertEquals(pingBox.width, capBox.width, 0.5, "$where: '${caption.text}' column width drifted")
+                                assertTrue(capBox.maxY <= pingBox.minY + 1.0, "$where: '${caption.text}' is not above the values")
+                            }
+                            val block = line.childrenUnmodifiable.filterIsInstance<CheckBox>().single { "tunnel-block-switch" in it.styleClass }
+                            assertEquals(
+                                block.localToScene(block.boundsInLocal).centerX,
+                                slot.localToScene(slot.boundsInLocal).centerX,
+                                1.0,
+                                "$where: toggle column drifted",
+                            )
+                            val gap = block.localToScene(block.boundsInLocal).minX -
+                                pings.last().localToScene(pings.last().boundsInLocal).maxX
+                            assertEquals(16.0, gap, 1.5, "$where: ping column is tight against the block switch ($gap)")
+                        }
+                    }
                     nodes.forEach { row ->
                         val block = (row.parent as Parent).lookupAll(".tunnel-block-switch").filterIsInstance<CheckBox>().single()
                         assertFalse(block.isSelected, "$where: an available server is already blocked")
@@ -882,19 +941,6 @@ class SettingsScreenTest {
                         )
                     }
                     val node = nodes.first { (it.lookup(".tunnel-row") as Labeled).text == "MSK1-1" }
-                    val pings = node.lookupAll(".tunnel-ping").filterIsInstance<Labeled>()
-                    val pingToggle = (node.parent as Parent).childrenUnmodifiable.filterIsInstance<CheckBox>()
-                        .single { "tunnel-block-switch" in it.styleClass }
-                    val pingGap = pingToggle.localToScene(pingToggle.boundsInLocal).minX -
-                        pings.last().localToScene(pings.last().boundsInLocal).maxX
-                    assertEquals(16.0, pingGap, 1.5, "$where: ping column is tight against the block switch ($pingGap)")
-                    legend.zip(pings).forEach { (caption, ping) ->
-                        val capBox = caption.localToScene(caption.boundsInLocal)
-                        val pingBox = ping.localToScene(ping.boundsInLocal)
-                        assertEquals(pingBox.centerX, capBox.centerX, 1.0, "$where: '${caption.text}' is not over its column")
-                        assertTrue(capBox.maxY <= pingBox.minY + 1.0, "$where: '${caption.text}' is not above the values")
-                        assertTrue(contains(window, capBox), "$where: '${caption.text}' outside")
-                    }
                     val line = node.parent as javafx.scene.layout.Region
                     val list = line.parent as javafx.scene.layout.Region
                     val inner = list.width - list.snappedLeftInset() - list.snappedRightInset()
@@ -1035,6 +1081,8 @@ class SettingsScreenTest {
                 assertTrue("switch" in winnerBlock.styleClass, "the recommended server has no block switch")
                 assertTrue("good" in winnerLabels.last { "tunnel-ping" in it.styleClass }.styleClass)
                 assertTrue("limited" in limited.styleClass, "a node at its limit looks open")
+                relayout(nav)
+                preview(nav.mainStage.scene, "settings-tunnel-columns")
                 val winnerPool = generateSequence(winner as javafx.scene.Node) { it.parent }.first { "pool" in it.styleClass }
                 assertEquals("MSK1", winnerPool.lookupAll(".pool-title").filterIsInstance<Labeled>().first().text)
                 assertTrue(
