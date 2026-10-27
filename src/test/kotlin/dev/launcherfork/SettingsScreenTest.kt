@@ -53,7 +53,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
 import java.time.Duration
+import java.util.Collections
 import java.util.Properties
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * The gear opens one scrollable column: memory, behaviour, updates and language, full width,
@@ -1214,6 +1217,57 @@ class SettingsScreenTest {
                 assertTrue(calls.last().none { !ServerBlock.isValidIpv4(it) }, "firewall received a non-IPv4: ${calls.last()}")
                 assertEquals(calls.last(), ServerBlock.uniqueValidIpv4(calls.last()))
             }
+    }
+
+    @Test
+    fun staleFirewallWriteDoesNotReplaceANewerOne() {
+        val calls = Collections.synchronizedList(mutableListOf<List<String>>())
+        val firstEntered = CountDownLatch(1)
+        val bothEntered = CountDownLatch(2)
+        val release = CountDownLatch(1)
+        val finished = CountDownLatch(1)
+        TunnelServices.inline = false
+        TunnelServices.beforeFirewallWrite = {
+            firstEntered.countDown()
+            bothEntered.countDown()
+            release.await(8, TimeUnit.SECONDS)
+        }
+        TunnelServices.applyBlocks = { ips ->
+            calls += ips.toList()
+            finished.countDown()
+            Result.success("ok")
+        }
+        TunnelServices.clearBlocks = {
+            calls.add(emptyList())
+            finished.countDown()
+            Result.success(0)
+        }
+        val (c, _) = settingsWith(LauncherSettings())
+        fun blockNamed(name: String): CheckBox {
+            val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
+                val row = button.graphic as? Parent
+                row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
+            }
+            return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<CheckBox>()
+                .single { "tunnel-block-switch" in it.styleClass }
+        }
+        try {
+            FxTestSupport.onFx {
+                c.showClientSection("tunnel")
+                c.settingsRoot.applyCss()
+                c.settingsRoot.layout()
+                blockNamed("MSK1-1").fire()
+            }
+            assertTrue(firstEntered.await(8, TimeUnit.SECONDS), "first firewall write did not start")
+            FxTestSupport.onFx { blockNamed("MSK1-1").fire() }
+            assertTrue(bothEntered.await(8, TimeUnit.SECONDS), "second firewall write did not start")
+            release.countDown()
+            assertTrue(finished.await(8, TimeUnit.SECONDS), "newer firewall write did not finish: $calls")
+            Thread.sleep(300) // a stale writer would land in this window; the skipped one must not
+            assertEquals(listOf(emptyList<String>()), calls.toList(), "an older block list was written after a newer one")
+        } finally {
+            release.countDown()
+        }
     }
 
     @Test

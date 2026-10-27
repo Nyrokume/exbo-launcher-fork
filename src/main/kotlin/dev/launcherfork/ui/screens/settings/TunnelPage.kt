@@ -61,6 +61,12 @@ internal object TunnelServices {
     var applyBlocks: (List<String>) -> Result<String> = { ips -> defaultApply(ips) }
     var clearBlocks: () -> Result<Int> = { TunnelFirewall.system().clear() }
 
+    /**
+     * Runs on the firewall worker before the write is allowed to start.
+     * Tests hold it to overlap two commits. Production leaves it empty.
+     */
+    var beforeFirewallWrite: () -> Unit = {}
+
     fun overridesFile(): Path = (directory ?: StalzonePaths.jvmWrapperDir()).resolve("overrides.json")
 
     fun statsFile(): Path = (directory ?: StalzonePaths.jvmWrapperDir()).resolve("cache").resolve("tunnel_stats.json")
@@ -73,6 +79,7 @@ internal object TunnelServices {
         clock = { Instant.now() }
         applyBlocks = { ips -> defaultApply(ips) }
         clearBlocks = { TunnelFirewall.system().clear() }
+        beforeFirewallWrite = {}
     }
 
     /** Existing firewall entry: invalid addresses never become rules. */
@@ -108,7 +115,9 @@ class TunnelPage(
     private var blockState = ServerBlockState()
     private var settingsError: String? = null
     private var firewallError: String? = null
-    private var firewallGen = 0
+    private val firewallGen = AtomicInteger()
+    /** One firewall mutation at a time. A newer commit skips any write that has not started. */
+    private val firewallGate = Any()
     private val cache = TunnelCache()
     private val catalogs = linkedMapOf<TunnelRegion, RoxyCatalog>()
     private val probes = HashMap<String, NodeProbe>()
@@ -399,7 +408,10 @@ class TunnelPage(
         if (settingsError != null) return
         val id = nodeId(target.pool, target.endpoint.name)
         val next = if (id in blockState.blocked) blockState.blocked.filter { it != id } else (blockState.blocked + id).distinct()
-        if (!saveBlock(next)) return
+        if (!saveBlock(next)) {
+            render()
+            return
+        }
         render()
         commitFirewall(next)
     }
@@ -417,16 +429,19 @@ class TunnelPage(
      * Full blocklist, not a hand-built script. Hosts come from [ServerBlock.resolveBlockedHosts]
      * (which keeps [ServerBlock.uniqueValidIpv4] only) and [TunnelFirewall.apply] filters again.
      * An empty list clears the existing rules. A group call reaches this only after confirm.
+     *
+     * Writes are serialized. A commit that has not started is dropped when a newer one exists,
+     * so a slow apply cannot put an older list back after the user has already changed it.
      */
     private fun commitFirewall(ids: List<String>) {
         val unique = ServerBlock.uniqueValidIpv4(ServerBlock.resolveBlockedHosts(knownServers(), ids))
-        val gen = ++firewallGen
+        val gen = firewallGen.incrementAndGet()
         val run = {
             if (unique.isEmpty()) TunnelServices.clearBlocks().map { "" }
             else TunnelServices.applyBlocks(unique)
         }
         val deliver = deliver@{ result: Result<String> ->
-            if (gen != firewallGen) return@deliver
+            if (gen != firewallGen.get()) return@deliver
             firewallError = result.fold(
                 onSuccess = { null },
                 onFailure = { error ->
@@ -436,11 +451,17 @@ class TunnelPage(
             )
             render()
         }
+        val execute = {
+            TunnelServices.beforeFirewallWrite()
+            synchronized(firewallGate) {
+                if (gen != firewallGen.get()) null else run()
+            }
+        }
         if (TunnelServices.inline) {
-            deliver(run())
+            execute()?.let(deliver)
         } else {
             thread(name = "tunnel-firewall", isDaemon = true) {
-                val result = run()
+                val result = execute() ?: return@thread
                 Platform.runLater { deliver(result) }
             }
         }
