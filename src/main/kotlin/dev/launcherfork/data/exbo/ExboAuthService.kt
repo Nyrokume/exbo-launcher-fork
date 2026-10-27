@@ -38,8 +38,13 @@ class ExboAuthService(private val api: ExboApi) : AuthService {
         return exchange(login) { api.totpAuth(login, code) }
     }
 
+    /**
+     * TODO(live register): no registration route is described in this repo.
+     * `ExternalLinks.REGISTER` is the public site page, not a launcher API.
+     * Do not invent `/auth` or `/register` parameters. The form says the call is unavailable.
+     */
     override fun register(request: RegistrationRequest): RegisterResult =
-        RegisterResult.Failure(RegisterError.SERVER_ERROR)
+        RegisterResult.Failure(RegisterError.NOT_SUPPORTED)
 
     /**
      * Same auto-auth the working launcher runs before the password form.

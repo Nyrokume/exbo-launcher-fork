@@ -47,7 +47,8 @@ internal class ExboLiveClientSource(
  * Installed EXBO client maintenance. [isInstalled] reads the client directory and the catalog hash,
  * not [Server.installed]. Verify repairs files through [syncClientFiles]. Reinstall and delete remove
  * only that client directory. The main window asks before either one starts; an unsafe path is refused
- * here before anything is deleted. Launcher self-update stays a no-op. Auth transport and web-seed
+ * here before anything is deleted. Launcher self-update installs nothing: a missing offer finishes
+ * the check, and any offer is rejected until a release public key exists. Auth transport and web-seed
  * schemes are unchanged.
  *
  * The speed argument matches the mock constructor so the app can pass one value through. Live work is not timed.
@@ -55,7 +56,9 @@ internal class ExboLiveClientSource(
 class LiveUpdateService internal constructor(
     private val source: LiveClientSource,
     private val openSeed: (String) -> InputStream,
-    private val fetcher: ((Server, AtomicBoolean, ProgressListener) -> Unit)?,
+    /** Null in production: no signed launcher build is offered, so nothing is installed. */
+    private val launcherOffer: LauncherUpdateOffer? = null,
+    private val fetcher: ((Server, AtomicBoolean, ProgressListener) -> Unit)? = null,
 ) : UpdateService {
     @Suppress("UNUSED_PARAMETER")
     constructor(api: ExboApi, servers: ExboServerRepository, speed: Double = 1.0) : this(
@@ -66,9 +69,22 @@ class LiveUpdateService internal constructor(
 
     private val pausedAt = ConcurrentHashMap<String, Double>()
 
+    /**
+     * Checks [decideLauncherUpdate] and installs nothing.
+     * With no pinned release key every offer is rejected and no file is written.
+     * No offer is configured, so the check finishes and the login window can open.
+     */
     override fun checkLauncherUpdate(listener: ProgressListener): Cancellable {
-        Thread({ listener.onFinished() }, "exbo-launcher-update").apply { isDaemon = true }.start()
-        return Cancellable {}
+        val worker = Thread({
+            listener.onPhase(UpdatePhase.CHECKING)
+            when (val decision = decideLauncherUpdate(launcherOffer)) {
+                LauncherUpdateDecision.Current -> listener.onFinished()
+                is LauncherUpdateDecision.Rejected -> listener.onFailed(decision.code)
+            }
+        }, "exbo-launcher-update")
+        worker.isDaemon = true
+        worker.start()
+        return Cancellable { worker.interrupt() }
     }
 
     override fun isInstalled(server: Server): Boolean {
