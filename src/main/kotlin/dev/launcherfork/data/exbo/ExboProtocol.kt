@@ -9,8 +9,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import java.security.MessageDigest
-import kotlin.io.path.exists
-import kotlin.io.path.isDirectory
 
 /**
  * Hosts from the installed launcher's `launcher_config.properties` (RU realm).
@@ -204,7 +202,7 @@ private fun serverFrom(entry: Json.Obj, root: Path): Server? {
         description = description(caption, desc),
         iconUri = art(entry.text("icon"), seeds, ICON_FALLBACK),
         backgroundUri = art(entry.text("background"), seeds, BACKGROUND_FALLBACK),
-        installed = clientDir.isDirectory() && clientDir.resolve("classes.jar").exists(),
+        installed = clientFilesPresent(clientDir),
         clientSizeBytes = entry.long("totalSize")?.coerceAtLeast(0) ?: 0L,
     )
 }

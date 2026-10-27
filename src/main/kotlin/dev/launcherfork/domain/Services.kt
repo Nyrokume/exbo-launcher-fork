@@ -85,6 +85,10 @@ interface UpdateService {
     /** Client download for [server]. */
     fun downloadClient(server: Server, listener: ProgressListener): Cancellable
 
+    /**
+     * True when the client is on disk. The mock uses [Server.installed].
+     * The live service reads the client directory and compares the installed version hash with the catalog version.
+     */
     fun isInstalled(server: Server): Boolean
 
     /** Progress kept after a pause, so "Continue" resumes from it (0 if none). */

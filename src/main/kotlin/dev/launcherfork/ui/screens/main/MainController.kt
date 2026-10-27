@@ -121,6 +121,12 @@ class MainController(private val ctx: UiContext) : Disposable {
         store.onDownloadFailed = {
             exceptionPaneController.show(ctx.t("main.exception.update"), ctx.t("main.exception.update.desc"))
         }
+        store.onOperationFailed = { operation, reason ->
+            val op = operation.name.lowercase()
+            val specific = "main.exception.$op.$reason"
+            val desc = if (ctx.strings.containsKey(specific)) ctx.t(specific) else ctx.t("main.exception.$op.desc")
+            exceptionPaneController.show(ctx.t("main.exception.$op"), desc)
+        }
         // game-actions menu next to ИГРАТЬ: one dropdown at a time with the top-bar menus
         val actions = status.gameActionsController
         actions.onShown = { profileBarController.hideMenu(); headerController.hideCommunityMenu() }
@@ -251,7 +257,7 @@ class MainController(private val ctx: UiContext) : Disposable {
 
     /**
      * A row of the game-actions menu. Verify starts at once (after a confirmation if the game runs: it gets closed);
-     * reinstall / delete always ask first and only the confirm button starts them (mock operations, nothing on disk).
+     * reinstall / delete always ask first and only the confirm button starts them.
      * Game folder → [GameFolders] + [FolderOpener]; logs → [ExboPaths.runtimeLogs] + [FolderOpener].
      */
     fun onGameAction(action: GameAction) {
@@ -272,7 +278,6 @@ class MainController(private val ctx: UiContext) : Disposable {
             GameAction.REINSTALL -> ClientOperation.REINSTALL
             GameAction.DELETE -> ClientOperation.DELETE
         }
-        if (ctx.liveBackend && operation == ClientOperation.REINSTALL) return
         if (!GameActions.needsConfirmation(action, state)) {
             store.runOperation(server, operation)
             return

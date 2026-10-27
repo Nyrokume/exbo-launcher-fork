@@ -254,4 +254,33 @@ class ClientStateStoreTest {
         updates.operations[0].second.listener.onFinished() // late
         assertEquals(ClientState.Ready, state())
     }
+
+    @Test
+    fun failedVerifyReturnsToTheInstalledClient() {
+        updates.installed += server.id
+        var reason = ""
+        store.onOperationFailed = { _, reported -> reason = reported }
+        assertTrue(store.runOperation(server, ClientOperation.VERIFY))
+        updates.operations.single().second.listener.onFailed("file_mismatch")
+        assertEquals("file_mismatch", reason)
+        assertEquals(ClientState.Ready, state())
+    }
+
+    @Test
+    fun failedDeleteThatRemovedTheClientShowsNotInstalled() {
+        updates.installed += server.id
+        store.runOperation(server, ClientOperation.DELETE)
+        updates.installed -= server.id
+        updates.operations.single().second.listener.onFailed("io")
+        assertEquals(ClientState.NotInstalled, state())
+    }
+
+    @Test
+    fun shutdownOfADeleteReadsWhetherTheClientIsStillInstalled() {
+        updates.installed += server.id
+        store.runOperation(server, ClientOperation.DELETE)
+        updates.installed -= server.id
+        store.shutdown()
+        assertEquals(ClientState.NotInstalled, state())
+    }
 }

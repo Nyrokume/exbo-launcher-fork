@@ -47,6 +47,25 @@ internal object ExboClients {
     }
 }
 
+/** A client directory counts as installed when it contains the game's `classes.jar`. */
+internal fun clientFilesPresent(directory: Path): Boolean =
+    Files.isDirectory(directory) && Files.isRegularFile(directory.resolve("classes.jar"))
+
+/**
+ * Disk truth behind ИГРАТЬ / Обновить. [present] is [clientFilesPresent] in the directory
+ * [ExboClients.directory] already maps. [current] is that install whose `runtime/<id>.hash` matches
+ * [remoteVersion]. A missing or different hash is still installed: the button says Обновить.
+ * [dev.launcherfork.domain.Server.installed] is not read.
+ */
+internal data class DiskInstall(val present: Boolean, val current: Boolean)
+
+internal fun diskInstall(directory: Path, remoteVersion: String?, installedHash: String?): DiskInstall {
+    val present = clientFilesPresent(directory)
+    if (!present) return DiskInstall(present = false, current = false)
+    val needsUpdate = installedClientNeedsUpdate(remoteVersion, installedHash, clientPresent = true)
+    return DiskInstall(present = true, current = !needsUpdate)
+}
+
 /** Catalog version recorded for [id], or null when the official hash file is missing. */
 internal fun readInstalledHash(id: String, runtime: Path = ExboClients.runtimeDir()): String? {
     val file = ExboClients.installedHashFile(id, runtime) ?: return null

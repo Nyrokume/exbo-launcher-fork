@@ -92,8 +92,9 @@ class AppContext(
         )
 
         /**
-         * Installed EXBO auth, server list, game process, and client download.
-         * A catalog client is fetched into the directory the official launcher already maps. Reinstall stays disabled.
+         * Installed EXBO auth, server list, game process, and client maintenance.
+         * Install detection, verify, reinstall, and delete use the directory the official launcher already maps.
+         * Reinstall and delete run only after the main window's confirmation. Launcher self-update stays a no-op.
          */
         fun live(
             language: String = "ru",

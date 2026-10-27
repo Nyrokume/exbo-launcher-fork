@@ -18,7 +18,7 @@ data class Server(
     val description: GameDescription?,
     val iconUri: URI,
     val backgroundUri: URI,
-    /** Fake "client is installed" flag; decides Download vs Play button. */
+    /** Mock install flag. The live service ignores it and reads the client directory. */
     val installed: Boolean,
     /** Fake client size for the progress text, bytes. */
     val clientSizeBytes: Long,
