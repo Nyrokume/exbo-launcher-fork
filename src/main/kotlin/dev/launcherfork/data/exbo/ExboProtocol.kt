@@ -13,21 +13,57 @@ import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
 
 /**
- * Hosts from the installed launcher's `launcher_config.properties` (RU realm).
- * The working client tries the https addresses, then the http ones.
+ * RU realm hosts from the installed launcher's `launcher_config.properties`.
+ * The official client lists TLS first, then cleartext. Credential requests use
+ * [credential] only: `/auth` answers the same JSON over TLS, and a cleartext
+ * retry would put the password, session, code, and token on the wire.
+ * [cleartext] stays in this list so it cannot be passed to [ExboApi] by accident;
+ * [exboBaseIsTrustedHttps] rejects every entry.
  */
 internal object ExboHosts {
-    val https = listOf(
+    val credential = listOf(
         "https://launcher.stalcraft.net:443",
         "https://launcher.stalcraftx.ru:443",
         "https://launcher.stalcraft-tech.net:443",
     )
-    val http = listOf(
+    val cleartext = listOf(
         "http://launcher.stalcraft.net:80",
         "http://launcher.stalcraftx.ru:80",
         "http://launcher.stalcraft-tech.net:80",
     )
-    val all = https + http
+}
+
+/** True only for an official TLS base with no userinfo, query, or path. */
+internal fun exboBaseIsTrustedHttps(base: String): Boolean {
+    if (base !in ExboHosts.credential) return false
+    return try {
+        val uri = URI(base)
+        uri.scheme == "https" &&
+            uri.rawUserInfo == null &&
+            uri.rawQuery == null &&
+            uri.fragment == null &&
+            uri.path.isNullOrEmpty() &&
+            !uri.host.isNullOrBlank()
+    } catch (_: Exception) {
+        false
+    }
+}
+
+/**
+ * Scheme, host, port, and path only. Query and userinfo can hold a password,
+ * session, token, authenticator code, or hwid, so they never stay in a log line.
+ */
+internal fun redactExboUrl(raw: String): String {
+    if (raw.isBlank()) return ""
+    return try {
+        val uri = URI(raw)
+        val scheme = uri.scheme
+        val host = uri.host
+        if ((scheme != "https" && scheme != "http") || host.isNullOrBlank()) return "redacted"
+        URI(scheme, null, host, uri.port, uri.path, null, null).toString()
+    } catch (_: Exception) {
+        "redacted"
+    }
 }
 
 /** Same SHA-1 hex the official client sends: `BigInteger(1, sha1).toString(16)`, leading zeros dropped. */
