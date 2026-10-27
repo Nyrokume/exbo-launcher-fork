@@ -34,8 +34,9 @@ internal fun decodeExboTorrent(catalog: ByteArray, seeds: List<String>, launcher
             DataInputStream(ByteArrayInputStream(plain)).use { input ->
                 invoke(metaClass.getMethod("read", DataInputStream::class.java), meta, input)
             }
-            invoke(metaClass.getMethod("setHttpSeeds", java.util.List::class.java), meta, seeds)
+            invoke(metaClass.getMethod("setHttpSeeds", java.util.List::class.java), meta, httpsWebSeeds(seeds))
             val info = invoke(metaClass.getMethod("toLTInfo"), meta) as TorrentInfo
+            enforceHttpsWebSeeds(info, seeds)
             val theirInfo = invoke(metaClass.getMethod("getInfo"), meta) ?: throw IOException("bad catalog")
             val files = invoke(theirInfo.javaClass.getMethod("getFiles"), theirInfo) as List<*>
             val paths = files.map { file ->
@@ -83,7 +84,11 @@ internal fun syncClientTorrent(
     cancelled: () -> Boolean = { false },
     onProgress: (done: Long, total: Long, perSecond: Long, checking: Boolean) -> Unit = { _, _, _, _ -> },
 ) {
-    val decoded = decodeExboTorrent(catalog, seeds, launcherJar)
+    val https = httpsWebSeeds(seeds)
+    if (https.isEmpty()) throw IOException("no seeds")
+    val decoded = decodeExboTorrent(catalog, https, launcherJar)
+    enforceHttpsWebSeeds(decoded.info, https)
+    if (decoded.info.webSeeds().any { exboHttpsUrl(it.url()) == null }) throw IOException("no seeds")
     val priorities = mapClientFiles(decoded.info, decoded.paths, exclusions)
     val session = SessionManager()
     var handle: com.frostwire.jlibtorrent.TorrentHandle? = null
@@ -118,6 +123,19 @@ internal fun syncClientTorrent(
         if (current != null && current.isValid) runCatching { session.remove(current) }
         runCatching { session.stop() }
     }
+}
+
+/**
+ * Keeps HTTPS url-seeds and drops every cleartext web seed jlibtorrent exposes.
+ * An empty web-seed list is left alone: [setHttpSeeds] on the catalog may store the HTTPS list
+ * somewhere [TorrentInfo.webSeeds] does not repeat, and wiping that list would drop the only seed.
+ */
+internal fun enforceHttpsWebSeeds(info: TorrentInfo, seeds: List<String>) {
+    for (seed in httpsWebSeeds(seeds)) info.addUrlSeed(seed)
+    val exposed = info.webSeeds().toList()
+    if (exposed.isEmpty() || exposed.all { exboHttpsUrl(it.url()) != null }) return
+    val kept = exposed.filter { exboHttpsUrl(it.url()) != null }
+    info.setWebSeeds(java.util.ArrayList(kept))
 }
 
 private fun safeRelative(path: String): Boolean {

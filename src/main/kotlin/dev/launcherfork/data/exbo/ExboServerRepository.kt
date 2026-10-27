@@ -46,7 +46,7 @@ class ExboServerRepository(
 
     fun remoteVersion(id: String): String? = versions[id]?.takeIf { it.isNotBlank() }
 
-    fun httpSeeds(id: String): List<String> = seeds[id].orEmpty()
+    fun httpSeeds(id: String): List<String> = httpsWebSeeds(seeds[id].orEmpty())
 
     fun exclusions(id: String): List<String> = exclusions[id].orEmpty()
 
@@ -115,13 +115,14 @@ class ExboServerRepository(
 }
 
 /**
- * Each catalog client keeps the icon `/listServers` sent (STALZONE's radiation mark, the OTS atom, …).
- * The supplied stalker helmet is only the main `stalcraft` row when that response has no http(s) icon.
+ * Each catalog client keeps the icon `/listServers` sent (STALZONE's radiation mark, the OTS atom, …)
+ * when that icon is HTTPS. Cleartext art is not loaded. The stalker helmet is the main `stalcraft`
+ * row when the response has no HTTPS icon, and any other row whose only icon was `http://`.
  */
 internal fun sidebarIcon(server: Server): URI {
+    if (exboHttpsUrl(server.iconUri.toString()) != null) return server.iconUri
     val scheme = server.iconUri.scheme?.lowercase()
-    if (scheme == "https" || scheme == "http") return server.iconUri
-    if (server.id == MAIN_CLIENT_ID) return Theme.gameIconUri()
+    if (server.id == MAIN_CLIENT_ID || scheme == "http" || scheme == "https") return Theme.gameIconUri()
     return server.iconUri
 }
 
@@ -132,9 +133,9 @@ private const val MAIN_CLIENT_ID = "stalcraft"
  * is missing or differs from the catalog version. `<client>/version` is a file inside the game
  * and is not this check. A client that is not on disk is not an update.
  */
-/** A catalog client can be fetched when the server list gave it a version and at least one web seed. */
+/** A catalog client can be fetched when the server list gave it a version and at least one HTTPS web seed. */
 internal fun catalogClientDownloadable(version: String?, seeds: List<String>): Boolean =
-    !version.isNullOrBlank() && seeds.isNotEmpty()
+    !version.isNullOrBlank() && httpsWebSeeds(seeds).isNotEmpty()
 
 internal fun installedClientNeedsUpdate(remoteVersion: String?, installedHash: String?, clientPresent: Boolean): Boolean {
     val remote = remoteVersion?.trim()?.takeIf { it.isNotEmpty() } ?: return false
