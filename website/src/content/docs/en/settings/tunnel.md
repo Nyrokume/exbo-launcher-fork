@@ -13,7 +13,7 @@ The second row, left to right:
 
 - **Measure** probes the open region. It does not change the selected server or `overrides.json`;
 - **Find best server** measures first when there is no fresh successful sample. It then writes the single node with the best score for the mode. No reply and at-limit nodes are not selected. Excluded groups are not candidates;
-- **Refresh** reloads the list. A server that was not in the previous list stays hidden until it answers. A miss drops the node from the pool;
+- an icon-only circular refresh control (SVG) spins on press and reloads the list. A server that was not in the previous list stays hidden until it answers. A miss drops the node from the pool;
 - the mode menu: **Ping**, **Client RTT**, **Server RTT**, **Stability**. It is an in-page list, not a native combo.
 
 Above the rows, the column captions are **To you**, **Ping**. The column Find best minimizes is marked. Stability still reads the ping column.
