@@ -614,7 +614,9 @@ class SettingsScreenTest {
             "settings.client.jvm", "settings.client.tunnel", "settings.client.accounts", "settings.client.sens",
             "settings.jvm.saved", "settings.jvm.heap", "settings.preset.v112", "settings.preset.aikar", "settings.tunnel.now",
             "settings.tunnel.measure", "settings.tunnel.find", "settings.tunnel.refresh",
-            "settings.tunnel.exclude", "settings.tunnel.no_reply", "settings.tunnel.limit",
+            "settings.tunnel.exclude", "settings.tunnel.exclude_group", "settings.tunnel.excluded_group",
+            "settings.tunnel.exclude.confirm", "settings.tunnel.block_node", "settings.tunnel.unblock_node",
+            "settings.tunnel.no_reply", "settings.tunnel.limit",
             "settings.tunnel.best", "settings.tunnel.pool_meta", "settings.tunnel.no_working",
             "settings.tunnel.col.client", "settings.tunnel.col.server", "settings.tunnel.col.sum",
             "settings.tunnel.metrics", "settings.tunnel.metrics.ping", "settings.tunnel.metrics.client",
@@ -704,8 +706,8 @@ class SettingsScreenTest {
                     assertTrue(s.tunnelPage.lookupAll(".tunnel-chip").isEmpty(), "$where: region is still a chip row")
                     assertTrue("segmented" in s.regionRu.parent.styleClass, "$where: region switch is not the segmented control")
                     assertTrue(
-                        s.tunnelPage.lookupAll(".button").filterIsInstance<Button>().none { it.text == "Блок" || it.text == "Block" },
-                        "$where: the Block action is still on the page",
+                        s.tunnelPools.lookupAll(".tunnel-node-block").filterIsInstance<Button>().any { it.text == "Блок" },
+                        "$where: a server row has no Блок control",
                     )
                     assertFalse("primary" in s.tunnelMeasure.styleClass, "$where: Measure is a primary action")
                     assertTrue("primary" in s.tunnelFindBest.styleClass, "$where: Find best lost the accent")
@@ -754,8 +756,9 @@ class SettingsScreenTest {
                         "$where: MSK1 does not hold its own servers",
                     )
                     val exclude = msk1.lookupAll(".tunnel-pool-lock").filterIsInstance<Button>().single()
-                    assertTrue(exclude.text.isNullOrBlank(), "$where: exclude is still a caption")
-                    assertTrue(exclude.lookupAll(".tunnel-state.open").isNotEmpty(), "$where: an open pool has no open lock")
+                    assertEquals("Исключить группу", exclude.text, "$where: group action is not labeled")
+                    assertTrue(exclude.lookupAll(".tunnel-state").isEmpty(), "$where: exclude is still an icon lock")
+                    assertTrue(exclude.width >= exclude.prefWidth(-1.0) - 1.0, "$where: '${exclude.text}' truncated")
                     val poolBox = msk1.localToScene(msk1.boundsInLocal)
                     val excludeBox = exclude.localToScene(exclude.boundsInLocal)
                     assertTrue(
@@ -769,9 +772,15 @@ class SettingsScreenTest {
                     assertTrue(s.tunnelPools.lookupAll(".tunnel-scale").isEmpty(), "$where: the color caption row is still on the page")
                     assertTrue("decision" in legend.last().styleClass, "$where: ping is not the column find-best uses")
                     nodes.forEach { row ->
-                        val mark = (row.graphic as? Parent)?.childrenUnmodifiable?.firstOrNull { "tunnel-state" in it.styleClass }
-                        assertNotNull(mark, "$where: a server row has no lock")
-                        assertTrue("open" in mark!!.styleClass, "$where: an available server looks locked")
+                        val block = (row.parent as Parent).lookupAll(".tunnel-node-block").filterIsInstance<Button>().single()
+                        assertEquals("Блок", block.text, "$where: an available server has no block control")
+                        val card = generateSequence(row as javafx.scene.Node) { it.parent }.first { "pool" in it.styleClass }
+                        val cardBox = card.localToScene(card.boundsInLocal)
+                        val blockBox = block.localToScene(block.boundsInLocal)
+                        assertTrue(
+                            blockBox.minX >= cardBox.minX - 1.0 && blockBox.maxX <= cardBox.maxX + 1.0,
+                            "$where: block control leaves its pool",
+                        )
                     }
                     val node = nodes.first { (it.lookup(".tunnel-row") as Labeled).text == "MSK1-1" }
                     val pings = node.lookupAll(".tunnel-ping").filterIsInstance<Labeled>()
@@ -782,10 +791,11 @@ class SettingsScreenTest {
                         assertTrue(capBox.maxY <= pingBox.minY + 1.0, "$where: '${caption.text}' is not above the values")
                         assertTrue(contains(window, capBox), "$where: '${caption.text}' outside")
                     }
-                    val list = node.parent as javafx.scene.layout.Region
+                    val line = node.parent as javafx.scene.layout.Region
+                    val list = line.parent as javafx.scene.layout.Region
                     val inner = list.width - list.snappedLeftInset() - list.snappedRightInset()
-                    assertEquals(inner, node.width, 1.0, "$where: server row does not fill the pool")
-                    assertTrue(node.localToScene(node.boundsInLocal).maxX <= poolBox.maxX + 1.0, "$where: server row leaves the pool")
+                    assertEquals(inner, line.width, 1.0, "$where: server row does not fill the pool")
+                    assertTrue(line.localToScene(line.boundsInLocal).maxX <= poolBox.maxX + 1.0, "$where: server row leaves the pool")
                     assertTrue(s.tunnelPage.lookupAll(".combo-box").isEmpty(), "$where: native mode menu")
                     assertTrue(s.tunnelPage.lookupAll(".tunnel-lock").isEmpty(), "$where: lock buttons are still on the page")
                     val modeButton = s.tunnelPage.lookup(".tunnel-mode-button") as Button
@@ -912,10 +922,10 @@ class SettingsScreenTest {
                 val winnerLabels = winnerRow.childrenUnmodifiable.filterIsInstance<Labeled>()
                 val dot = winnerRow.childrenUnmodifiable.first { "tunnel-best-dot" in it.styleClass }
                 assertFalse("idle" in dot.styleClass, "find best did not mark the recommendation")
-                assertTrue("open" in winnerRow.childrenUnmodifiable.first { "tunnel-state" in it.styleClass }.styleClass)
+                val winnerBlock = (winner.parent as Parent).lookupAll(".tunnel-node-block").filterIsInstance<Button>().single()
+                assertEquals("Блок", winnerBlock.text, "the recommended server is already blocked")
                 assertTrue("good" in winnerLabels.last { "tunnel-ping" in it.styleClass }.styleClass)
-                val limitedMark = (limited.graphic as javafx.scene.Parent).childrenUnmodifiable.first { "tunnel-state" in it.styleClass }
-                assertTrue("limit" in limitedMark.styleClass, "a node at its limit looks open")
+                assertTrue("limited" in limited.styleClass, "a node at its limit looks open")
                 val winnerPool = generateSequence(winner as javafx.scene.Node) { it.parent }.first { "pool" in it.styleClass }
                 assertEquals("MSK1", winnerPool.lookupAll(".pool-title").filterIsInstance<Labeled>().first().text)
                 assertTrue(
@@ -1008,7 +1018,7 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun refreshDropsSilentServersAndKeepsOnlyNewOnesThatReply() {
+    fun refreshKeepsFailedMeasuresAndHidesNewSilentServers() {
         val (c, _) = settingsWith(LauncherSettings())
         FxTestSupport.onFx {
             c.showClientSection("tunnel")
@@ -1029,8 +1039,8 @@ class SettingsScreenTest {
             c.tunnelMeasure.fire()
             val measured = names()
             assertTrue("MSK1-1" in measured, "measured=$measured")
-            assertFalse("MSK1-5" in measured)
-            assertFalse(measured.any { it.startsWith("SPB3") })
+            assertTrue("MSK1-5" in measured, "a failed measure removed a listed server: $measured")
+            assertTrue(measured.any { it.startsWith("SPB3") }, "a failed measure removed a listed pool: $measured")
             TunnelServices.fetch = { region ->
                 if (region != TunnelRegion.RU) TunnelFixtures.catalog(region)
                 else TunnelCatalogs.parse(
@@ -1049,12 +1059,117 @@ class SettingsScreenTest {
                 )
             }
             c.tunnelRefresh.fire()
-            assertEquals(setOf("MSK1-1", "NEW-1"), names().toSet())
+            assertEquals(setOf("MSK1-1", "MSK1-2", "NEW-1"), names().toSet())
             assertEquals(
                 setOf("MSK1", "NEW"),
                 c.tunnelPools.lookupAll(".pool-title").filterIsInstance<Labeled>().map { it.text }.toSet(),
             )
         }
+    }
+
+    @Test
+    fun groupExcludeConfirmsBeforeFirewallAndHidesInvalidNodes() {
+        val calls = mutableListOf<List<String>>()
+        TunnelServices.applyBlocks = { ips ->
+            calls += ips.toList()
+            Result.success("ok")
+        }
+        TunnelServices.clearBlocks = {
+            calls.add(emptyList())
+            Result.success(0)
+        }
+        val (c, store) = settingsWith(LauncherSettings())
+        FxTestSupport.onFx {
+                c.showClientSection("tunnel")
+                c.settingsRoot.applyCss()
+                c.settingsRoot.layout()
+                fun excludeNamed(pool: String) = c.tunnelPools.children.first { card ->
+                    card.lookupAll(".pool-title").filterIsInstance<Labeled>().any { it.text == pool }
+                }.lookupAll(".tunnel-pool-lock").filterIsInstance<Button>().single()
+                fun confirmBar() = c.tunnelPage.lookup(".tunnel-confirm") as javafx.scene.layout.Region
+                fun blockNamed(name: String): Button {
+                    val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
+                        val row = button.graphic as? Parent
+                        row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
+                    }
+                    return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<Button>()
+                        .single { "tunnel-node-block" in it.styleClass }
+                }
+                val exclude = excludeNamed("MSK1")
+                assertEquals("Исключить группу", exclude.text)
+                exclude.fire()
+                assertTrue(calls.isEmpty(), "group exclude fired the firewall before confirm")
+                val bar = confirmBar()
+                assertTrue(bar.isVisible, "confirm did not open")
+                assertEquals("Заблокировать 5 нод группы?", (bar.lookup(".tunnel-confirm-text") as Labeled).text)
+                (bar.lookup(".tunnel-confirm-no") as Button).fire()
+                assertFalse(bar.isVisible, "cancel left the confirm open")
+                assertTrue(calls.isEmpty(), "cancel wrote firewall rules")
+                assertEquals("Исключить группу", excludeNamed("MSK1").text)
+                val overrides = TunnelServices.overridesFile()
+                assertFalse(
+                    java.nio.file.Files.exists(overrides) && java.nio.file.Files.readString(overrides).contains("excluded_pools"),
+                    "cancel stored a group exclusion",
+                )
+                excludeNamed("MSK1").fire()
+                (confirmBar().lookup(".tunnel-confirm-yes") as Button).fire()
+                assertEquals("Группа исключена", excludeNamed("MSK1").text)
+                assertEquals(1, calls.size, "confirm did not write the firewall once: $calls")
+                assertEquals(calls.single(), ServerBlock.uniqueValidIpv4(calls.single()))
+                assertEquals(
+                    listOf("85.119.149.7", "85.119.149.8", "85.119.149.9", "85.119.149.10", "85.119.149.25"),
+                    calls.single(),
+                )
+                assertFalse(java.nio.file.Files.readString(overrides).contains("New-NetFirewallRule"))
+                assertTrue(java.nio.file.Files.readString(overrides).contains("MSK1"))
+                assertTrue(store.load().serverBlock.blocked.containsAll(listOf("MSK1::MSK1-1", "MSK1::MSK1-5")))
+                val unblock = blockNamed("MSK1-1")
+                assertEquals("Снять блок", unblock.text)
+                unblock.fire()
+                assertFalse(confirmBar().isVisible, "a single server opened the group confirm")
+                assertEquals(2, calls.size, "a single server did not sync the firewall")
+                assertEquals(calls.last(), ServerBlock.uniqueValidIpv4(calls.last()))
+                assertFalse("85.119.149.7" in calls.last())
+                assertEquals("Блок", blockNamed("MSK1-1").text)
+                assertFalse("MSK1::MSK1-1" in store.load().serverBlock.blocked)
+                TunnelServices.probe = { endpoint ->
+                    if (endpoint.name == "HOST") {
+                        TunnelProbeOutcome.Reply(Duration.ofMillis(1), Duration.ofMillis(1), true)
+                    } else {
+                        TunnelProbeOutcome.Reply(Duration.ofMillis(12), Duration.ofMillis(4), false)
+                    }
+                }
+                TunnelServices.fetch = { region ->
+                    if (region != TunnelRegion.RU) TunnelFixtures.catalog(region)
+                    else TunnelCatalogs.parse(
+                        """
+                        {"mode":"roxy","clientToTunnelRttWeight":1,"pools":[
+                          {"name":"MIX","tunnels":[
+                            {"name":"GOOD","address":"203.0.113.9:29450"},
+                            {"name":"HOST","address":"tunnel.example:29450"},
+                            {"name":"BAD","address":"999.1.1.1:29450"}
+                          ]}
+                        ]}
+                        """.trimIndent(),
+                    )
+                }
+                c.tunnelRefresh.fire()
+                val shown = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().mapNotNull { button ->
+                    val row = button.graphic as? Parent
+                    row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.firstOrNull { "tunnel-row" in it.styleClass }?.text
+                }
+                assertTrue("GOOD" in shown, "a valid node was hidden: $shown")
+                assertFalse("HOST" in shown, "a limit node without an IPv4 was shown: $shown")
+                assertFalse("BAD" in shown, "an invalid address was shown: $shown")
+                assertFalse(shown.any { it == "—" || it.isBlank() })
+                excludeNamed("MIX").fire()
+                assertEquals("Заблокировать 1 нод группы?", (confirmBar().lookup(".tunnel-confirm-text") as Labeled).text)
+                assertEquals(2, calls.size, "opening confirm firewalled the group")
+                (confirmBar().lookup(".tunnel-confirm-yes") as Button).fire()
+                assertTrue("203.0.113.9" in calls.last(), "group confirm dropped the valid node: ${calls.last()}")
+                assertTrue(calls.last().none { !ServerBlock.isValidIpv4(it) }, "firewall received a non-IPv4: ${calls.last()}")
+                assertEquals(calls.last(), ServerBlock.uniqueValidIpv4(calls.last()))
+            }
     }
 
     @Test
