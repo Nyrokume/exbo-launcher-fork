@@ -10,9 +10,9 @@ While `LauncherApp` built `AppContext.mock`, any login and password are accepted
 | Input | What the mock does |
 |---|---|
 | Any login and password | Login continues; the second factor decides the next panel |
-| Password `wrong` | “Wrong login or password”; you stay on the login panel |
-| Login `2fa` | Always the mail code, in every `mock2fa` mode |
-| Login `totp` | Always Google Authenticator, in every `mock2fa` mode |
+| Password `wrong` | “Wrong login or password. Check them and try again.” You stay on the login panel |
+| Login `2fa` | Always the email code, in every `mock2fa` mode |
+| Login `totp` | Always the authenticator code (TOTP / Google Authenticator), in every `mock2fa` mode |
 
 ## Second factor
 
@@ -20,16 +20,16 @@ While `LauncherApp` built `AppContext.mock`, any login and password are accepted
 
 | Value | Behavior |
 |---|---|
-| `random` | Default outside a tour: each login picks mail or TOTP at random |
-| `email` | Always the mail code |
+| `random` | Default outside a tour: each login picks an email code or an authenticator code at random |
+| `email` | Always the email code |
 | `totp` | Always the authenticator code |
 | `none` | Straight to the main window |
 
 The screenshot tour and the showcase use `none` when the property is unset.
 
-The mail code has 9 cells. Any 9-digit code works except `000000000`, which shows “Invalid code!”.
+The email code has 9 cells. Any 9-digit code works except `000000000`, which shows “Wrong email code. Enter it again.”
 
-Google Authenticator has 6 cells. Any 6-digit code works except `000000`, which shows the toast “CONFIRMATION ERROR”. **Back to login** and Esc return to the login panel.
+The authenticator code has 6 cells. Any 6-digit code works except `000000`, which shows “Wrong app code. Enter it again.” **Back to login** and Esc return to the login panel.
 
 ## Registration
 

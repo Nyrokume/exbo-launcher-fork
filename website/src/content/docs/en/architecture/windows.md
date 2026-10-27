@@ -16,7 +16,7 @@ The main window is `StageStyle.UNDECORATED`, **1024×640**, resizable from the e
 :::
 
 :::note[Open PR #20]
-Branch `ui/auth-compact` is not merged. There the login window is **460×506**. The mail code is **460×438** without an error and **460×526** with one. TOTP is **460×444** and **460×532**. Registration, age, and update stay **460×700**. The Steam / Epic row is hidden (`visible=false`, `managed=false`): the nodes and handlers stay, and the row collapses. On `main` that row is still on the login panel.
+Branch `ui/auth-compact` is not merged. There the login window is **460×506**. The email code is **460×438** without an error and **460×526** with one. The authenticator code is **460×444** and **460×532**. Registration, age, and update stay **460×700**. The Steam / Epic row is hidden (`visible=false`, `managed=false`): the nodes and handlers stay, and the row collapses. On `main` that row is still on the login panel.
 :::
 
 ## What each window holds
@@ -25,7 +25,7 @@ Branch `ui/auth-compact` is not merged. There the login window is **460×506**. 
 |---|---|---|
 | Stage | primary, `TRANSPARENT` | `StageNavigator.mainStage`, `UNDECORATED` |
 | Frame | `auth_window.fxml`, `AuthWindowController` | `window.fxml`, `WindowController` |
-| Content | update, login, mail, TOTP, age, registration | `main.fxml` in `contentHost`, dialogs in `overlayLayer` |
+| Content | update, login, email code, authenticator code, age, registration | `main.fxml` in `contentHost`, dialogs in `overlayLayer` |
 
 The pre-main title strip has the logo, drag without maximize, minimize, and close. If the panel has `.zone-logo`, the small `authLogo` hides. The login panel centers the EXBO vector (`#zoneLoginLogo`, 150 px) on `-card-description`.
 

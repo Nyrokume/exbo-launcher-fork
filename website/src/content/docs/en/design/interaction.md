@@ -7,7 +7,7 @@ Two windows. Pre-main on `main` is 460×700. The main window is 1024×640. The s
 
 ## Happy login
 
-Update → login → a mail code or TOTP when needed → main window → **PLAY**.
+Update → login → an email code or an authenticator code when needed → main window → **PLAY**.
 
 `-Dlauncher.mock2fa=none` skips the second factor. On live, the EXBO client response decides the second factor, not this property.
 
@@ -19,7 +19,7 @@ A form error keeps you on registration. **← Back** returns to the age gate wit
 
 ## Login errors
 
-An empty login, the password `wrong`, and TOTP `000000` show a field or a toast and do not open the main window. The mail code `000000000` also stays in pre-main.
+An empty login, the password `wrong`, and the authenticator code `000000` show a field or a toast and do not open the main window. The email code `000000000` also stays in pre-main.
 
 ## Play
 
