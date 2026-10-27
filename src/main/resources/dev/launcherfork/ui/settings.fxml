@@ -27,7 +27,9 @@
                         is one card: name and count on the left, Исключить on the right of that title, then
                         full-width rows (name, client RTT, server RTT, sum, block switch). The server list
                         scrolls; the toolbar does not.
-    JVM                 preset cards (own page).
+    JVM                 own page. A summary card on top names the config that will launch
+                        («Выбран для запуска», or «не выбран»). The preset cards sit under that,
+                        each with a radio; the active one is filled and labeled.
     АККАУНТЫ            one card per session (name and login on the left, key icon / Применить / Удалить on the right).
                         Cards and the name/save row stay inside the page; extra cards scroll above that row.
     ЧУВСТВИТЕЛЬНОСТЬ    own page, the whole settings viewport. One compact row (base, Посчитать, Записать),
@@ -153,9 +155,14 @@
 
             <!-- JVM, туннель, чувствительность и свап аккаунтов — отдельные страницы на всю область. -->
             <VBox fx:id="clientContent" id="settingsClient" styleClass="settings-page" VBox.vgrow="ALWAYS">
-                <VBox fx:id="jvmPage" id="settingsJvm" styleClass="settings-group" maxWidth="Infinity">
+                <VBox fx:id="jvmPage" id="settingsJvm" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                     <Label styleClass="settings-group-label,font-display" text="%settings.heading.jvm" minHeight="-Infinity"/>
-                    <Label fx:id="jvmStatus" styleClass="settings-note" minWidth="-Infinity"/>
+                    <VBox fx:id="jvmSummary" styleClass="jvm-summary,card,zone-radius-md,empty" maxWidth="Infinity">
+                        <Label fx:id="jvmStatusKicker" styleClass="jvm-summary-kicker" text="%settings.jvm.now" minHeight="-Infinity"/>
+                        <Label fx:id="jvmStatus" styleClass="jvm-summary-name" minWidth="-Infinity" wrapText="true"/>
+                        <Label fx:id="jvmStatusHint" styleClass="jvm-summary-hint" wrapText="true"/>
+                    </VBox>
+                    <Label styleClass="jvm-list-label" text="%settings.jvm.list" minHeight="-Infinity"/>
                     <GridPane fx:id="jvmGrid" styleClass="jvm-grid" hgap="8" vgap="8">
                         <columnConstraints>
                             <ColumnConstraints hgrow="ALWAYS" percentWidth="50" minWidth="120"/>

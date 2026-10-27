@@ -609,7 +609,7 @@ class SettingsScreenTest {
             "settings.heading.behaviour", "settings.heading.language", "settings.language.interface", "settings.exit.short", "settings.p2p.short",
             "settings.nav.jvm", "settings.nav.tunnel", "settings.nav.sens", "settings.nav.accounts",
             "settings.page.launcher", "settings.page.client", "settings.heading.jvm", "settings.heading.tunnel",
-            "settings.heading.accounts", "settings.heading.sens", "settings.jvm.active", "settings.accounts.save",
+            "settings.heading.accounts", "settings.heading.sens", "settings.jvm.active", "settings.jvm.chosen", "settings.jvm.none.hint", "settings.jvm.list", "settings.accounts.save",
             "settings.accounts.keys", "settings.accounts.login", "settings.accounts.current", "settings.accounts.empty", "settings.accounts.no_keys",
             "settings.sens.write", "settings.sens.row", "settings.sens.down", "settings.sens.up",
             "settings.client.jvm", "settings.client.tunnel", "settings.client.accounts", "settings.client.sens",
@@ -686,6 +686,17 @@ class SettingsScreenTest {
                     relayout(nav)
                     assertTrue(s.jvmGrid.children.size > 1, "$where: presets missing")
                     assertTrue(s.jvmPage.sceneBounds().minY >= -1.0, "$where: jvm section not scrolled into view")
+                    assertEquals("не выбран", s.jvmStatus.text, "$where: an empty launch config looks chosen")
+                    assertEquals("Сейчас", s.jvmStatusKicker.text, "$where: empty summary lost its kicker")
+                    assertTrue("empty" in s.jvmSummary.styleClass, "$where: empty summary looks selected")
+                    assertTrue(s.jvmSummary.localToScene(s.jvmSummary.boundsInLocal).maxY <= s.jvmGrid.localToScene(s.jvmGrid.boundsInLocal).minY + 1.0, "$where: the launch summary is not above the configs")
+                    assertTrue(s.jvmGrid.children.filterIsInstance<Button>().none { "selected" in it.styleClass }, "$where: a config is marked chosen before a click")
+                    s.jvmGrid.children.filterIsInstance<Button>().forEach { preset ->
+                        assertNotNull((preset.graphic as? Parent)?.lookup(".jvm-radio"), "$where: a config has no radio")
+                        val mark = (preset.graphic as? Parent)?.lookup(".jvm-chosen") as? Labeled
+                        assertNotNull(mark, "$where: a config has no chosen label")
+                        assertFalse(mark!!.isVisible, "$where: an unpicked config says it will launch")
+                    }
                     assertFalse(s.launcherPage.isManaged, "$where: launcher groups stay under JVM")
                     assertFalse(s.tunnelPage.isManaged, "$where: tunnel stays on the JVM section")
                     assertTrue("selected" in main.headerController.navJvm.styleClass, "$where: JVM not selected")
@@ -957,10 +968,22 @@ class SettingsScreenTest {
                 assertTrue(args.any { it == "-Droxy_address_override.eu=79.127.241.67:29450" })
                 assertFalse(java.nio.file.Files.readString(TunnelServices.overridesFile()).contains("STALZONE-SB"))
                 s.showClientSection("jvm")
+                relayout(nav)
                 val card = s.jvmGrid.children.filterIsInstance<Button>()
                     .first { it.userData == dev.launcherfork.stalzone.JvmPresets.CURRENT }
                 card.fire()
+                relayout(nav)
                 assertEquals(dev.launcherfork.stalzone.JvmPresets.CURRENT, app.desk.activeProfile())
+                assertTrue("selected" in card.styleClass, "the launch config card is not marked")
+                assertEquals("Выбран для запуска", s.jvmStatusKicker.text)
+                assertTrue(s.jvmStatus.text.startsWith("v1.1.2"), "summary does not name the launch config: ${s.jvmStatus.text}")
+                assertFalse(s.jvmStatus.text.contains("не выбран"), "a picked config still reads as none")
+                assertTrue("selected" in s.jvmSummary.styleClass, "the launch summary is not the selected card")
+                val chosen = (card.graphic as Parent).lookup(".jvm-chosen") as Labeled
+                assertTrue(chosen.isVisible)
+                assertEquals("Выбран для запуска", chosen.text)
+                assertTrue(s.jvmGrid.children.filterIsInstance<Button>().filter { it !== card }.none { "selected" in it.styleClass })
+                preview(nav.mainStage.scene, "settings-jvm")
                 s.showClientSection("sens")
                 s.baseSens.text = "5"
                 s.calcSens.fire()

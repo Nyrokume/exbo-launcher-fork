@@ -702,6 +702,22 @@
 
 /* client tools, stacked under the launcher groups. Same cards and 34 px rows. */
 .client-card { -fx-padding: 10 14 12 14; -fx-spacing: 8; }
+#settingsJvm { -fx-spacing: 8; }
+.jvm-summary { -fx-padding: 10 12; -fx-spacing: 2; -fx-max-width: infinity; }
+.jvm-summary.empty { -fx-border-color: -border; -fx-background-color: -card; }
+.jvm-summary.selected, .jvm-summary.selected:hover {
+    -fx-border-color: -primary;
+    -fx-background-color: -destructive-soft;
+}
+.jvm-summary-kicker { -fx-font-size: 11; -fx-text-fill: -settings-muted; }
+.jvm-summary.selected .jvm-summary-kicker {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 15;
+    -fx-text-fill: -destructive-text;
+}
+.jvm-summary-name { -fx-font-size: 16; -fx-text-fill: -foreground; }
+.jvm-summary-hint { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.jvm-list-label { -fx-font-size: 11; -fx-text-fill: -settings-muted; -fx-padding: 2 0 0 0; }
 .jvm-preset {
     -fx-background-color: -card;
     -fx-border-color: -border;
@@ -710,7 +726,7 @@
     -fx-border-radius: 8;
     -fx-padding: 8 10 8 10;
     -fx-cursor: hand;
-    -fx-alignment: TOP_LEFT;
+    -fx-alignment: CENTER_LEFT;
     -fx-content-display: graphic-only;
     -fx-max-width: infinity;
 }
@@ -722,6 +738,26 @@
 .jvm-preset:disabled { -fx-opacity: 0.45; }
 .jvm-preset-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
 .jvm-preset-hint { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.jvm-preset-text { -fx-spacing: 1; }
+.jvm-radio {
+    -fx-min-width: 16; -fx-pref-width: 16; -fx-max-width: 16;
+    -fx-min-height: 16; -fx-pref-height: 16; -fx-max-height: 16;
+    -fx-background-color: transparent, transparent;
+    -fx-background-insets: 0, 4;
+    -fx-background-radius: 8, 4;
+    -fx-border-color: -settings-muted;
+    -fx-border-radius: 8;
+    -fx-border-width: 1.5;
+}
+.jvm-preset.selected .jvm-radio, .jvm-preset.selected:hover .jvm-radio {
+    -fx-background-color: transparent, -primary;
+    -fx-border-color: -primary;
+}
+.jvm-chosen {
+    -fx-font-family: "Bebas Neue Regular";
+    -fx-font-size: 13;
+    -fx-text-fill: -destructive-text;
+}
 .session-scroll, .session-scroll > .viewport,
 .tunnel-scroll, .tunnel-scroll > .viewport {
     -fx-background-color: transparent; -fx-background: transparent;
