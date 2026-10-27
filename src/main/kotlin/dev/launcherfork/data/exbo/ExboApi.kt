@@ -12,58 +12,11 @@ import kotlin.io.path.exists
 import kotlin.io.path.readBytes
 
 /** Thrown when every launcher host failed. The message never includes the request (it can carry a password or token). */
-internal class ExboTransportException(message: String) : IOException(exboPublicError(message))
-
-/**
- * Text safe to log or show. HttpURLConnection embeds the full URL, query included,
- * in several exception messages, so anything that looks like a URL or a secret
- * parameter is replaced.
- */
-internal fun exboPublicError(message: String): String {
-    if (!exboTextHasSecret(message) && message.length <= 400) return message
-    if (!exboTextHasSecret(message)) return message.take(400)
-    return "redacted"
-}
-
-internal fun exboTextHasSecret(text: String): Boolean {
-    val lower = text.lowercase()
-    if ("://" in lower) return true
-    if ('?' in text && '=' in text) return true
-    return SECRET_MARKERS.any { marker ->
-        var from = 0
-        while (from < lower.length) {
-            val at = lower.indexOf(marker, from)
-            if (at < 0) return@any false
-            val boundary = at == 0 || lower[at - 1] == '?' || lower[at - 1] == '&' || lower[at - 1].isWhitespace()
-            if (boundary) return@any true
-            from = at + marker.length
-        }
-        false
-    }
-}
-
-private val SECRET_MARKERS = listOf(
-    "pass=", "passhash=", "token=", "session=", "secret=", "hwid=", "code=", "answer=",
-)
-
-/** Class name, or a message this code already sanitized. Never the underlying URL. */
-internal fun exboTransportFailure(error: Exception?): String = when (error) {
-    null -> "no endpoint"
-    is ExboTransportException -> error.message ?: "transport"
-    else -> error.javaClass.simpleName
-}
-
-/** Why this status cannot be used, or null when the body is the response. 3xx is never followed. */
-internal fun exboHttpFailure(code: Int): String? = when {
-    code < 0 -> "no status"
-    code in 300..399 -> "redirect"
-    code >= 400 -> "http $code"
-    else -> null
-}
+internal class ExboTransportException(message: String) : IOException(message)
 
 /**
  * The installed EXBO launcher's backend: registry session, bootstrap hash, HWID from the 32-bit JRE,
- * then `/auth` and `/listServers` on [ExboHosts.credential]. Cleartext hosts are not contacted.
+ * then `/auth` and `/listServers` on the hosts in [ExboHosts].
  */
 class ExboApi(
     private val root: Path = ExboPaths.roamingRoot(),
@@ -216,7 +169,14 @@ class ExboApi(
         val reply = parseAuthReply(body)
         val obj = parseJson(body) as? Json.Obj
         fun len(name: String) = obj?.text(name)?.length ?: -1
-        val urlHost = obj?.text("loginURL")?.let { redactExboUrl(it) } ?: ""
+        val urlHost = obj?.text("loginURL")?.let { raw ->
+            try {
+                val uri = java.net.URI(raw)
+                listOf(uri.scheme, uri.host, uri.path).filterNotNull().joinToString("")
+            } catch (_: Exception) {
+                "bad"
+            }
+        } ?: ""
         System.err.println(
             "[launcher-fork] auth_type=${reply.type} token=${reply.token != null} " +
                 "secretLen=${len("secretHash")} sessionLen=${len("session")} loginLen=${len("trueLogin")} " +
@@ -229,78 +189,31 @@ class ExboApi(
 
     private fun getBytes(path: String, accept: String?): ByteArray {
         var last: Exception? = null
-        for (base in ExboHosts.credential) {
-            if (!exboBaseIsTrustedHttps(base)) continue
+        for (base in ExboHosts.all) {
             try {
                 return request(base, path, accept)
             } catch (e: IOException) {
                 last = e
             }
         }
-        throw ExboTransportException(exboTransportFailure(last))
+        throw ExboTransportException(last?.javaClass?.simpleName ?: "no endpoint")
     }
 
-    /**
-     * GET [base] + [path] over TLS. The path still carries the official query
-     * (the server reads the password and token from it). Redirects are not followed:
-     * a 3xx to cleartext would resend that query in the clear. Connection failures
-     * are rethrown without the URL, which [HttpURLConnection] puts in the message.
-     */
-    internal fun request(base: String, path: String, accept: String?): ByteArray {
-        require(exboBaseIsTrustedHttps(base)) { "unapproved auth host" }
-        val conn = open(base, path)
+    private fun request(base: String, path: String, accept: String?): ByteArray {
+        val conn = (URI(base + path).toURL().openConnection() as HttpURLConnection)
         conn.connectTimeout = 15_000
         conn.readTimeout = 60_000
-        conn.instanceFollowRedirects = false
-        conn.useCaches = false
+        conn.instanceFollowRedirects = true
         if (accept != null) conn.setRequestProperty("Accept", accept)
         try {
             val code = conn.responseCode
-            exboHttpFailure(code)?.let { throw ExboTransportException(it) }
-            return conn.inputStream?.readBytes() ?: ByteArray(0)
-        } catch (e: ExboTransportException) {
-            throw e
-        } catch (e: Exception) {
-            if (e is InterruptedException) Thread.currentThread().interrupt()
-            throw ExboTransportException(e.javaClass.simpleName)
+            val stream = if (code >= 400) conn.errorStream else conn.inputStream
+            val body = stream?.readBytes() ?: ByteArray(0)
+            if (code >= 400) throw ExboTransportException("http $code")
+            return body
         } finally {
             conn.disconnect()
         }
-    }
-
-    private fun open(base: String, path: String): HttpURLConnection {
-        val target = try {
-            approvedTarget(base, path)
-        } catch (e: ExboTransportException) {
-            throw e
-        } catch (e: Exception) {
-            if (e is InterruptedException) Thread.currentThread().interrupt()
-            throw ExboTransportException(e.javaClass.simpleName)
-        }
-        try {
-            return (target.toURL().openConnection() as HttpURLConnection)
-        } catch (e: Exception) {
-            if (e is InterruptedException) Thread.currentThread().interrupt()
-            throw ExboTransportException(e.javaClass.simpleName)
-        }
-    }
-
-    /**
-     * The query is appended to an allowlisted base. Reject a path that changes the host,
-     * port, scheme, or userinfo so the password cannot be steered at another server.
-     */
-    private fun approvedTarget(base: String, path: String): URI {
-        val baseUri = URI(base)
-        val target = URI(base + path)
-        if (
-            target.scheme != "https" ||
-            target.host != baseUri.host ||
-            target.port != baseUri.port ||
-            target.rawUserInfo != null
-        ) {
-            throw ExboTransportException("unapproved auth host")
-        }
-        return target
     }
 
     private fun bootstrap(): String {
