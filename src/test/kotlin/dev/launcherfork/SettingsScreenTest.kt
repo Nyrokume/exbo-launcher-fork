@@ -1226,6 +1226,22 @@ class SettingsScreenTest {
         val bothEntered = CountDownLatch(2)
         val release = CountDownLatch(1)
         val finished = CountDownLatch(1)
+        val (c, _) = settingsWith(LauncherSettings())
+        fun blockNamed(name: String): CheckBox {
+            val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
+                val row = button.graphic as? Parent
+                row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
+            }
+            return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<CheckBox>()
+                .single { "tunnel-block-switch" in it.styleClass }
+        }
+        FxTestSupport.onFx {
+            c.showClientSection("tunnel")
+            c.settingsRoot.applyCss()
+            c.settingsRoot.layout()
+            assertTrue(blockNamed("MSK1-1").isVisible, "MSK1-1 was not on the tunnel page")
+        }
+        // Catalog load stays inline. Only the firewall writes under test run on worker threads.
         TunnelServices.inline = false
         TunnelServices.beforeFirewallWrite = {
             firstEntered.countDown()
@@ -1242,22 +1258,8 @@ class SettingsScreenTest {
             finished.countDown()
             Result.success(0)
         }
-        val (c, _) = settingsWith(LauncherSettings())
-        fun blockNamed(name: String): CheckBox {
-            val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
-                val row = button.graphic as? Parent
-                row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
-            }
-            return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<CheckBox>()
-                .single { "tunnel-block-switch" in it.styleClass }
-        }
         try {
-            FxTestSupport.onFx {
-                c.showClientSection("tunnel")
-                c.settingsRoot.applyCss()
-                c.settingsRoot.layout()
-                blockNamed("MSK1-1").fire()
-            }
+            FxTestSupport.onFx { blockNamed("MSK1-1").fire() }
             assertTrue(firstEntered.await(8, TimeUnit.SECONDS), "first firewall write did not start")
             FxTestSupport.onFx { blockNamed("MSK1-1").fire() }
             assertTrue(bothEntered.await(8, TimeUnit.SECONDS), "second firewall write did not start")
