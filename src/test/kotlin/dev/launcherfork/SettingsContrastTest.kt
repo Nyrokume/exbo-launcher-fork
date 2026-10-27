@@ -69,7 +69,7 @@ class SettingsContrastTest {
     }
 
     /**
-     * Segmented controls («Закрывать лаунчер», «Peer-to-peer», «Язык»): the inactive options are bright text on the
+     * Segmented controls («Закрывать лаунчер», «P2P-загрузка», «Язык»): the inactive options are bright text on the
      * control (>= 7:1, AAA, also when hovered), the selected one is the theme accent filling the whole part with
      * -primary-foreground on it (>= 4.5:1). In zone and exbo that is white text on the accent (site red / exbo blue);
      * shadcn is monochrome (near-white accent, dark text). Figures are printed for the PR.

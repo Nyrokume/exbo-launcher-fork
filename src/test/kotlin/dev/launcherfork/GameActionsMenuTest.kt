@@ -212,7 +212,7 @@ class GameActionsMenuTest {
         assertTrue(FxTestSupport.waitFx { main.state() == ClientState.NotInstalled }, "mock deletion did not finish")
         FxTestSupport.onFx {
             assertFalse(main.defaultStatusPaneController.downloadButton.isDisable)
-            assertEquals("ЗАГРУЗИТЬ", main.defaultStatusPaneController.downloadButton.text)
+            assertEquals("СКАЧАТЬ ИГРУ", main.defaultStatusPaneController.downloadButton.text)
             // a stale confirm after cancel can never run: open + cancel, then the confirm button does nothing new
             main.store.state(main.selected!!).set(ClientState.Ready)
             main.item(GameAction.REINSTALL).fire()
