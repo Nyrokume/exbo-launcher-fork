@@ -9,8 +9,6 @@ import java.net.URI
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.io.path.exists
-import kotlin.io.path.isDirectory
 
 /** Server cards from the working launcher's `/listServers`, using the token from [ExboAuthService]. */
 class ExboServerRepository(
@@ -56,9 +54,8 @@ class ExboServerRepository(
         catalogClientDownloadable(versions[server.id], seeds[server.id].orEmpty())
 
     override fun needsClientUpdate(server: Server): Boolean {
-        val dir = locate(server.id)
-        val present = dir.isDirectory() && dir.resolve("classes.jar").exists()
-        return installedClientNeedsUpdate(versions[server.id], readInstalledHash(server.id), present)
+        val state = diskInstall(locate(server.id), versions[server.id], readInstalledHash(server.id))
+        return state.present && !state.current
     }
 
     override fun clientDirectory(server: Server): Path? = locate(server.id)
@@ -77,7 +74,7 @@ class ExboServerRepository(
         exclusions.putAll(catalog.exclusions)
         cached = catalog.servers.map { server ->
             val dir = locate(server.id)
-            val installed = dir.isDirectory() && dir.resolve("classes.jar").exists()
+            val installed = clientFilesPresent(dir)
             server.copy(iconUri = sidebarIcon(server), installed = installed)
         }
         cachedSource = body

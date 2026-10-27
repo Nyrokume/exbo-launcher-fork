@@ -45,19 +45,25 @@ class ClientStateStore(
 ) {
     /** Shown by the main window when a client update cannot finish. The reason is not displayed. */
     var onDownloadFailed: () -> Unit = {}
+    /** Shown when verify / reinstall / delete stops. The reason is a stable code, not a path. */
+    var onOperationFailed: (ClientOperation, String) -> Unit = { _, _ -> }
     private val states = HashMap<String, ObjectProperty<ClientState>>()
+    private val serversById = HashMap<String, Server>()
     private val jobs = HashMap<String, Cancellable>()
     private val generations = HashMap<String, Long>()
 
-    fun state(server: Server): ObjectProperty<ClientState> = states.getOrPut(server.id) {
-        val paused = updates.pausedProgress(server)
-        SimpleObjectProperty(
-            when {
-                updates.isInstalled(server) -> ClientState.Ready
-                paused > 0 -> ClientState.Paused(paused, server.clientSizeBytes)
-                else -> ClientState.NotInstalled
-            },
-        )
+    fun state(server: Server): ObjectProperty<ClientState> {
+        serversById[server.id] = server
+        return states.getOrPut(server.id) {
+            val paused = updates.pausedProgress(server)
+            SimpleObjectProperty(
+                when {
+                    updates.isInstalled(server) -> ClientState.Ready
+                    paused > 0 -> ClientState.Paused(paused, server.clientSizeBytes)
+                    else -> ClientState.NotInstalled
+                },
+            )
+        }
     }
 
     fun isAnyDownloading(except: Server): Boolean =
@@ -97,6 +103,13 @@ class ClientStateStore(
                 if (!isCurrent(server, gen)) return@ui
                 jobs.remove(server.id)
                 prop.set(if (operation == ClientOperation.DELETE) ClientState.NotInstalled else ClientState.Ready)
+            }
+
+            override fun onFailed(reason: String) = ui {
+                if (!isCurrent(server, gen)) return@ui
+                jobs.remove(server.id)
+                prop.set(if (updates.isInstalled(server)) ClientState.Ready else ClientState.NotInstalled)
+                onOperationFailed(operation, reason)
             }
         })
         return true
@@ -174,9 +187,10 @@ class ClientStateStore(
             if (id in playing) return@forEach
             when (val s = p.get()) {
                 is ClientState.Downloading -> p.set(ClientState.Paused(s.progress.fraction, s.progress.totalBytes))
-                // TODO(real update service): an interrupted verify / reinstall / delete is shown as Ready here (the mock
-                //  has nothing half-done); the real service must report the client's actual state (Agent.Master, PR #8)
-                is ClientState.Busy -> p.set(ClientState.Ready)
+                is ClientState.Busy -> {
+                    val known = serversById[id]
+                    p.set(if (known == null || updates.isInstalled(known)) ClientState.Ready else ClientState.NotInstalled)
+                }
                 else -> Unit
             }
         }
