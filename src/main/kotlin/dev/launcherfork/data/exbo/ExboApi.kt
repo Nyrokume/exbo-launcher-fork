@@ -143,7 +143,12 @@ class ExboApi(
         return reply
     }
 
-    /** Writes the new session the way the official client does, and only after a successful auth. */
+    /**
+     * Writes the new session the way the installed client does, and only after a successful auth.
+     * `EXBO_SESSION` is the raw session string. `exboSessionPath` sends it as `session=` because
+     * that is the EXBO query, and the installed launcher reads this same value. It is not sealed
+     * here. The fork copy in `sessions.json` is sealed with DPAPI on Windows.
+     */
     fun remember(login: String, session: String?) {
         val values = linkedMapOf("EXBO_AUTO_AUTH" to "true", "EXBO_LOGIN" to login)
         if (!session.isNullOrBlank()) values["EXBO_SESSION"] = session

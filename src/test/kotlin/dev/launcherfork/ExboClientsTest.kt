@@ -60,6 +60,7 @@ class ExboClientsTest {
         assertTrue(catalogClientDownloadable("abc", listOf("https://cdn.example/files")))
         assertFalse(catalogClientDownloadable(null, listOf("https://cdn.example/files")))
         assertFalse(catalogClientDownloadable("abc", emptyList()))
+        assertFalse(catalogClientDownloadable("abc", listOf("http://cdn.example/files")))
         assertFalse(catalogClientDownloadable("  ", listOf("https://cdn.example/files")))
     }
 

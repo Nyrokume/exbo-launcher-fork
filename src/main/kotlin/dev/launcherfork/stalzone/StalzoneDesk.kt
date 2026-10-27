@@ -10,6 +10,8 @@ class StalzoneDesk(
     private val sessionsFile: Path,
     private val configsDir: Path,
     private val optionsFile: Path,
+    /** Seals `EXBO_SESSION` in [sessionsFile]. The registry write stays the raw session. */
+    private val secrets: SessionSecretProtector = PlainSessionSecrets,
 ) {
     fun activeProfile(): String? = registry.readValues(JvmProfile.ACTIVE_KEY)[JvmProfile.ACTIVE_VALUE]
 
@@ -65,7 +67,7 @@ class StalzoneDesk(
         if (next != text) Files.writeString(file, next)
     }
 
-    fun sessions(): List<ExboSession> = SessionFile.load(sessionsFile)
+    fun sessions(): List<ExboSession> = SessionFile.load(sessionsFile, secrets)
 
     /** Live `SOFTWARE\EXBO` values, so the accounts page can mark the session that is already applied. */
     fun liveAccount(): Map<String, String> = registry.readValues(ExboSessions.KEY_PATH)
@@ -75,7 +77,7 @@ class StalzoneDesk(
         val existing = sessions()
         val nextId = (existing.maxOfOrNull { it.id } ?: 0L) + 1
         val session = ExboSessions.capture(name.ifBlank { "session $nextId" }, nextId, Instant.now().toString(), live)
-        SessionFile.save(sessionsFile, existing + session)
+        SessionFile.save(sessionsFile, existing + session, secrets)
         return session
     }
 
@@ -84,7 +86,7 @@ class StalzoneDesk(
     }
 
     fun delete(id: Long) {
-        SessionFile.save(sessionsFile, sessions().filter { it.id != id })
+        SessionFile.save(sessionsFile, sessions().filter { it.id != id }, secrets)
     }
 
     /**
@@ -100,7 +102,7 @@ class StalzoneDesk(
         if (existing[index].name == trimmed) return true
         val next = existing.toMutableList()
         next[index] = existing[index].copy(name = trimmed)
-        SessionFile.save(sessionsFile, next)
+        SessionFile.save(sessionsFile, next, secrets)
         return true
     }
 

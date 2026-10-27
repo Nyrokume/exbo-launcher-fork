@@ -191,8 +191,9 @@
 }
 
 /* ---------- update panel (update_panel.fxml) ---------- */
-.zone-top-hero { -fx-alignment: center-left; -fx-spacing: 14; }
-.zone-logo { -fx-padding: 0 0 18 0; }
+/* content-sized, same density as the compact 2FA cards: padding only, the hero does not grow */
+.zone-top-hero { -fx-alignment: center-left; -fx-spacing: 12; -fx-padding: 28 28 16 28; }
+.zone-logo { -fx-padding: 0 0 8 0; }
 .zone-logo .logo-path { -fx-fill: -foreground; }
 /* login card: the logo stands alone, no gap under it */
 .zone-login-logo { -fx-padding: 0; }
@@ -200,7 +201,7 @@
 .zone-top.zone-login-top { -fx-padding: 34 28 26 28; }
 /* login: one monotone black, the logo block takes the form colour instead of the grey card */
 .zone-top.zone-top-plain { -fx-background-color: -card-description; }
-.zone-bottom-status { -fx-spacing: 12; -fx-padding: 26 28 30 28; }
+.zone-bottom-status { -fx-spacing: 10; -fx-padding: 18 28 20 28; }
 .zone-status { -fx-font-size: 15; -fx-text-fill: -foreground; }
 .zone-progress { -fx-pref-height: 6; -fx-min-height: 6; -fx-max-height: 6; }
 .zone-progress > .track {

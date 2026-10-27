@@ -12,6 +12,7 @@ import dev.launcherfork.domain.ExboPaths
 import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.stalzone.MemoryRegistry
+import dev.launcherfork.stalzone.SessionSecrets
 import dev.launcherfork.stalzone.StalzoneDesk
 import dev.launcherfork.stalzone.StalzonePaths
 import dev.launcherfork.stalzone.WindowsRegistry
@@ -110,6 +111,7 @@ class AppContext(
                 StalzonePaths.sessionsFile(),
                 StalzonePaths.jvmConfigsDir(),
                 StalzonePaths.optionsFile(),
+                SessionSecrets.platform(),
             )
             val auth = ExboAuthService(api)
             val system = HostSystemInfo()

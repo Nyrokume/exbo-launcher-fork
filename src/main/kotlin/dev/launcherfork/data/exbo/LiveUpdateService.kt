@@ -47,8 +47,8 @@ internal class ExboLiveClientSource(
  * Installed EXBO client maintenance. [isInstalled] reads the client directory and the catalog hash,
  * not [Server.installed]. Verify repairs files through [syncClientFiles]. Reinstall and delete remove
  * only that client directory. The main window asks before either one starts; an unsafe path is refused
- * here before anything is deleted. Launcher self-update stays a no-op. Auth transport and web-seed
- * schemes are unchanged.
+ * here before anything is deleted. Launcher self-update stays a no-op. Web seeds that reach this
+ * service are the HTTPS list from the server catalog; [exboOpenSeed] refuses cleartext again.
  *
  * The speed argument matches the mock constructor so the app can pass one value through. Live work is not timed.
  */
