@@ -6,29 +6,38 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
-/** Reads and writes the Regedit `sessions.json` array. */
+/**
+ * Reads and writes the Regedit `sessions.json` array.
+ * `EXBO_SESSION` is sealed with [secrets] before it hits disk and opened on load.
+ * A blob that does not open drops that session. The ciphertext is not returned.
+ */
 object SessionFile {
-    fun load(path: Path): List<ExboSession> {
+    fun load(path: Path, secrets: SessionSecretProtector = PlainSessionSecrets): List<ExboSession> {
         if (!Files.exists(path)) return emptyList()
         val text = Files.readString(path).trim()
         if (text.isEmpty()) return emptyList()
         val parsed = MiniJson.parse(text) as? List<*> ?: error("sessions.json is not a list")
-        return parsed.map { item ->
-            val obj = item as Map<*, *>
-            ExboSession(
-                id = (obj["id"] as Number).toLong(),
-                name = obj["name"] as String,
-                createdAt = obj["created_at"] as String,
-                data = keyFrom(obj["data"] as Map<*, *>),
-            )
+        return parsed.mapNotNull { item ->
+            try {
+                val obj = item as Map<*, *>
+                ExboSession(
+                    id = (obj["id"] as Number).toLong(),
+                    name = obj["name"] as String,
+                    createdAt = obj["created_at"] as String,
+                    data = openKey(keyFrom(obj["data"] as Map<*, *>), secrets),
+                )
+            } catch (_: SessionSecretException) {
+                null
+            }
         }
     }
 
-    fun save(path: Path, sessions: List<ExboSession>) {
+    fun save(path: Path, sessions: List<ExboSession>, secrets: SessionSecretProtector = PlainSessionSecrets) {
+        val sealed = sessions.map { it.copy(data = sealKey(it.data, secrets)) }
         val parent = path.parent
         if (parent != null) Files.createDirectories(parent)
         val tmp = path.resolveSibling(path.fileName.toString() + ".tmp")
-        Files.writeString(tmp, MiniJson.write(sessions.map { toMap(it) }))
+        Files.writeString(tmp, MiniJson.write(sealed.map { toMap(it) }))
         moveReplacing(tmp, path)
     }
 
@@ -57,6 +66,22 @@ object SessionFile {
         },
         "subkeys" to key.subkeys.map { keyMap(it) },
     )
+
+    private fun sealKey(key: ExboKey, secrets: SessionSecretProtector): ExboKey = key.copy(
+        values = key.values.map { sealValue(it, secrets) },
+        subkeys = key.subkeys.map { sealKey(it, secrets) },
+    )
+
+    private fun openKey(key: ExboKey, secrets: SessionSecretProtector): ExboKey = key.copy(
+        values = key.values.map { openValue(it, secrets) },
+        subkeys = key.subkeys.map { openKey(it, secrets) },
+    )
+
+    private fun sealValue(value: ExboValue, secrets: SessionSecretProtector): ExboValue =
+        if (value.name == "EXBO_SESSION") value.copy(value = secrets.protect(value.value)) else value
+
+    private fun openValue(value: ExboValue, secrets: SessionSecretProtector): ExboValue =
+        if (value.name == "EXBO_SESSION") value.copy(value = secrets.unprotect(value.value)) else value
 
     private fun keyFrom(obj: Map<*, *>): ExboKey = ExboKey(
         name = obj["name"] as? String ?: "",

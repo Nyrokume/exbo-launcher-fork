@@ -43,6 +43,8 @@ class LauncherUpdateController(private val ctx: UiContext) : Disposable, UpdateP
         WindowChrome.wireButtons(ctx.navigator, closeButton, hideButton)
         errorFirst.text = ""
         errorSecond.text = ""
+        // empty lines must not reserve a hole under the bar (same as the auth panels); a real message grows the window
+        listOf(errorFirst, errorSecond).forEach { it.managedProperty().bind(it.textProperty().isNotEmpty) }
         statusLabel.text = ctx.t(Messages.key(UpdatePhase.CHECKING))
         rollingBar.progress = ProgressIndicator.INDETERMINATE_PROGRESS
         progressBar?.progress = ProgressIndicator.INDETERMINATE_PROGRESS

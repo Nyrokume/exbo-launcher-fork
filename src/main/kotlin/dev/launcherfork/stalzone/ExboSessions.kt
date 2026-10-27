@@ -5,6 +5,8 @@ package dev.launcherfork.stalzone
  * (`%LOCALAPPDATA%\stalcraft-nyrokume\sessions.json`).
  * Applying a session writes only `EXBO_AUTO_AUTH`, `EXBO_LOGIN` and `EXBO_SESSION`
  * under `HKCU\SOFTWARE\EXBO`, and forces auto-auth to `true`.
+ * Those registry strings stay raw: the installed launcher and `/auth?session=` read them.
+ * The copy in `sessions.json` is sealed separately.
  */
 data class ExboValue(val name: String, val value: String, val valueType: String = "REG_SZ")
 

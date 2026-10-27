@@ -48,8 +48,8 @@ internal class ExboLiveClientSource(
  * not [Server.installed]. Verify repairs files through [syncClientFiles]. Reinstall and delete remove
  * only that client directory. The main window asks before either one starts; an unsafe path is refused
  * here before anything is deleted. Launcher self-update installs nothing: a missing offer finishes
- * the check, and any offer is rejected until a release public key exists. Auth transport and web-seed
- * schemes are unchanged.
+ * the check, and any offer is rejected until a release public key exists. Web seeds that reach this
+ * service are the HTTPS list from the server catalog; [exboOpenSeed] refuses cleartext again.
  *
  * The speed argument matches the mock constructor so the app can pass one value through. Live work is not timed.
  */

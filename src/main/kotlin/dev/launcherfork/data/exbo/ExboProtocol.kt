@@ -31,6 +31,34 @@ internal object ExboHosts {
     )
 }
 
+/**
+ * HTTPS URL with a host and no userinfo.
+ * Web seeds and catalog art use this. Cleartext, a missing host, or embedded credentials are rejected.
+ */
+internal fun exboHttpsUrl(raw: String): URI? {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return null
+    val uri = try {
+        URI(trimmed)
+    } catch (_: Exception) {
+        return null
+    }
+    if (uri.scheme != "https" || uri.host.isNullOrBlank()) return null
+    if (uri.rawUserInfo != null || uri.fragment != null) return null
+    return uri
+}
+
+/** HTTPS web seeds only, original order, duplicates dropped. `http://` never stays in the list. */
+internal fun httpsWebSeeds(seeds: List<String>): List<String> {
+    val kept = ArrayList<String>(seeds.size)
+    for (seed in seeds) {
+        val trimmed = seed.trim()
+        if (exboHttpsUrl(trimmed) == null || trimmed in kept) continue
+        kept += trimmed
+    }
+    return kept
+}
+
 /** True only for an official TLS base with no userinfo, query, or path. */
 internal fun exboBaseIsTrustedHttps(base: String): Boolean {
     if (base !in ExboHosts.credential) return false
@@ -215,7 +243,7 @@ internal fun parseServerCatalog(body: String, root: Path = ExboPaths.roamingRoot
         servers += server
         entry.text("runCommand")?.takeIf { it.isNotEmpty() }?.let { commands[server.id] = it }
         entry.text("version")?.takeIf { it.isNotEmpty() }?.let { versions[server.id] = it }
-        entry.strings("httpSeeds").filter { it.startsWith("https://") || it.startsWith("http://") }
+        httpsWebSeeds(entry.strings("httpSeeds"))
             .takeIf { it.isNotEmpty() }?.let { seeds[server.id] = it }
         entry.strings("exclusions").filter { it.isNotBlank() }
             .takeIf { it.isNotEmpty() }?.let { exclusions[server.id] = it }
@@ -261,9 +289,11 @@ private fun description(caption: String, desc: List<String>): GameDescription.Te
 
 private fun art(path: String?, seeds: List<String>, fallback: String): URI {
     val raw = path?.trim().orEmpty()
+    val httpsSeeds = httpsWebSeeds(seeds)
     val candidate = when {
-        raw.startsWith("https://") || raw.startsWith("http://") -> raw
-        raw.isNotEmpty() && seeds.isNotEmpty() -> seeds.first().trimEnd('/') + "/" + raw.trimStart('/')
+        exboHttpsUrl(raw) != null -> raw
+        raw.isNotEmpty() && "://" !in raw && httpsSeeds.isNotEmpty() ->
+            httpsSeeds.first().trimEnd('/') + "/" + raw.trimStart('/')
         else -> null
     }
     if (candidate != null) {

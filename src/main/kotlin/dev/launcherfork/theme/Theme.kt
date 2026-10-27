@@ -28,15 +28,18 @@ object Theme {
 
     /**
      * Separate pre-main window (update / auth / mail code, docs/design/WINDOWS.md): undecorated (transparent
-     * corners), not resizable, rounded like the stalzone.com/login card. 460x700 = 32 px title strip + 460x668
-     * panel host; room for registration/TOTP error toasts in the form flow without clipping. The zone login panel
-     * stretches to the host (its min is 420x560), legacy 379x490 panels are centered.
+     * corners), not resizable, rounded like the stalzone.com/login card. The tallest size, 460x700, is a 32 px
+     * title strip plus a 460x668 panel host (registration and age). Compact panels, including launcher update,
+     * fit their content between AUTH_WINDOW_MIN_HEIGHT and that ceiling. Legacy 379x490 panels are centered.
      */
     const val AUTH_WINDOW_WIDTH = 460.0
-    /** Tallest pre-main window (fixed-size legacy panels and update panel); compact panels fit their content. */
+    /** Tallest pre-main window (fixed-size legacy panels, registration, age); compact panels fit their content. */
     const val AUTH_WINDOW_HEIGHT = 700.0
-    /** Shortest pre-main window: a compact (content-sized) panel never makes the window lower than this. */
-    const val AUTH_WINDOW_MIN_HEIGHT = 360.0
+    /**
+     * Shortest pre-main window. Compact panels fit their content, and the launcher-update card is shorter than
+     * the login and 2FA cards, so the floor sits under that card (was 360, which left a blank band under the bar).
+     */
+    const val AUTH_WINDOW_MIN_HEIGHT = 280.0
     const val AUTH_TITLEBAR_HEIGHT = 32.0
     const val AUTH_PANEL_WIDTH = AUTH_WINDOW_WIDTH
     const val AUTH_PANEL_HEIGHT = AUTH_WINDOW_HEIGHT - AUTH_TITLEBAR_HEIGHT
