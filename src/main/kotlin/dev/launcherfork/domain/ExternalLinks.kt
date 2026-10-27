@@ -11,7 +11,7 @@ object ExternalLinks {
     const val REFERRAL = "https://stalzone.net/referral"
     /** Donate / top-up (stalzone.com account menu `.donate` → `/donate`). */
     const val TOP_UP = "https://stalzone.com/donate"
-    /** Official site registration. Live login opens this instead of the mock form. */
+    /** Official site registration page. Login «Создать» uses the in-app age gate instead. */
     const val REGISTER = "https://exbo.ru/index.php?do=register"
     /** Official password restore. */
     const val RESTORE = "https://exbo.ru/index.php?do=lostpassword"

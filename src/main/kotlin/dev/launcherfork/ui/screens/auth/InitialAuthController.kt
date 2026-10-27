@@ -128,10 +128,9 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
         autoAuthCheckBox.isSelected = !autoAuthCheckBox.isSelected
     }
 
-    /** "Создать" (zone) / "Регистрация" (legacy): the mock form, or the official site when EXBO is live. */
+    /** "Создать" (zone) / "Регистрация" (legacy): in-app age gate, including when EXBO is live. */
     @FXML fun onRegister() {
-        if (ctx.liveBackend) ctx.services.links.open(ExternalLinks.REGISTER)
-        else ctx.navigator.showAgeGate()
+        ctx.navigator.showAgeGate()
     }
 
     @FXML fun onRestore() {

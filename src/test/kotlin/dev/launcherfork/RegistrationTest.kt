@@ -2,6 +2,8 @@ package dev.launcherfork
 
 import dev.launcherfork.app.AppContext
 import dev.launcherfork.data.mock.MockAuthService
+import dev.launcherfork.domain.ExternalLinks
+import dev.launcherfork.domain.LinkOpener
 import dev.launcherfork.domain.RegisterError
 import dev.launcherfork.domain.RegisterResult
 import dev.launcherfork.domain.RegistrationField
@@ -278,6 +280,24 @@ class RegistrationTest {
             c.passwordField.text = "secret"
             assertEquals("", c.noticeLabel!!.text, "notice hides once the password is typed")
             assertFalse(c.noticeLabel!!.isVisible)
+        }
+    }
+
+    @Test
+    fun liveBackendOnRegisterShowsAgeGateAndDoesNotOpenRegister() {
+        val nav = RecordingNavigator()
+        val opened = mutableListOf<String>()
+        val app = AppContext.mock(authDelayMs = 0, links = LinkOpener { opened += it })
+        val ctx = UiContext(app.services, nav, Strings.bundle("ru"), "ru", app.clientStates, false, app.desk, true)
+        val zone = FxTestSupport.onFx { Fxml.load<InitialAuthController>(ctx, "auth_panel.fxml").controller }
+        val legacy = FxTestSupport.onFx { Fxml.load<InitialAuthController>(ctx, "initial_auth.fxml").controller }
+        FxTestSupport.onFx {
+            zone.registerButton.fire()
+            legacy.onRegister()
+            assertEquals(listOf("age:", "age:"), nav.calls.toList())
+            assertTrue(opened.none { it == ExternalLinks.REGISTER }, "register stays in-app: $opened")
+            zone.onRestore()
+            assertEquals(listOf(ExternalLinks.RESTORE), opened.toList(), "password restore still opens in the browser")
         }
     }
 }
