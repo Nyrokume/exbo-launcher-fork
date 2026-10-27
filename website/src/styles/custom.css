@@ -1,0 +1,141 @@
+/* Zone-matched Starlight theme — from theme-zone.css / STYLE-ZONE.md
+   Fonts: Manrope (body), Bebas Neue (display H1), IBM Plex Mono (code).
+   Load Google fonts in astro.config / head, or self-host OFL files. */
+
+:root,
+[data-theme='dark'] {
+  --sl-color-accent-low: #3a0a12;
+  --sl-color-accent: #e91932;
+  --sl-color-accent-high: #ff3b52;
+
+  --sl-color-white: #ece7e1;
+  --sl-color-gray-1: #efeae4;
+  --sl-color-gray-2: #d9d2ca;
+  --sl-color-gray-3: #bdb2a6;
+  --sl-color-gray-4: #6a645e;
+  --sl-color-gray-5: #2e2d2d;
+  --sl-color-gray-6: #181818;
+  --sl-color-black: #0a0a0a;
+
+  --sl-color-bg: #0a0a0a;
+  --sl-color-bg-nav: #0f0f0f;
+  --sl-color-bg-sidebar: #0f0f0f;
+  --sl-color-bg-inline-code: #121212;
+  --sl-color-hairline: #2e2d2d;
+  --sl-color-hairline-light: #383532;
+
+  --sl-color-text: #ece7e1;
+  --sl-color-text-accent: #ff3b52;
+  --sl-color-text-invert: #0a0a0a;
+
+  --zone-card: #181818;
+  --zone-card-alt: #0f0f0f;
+  --zone-input: #121212;
+  --zone-muted: #bdb2a6;
+  --zone-success: #3ecf8e;
+  --zone-warning: #e8b04a;
+  --zone-error: #e63030;
+  --zone-radius: 5px;
+  --zone-radius-md: 10px;
+
+  --sl-font: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sl-font-system-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --zone-font-display: 'Bebas Neue', 'Bebas Neue Regular', Impact, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+  background: var(--sl-color-bg);
+}
+
+body {
+  font-family: var(--sl-font);
+  font-size: 16px;
+  line-height: 1.65;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hero h1,
+.sl-markdown-content h1:first-child,
+h1.sl-heading-wrapper,
+.site-title {
+  font-family: var(--zone-font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4 {
+  font-family: var(--sl-font);
+  font-weight: 600;
+  color: #f7f3ee;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.sl-markdown-content a {
+  color: var(--sl-color-accent);
+  text-underline-offset: 0.18em;
+}
+.sl-markdown-content a:hover {
+  color: var(--sl-color-accent-high);
+}
+
+.sl-markdown-content code:not(pre code) {
+  background: var(--sl-color-bg-inline-code);
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--zone-radius);
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.9em;
+  color: #efeae4;
+}
+
+.sl-markdown-content pre {
+  background: var(--zone-card) !important;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--zone-radius-md);
+  font-family: var(--sl-font-system-mono);
+}
+
+.sl-markdown-content blockquote {
+  border-inline-start: 3px solid var(--sl-color-accent);
+  background: rgba(233, 25, 50, 0.05);
+  color: var(--zone-muted);
+  border-radius: 0 var(--zone-radius) var(--zone-radius) 0;
+}
+
+.sl-markdown-content table {
+  border-color: var(--sl-color-hairline);
+}
+.sl-markdown-content th {
+  background: var(--zone-card-alt);
+  color: #f7f3ee;
+}
+.sl-markdown-content td {
+  border-color: var(--sl-color-hairline-light);
+}
+
+.sidebar a[aria-current='page'],
+.sidebar a[aria-current='true'] {
+  color: var(--sl-color-accent-high);
+  border-inline-start-color: var(--sl-color-accent);
+}
+
+.sl-link-button,
+a.action-button {
+  background: var(--sl-color-accent);
+  color: #ffffff !important;
+  border-radius: var(--zone-radius);
+  border: 1px solid transparent;
+}
+.sl-link-button:hover,
+a.action-button:hover {
+  background: var(--sl-color-accent-high);
+}
+
+.zone-ok { color: var(--zone-success); }
+.zone-warn { color: var(--zone-warning); }
+.zone-err { color: var(--zone-error); }
