@@ -24,7 +24,7 @@ Open PRs on top of that file are marked on the [windows](../../architecture/wind
 - Settings on one screen, the RAM bar, and the “⋯” menu (#8).
 - Online count in the games list (#7), the Communities menu (#6), the profile menu no longer pushes header links (#5).
 - Icon: relative generator paths, a multi-size `.ico` (#4).
-- Zone style for the mail-code window (9 digits) and the update window (#3).
+- Zone style for the email-code window (9 digits) and the update window (#3).
 - Zone redesign: STALZONE style, a separate login window, a vector logo, the profile menu (#2).
 - Login panel in the stalzone.com/login style (#1).
 
@@ -36,8 +36,8 @@ Open PRs on top of that file are marked on the [windows](../../architecture/wind
 |---|---|---|
 | 2026-10-24 | `5fcc81f` | Connect to the installed EXBO client: `AppContext.live` |
 | 2026-10-24 | `ca46ea7` | Tunnel as a Roxy override (`overrides.json`, `-Droxy_address_override`). JVM card subtitles removed. The session key is an icon |
-| 2026-10-24 | `5fb69fd` | Measure does not write `overrides.json`. Find best writes one node for the region |
-| 2026-10-27 | `4a7351e` | Columns are named by the path they measure. The node Find best would save is marked |
+| 2026-10-24 | `5fb69fd` | Measure does not write `overrides.json`. Find best server writes one node for the region |
+| 2026-10-27 | `4a7351e` | Columns are named by the path they measure. The node Find best server would save is marked |
 | 2026-10-27 | `b12c51d` | Each server shows an open or closed lock instead of the metrics paragraph |
 
 Those commits are written up on [AppContext](../../architecture/app-context/), [tunnel](../../settings/tunnel/), [JVM](../../settings/jvm/), and [accounts](../../settings/accounts/).

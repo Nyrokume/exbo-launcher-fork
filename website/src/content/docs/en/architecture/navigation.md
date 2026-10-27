@@ -9,7 +9,7 @@ description: Navigator methods, overlays, and the profile menu on main.
 
 1. The update panel is placed in `panelHost`. The controller’s `UpdatePanel.start(done)` runs.
 2. `done` calls `showAuth()`. The login panel replaces the update in the same window.
-3. A mail code calls `showMailAuth()`. An app code calls `showTotpAuth()`. Back and Esc return to `showAuth()`.
+3. An email code calls `showMailAuth()`. An authenticator code calls `showTotpAuth()`. Back and Esc return to `showAuth()`.
 4. **Create** opens `showAgeGate()`. Age of at least 18 leads to `showRegister`. Back returns to the gate with the same date. Success calls `showRegistered(login)`: login again with the name filled in.
 5. A successful login calls `showMain()`. The panel’s `dispose()` runs. The main window is shown on the screen that held the login window, then the login window hides.
 

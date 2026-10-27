@@ -16,11 +16,11 @@ The second row, left to right:
 - an icon-only circular refresh control (SVG) spins on press and reloads the list. A server that was not in the previous list stays hidden until it answers. A miss drops the node from the pool;
 - the mode menu: **Ping**, **Client RTT**, **Server RTT**, **Stability**. It is an in-page list, not a native combo.
 
-Above the rows, the column captions are **To you**, **Ping**. The column Find best minimizes is marked. Stability still reads the ping column.
+Above the rows, the column captions are **To you**, **Ping**. The column Find best server minimizes is marked. Stability still reads the ping column.
 
 A group is a card: name, count of visible nodes, and an **Exclude** lock on the right. The lock writes the group exclusion to `overrides.json` immediately, with no extra confirm. Clicking the group name measures only that group.
 
-A node row shows a lock (open, closed with the group, or at limit), a dot for “Find best would save this node”, the name, and two figures. Clicking an available row writes that region’s override. A closed, excluded, or at-limit node cannot be selected.
+A node row shows a lock (open, closed with the group, or at limit), a dot for “Find best server would save this node”, the name, and two figures. Clicking an available row writes that region’s override. A closed, excluded, or at-limit node cannot be selected.
 
 Empty figures are `—`. No reply puts a label in the ping column. Row tooltips use the scale up to 50 ms, up to 100, and above 100. Loss and jitter for the hour are in the tooltip, not a separate paragraph.
 
