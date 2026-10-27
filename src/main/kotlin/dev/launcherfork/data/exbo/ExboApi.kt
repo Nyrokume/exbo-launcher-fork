@@ -326,15 +326,27 @@ class ExboApi(
     /**
      * The native HWID lives in the 32-bit `jmt.dll`. The installed `java.exe` is a stub that only
      * runs `../launcher/args_new.txt` next to its own exe, so the helper uses a copy of that JRE
-     * and never touches the real launcher arguments.
+     * and never touches the real launcher arguments. The copy is checked against the installed tree
+     * before the process starts; a mismatch does not run `java.exe`.
      */
     private fun hwid(): String {
         cachedHwid?.let { return it }
-        val work = jreLayout()
+        val work = try {
+            jreLayout(root)
+        } catch (_: IOException) {
+            throw ExboTransportException(JRE_INTEGRITY_ERROR)
+        }
         try {
-            val classDir = work.resolve("classes")
-            Files.createDirectories(classDir)
-            Files.createDirectories(work.resolve("launcher"))
+            val classDir = try {
+                realWorkDirectory(work, "classes")
+            } catch (_: IOException) {
+                throw ExboTransportException(JRE_INTEGRITY_ERROR)
+            }
+            val launcherDir = try {
+                realWorkDirectory(work, "launcher")
+            } catch (_: IOException) {
+                throw ExboTransportException(JRE_INTEGRITY_ERROR)
+            }
             val bytes = ExboApi::class.java.getResourceAsStream("/exbo/HwidDump.class")?.readBytes()
                 ?: throw ExboTransportException("hwid helper missing")
             Files.write(classDir.resolve("HwidDump.class"), bytes)
@@ -346,7 +358,10 @@ class ExboApi(
             ).joinToString(";") { it.toString() }
             val native = root.resolve("launcher").resolve("native")
             val args = "-Djava.library.path=$native -Djava.class.path=$cp -Djava.net.preferIPv4Stack=true HwidDump"
-            Files.writeString(work.resolve("launcher").resolve("args_new.txt"), args)
+            Files.writeString(launcherDir.resolve("args_new.txt"), args)
+            if (!jreTreeMatches(root.resolve("java"), work.resolve("java"))) {
+                throw ExboTransportException(JRE_INTEGRITY_ERROR)
+            }
             val proc = ProcessBuilder(javaExe.toString())
                 .directory(work.resolve("java").toFile())
                 .redirectErrorStream(false)
@@ -368,34 +383,7 @@ class ExboApi(
             cachedHwid = line
             return line
         } finally {
-            work.resolve("classes").toFile().deleteRecursively()
-        }
-    }
-
-    /**
-     * The stub resolves `../launcher/args_new.txt` from its own exe, not from the working directory.
-     * A copy of the JRE gets a private args file so the real `%APPDATA%\EXBO\launcher\args_new.txt` stays untouched.
-     */
-    private fun jreLayout(): Path {
-        val layout = Path.of(System.getProperty("java.io.tmpdir"), "exbo-fork-jre")
-        val exe = layout.resolve("java").resolve("bin").resolve("java.exe")
-        if (!exe.exists()) {
-            layout.resolve("java").toFile().deleteRecursively()
-            copyTree(root.resolve("java"), layout.resolve("java"))
-        }
-        return layout
-    }
-
-    private fun copyTree(from: Path, to: Path) {
-        Files.walk(from).use { paths ->
-            paths.forEach { src ->
-                val dest = to.resolve(from.relativize(src).toString())
-                if (Files.isDirectory(src)) Files.createDirectories(dest)
-                else {
-                    Files.createDirectories(dest.parent)
-                    Files.copy(src, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-                }
-            }
+            deleteTree(work.resolve("classes"))
         }
     }
 
