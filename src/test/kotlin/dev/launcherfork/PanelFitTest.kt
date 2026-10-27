@@ -38,8 +38,8 @@ class PanelFitTest {
         if (zone !in scene.stylesheets) scene.stylesheets.add(1, zone)
         root.applyCss(); root.layout()
         val windowHeight = AuthWindowController.fittedWindowHeight(root)
-        // login and e-mail code panels are content-sized (compact windows, user 2026-10-27); the others keep the full window
-        if (panel == "auth_panel.fxml" || panel == "mail_auth_panel.fxml") assertTrue(windowHeight < Theme.AUTH_WINDOW_HEIGHT, "$panel $lang should be compact: $windowHeight")
+        // login, e-mail and authenticator code panels are content-sized (compact windows, user 2026-10-27); the others keep the full window
+        if (panel == "auth_panel.fxml" || panel == "mail_auth_panel.fxml" || panel == "totp_auth_panel.fxml") assertTrue(windowHeight < Theme.AUTH_WINDOW_HEIGHT, "$panel $lang should be compact: $windowHeight")
         else assertTrue(windowHeight == Theme.AUTH_WINDOW_HEIGHT, "$panel $lang should keep the full window: $windowHeight")
         val h = windowHeight - Theme.AUTH_TITLEBAR_HEIGHT
         root.resize(Theme.AUTH_PANEL_WIDTH, h); root.layout()

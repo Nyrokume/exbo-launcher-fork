@@ -157,12 +157,13 @@ class ZonePanelsTest {
                 scene.root.applyCss(); scene.root.layout()
                 val bottom = c.registerButton.localToScene(c.registerButton.layoutBounds).maxY
                 assertTrue(bottom <= scene.height - 20, "footer too close to the window edge: maxY=$bottom of ${scene.height}")
-                // no hole above ВОЙТИ; footer sits near the bottom of the fixed 620 window
-                val socialsBottom = c.enterSteamButton.localToScene(c.enterSteamButton.layoutBounds).maxY
+                // no hole above ВОЙТИ (social row hidden): it follows remember / restore; footer near the bottom
+                val rowBottom = c.autoAuthCheckBox.localToScene(c.autoAuthCheckBox.layoutBounds).maxY
                 val enterTop = c.enterButton.localToScene(c.enterButton.layoutBounds).minY
-                assertTrue(enterTop - socialsBottom <= 40.0, "gap above ВОЙТИ: ${enterTop - socialsBottom}")
+                assertTrue(enterTop - rowBottom <= 48.0, "gap above ВОЙТИ: ${enterTop - rowBottom}")
                 assertTrue(bottom >= scene.height - 40, "empty strip under the footer: maxY=$bottom of ${scene.height}")
-                assertEquals(dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, nav.authStage.height, 0.5, "login window height")
+                // compact login window (user 2026-10-27): fits its content, below the full pre-main height
+                assertTrue(nav.authStage.height < dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "login window height ${nav.authStage.height}")
                 // the top card shows the EXBO logo instead of a heading; the title strip drops its small copy
                 val logo = scene.root.lookup(".zone-top .zone-login-logo")
                 assertTrue(logo is dev.launcherfork.ui.components.LogoMark && logo.isVisible, "no EXBO logo in the top card")
@@ -229,11 +230,14 @@ class ZonePanelsTest {
                 val scene = nav.authStage.scene
                 scene.root.applyCss(); scene.root.layout()
                 val h = nav.authStage.height
-                assertTrue(h < loginHeight, "code window ($h) should be lower than the login window ($loginHeight)")
-                assertTrue(h <= 460.0, "code window too tall: $h")
+                // compact: idle lower than the login window; the error toast grows it, within the full pre-main height
+                if (!error) assertTrue(h < loginHeight, "code window ($h) should be lower than the login window ($loginHeight)")
+                if (!error) assertTrue(h <= 460.0, "code window too tall: $h")
+                assertTrue(h <= dev.launcherfork.theme.Theme.AUTH_WINDOW_HEIGHT, "code window too tall: $h")
                 assertTrue(scene.root.lookup("#authLogo").isVisible, "title strip logo missing on the code window")
                 val bottom = c.backButton!!.let { it.localToScene(it.layoutBounds) }.maxY
                 assertTrue(bottom <= scene.height - 16 && bottom >= scene.height - 44, "footer at $bottom of ${scene.height}")
+                if (error) assertTrue(c.toast!!.let { !it.isVisible || it.localToScene(it.layoutBounds).maxY <= c.enterButton.localToScene(c.enterButton.layoutBounds).minY }, "error toast clipped / overlaps ПОДТВЕРДИТЬ")
                 if (error) assertTrue(c.errorFirst.localToScene(c.errorFirst.layoutBounds).maxY < c.enterButton.localToScene(c.enterButton.layoutBounds).minY)
                 val img = scene.snapshot(null)
                 val out = BufferedImage(img.width.toInt(), img.height.toInt(), BufferedImage.TYPE_INT_ARGB)
@@ -283,7 +287,9 @@ class ZonePanelsTest {
         val reader = img.pixelReader
         for (y in 0 until h) for (x in 0 until w) out.setRGB(x, y, reader.getArgb(x, y))
         // one monotone black: the logo block and the form share a colour (user, 2026-10-07)
-        assertEquals(out.getRGB(10, 10), out.getRGB(10, h - 10), "logo block and form should be the same black")
+        // the compact panel is shorter than this scene: sample the form just under the footer, not the scene bottom
+        val formY = (bottom + 8).toInt().coerceAtMost(h - 1)
+        assertEquals(out.getRGB(10, 10), out.getRGB(10, formY), "logo block and form should be the same black")
         previewDir.mkdirs()
         ImageIO.write(out, "png", File(previewDir, file))
     }
