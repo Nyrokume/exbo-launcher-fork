@@ -940,8 +940,8 @@ class SettingsScreenTest {
                 assertTrue("best" in winner.styleClass, "find best did not mark the recommendation")
                 val winnerRow = winner.graphic as javafx.scene.Parent
                 val winnerLabels = winnerRow.childrenUnmodifiable.filterIsInstance<Labeled>()
-                val dot = winnerRow.childrenUnmodifiable.first { "tunnel-best-dot" in it.styleClass }
-                assertFalse("idle" in dot.styleClass, "find best did not mark the recommendation")
+                assertTrue(winnerRow.lookupAll(".tunnel-best-dot").isEmpty(), "a status dot is still in front of the server name")
+                assertTrue("best" in (winner.parent as javafx.scene.Node).styleClass, "find best did not mark the recommendation row")
                 val winnerBlock = (winner.parent as Parent).lookupAll(".tunnel-block-switch").filterIsInstance<CheckBox>().single()
                 assertFalse(winnerBlock.isSelected, "the recommended server is already blocked")
                 assertTrue("switch" in winnerBlock.styleClass, "the recommended server has no block switch")

@@ -516,23 +516,30 @@ class SettingsController(private val ctx: UiContext) {
         JvmPresets.all.forEachIndexed { index, preset ->
             val built = presetBuilt(preset.id)
             val heap = if (built == null) ctx.t("settings.jvm.unavailable") else ctx.t("settings.jvm.heap", built.heapGb)
-            val title = Label("${preset.version} · $heap").apply {
+            val title = Label("$preset.version, $heap").apply {
                 styleClass.add("jvm-preset-title")
                 textOverrun = OverrunStyle.ELLIPSIS
+                isWrapText = false
+                minWidth = 0.0
                 maxWidth = Double.MAX_VALUE
             }
             val hint = Label(ctx.t(preset.hintKey)).apply {
                 styleClass.add("jvm-preset-hint")
-                textOverrun = OverrunStyle.ELLIPSIS
+                isWrapText = true
+                minWidth = 0.0
                 maxWidth = Double.MAX_VALUE
             }
             val chosen = Label(ctx.t("settings.jvm.chosen")).apply {
                 styleClass.add("jvm-chosen")
+                isWrapText = true
+                minWidth = 0.0
+                maxWidth = Double.MAX_VALUE
                 isVisible = false
                 isManaged = false
             }
             val text = VBox(title, hint, chosen).apply {
                 styleClass.add("jvm-preset-text")
+                minWidth = 0.0
                 maxWidth = Double.MAX_VALUE
             }
             HBox.setHgrow(text, Priority.ALWAYS)
@@ -574,7 +581,7 @@ class SettingsController(private val ctx: UiContext) {
             val id = card.userData as? String ?: return@forEach
             val built = presetBuilt(id) ?: return@forEach
             val version = JvmPresets.all.firstOrNull { it.id == id }?.version ?: return@forEach
-            presetTitle(card)?.text = "$version · ${ctx.t("settings.jvm.heap", built.heapGb)}"
+            presetTitle(card)?.text = "$version, ${ctx.t("settings.jvm.heap", built.heapGb)}"
         }
         if (::jvmSummary.isInitialized) refreshJvmStatus()
     }
@@ -759,7 +766,7 @@ class SettingsController(private val ctx: UiContext) {
             jvmStatusKicker.text = ctx.t("settings.jvm.chosen")
             val heap = preset?.let { presetBuilt(it.id) }?.heapGb
             val name = jvmCaption(active)
-            jvmStatus.text = if (heap != null) "$name · ${ctx.t("settings.jvm.heap", heap)}" else name
+            jvmStatus.text = if (heap != null) "$name, ${ctx.t("settings.jvm.heap", heap)}" else name
             jvmStatusHint.text = when {
                 preset != null -> ctx.t(preset.hintKey)
                 active == JvmProfile.RECOMMENDED -> ctx.t("settings.jvm.profile.hint")

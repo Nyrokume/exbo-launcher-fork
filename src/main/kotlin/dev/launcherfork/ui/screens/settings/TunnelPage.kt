@@ -948,12 +948,7 @@ class TunnelPage(
             excluded -> "settings.tunnel.excluded_group"
             else -> "settings.tunnel.block_node"
         }
-        val dot = Region().apply {
-            styleClass.add("tunnel-best-dot")
-            if (!recommended) styleClass.add("idle")
-        }
         val parts = arrayOf<javafx.scene.Node>(
-            dot,
             name,
             rtt(client, "client", if (shown.received && !shown.failed) shown.clientMs else null, decision),
             rtt(server, "server", if (shown.received && !shown.failed) shown.serverMs else null, decision),

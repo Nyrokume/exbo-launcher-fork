@@ -597,11 +597,13 @@
     -fx-cursor: hand;
 }
 .settings-mini:hover { -fx-border-color: -border-hover; -fx-text-fill: -foreground; }
+.settings-mini:focused { -fx-border-color: -foreground; -fx-border-width: 1; }
 .settings-mini.primary, .settings-mini.primary:hover {
     -fx-background-color: -primary;
     -fx-border-color: transparent;
     -fx-text-fill: -primary-foreground;
 }
+.settings-mini.primary:focused { -fx-border-color: -primary-foreground; -fx-border-width: 1; }
 .settings-mini:disabled, .settings-mini:disabled:hover {
     -fx-opacity: 1;
     -fx-background-color: -input;
@@ -709,15 +711,11 @@
     -fx-border-color: -primary;
     -fx-background-color: -destructive-soft;
 }
-.jvm-summary-kicker { -fx-font-size: 11; -fx-text-fill: -settings-muted; }
-.jvm-summary.selected .jvm-summary-kicker {
-    -fx-font-family: "Bebas Neue Regular";
-    -fx-font-size: 15;
-    -fx-text-fill: -destructive-text;
-}
+.jvm-summary-kicker { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
+.jvm-summary.selected .jvm-summary-kicker { -fx-text-fill: -destructive-text; }
 .jvm-summary-name { -fx-font-size: 16; -fx-text-fill: -foreground; }
 .jvm-summary-hint { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
-.jvm-list-label { -fx-font-size: 11; -fx-text-fill: -settings-muted; -fx-padding: 2 0 0 0; }
+.jvm-list-label { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 2 0 0 0; }
 .jvm-preset {
     -fx-background-color: -card;
     -fx-border-color: -border;
@@ -731,10 +729,15 @@
     -fx-max-width: infinity;
 }
 .jvm-preset:hover { -fx-border-color: -border-hover; }
+.jvm-preset:focused {
+    -fx-border-color: -foreground;
+    -fx-border-width: 1;
+}
 .jvm-preset.selected, .jvm-preset.selected:hover {
     -fx-border-color: -primary;
     -fx-background-color: -destructive-soft;
 }
+.jvm-preset.selected:focused { -fx-border-color: -foreground; }
 .jvm-preset:disabled { -fx-opacity: 0.45; }
 .jvm-preset-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
 .jvm-preset-hint { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
@@ -754,8 +757,7 @@
     -fx-border-color: -primary;
 }
 .jvm-chosen {
-    -fx-font-family: "Bebas Neue Regular";
-    -fx-font-size: 13;
+    -fx-font-size: 12;
     -fx-text-fill: -destructive-text;
 }
 .session-scroll, .session-scroll > .viewport,
@@ -766,7 +768,7 @@
 .tunnel-pools { -fx-spacing: 10; -fx-padding: 2 0 4 0; }
 .tunnel-legend-row { -fx-padding: 0 21 0 0; -fx-alignment: center-right; }
 .tunnel-legend {
-    -fx-font-size: 11;
+    -fx-font-size: 12;
     -fx-text-fill: -settings-muted;
     -fx-alignment: center-right;
 }
@@ -782,13 +784,7 @@
     -fx-shape: "M5,7 V4.2 C5,1.6 12,1.2 13.5,3.5 L11.7,4.7 C10.8,3.2 8.4,3.2 7.4,4.4 V7 H13 V15 H3 V7 Z";
 }
 .tunnel-state.limit { -fx-background-color: -settings-warning; }
-.tunnel-best-dot {
-    -fx-min-width: 6; -fx-pref-width: 6; -fx-max-width: 6;
-    -fx-min-height: 6; -fx-pref-height: 6; -fx-max-height: 6;
-    -fx-background-color: -primary;
-    -fx-background-radius: 3;
-}
-.tunnel-best-dot.idle { -fx-background-color: transparent; }
+/* Recommendation is the row itself (left edge and name colour), not a status dot. */
 .tunnel-pool-lock {
     -fx-font-size: 12;
     -fx-background-color: transparent;
@@ -805,11 +801,13 @@
     -fx-faint-focus-color: transparent;
 }
 .tunnel-pool-lock:hover { -fx-background-color: -destructive-soft; -fx-text-fill: -foreground; }
+.tunnel-pool-lock:focused { -fx-border-color: -foreground; -fx-border-width: 1; }
 .tunnel-pool-lock.locked, .tunnel-pool-lock.locked:hover {
     -fx-background-color: -primary;
     -fx-border-color: transparent;
     -fx-text-fill: -primary-foreground;
 }
+.tunnel-pool-lock.locked:focused { -fx-border-color: -primary-foreground; -fx-border-width: 1; }
 .tunnel-pool-lock:disabled, .tunnel-pool-lock:disabled:hover {
     -fx-opacity: 0.45;
     -fx-cursor: default;
@@ -918,13 +916,10 @@
 .tunnel-node .tunnel-ping.sum.bad,
 .tunnel-node .tunnel-ping.sum.very-bad { -fx-text-fill: -destructive-text; }
 .pool-meta {
-    -fx-font-size: 11;
+    -fx-font-size: 12;
     -fx-text-fill: -settings-muted;
-    -fx-background-color: -fill-strong;
-    -fx-background-radius: 8;
-    -fx-padding: 0 6;
-    -fx-min-height: 16; -fx-pref-height: 16; -fx-max-height: 16;
-    -fx-alignment: center;
+    -fx-padding: 0;
+    -fx-alignment: center-left;
 }
 .tunnel-list {
     -fx-background-color: transparent;
@@ -980,6 +975,14 @@
     -fx-background-radius: 0;
     -fx-border-radius: 0;
 }
+.tunnel-line > .tunnel-node:focused,
+.tunnel-line > .tunnel-node.selected:focused {
+    -fx-border-color: -foreground;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+.tunnel-line > .tunnel-node:focused:disabled { -fx-border-color: transparent; -fx-border-width: 0; }
 .tunnel-line.node-blocked .tunnel-row,
 .tunnel-line.node-blocked .tunnel-ping { -fx-text-fill: -settings-muted; }
 .tunnel-confirm {
@@ -1160,6 +1163,11 @@
 .tunnel-line > .tunnel-block-switch:selected > .box > .mark,
 .tunnel-line > .tunnel-block-switch:selected:hover > .box > .mark {
     -fx-background-color: -primary-foreground;
+}
+.tunnel-line > .tunnel-block-switch:focused {
+    -fx-border-color: -foreground;
+    -fx-border-width: 1;
+    -fx-border-radius: 10;
 }
 .tunnel-line > .tunnel-block-switch:disabled,
 .tunnel-line > .tunnel-block-switch:disabled:hover { -fx-opacity: 0.45; }
