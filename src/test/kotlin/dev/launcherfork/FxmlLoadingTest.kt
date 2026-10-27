@@ -171,6 +171,6 @@ class FxmlLoadingTest {
                 .map { "$key: $it" }.toList()
         }
         assertTrue(mixed.isEmpty(), "mixed Latin/Cyrillic words: $mixed")
-        assertEquals("EXBO Launcher: Авторизация", bundle.getString("title.auth"))
+        assertEquals("EXBO Launcher: Вход", bundle.getString("title.auth"))
     }
 }

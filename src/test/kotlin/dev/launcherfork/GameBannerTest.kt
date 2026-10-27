@@ -72,9 +72,9 @@ class GameBannerTest {
             assertFalse(props.values.any { "Starcraft" in it.toString() }, "$file: STALZONE, not Starcraft")
         }
         val ru = Strings.bundle("ru")
-        assertTrue(ru.getString("game.stalzone.lead").startsWith("STALZONE — это массовый многопользовательский онлайн-шутер"))
-        assertEquals("Зона ждет.", ru.getString("game.stalzone.closing"))
-        assertEquals("The Zone awaits.", Strings.bundle("en").getString("game.stalzone.closing"))
+        assertTrue(ru.getString("game.stalzone.lead").startsWith("STALZONE — многопользовательский шутер"))
+        assertEquals("Захваты и вылазки идут с отрядом.", ru.getString("game.stalzone.closing"))
+        assertEquals("Captures and raids are done with a squad.", Strings.bundle("en").getString("game.stalzone.closing"))
     }
 
     @Test
@@ -93,7 +93,7 @@ class GameBannerTest {
                 assertFalse(c.scroll.isVisible)
                 c.show(stalzone)
                 assertEquals("STALZONE", c.title.text)
-                assertEquals("Сможете ли Вы выжить в этом мире?", c.subheading.text)
+                assertEquals("Мутанты, артефакты, аномалии", c.subheading.text)
             }
         } finally {
             app.shutdown()
