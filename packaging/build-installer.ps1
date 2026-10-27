@@ -1,10 +1,26 @@
 # Builds the Windows x64 installer into dist\ on this machine.
-#   LauncherFork_Setup_<ver>.exe      per-user NSIS installer (bundled jlink runtime)
+#   LauncherFork_Setup_<ver>.exe      per-user NSIS wizard (bundled jlink runtime)
 #   LauncherFork_portable_win64.zip   the same image: unpack and run LauncherFork.exe
+#   SHA256SUMS.txt                    hashes of those two deliverables
 #
-# Uses the Temurin 21 jmods already installed, and downloads OpenJFX 21 Windows jmods
-# plus NSIS 3 into build\packaging-cache (gitignored with build\).
-# Does not install into, replace, or unregister the official ExboLauncher.
+# How to build (no administrator prompt):
+#   1. Install Temurin JDK 21, the kind that ships jlink. The default -Jdk path is one Adoptium build.
+#   2. From the repo root, in PowerShell:
+#        powershell -ExecutionPolicy Bypass -File packaging\build-installer.ps1
+#      Another JDK:
+#        powershell -ExecutionPolicy Bypass -File packaging\build-installer.ps1 -Jdk "C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot"
+#   3. Collect dist\LauncherFork_Setup_<version>.exe and the portable zip.
+#
+# The script downloads OpenJFX 21 Windows jmods and NSIS 3.10 into build\packaging-cache
+# (gitignored with build\). It does not install the launcher, and it does not replace or
+# unregister the official ExboLauncher or write HKCU\SOFTWARE\EXBO.
+#
+# The setup wizard checks SHA-256 of every shipped file twice (staging, then the install folder)
+# via Windows PowerShell Get-FileHash. A mismatch or a missing PowerShell aborts install.
+# File size is not treated as integrity. Authenticode is a TODO: this repo has no certificate.
+#
+# Linux can compile the same exe with packaging/build-dist.sh (system makensis, WIN_JDK, WIN_JFX)
+# but cannot click through the wizard. The wizard runs on Windows.
 param(
     [string]$Jdk = "C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot"
 )
@@ -128,16 +144,47 @@ start "" "%~dp0runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true -
 Set-Content -Path (Join-Path $Win "$App.cmd") -Value $cmd -Encoding ascii
 
 $readme = @"
-$App $Version
+EXBO Launcher $Version
+STALZONE
 
-Own program, separate from ExboLauncher. It signs in, updates and starts the game client already stored under %APPDATA%\EXBO. It does not replace ExboLauncher.exe.
-Installed by the setup program into %LOCALAPPDATA%\LauncherFork. This folder is not the EXBO launcher directory.
-INTERNAL USE ONLY: contains EXBO-owned images and the commercial Europe font. Do not redistribute.
+Separate from ExboLauncher.exe. It signs in, updates and starts the game client already stored under %APPDATA%\EXBO.
+The setup program installs per-user into %LOCALAPPDATA%\LauncherFork and does not ask for administrator rights.
+Removing this launcher does not delete the game client or HKCU session values (EXBO_SESSION).
 
 Run LauncherFork.exe (or LauncherFork.cmd). The bundled Java runtime is in runtime\.
 JVM options (for example -Dlauncher.lang=en) can be passed on the command line and are given to the JVM.
 "@
 Set-Content -Path (Join-Path $Win "README.txt") -Value $readme -Encoding ascii
+
+Write-Host "== payload SHA-256 (checked again by the installer; size is not enough)"
+$manifest = Join-Path $Work "payload.sha256"
+$shaLines = New-Object System.Collections.Generic.List[string]
+$payloadBytes = [int64]0
+foreach ($file in (Get-ChildItem $Win -Recurse -File | Sort-Object FullName)) {
+    $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant()
+    if ($hash -notmatch '^[0-9a-f]{64}$') { throw "sha256 failed for $($file.FullName)" }
+    $rel = $file.FullName.Substring($Win.Length).TrimStart('\').Replace('/', '\')
+    $shaLines.Add("$hash *$rel")
+    $payloadBytes += $file.Length
+}
+if ($shaLines.Count -lt 1) { throw "payload is empty" }
+$utf8 = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllLines($manifest, $shaLines, $utf8)
+$estimatedKb = [int][Math]::Ceiling($payloadBytes / 1KB)
+if ($estimatedKb -lt 1) { throw "payload size is empty" }
+Write-Host "   $($shaLines.Count) files, $estimatedKb KB"
+
+Write-Host "== per-file copy list (no wildcard copy)"
+$copyList = Join-Path $Work "copy_payload.nsh"
+$copyLines = New-Object System.Collections.Generic.List[string]
+foreach ($file in (Get-ChildItem $Win -Recurse -File | Sort-Object FullName)) {
+    $rel = $file.FullName.Substring($Win.Length).TrimStart('\').Replace('/', '\').Replace('$', '$$')
+    $dir = Split-Path $rel -Parent
+    if ($dir) { $copyLines.Add("  CreateDirectory `"`$INSTDIR\$dir`"") }
+    $copyLines.Add("  CopyFiles /SILENT `"`$PLUGINSDIR\payload\$rel`" `"`$INSTDIR\$rel`"")
+}
+if ($copyLines.Count -lt 1) { throw "copy list is empty" }
+Set-Content -Path $copyList -Value $copyLines -Encoding ascii
 
 Write-Host "== uninstall list"
 $unlist = Join-Path $Work "uninstall_files.nsh"
@@ -166,7 +213,10 @@ if (Test-Path $setup) { Remove-Item -Force $setup }
     "-DOUTFILE=$setup" `
     "-DSRCDIR=$Win" `
     "-DUNINSTALL_LIST=$unlist" `
+    "-DCOPY_LIST=$copyList" `
     "-DICON=$(Join-Path $Work "$App.ico")" `
+    "-DMANIFEST=$manifest" `
+    "-DESTIMATED_KB=$estimatedKb" `
     "-DVERSION=$Version" `
     "-DVERSION_QUAD=$VersionQuad" `
     (Join-Path $Root "packaging\installer.nsi")
