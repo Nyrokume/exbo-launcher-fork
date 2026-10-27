@@ -357,19 +357,27 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
      * called right after a layout pulse, the panel's CSS is current and is not applied again.
      */
     private fun fitAuthHeight(recenter: Boolean, cssApplied: Boolean = false) {
-        if (activeWindow != ActiveWindow.PRE_MAIN || !authSlot.isShowing) return
+        if (activeWindow != ActiveWindow.PRE_MAIN) return
+        val showing = authSlot.isShowing
+        // LauncherApp shows the stage only after the update panel is installed. Size it first, or the window
+        // opens at the scene default (the 700px registration ceiling) and then snaps down.
+        if (!showing && stage.scene == null) return
         if (cssApplied) authRefitChecks++
         val h = authWindow.fittedWindowHeight(applyCss = !cssApplied)
         if (!h.isFinite() || h <= 0.0) return
         val old = stage.height
-        // asked for this height already: don't re-request it on every pulse if the window system lags or refuses
-        if (kotlin.math.abs(h - old) < 0.5 || kotlin.math.abs(h - requestedAuthHeight) < 0.5) return
-        requestedAuthHeight = h
+        // asked for this height already: don't re-request it on every pulse if the window system lags or refuses.
+        // Before the first show, still apply the size and leave requestedAuthHeight unset, so a show() that
+        // restores the scene default can be corrected by the next pulse.
+        if (showing && (kotlin.math.abs(h - old) < 0.5 || kotlin.math.abs(h - requestedAuthHeight) < 0.5)) return
+        if (!showing && kotlin.math.abs(h - old) < 0.5) return
+        if (showing) requestedAuthHeight = h
         // width and height together: a height-only change reaches GTK with width 0 (gtk_window_resize fails,
         // the window keeps its old size and the stale bottom stays on screen)
         stage.width = Theme.AUTH_WINDOW_WIDTH
         stage.height = h
-        if (recenter) stage.y += (old - h) / 2
+        if (!showing || !recenter) return
+        stage.y += (old - h) / 2
         // never past the screen edge (small monitors, a growing error line near the bottom)
         val screen = WindowFrame.screenBoundsOf(Rectangle2D(stage.x, stage.y, stage.width, h))
         stage.y = stage.y.coerceIn(screen.minY, (screen.maxY - h).coerceAtLeast(screen.minY))
