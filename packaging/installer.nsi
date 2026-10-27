@@ -1,24 +1,87 @@
-; LauncherFork per-user installer (no admin rights): %LOCALAPPDATA%\LauncherFork,
-; Start menu + desktop shortcuts, uninstaller, entry in "Apps & features".
-; Built by packaging/build-dist.sh:
-;   makensis -DVERSION=... -DVERSION_QUAD=... -DSRCDIR=<image dir> -DUNINSTALL_LIST=<generated .nsh> \
-;            -DOUTFILE=... -DICON=... installer.nsi
+﻿; EXBO Launcher (STALZONE) per-user wizard.
+; Public install flow this follows (support.exbo.ru, "Установка игры в «EXBO»" /
+; "Installing the game in EXBO"): choose the launcher folder, "Изменить папку" /
+; "Change Folder", "Далее" / Next, then wait while the launcher is installed.
+; The game itself is downloaded later from inside the launcher.
 ;
-; Safety rules (the directory page lets the user pick any folder, e.g. D:\Projects):
-;  - the final install dir always ends with \LauncherFork (appended if missing, also for silent /D=...);
-;  - runtime\ and app\ are wiped recursively only on upgrade, i.e. when our marker file exists;
-;  - an existing folder with runtime\ or app\ but without the marker is refused;
-;  - the uninstaller deletes exactly the files/dirs the installer shipped (UNINSTALL_LIST) and removes
-;    directories, including $INSTDIR, only if they are empty.
-Target x86-unicode  ; 32-bit stub, runs on 64-bit Windows. The bundled runtime is 64-bit.
+; Fork-specific on purpose (do not "fix" these toward Program Files or HKLM):
+;   - RequestExecutionLevel user, default %LOCALAPPDATA%\LauncherFork, no UAC.
+;   - The final folder always ends with \LauncherFork.
+;   - Registry is HKCU\Software\LauncherFork and the per-user uninstall key only.
+;     HKCU\SOFTWARE\EXBO (EXBO_SESSION) and %APPDATA%\EXBO are never written or deleted.
+;   - A same-named shortcut is replaced or removed only when its target is this install.
+;   - Authenticode is not applied: this repo has no certificate (TODO).
+;
+; Integrity: every shipped file is SHA-256 checked (packaging/verify-payload.ps1)
+; in the staging directory before the old tree is replaced, and again after copy.
+; A mismatch, a missing file, or PowerShell/Get-FileHash failing aborts the install
+; (exit 3). File size is not an integrity signal. CRCCheck force covers the exe.
+;
+; Build (defines): VERSION, VERSION_QUAD, OUTFILE, SRCDIR, UNINSTALL_LIST, COPY_LIST, ICON,
+; MANIFEST (sha256 lines), ESTIMATED_KB. Wizard art and the checker scripts sit
+; next to this file. makensis on Linux can compile the exe; the wizard runs on Windows.
+;
+; Not matched, because it is not in this repo or in the public install article
+; and is not taken from a closed installer binary: official sidebar artwork,
+; an installer EULA page, the official default directory, and the official
+; publisher string inside that binary. Game desktop shortcuts are created from
+; the launcher (separate EXBO help article), not by this setup program.
+Target x86-unicode
+Unicode true
+CRCCheck force
+ManifestDPIAware true
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
+!include "nsDialogs.nsh"
+!include "WinMessages.nsh"
+
+!ifndef VERSION
+  !error "VERSION is required"
+!endif
+!ifndef VERSION_QUAD
+  !error "VERSION_QUAD is required"
+!endif
+!ifndef OUTFILE
+  !error "OUTFILE is required"
+!endif
+!ifndef SRCDIR
+  !error "SRCDIR is required"
+!endif
+!ifndef UNINSTALL_LIST
+  !error "UNINSTALL_LIST is required"
+!endif
+!ifndef ICON
+  !error "ICON is required"
+!endif
+!ifndef MANIFEST
+  !error "MANIFEST is required"
+!endif
+!ifndef COPY_LIST
+  !error "COPY_LIST is required"
+!endif
+!ifndef ESTIMATED_KB
+  !error "ESTIMATED_KB is required"
+!endif
 
 !define APP "LauncherFork"
+!define PRODUCT "EXBO Launcher"
+!define PUBLISHER "EXBO"
+!define START_FOLDER "EXBO Launcher"
+!define LNK_APP "EXBO Launcher.lnk"
+!define LNK_UNINST "Uninstall EXBO Launcher.lnk"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP}"
 !define MARKER ".launcherfork-install"
+; makensis chdirs to this script, so these names stay next to installer.nsi.
+!define VERIFY_PS1 "verify-payload.ps1"
+!define SHORTCUT_PS1 "shortcut-target.ps1"
 
-Name "${APP} ${VERSION}"
+Var DesktopShortcut
+Var ChkDesktop
+
+Name "${PRODUCT} ${VERSION}"
+Caption "$(CAPTION)"
+UninstallCaption "$(UNCAPTION)"
+BrandingText "${PUBLISHER}"
 OutFile "${OUTFILE}"
 InstallDir "$LOCALAPPDATA\${APP}"
 InstallDirRegKey HKCU "Software\${APP}" "InstallDir"
@@ -28,32 +91,128 @@ ShowInstDetails show
 ShowUninstDetails show
 
 VIProductVersion "${VERSION_QUAD}"
-VIAddVersionKey /LANG=1033 "ProductName" "${APP}"
-VIAddVersionKey /LANG=1033 "FileDescription" "${APP} ${VERSION} Setup"
+VIAddVersionKey /LANG=1049 "ProductName" "${PRODUCT}"
+VIAddVersionKey /LANG=1049 "CompanyName" "${PUBLISHER}"
+VIAddVersionKey /LANG=1049 "FileDescription" "Установка лаунчера EXBO"
+VIAddVersionKey /LANG=1049 "FileVersion" "${VERSION}"
+VIAddVersionKey /LANG=1049 "ProductVersion" "${VERSION}"
+VIAddVersionKey /LANG=1049 "LegalCopyright" "${PUBLISHER}"
+VIAddVersionKey /LANG=1049 "Comments" "STALZONE"
+VIAddVersionKey /LANG=1033 "ProductName" "${PRODUCT}"
+VIAddVersionKey /LANG=1033 "CompanyName" "${PUBLISHER}"
+VIAddVersionKey /LANG=1033 "FileDescription" "${PRODUCT} Setup"
 VIAddVersionKey /LANG=1033 "FileVersion" "${VERSION}"
 VIAddVersionKey /LANG=1033 "ProductVersion" "${VERSION}"
-VIAddVersionKey /LANG=1033 "LegalCopyright" "Internal build. Contains EXBO assets."
+VIAddVersionKey /LANG=1033 "LegalCopyright" "${PUBLISHER}"
+VIAddVersionKey /LANG=1033 "Comments" "STALZONE"
 
 !define MUI_ICON "${ICON}"
 !define MUI_UNICON "${ICON}"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "wizard.bmp"
+!define MUI_UNWELCOMEFINISHPAGE_BITMAP "wizard.bmp"
+!define MUI_HEADERIMAGE
+!define MUI_HEADERIMAGE_BITMAP "header.bmp"
+!define MUI_HEADERIMAGE_UNBITMAP "header.bmp"
 !define MUI_ABORTWARNING
-!define MUI_FINISHPAGE_RUN "$INSTDIR\${APP}.exe"
+!define MUI_ABORTWARNING_TEXT "$(ABORT_TEXT)"
+!define MUI_WELCOMEPAGE_TITLE "$(WELCOME_TITLE)"
+!define MUI_WELCOMEPAGE_TEXT "$(WELCOME_TEXT)"
 
 !insertmacro MUI_PAGE_WELCOME
-!define MUI_PAGE_CUSTOMFUNCTION_LEAVE DirectoryLeave
+!define MUI_DIRECTORYPAGE_TEXT_TOP "$(DIR_TOP)"
+!define MUI_DIRECTORYPAGE_TEXT_DESTINATION "$(DIR_DEST)"
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW OnDirectoryShow
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE OnDirectoryLeave
 !insertmacro MUI_PAGE_DIRECTORY
+Page custom OnTasksCreate OnTasksLeave
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW OnInstFilesShow
 !insertmacro MUI_PAGE_INSTFILES
+!define MUI_FINISHPAGE_TITLE "$(FINISH_TITLE)"
+!define MUI_FINISHPAGE_TEXT "$(FINISH_TEXT)"
+!define MUI_FINISHPAGE_TEXT_LARGE
+!define MUI_FINISHPAGE_RUN_TEXT "$(FINISH_RUN)"
+!define MUI_FINISHPAGE_RUN "$INSTDIR\${APP}.exe"
 !insertmacro MUI_PAGE_FINISH
+
+!define MUI_UNCONFIRMPAGE_TEXT_TOP "$(UNCONFIRM_TOP)"
+!define MUI_UNCONFIRMPAGE_TEXT_LOCATION "$(UNCONFIRM_LOC)"
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 
 !insertmacro MUI_LANGUAGE "Russian"
 !insertmacro MUI_LANGUAGE "English"
 
-LangString MSG_FOREIGN ${LANG_RUSSIAN} "В папке $INSTDIR уже есть runtime или app, но это не установка ${APP}. Выберите другую папку."
-LangString MSG_FOREIGN ${LANG_ENGLISH} "$INSTDIR already contains runtime or app, but it is not a ${APP} installation. Choose another folder."
-LangString MSG_NOT_OURS ${LANG_RUSSIAN} "В $INSTDIR не найдена установка ${APP}. Удаление отменено."
-LangString MSG_NOT_OURS ${LANG_ENGLISH} "No ${APP} installation found in $INSTDIR. Uninstall cancelled."
+LangString CAPTION ${LANG_RUSSIAN} "Установка лаунчера «EXBO»"
+LangString CAPTION ${LANG_ENGLISH} "${PRODUCT} Setup"
+LangString UNCAPTION ${LANG_RUSSIAN} "Удаление лаунчера «EXBO»"
+LangString UNCAPTION ${LANG_ENGLISH} "Uninstall ${PRODUCT}"
+LangString ABORT_TEXT ${LANG_RUSSIAN} "Прервать установку лаунчера «EXBO»?"
+LangString ABORT_TEXT ${LANG_ENGLISH} "Stop installing ${PRODUCT}?"
+LangString WELCOME_TITLE ${LANG_RUSSIAN} "Установка лаунчера «EXBO»"
+LangString WELCOME_TITLE ${LANG_ENGLISH} "${PRODUCT} Setup"
+LangString WELCOME_TEXT ${LANG_RUSSIAN} "Этот мастер установит лаунчер «EXBO» для STALZONE.$\r$\n$\r$\nСначала выберите папку лаунчера и нажмите «Далее». Дождитесь окончания установки. Игра скачивается уже из лаунчера.$\r$\n$\r$\nНажмите «Далее»."
+LangString WELCOME_TEXT ${LANG_ENGLISH} "This wizard installs ${PRODUCT} for STALZONE.$\r$\n$\r$\nChoose the launcher folder and click Next, then wait until installation finishes. The game is downloaded from the launcher.$\r$\n$\r$\nClick Next."
+LangString DIR_TITLE ${LANG_RUSSIAN} "Папка лаунчера"
+LangString DIR_TITLE ${LANG_ENGLISH} "Launcher folder"
+LangString DIR_SUB ${LANG_RUSSIAN} "Выберите папку и нажмите «Далее»."
+LangString DIR_SUB ${LANG_ENGLISH} "Choose a folder and click Next."
+LangString DIR_TOP ${LANG_RUSSIAN} "Выберите папку, в которую будет установлен лаунчер, и нажмите «Далее».$\r$\n$\r$\nЕсли путь не заканчивается на \${APP}, мастер добавит эту папку. Лаунчер не ставится в каталог игры и не заменяет ExboLauncher."
+LangString DIR_TOP ${LANG_ENGLISH} "Choose the folder where the launcher will be installed, then click Next.$\r$\n$\r$\nIf the path does not end with \${APP}, the wizard adds that folder. The launcher is not placed in the game directory and does not replace ExboLauncher."
+LangString DIR_DEST ${LANG_RUSSIAN} "Папка установки"
+LangString DIR_DEST ${LANG_ENGLISH} "Destination folder"
+LangString DIR_BROWSE ${LANG_RUSSIAN} "Изменить папку"
+LangString DIR_BROWSE ${LANG_ENGLISH} "Change Folder"
+LangString DIR_ADJUSTED ${LANG_RUSSIAN} "Лаунчер будет установлен в:$\r$\n$\r$\n$INSTDIR$\r$\n$\r$\nПапка \${APP} добавлена автоматически, чтобы не задеть каталог игры."
+LangString DIR_ADJUSTED ${LANG_ENGLISH} "The launcher will be installed in:$\r$\n$\r$\n$INSTDIR$\r$\n$\r$\nThe \${APP} folder was added so the game directory is left alone."
+LangString TASKS_TITLE ${LANG_RUSSIAN} "Ярлыки"
+LangString TASKS_TITLE ${LANG_ENGLISH} "Shortcuts"
+LangString TASKS_SUB ${LANG_RUSSIAN} "Меню «Пуск» и рабочий стол."
+LangString TASKS_SUB ${LANG_ENGLISH} "Start Menu and desktop."
+LangString TASKS_LABEL ${LANG_RUSSIAN} "Ярлык лаунчера будет в меню «Пуск». Ярлык игры на рабочем столе по-прежнему создаётся из самого лаунчера."
+LangString TASKS_LABEL ${LANG_ENGLISH} "The launcher shortcut is added to the Start Menu. A desktop shortcut for the game is still created from the launcher itself."
+LangString TASKS_DESKTOP ${LANG_RUSSIAN} "Создать ярлык лаунчера на рабочем столе"
+LangString TASKS_DESKTOP ${LANG_ENGLISH} "Create a desktop shortcut for the launcher"
+LangString INST_TITLE ${LANG_RUSSIAN} "Установка лаунчера"
+LangString INST_TITLE ${LANG_ENGLISH} "Installing the launcher"
+LangString INST_SUB ${LANG_RUSSIAN} "Подождите, пока установка завершится. Это может занять некоторое время."
+LangString INST_SUB ${LANG_ENGLISH} "Wait until installation finishes. This can take a while."
+LangString FINISH_TITLE ${LANG_RUSSIAN} "Лаунчер установлен"
+LangString FINISH_TITLE ${LANG_ENGLISH} "Launcher installed"
+LangString FINISH_TEXT ${LANG_RUSSIAN} "Лаунчер «EXBO» установлен.$\r$\n$\r$\nНажмите «Готово». Игру можно скачать после входа в лаунчер."
+LangString FINISH_TEXT ${LANG_ENGLISH} "${PRODUCT} is installed.$\r$\n$\r$\nClick Finish. You can download the game after you sign in."
+LangString FINISH_RUN ${LANG_RUSSIAN} "Запустить лаунчер «EXBO»"
+LangString FINISH_RUN ${LANG_ENGLISH} "Launch ${PRODUCT}"
+LangString UNCONFIRM_TOP ${LANG_RUSSIAN} "Будет удалён лаунчер «EXBO» из папки ниже и его ярлыки.$\r$\n$\r$\nИгра STALZONE, каталог данных EXBO и сессия в реестре (EXBO_SESSION) не удаляются."
+LangString UNCONFIRM_TOP ${LANG_ENGLISH} "This removes ${PRODUCT} from the folder below, and its shortcuts.$\r$\n$\r$\nThe STALZONE game, EXBO data folders, and the registry session (EXBO_SESSION) are not removed."
+LangString UNCONFIRM_LOC ${LANG_RUSSIAN} "Папка лаунчера"
+LangString UNCONFIRM_LOC ${LANG_ENGLISH} "Launcher folder"
+LangString MSG_FOREIGN ${LANG_RUSSIAN} "В папке $INSTDIR уже есть runtime или app, но это не установка лаунчера «EXBO». Выберите другую папку."
+LangString MSG_FOREIGN ${LANG_ENGLISH} "$INSTDIR already contains runtime or app, but it is not an ${PRODUCT} installation. Choose another folder."
+LangString MSG_NOT_OURS ${LANG_RUSSIAN} "В $INSTDIR не найден лаунчер «EXBO». Удаление отменено."
+LangString MSG_NOT_OURS ${LANG_ENGLISH} "No ${PRODUCT} installation was found in $INSTDIR. Uninstall cancelled."
+LangString MSG_INTEGRITY ${LANG_RUSSIAN} "Проверка целостности файлов лаунчера не прошла (SHA-256). Установка остановлена. Повторите загрузку установщика."
+LangString MSG_INTEGRITY ${LANG_ENGLISH} "The launcher files failed the SHA-256 integrity check. Setup stopped. Download the installer again."
+LangString MSG_COPY ${LANG_RUSSIAN} "Не удалось скопировать файлы лаунчера. Установка остановлена."
+LangString MSG_COPY ${LANG_ENGLISH} "The launcher files could not be copied. Setup stopped."
+LangString DETAIL_DIR ${LANG_RUSSIAN} "Папка установки:"
+LangString DETAIL_DIR ${LANG_ENGLISH} "Install folder:"
+LangString DETAIL_VERIFY ${LANG_RUSSIAN} "Проверка SHA-256 файлов лаунчера..."
+LangString DETAIL_VERIFY ${LANG_ENGLISH} "Checking SHA-256 of the launcher files..."
+LangString SEC_NAME ${LANG_RUSSIAN} "Лаунчер «EXBO»"
+LangString SEC_NAME ${LANG_ENGLISH} "${PRODUCT}"
+LangString SHORTCUT_COMMENT ${LANG_RUSSIAN} "Лаунчер «EXBO» — STALZONE"
+LangString SHORTCUT_COMMENT ${LANG_ENGLISH} "${PRODUCT} — STALZONE"
+LangString SHORTCUT_KEPT ${LANG_RUSSIAN} "Ярлык «${PRODUCT}» ведёт в другую программу и не был заменён."
+LangString SHORTCUT_KEPT ${LANG_ENGLISH} "The «${PRODUCT}» shortcut points at another program and was left in place."
+
+Function .onInit
+  SetShellVarContext current
+  StrCpy $DesktopShortcut "1"
+FunctionEnd
+
+Function un.onInit
+  SetShellVarContext current
+FunctionEnd
 
 ; $INSTDIR := $INSTDIR without trailing "\" + "\LauncherFork" unless it already ends with it (case-insensitive).
 Function EnsureAppSubdir
@@ -69,24 +228,176 @@ Function EnsureAppSubdir
   ${Loop}
   StrLen $0 "\${APP}"
   StrCpy $0 $INSTDIR "" -$0
-  ${If} $0 != "\${APP}"   ; StrCmp/== is case-insensitive
+  ${If} $0 != "\${APP}"
     StrCpy $INSTDIR "$INSTDIR\${APP}"
   ${EndIf}
   Pop $0
 FunctionEnd
 
-Function DirectoryLeave
-  Call EnsureAppSubdir
+Function OnDirectoryShow
+  !insertmacro MUI_HEADER_TEXT "$(DIR_TITLE)" "$(DIR_SUB)"
+  SendMessage $mui.DirectoryPage.BrowseButton ${WM_SETTEXT} 0 "STR:$(DIR_BROWSE)"
 FunctionEnd
 
-Section "Install"
+Function OnDirectoryLeave
+  Push $0
+  StrCpy $0 $INSTDIR
+  Call EnsureAppSubdir
+  ${If} $0 != $INSTDIR
+    MessageBox MB_ICONINFORMATION "$(DIR_ADJUSTED)" /SD IDOK
+  ${EndIf}
+  Pop $0
+FunctionEnd
+
+Function OnTasksCreate
+  !insertmacro MUI_HEADER_TEXT "$(TASKS_TITLE)" "$(TASKS_SUB)"
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 S== "error"
+    Abort
+  ${EndIf}
+  ${NSD_CreateLabel} 0 0 100% 36u "$(TASKS_LABEL)"
+  Pop $0
+  ${NSD_CreateCheckbox} 0 48u 100% 14u "$(TASKS_DESKTOP)"
+  Pop $ChkDesktop
+  ${If} $DesktopShortcut S== "1"
+    ${NSD_SetState} $ChkDesktop ${BST_CHECKED}
+  ${EndIf}
+  ${NSD_OnClick} $ChkDesktop OnDesktopClick
+  nsDialogs::Show
+FunctionEnd
+
+Function OnDesktopClick
+  ${NSD_GetState} $ChkDesktop $DesktopShortcut
+FunctionEnd
+
+Function OnTasksLeave
+  ${NSD_GetState} $ChkDesktop $DesktopShortcut
+FunctionEnd
+
+Function OnInstFilesShow
+  !insertmacro MUI_HEADER_TEXT "$(INST_TITLE)" "$(INST_SUB)"
+FunctionEnd
+
+; In: $R8 = directory to check. Out: $R7 is "0" only when every manifest hash matches.
+Function VerifyTree
+  Push $R0
+  Push $R1
+  Push $R2
+  Push $R8
+  Push $R9
+  StrCpy $R7 "2"
+  StrCpy $R1 "PAYLOAD_ROOT"
+  StrCpy $R2 $R8
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, t R2) i.R0'
+  ${If} $R0 S== "0"
+    Goto verify_done
+  ${EndIf}
+  StrCpy $R1 "PAYLOAD_MANIFEST"
+  StrCpy $R2 "$PLUGINSDIR\payload.sha256"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, t R2) i.R0'
+  ${If} $R0 S== "0"
+    Goto verify_clear
+  ${EndIf}
+  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "$PLUGINSDIR\verify-payload.ps1"'
+  Pop $R7
+  Pop $R2
+  ${If} $R7 S== "error"
+  ${OrIf} $R7 S== ""
+    StrCpy $R7 "2"
+  ${EndIf}
+  verify_clear:
+  StrCpy $R1 "PAYLOAD_ROOT"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
+  StrCpy $R1 "PAYLOAD_MANIFEST"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
+  verify_done:
+  Pop $R9
+  Pop $R8
+  Pop $R2
+  Pop $R1
+  Pop $R0
+FunctionEnd
+
+; In: $R8 = .lnk path, $R9 = expected target. Out: $R7 as shortcut-target.ps1
+; (0 ours, 1 someone else, 3 missing, anything else = do not touch).
+Function ShortcutState
+  Push $R0
+  Push $R1
+  Push $R2
+  ${IfNot} ${FileExists} "$R8"
+    StrCpy $R7 "3"
+    Goto shortcut_done
+  ${EndIf}
+  Push $R8
+  Push $R9
+  StrCpy $R7 "2"
+  StrCpy $R1 "LNK_PATH"
+  StrCpy $R2 $R8
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, t R2) i.R0'
+  StrCpy $R1 "LNK_EXPECT"
+  StrCpy $R2 $R9
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, t R2) i.R0'
+  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "$PLUGINSDIR\shortcut-target.ps1"'
+  Pop $R7
+  Pop $R2
+  ${If} $R7 S== "error"
+  ${OrIf} $R7 S== ""
+    StrCpy $R7 "2"
+  ${EndIf}
+  StrCpy $R1 "LNK_PATH"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
+  StrCpy $R1 "LNK_EXPECT"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
+  Pop $R9
+  Pop $R8
+  shortcut_done:
+  Pop $R2
+  Pop $R1
+  Pop $R0
+FunctionEnd
+
+; Create $R8 -> $R9 when the link is missing or already ours. Never replace a foreign target.
+Function CreateOwnedShortcut
+  Push $R7
+  Call ShortcutState
+  ${If} $R7 S== "0"
+  ${OrIf} $R7 S== "3"
+    SetOutPath "$INSTDIR"
+    ClearErrors
+    CreateShortcut "$R8" "$R9" "" "$INSTDIR\${APP}.ico" 0 SW_SHOWNORMAL "" "$(SHORTCUT_COMMENT)"
+  ${Else}
+    DetailPrint "$(SHORTCUT_KEPT) $R8"
+  ${EndIf}
+  Pop $R7
+FunctionEnd
+
+Function DeleteOwnedShortcut
+  Push $R7
+  Call ShortcutState
+  ${If} $R7 S== "0"
+    Delete "$R8"
+  ${EndIf}
+  Pop $R7
+FunctionEnd
+
+; Drops shipped files, our marker, and our HKCU keys. Does not touch SOFTWARE\EXBO.
+Function RollbackPayload
+  !include "${UNINSTALL_LIST}"
+  Delete "$INSTDIR\${MARKER}"
+  Delete "$INSTDIR\Uninstall.exe"
+  RMDir "$INSTDIR"
+  DeleteRegKey HKCU "${UNINST_KEY}"
+  DeleteRegKey HKCU "Software\${APP}"
+FunctionEnd
+
+Section "$(SEC_NAME)"
   SetShellVarContext current
-  Call EnsureAppSubdir   ; silent installs (/S /D=...) skip the directory page
+  InitPluginsDir
+  Call EnsureAppSubdir
+  DetailPrint "$(DETAIL_DIR) $INSTDIR"
 
   ${If} ${FileExists} "$INSTDIR\${MARKER}"
-    ; upgrade of our own installation: replace runtime/app cleanly
-    RMDir /r "$INSTDIR\runtime"
-    RMDir /r "$INSTDIR\app"
   ${ElseIf} ${FileExists} "$INSTDIR\runtime\*.*"
   ${OrIf} ${FileExists} "$INSTDIR\app\*.*"
     MessageBox MB_ICONSTOP "$(MSG_FOREIGN)" /SD IDOK
@@ -94,25 +405,82 @@ Section "Install"
     Quit
   ${EndIf}
 
-  SetOutPath "$INSTDIR"
+  SetOutPath "$PLUGINSDIR"
+  File "/oname=payload.sha256" "${MANIFEST}"
+  File "/oname=verify-payload.ps1" "${VERIFY_PS1}"
+  File "/oname=shortcut-target.ps1" "${SHORTCUT_PS1}"
+  CreateDirectory "$PLUGINSDIR\payload"
+  SetOutPath "$PLUGINSDIR\payload"
   File /r "${SRCDIR}\*.*"
+
+  DetailPrint "$(DETAIL_VERIFY)"
+  StrCpy $R8 "$PLUGINSDIR\payload"
+  Call VerifyTree
+  ${If} $R7 S!= "0"
+    DetailPrint "SHA-256: $R7"
+    MessageBox MB_ICONSTOP "$(MSG_INTEGRITY)" /SD IDOK
+    SetErrorLevel 3
+    Quit
+  ${EndIf}
+
+  ${If} ${FileExists} "$INSTDIR\${MARKER}"
+    RMDir /r "$INSTDIR\runtime"
+    RMDir /r "$INSTDIR\app"
+  ${EndIf}
+
+  CreateDirectory "$INSTDIR"
+  ClearErrors
+  !include "${COPY_LIST}"
+  ${If} ${Errors}
+    Call RollbackPayload
+    MessageBox MB_ICONSTOP "$(MSG_COPY)" /SD IDOK
+    SetErrorLevel 3
+    Quit
+  ${EndIf}
+
+  DetailPrint "$(DETAIL_VERIFY)"
+  StrCpy $R8 "$INSTDIR"
+  Call VerifyTree
+  ${If} $R7 S!= "0"
+    DetailPrint "SHA-256: $R7"
+    Call RollbackPayload
+    MessageBox MB_ICONSTOP "$(MSG_INTEGRITY)" /SD IDOK
+    SetErrorLevel 3
+    Quit
+  ${EndIf}
+
+  SetOutPath "$INSTDIR"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   FileOpen $0 "$INSTDIR\${MARKER}" w
-  FileWrite $0 "${APP} ${VERSION}$\r$\n"
+  FileWrite $0 "${PRODUCT} ${VERSION}$\r$\n"
   FileClose $0
 
-  CreateDirectory "$SMPROGRAMS\${APP}"
-  CreateShortcut "$SMPROGRAMS\${APP}\${APP}.lnk" "$INSTDIR\${APP}.exe" "" "$INSTDIR\${APP}.ico"
-  CreateShortcut "$SMPROGRAMS\${APP}\Uninstall ${APP}.lnk" "$INSTDIR\Uninstall.exe"
-  CreateShortcut "$DESKTOP\${APP}.lnk" "$INSTDIR\${APP}.exe" "" "$INSTDIR\${APP}.ico"
+  CreateDirectory "$SMPROGRAMS\${START_FOLDER}"
+  StrCpy $R8 "$SMPROGRAMS\${START_FOLDER}\${LNK_APP}"
+  StrCpy $R9 "$INSTDIR\${APP}.exe"
+  Call CreateOwnedShortcut
+  StrCpy $R8 "$SMPROGRAMS\${START_FOLDER}\${LNK_UNINST}"
+  StrCpy $R9 "$INSTDIR\Uninstall.exe"
+  Call CreateOwnedShortcut
+  ${If} $DesktopShortcut S== "1"
+    StrCpy $R8 "$DESKTOP\${LNK_APP}"
+    StrCpy $R9 "$INSTDIR\${APP}.exe"
+    Call CreateOwnedShortcut
+  ${Else}
+    StrCpy $R8 "$DESKTOP\${LNK_APP}"
+    StrCpy $R9 "$INSTDIR\${APP}.exe"
+    Call DeleteOwnedShortcut
+  ${EndIf}
 
   WriteRegStr HKCU "Software\${APP}" "InstallDir" "$INSTDIR"
-  WriteRegStr HKCU "${UNINST_KEY}" "DisplayName" "${APP}"
+  WriteRegStr HKCU "${UNINST_KEY}" "DisplayName" "${PRODUCT}"
   WriteRegStr HKCU "${UNINST_KEY}" "DisplayVersion" "${VERSION}"
-  WriteRegStr HKCU "${UNINST_KEY}" "Publisher" "launcher-fork (internal)"
+  WriteRegStr HKCU "${UNINST_KEY}" "Publisher" "${PUBLISHER}"
   WriteRegStr HKCU "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\${APP}.ico"
   WriteRegStr HKCU "${UNINST_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "${UNINST_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+  WriteRegStr HKCU "${UNINST_KEY}" "Comments" "STALZONE"
+  WriteRegDWORD HKCU "${UNINST_KEY}" "EstimatedSize" ${ESTIMATED_KB}
   WriteRegDWORD HKCU "${UNINST_KEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINST_KEY}" "NoRepair" 1
 SectionEnd
@@ -125,10 +493,20 @@ Section "Uninstall"
     Quit
   ${EndIf}
 
-  Delete "$DESKTOP\${APP}.lnk"
-  Delete "$SMPROGRAMS\${APP}\${APP}.lnk"
-  Delete "$SMPROGRAMS\${APP}\Uninstall ${APP}.lnk"
-  RMDir "$SMPROGRAMS\${APP}"
+  InitPluginsDir
+  SetOutPath "$PLUGINSDIR"
+  File "/oname=shortcut-target.ps1" "${SHORTCUT_PS1}"
+
+  StrCpy $R8 "$DESKTOP\${LNK_APP}"
+  StrCpy $R9 "$INSTDIR\${APP}.exe"
+  Call un.DeleteOwnedShortcut
+  StrCpy $R8 "$SMPROGRAMS\${START_FOLDER}\${LNK_APP}"
+  StrCpy $R9 "$INSTDIR\${APP}.exe"
+  Call un.DeleteOwnedShortcut
+  StrCpy $R8 "$SMPROGRAMS\${START_FOLDER}\${LNK_UNINST}"
+  StrCpy $R9 "$INSTDIR\Uninstall.exe"
+  Call un.DeleteOwnedShortcut
+  RMDir "$SMPROGRAMS\${START_FOLDER}"
 
   ; exactly what the installer shipped; directories only if empty
   !include "${UNINSTALL_LIST}"
@@ -138,4 +516,50 @@ Section "Uninstall"
 
   DeleteRegKey HKCU "${UNINST_KEY}"
   DeleteRegKey HKCU "Software\${APP}"
+  ; SOFTWARE\EXBO and the game tree are intentionally not touched.
 SectionEnd
+
+Function un.ShortcutState
+  Push $R0
+  Push $R1
+  Push $R2
+  ${IfNot} ${FileExists} "$R8"
+    StrCpy $R7 "3"
+    Goto unshortcut_done
+  ${EndIf}
+  Push $R8
+  Push $R9
+  StrCpy $R7 "2"
+  StrCpy $R1 "LNK_PATH"
+  StrCpy $R2 $R8
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, t R2) i.R0'
+  StrCpy $R1 "LNK_EXPECT"
+  StrCpy $R2 $R9
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, t R2) i.R0'
+  nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "$PLUGINSDIR\shortcut-target.ps1"'
+  Pop $R7
+  Pop $R2
+  ${If} $R7 S== "error"
+  ${OrIf} $R7 S== ""
+    StrCpy $R7 "2"
+  ${EndIf}
+  StrCpy $R1 "LNK_PATH"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
+  StrCpy $R1 "LNK_EXPECT"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
+  Pop $R9
+  Pop $R8
+  unshortcut_done:
+  Pop $R2
+  Pop $R1
+  Pop $R0
+FunctionEnd
+
+Function un.DeleteOwnedShortcut
+  Push $R7
+  Call un.ShortcutState
+  ${If} $R7 S== "0"
+    Delete "$R8"
+  ${EndIf}
+  Pop $R7
+FunctionEnd

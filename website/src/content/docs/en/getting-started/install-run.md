@@ -50,12 +50,14 @@ Stay on mock when you are arguing about layout. Live connects on its own only wh
 
 | File | What it is |
 |---|---|
-| `LauncherFork_Setup_<version>.exe` | NSIS, x64, no administrator rights, `%LOCALAPPDATA%\LauncherFork` |
+| `LauncherFork_Setup_<version>.exe` | NSIS wizard, x64, no administrator rights. Folder, Next, install. Default `%LOCALAPPDATA%\LauncherFork`. Apps & features name: EXBO Launcher |
 | `LauncherFork_portable_win64.zip` | The same image; run `LauncherFork.exe` |
 | `LauncherFork_linux_x64.tar.gz` | jlink image; run `bin/launcherfork` |
 | `SHA256SUMS.txt` | Checksums |
 
 `LauncherFork.exe` forwards its arguments to the JVM, for example `-Dlauncher.lang=en`.
+
+On Windows, `packaging/build-installer.ps1` builds the same installer (JDK 21 with `jlink`; the script downloads OpenJFX and NSIS). On Linux, `packaging/build-dist.sh` only compiles the exe: the wizard runs on Windows, where PowerShell checks SHA-256 of the payload. This repo has no code-signing certificate. Uninstall does not delete the game or `EXBO_SESSION`.
 
 :::caution[EXBO assets are in git history]
 PNGs from the original launcher and the `Europe` font belong to EXBO. The README forbids public builds until those files are replaced. Deleting them from the work tree does not rewrite history.

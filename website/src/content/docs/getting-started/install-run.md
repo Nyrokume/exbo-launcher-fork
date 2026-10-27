@@ -50,12 +50,14 @@ PNG пишет автотур `ScreenshotTour` в указанный катал�
 
 | Файл | Что это |
 |---|---|
-| `LauncherFork_Setup_<версия>.exe` | NSIS, x64, без прав администратора, `%LOCALAPPDATA%\LauncherFork` |
+| `LauncherFork_Setup_<версия>.exe` | Мастер NSIS, x64, без прав администратора. Папка, «Далее», установка. По умолчанию `%LOCALAPPDATA%\LauncherFork`. В системе имя EXBO Launcher |
 | `LauncherFork_portable_win64.zip` | Тот же образ, запуск `LauncherFork.exe` |
 | `LauncherFork_linux_x64.tar.gz` | jlink, запуск `bin/launcherfork` |
 | `SHA256SUMS.txt` | Контрольные суммы |
 
 `LauncherFork.exe` передаёт свои аргументы в JVM, например `-Dlauncher.lang=en`.
+
+На Windows тот же установщик собирает `packaging/build-installer.ps1` (JDK 21 с `jlink`; OpenJFX и NSIS скрипт скачивает сам). С Linux `packaging/build-dist.sh` только компилирует exe: мастер запускается на Windows, SHA-256 файлов там проверяет PowerShell. Подписи кода в репозитории нет. Удаление лаунчера не стирает игру и не трогает `EXBO_SESSION`.
 
 :::caution[Ассеты EXBO в истории git]
 PNG из оригинального лаунчера и шрифт `Europe` принадлежат EXBO. README запрещает публичные сборки, пока эти файлы не заменены. Удаление из рабочего дерева историю не чистит.
