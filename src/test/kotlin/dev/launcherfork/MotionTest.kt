@@ -116,12 +116,33 @@ class MotionTest {
         Motion.crossfade(a, b); assertTrue(b.isVisible); assertFalse(a.isVisible); assertEquals(1.0, b.opacity)
         Motion.markerIn(a); assertEquals(1.0, a.scaleY); assertEquals(1.0, a.opacity)
         assertNull(Motion.drift(a), "no drift while disabled"); assertEquals(1.0, a.scaleX)
+        a.rotate = 40.0
+        Motion.spin(a, true); assertEquals(0.0, a.rotate); assertFalse(Motion.isAnimating(a, Motion.SPIN))
+        Motion.spin(a, false); assertEquals(0.0, a.rotate); assertFalse(Motion.isAnimating(a, Motion.SPIN))
         var ran = false
         Motion.snapshotCrossfade(StackPane()) { ran = true }
         assertTrue(ran)
         val bar = ProgressBar(0.0)
         StackPane(bar).let { javafx.scene.Scene(it) }
         Motion.progress(bar, 0.5); assertEquals(0.5, bar.progress); assertFalse(Motion.isAnimating(bar, "progress"))
+    }
+
+    @Test
+    fun spinLoopsOnlyWhileAsked() = animated {
+        val node = Region()
+        FxTestSupport.onFx {
+            Motion.spin(node, true)
+            val running = Motion.running(node, Motion.SPIN) as javafx.animation.Timeline
+            assertEquals(javafx.animation.Animation.INDEFINITE, running.cycleCount)
+            assertEquals(javafx.animation.Animation.Status.RUNNING, running.status)
+            assertEquals(Interpolator.LINEAR, running.keyFrames.last().values.first().interpolator)
+            val again = Motion.running(node, Motion.SPIN)
+            Motion.spin(node, true)
+            assertTrue(again === Motion.running(node, Motion.SPIN), "a second spin restarted the turn")
+            Motion.spin(node, false)
+            assertEquals(0.0, node.rotate)
+            assertFalse(Motion.isAnimating(node, Motion.SPIN))
+        }
     }
 
     @Test

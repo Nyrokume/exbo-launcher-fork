@@ -23,9 +23,11 @@ import dev.launcherfork.stalzone.TunnelSettings
 import dev.launcherfork.stalzone.TunnelTarget
 import dev.launcherfork.stalzone.toView
 import dev.launcherfork.ui.UiContext
+import dev.launcherfork.ui.motion.Motion
 import javafx.application.Platform
 import javafx.event.EventHandler
 import javafx.geometry.Pos
+import javafx.scene.Group
 import javafx.scene.Node
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
@@ -39,7 +41,9 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
+import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
+import javafx.scene.shape.SVGPath
 import java.nio.file.Path
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -94,8 +98,8 @@ internal object TunnelServices {
  * One Roxy node per region. Opening the region loads that list. Opening a group measures its nodes
  * once. «Измерить» measures the open region and does not write an override. «Найти лучший сервер»
  * measures when this region has no fresh success, then writes the single best node.
- * «Обновить» reloads the catalog. A node that was already listed stays after a miss. A node that
- * was not in the previous list stays hidden until it answers.
+ * The refresh icon (accessible name «Обновить») reloads the catalog. A node that was already listed
+ * stays after a miss. A node that was not in the previous list stays hidden until it answers.
  * «Исключить группу» asks «Заблокировать N нод группы?» and only then writes the group's addresses
  * through [ServerBlock.uniqueValidIpv4] and the existing firewall apply. The row switch toggles one
  * server on the blocklist immediately (on = blocked) and syncs that same firewall path, with no dialog.
@@ -128,6 +132,25 @@ class TunnelPage(
     private var probeGen = 0
     private var measuring = false
     private var refreshing = false
+    /** True from the refresh press until that reload, including the probe round it starts, has settled. */
+    private var refreshSpinning = false
+    /** Lucide refresh-cw 0.544.0 (ISC): two circular arrows, 24×24 stroke grid. */
+    private val refreshIcon = StackPane(Group(SVGPath().apply {
+        content = "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" +
+            "M21 3v5h-5" +
+            "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" +
+            "M8 16H3v5"
+        styleClass.add("tunnel-refresh-glyph")
+        scaleX = 16.0 / 24.0
+        scaleY = 16.0 / 24.0
+        isMouseTransparent = true
+    })).apply {
+        styleClass.add("tunnel-refresh-icon")
+        setMinSize(16.0, 16.0)
+        setPrefSize(16.0, 16.0)
+        setMaxSize(16.0, 16.0)
+        isMouseTransparent = true
+    }
     private val hidden = HashSet<String>()
     private val awaiting = HashSet<String>()
     private var suppressRegion = false
@@ -195,6 +218,11 @@ class TunnelPage(
         reloadFiles()
         tunnelMeasure.tooltip = Tooltip(ctx.t("settings.tunnel.measure.hint"))
         tunnelFindBest.tooltip = Tooltip(ctx.t("settings.tunnel.find.hint"))
+        tunnelRefresh.text = ""
+        tunnelRefresh.contentDisplay = ContentDisplay.GRAPHIC_ONLY
+        tunnelRefresh.alignment = Pos.CENTER
+        tunnelRefresh.graphic = refreshIcon
+        tunnelRefresh.accessibleText = ctx.t("settings.tunnel.refresh")
         tunnelRefresh.tooltip = Tooltip(ctx.t("settings.tunnel.refresh.hint"))
         tunnelMeasure.setOnAction { measureOpen() }
         tunnelFindBest.setOnAction { findBest() }
@@ -313,6 +341,7 @@ class TunnelPage(
         setModeOpen(false)
         closeConfirm()
         refreshing = false
+        refreshSpinning = false
         selected = region
         cancelRound()
         catalogGen++
@@ -579,11 +608,14 @@ class TunnelPage(
         val region = selected
         catalogGen++
         val gen = catalogGen
+        refreshSpinning = true
         refreshing = true
         render()
         val deliver = deliver@{ result: Result<RoxyCatalog> ->
             if (gen != catalogGen || selected != region) {
                 refreshing = false
+                refreshSpinning = false
+                render()
                 return@deliver
             }
             refreshing = false
@@ -596,12 +628,13 @@ class TunnelPage(
                 for (target in targets) {
                     if (target.endpoint.address !in known) awaiting += target.key()
                 }
-                startRound(targets) {}
+                startRound(targets) { refreshSpinning = false }
             }
             result.onFailure {
+                refreshSpinning = false
                 if (catalogs[region] == null) catalogError = ctx.t("settings.tunnel.load_failed")
-                render()
             }
+            render()
         }
         if (TunnelServices.inline) {
             deliver(runCatching { TunnelServices.fetch(region) })
@@ -692,6 +725,7 @@ class TunnelPage(
         tunnelMeasure.isDisable = busy
         tunnelFindBest.isDisable = busy
         tunnelRefresh.isDisable = busy
+        Motion.spin(refreshIcon, refreshSpinning)
         modeButton.isDisable = locked
         if (locked) setModeOpen(false)
         firewallNote.text = firewallError.orEmpty()

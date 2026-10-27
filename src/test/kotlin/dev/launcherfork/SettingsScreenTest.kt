@@ -27,6 +27,7 @@ import dev.launcherfork.stalzone.TunnelCatalog
 import dev.launcherfork.stalzone.TunnelCatalogs
 import dev.launcherfork.stalzone.TunnelFirewall
 import dev.launcherfork.stalzone.TunnelRegion
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.screens.settings.TunnelServices
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Fxml
@@ -782,7 +783,7 @@ class SettingsScreenTest {
                     assertFalse("primary" in s.tunnelMeasure.styleClass, "$where: Measure is a primary action")
                     assertTrue("primary" in s.tunnelFindBest.styleClass, "$where: Find best lost the accent")
                     assertEquals("Измерить", s.tunnelMeasure.text)
-                    listOf(s.tunnelMeasure, s.tunnelFindBest, s.tunnelRefresh).forEach { button ->
+                    listOf(s.tunnelMeasure, s.tunnelFindBest).forEach { button ->
                         assertEquals(34.0, button.height, 0.5, "$where: '${button.text}' is not the settings action height")
                         assertEquals(s.tunnelMeasure.padding, button.padding, "$where: '${button.text}' padding")
                         assertEquals(s.tunnelMeasure.font.size, button.font.size, 0.01, "$where: '${button.text}' font")
@@ -806,8 +807,28 @@ class SettingsScreenTest {
                         "$where: the action row is not Measure, Find best, Refresh, mode",
                     )
                     assertTrue(s.tunnelRefresh.localToScene(s.tunnelRefresh.boundsInLocal).maxX <= s.tunnelMode.localToScene(s.tunnelMode.boundsInLocal).minX + 1.0, "$where: mode is not at the end of the action row")
-                    assertEquals("Обновить", s.tunnelRefresh.text)
+                    assertEquals("", s.tunnelRefresh.text, "$where: refresh still shows a caption")
+                    assertEquals("Обновить", s.tunnelRefresh.accessibleText, "$where: refresh lost its accessible name")
+                    assertEquals(
+                        "Загрузить список заново. Новый сервер попадает в пул только если отвечает.",
+                        s.tunnelRefresh.tooltip.text,
+                        "$where: refresh tooltip",
+                    )
+                    assertTrue("tunnel-refresh" in s.tunnelRefresh.styleClass, "$where: refresh is not the icon button")
                     assertFalse("primary" in s.tunnelRefresh.styleClass, "$where: Refresh is a primary action")
+                    assertEquals(34.0, s.tunnelRefresh.height, 0.5, "$where: refresh icon is not the settings action height")
+                    assertEquals(34.0, s.tunnelRefresh.width, 0.5, "$where: refresh icon is not the square action")
+                    assertEquals(s.tunnelMeasure.height, s.tunnelRefresh.height, 0.5, "$where: refresh is taller than Измерить")
+                    val refreshIcon = s.tunnelRefresh.lookup(".tunnel-refresh-icon") as javafx.scene.layout.Region
+                    assertNotNull(s.tunnelRefresh.lookup(".tunnel-refresh-glyph"), "$where: refresh has no glyph")
+                    assertEquals(0.0, refreshIcon.rotate, 0.01, "$where: refresh icon spins while idle")
+                    val refreshBox = s.tunnelRefresh.localToScene(s.tunnelRefresh.boundsInLocal)
+                    val iconBox = refreshIcon.localToScene(refreshIcon.boundsInLocal)
+                    assertTrue(
+                        iconBox.minX >= refreshBox.minX - 0.5 && iconBox.maxX <= refreshBox.maxX + 0.5 &&
+                            iconBox.minY >= refreshBox.minY - 0.5 && iconBox.maxY <= refreshBox.maxY + 0.5,
+                        "$where: refresh glyph leaves the button",
+                    )
                     val nodes = s.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>()
                     assertTrue(nodes.size >= 2, "$where: server rows missing")
                     nodes.forEach { node ->
@@ -1112,6 +1133,53 @@ class SettingsScreenTest {
             assertTrue(text.contains("79.127.241.68:29450"), "find best did not write the EU winner")
             assertFalse(text.contains("79.127.241.67"), "find best left the previous EU node")
             assertFalse(text.contains("New-NetFirewallRule") || text.contains("RunAs"))
+        }
+    }
+
+    @Test
+    fun refreshIconSpinsWhileTheReloadIsInFlight() {
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val (c, _) = settingsWith(LauncherSettings())
+        try {
+            FxTestSupport.onFx {
+                c.showClientSection("tunnel")
+                c.settingsRoot.applyCss()
+                c.settingsRoot.layout()
+                val icon = c.tunnelRefresh.lookup(".tunnel-refresh-icon")
+                assertNotNull(icon)
+                assertEquals(0.0, icon!!.rotate, 0.01)
+                assertFalse(Motion.isAnimating(icon, Motion.SPIN))
+            }
+            TunnelServices.inline = false
+            TunnelServices.fetch = { region ->
+                started.countDown()
+                check(release.await(5, TimeUnit.SECONDS)) { "refresh fetch was not released" }
+                TunnelFixtures.catalog(region)
+            }
+            Motion.override = null
+            Motion.setting = true
+            assertTrue(Motion.enabled)
+            FxTestSupport.onFx { c.tunnelRefresh.fire() }
+            assertTrue(started.await(5, TimeUnit.SECONDS), "refresh never started")
+            FxTestSupport.onFx {
+                val icon = c.tunnelRefresh.lookup(".tunnel-refresh-icon")
+                assertTrue(Motion.isAnimating(icon, Motion.SPIN), "refresh icon is still while the reload runs")
+                assertTrue(c.tunnelRefresh.isDisable, "refresh stays pressed in while the reload runs")
+                assertEquals("", c.tunnelRefresh.text)
+            }
+            release.countDown()
+            assertTrue(
+                FxTestSupport.waitFx(5_000) {
+                    val icon = c.tunnelRefresh.lookup(".tunnel-refresh-icon") ?: return@waitFx false
+                    !Motion.isAnimating(icon, Motion.SPIN) && icon.rotate == 0.0 && !c.tunnelRefresh.isDisable
+                },
+                "refresh icon did not return to rest",
+            )
+        } finally {
+            release.countDown()
+            Motion.override = false
+            Motion.setting = true
         }
     }
 

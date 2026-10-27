@@ -27,9 +27,10 @@ import kotlin.math.abs
  * transitions the UI uses, so every screen moves the same way and the login panels can adopt it later.
  *
  * Rules (the minimalist "QL" look): fades, small slides (at most [MAX_SLIDE] px), a short scale on press; durations
- * [FAST] / [NORMAL] / [SLOW] (120 / 200 / 280 ms) with the ease-out [EASE]; nothing bounces, nothing loops except the
- * optional very slow wallpaper drift ([drift], off unless asked for). Motion never decides state: callers keep their
- * logical state (shown / hidden) themselves, the helpers only animate towards it.
+ * [FAST] / [NORMAL] / [SLOW] (120 / 200 / 280 ms) with the ease-out [EASE]; nothing bounces. The only loops are the
+ * optional very slow wallpaper drift ([drift], off unless asked for) and the in-flight refresh spin ([spin], on only
+ * while a reload is running). Motion never decides state: callers keep their logical state (shown / hidden / busy)
+ * themselves, the helpers only animate towards it.
  *
  * Global switch [enabled]: `-Dlauncher.animations=on|off` ([override]) wins over the settings key `animations=on|off`
  * ([setting], «Настройки → Поведение → Анимации», on by default). Disabled, EVERY helper applies its end state at once
@@ -56,6 +57,8 @@ object Motion {
     val SLOW: Duration = Duration.millis(SLOW_MS)
     /** Half a period of the optional wallpaper drift (1.00 -> [DRIFT_SCALE] and back, alternating). */
     val DRIFT_PERIOD: Duration = Duration.seconds(40.0)
+    /** One turn of an in-flight refresh icon. Linear, so a loop has no visible seam. */
+    val SPIN_TURN: Duration = Duration.millis(720.0)
     const val DRIFT_SCALE = 1.04
 
     /** Ease-out: fast start, soft landing (Material "emphasized decelerate"); no overshoot. */
@@ -123,6 +126,8 @@ object Motion {
     private const val MARKER = "marker"
     /** The wallpaper drift ([drift]). */
     const val DRIFT = "drift"
+    /** In-flight refresh indicator ([spin]). */
+    const val SPIN = "spin"
 
     /** The running animation of [node] on [channel] (tests, the screenshot tour), null when idle. */
     fun running(node: Node, channel: String = SHOW): Animation? = node.properties[KEY + channel] as? Animation
@@ -392,6 +397,28 @@ object Motion {
             mark.translateX = delta
             start(mark, THUMB, tween(NORMAL, kv(mark.translateXProperty(), 0.0)))
         }
+    }
+
+    /**
+     * Spins [node] while [on] (one linear turn per [SPIN_TURN], forever). The idle angle is 0.
+     * Calling again while it is already spinning leaves the current turn alone. With motion off, or when [on] is
+     * false, the node rests at 0 and nothing is running — the same rule as the other helpers, so tests and the
+     * screenshot tour stay on a settled frame.
+     */
+    fun spin(node: Node, on: Boolean) {
+        if (!on || !enabled) {
+            stop(node, SPIN)
+            node.rotate = 0.0
+            return
+        }
+        if (isAnimating(node, SPIN)) return
+        node.rotate = 0.0
+        val anim = Timeline(
+            KeyFrame(Duration.ZERO, KeyValue(node.rotateProperty(), 0.0)),
+            KeyFrame(SPIN_TURN, KeyValue(node.rotateProperty(), 360.0, Interpolator.LINEAR)),
+        ).apply { cycleCount = Animation.INDEFINITE }
+        node.properties[KEY + SPIN] = anim
+        anim.play()
     }
 
     /**

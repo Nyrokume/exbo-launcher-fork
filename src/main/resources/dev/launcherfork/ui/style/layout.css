@@ -1042,6 +1042,34 @@
     -fx-background-radius: 8;
     -fx-max-width: infinity;
 }
+/* Refresh sits in the same 34 px action row as Измерить, square, graphic only.
+   The glyph is a 16 px Lucide refresh (24-grid stroke, scaled), centred so a spin stays inside the button. */
+.tunnel-refresh {
+    -fx-padding: 0;
+    -fx-min-width: 34; -fx-pref-width: 34; -fx-max-width: 34;
+    -fx-alignment: center;
+    -fx-content-display: graphic-only;
+    -fx-graphic-text-gap: 0;
+}
+.tunnel-refresh-icon {
+    -fx-min-width: 16; -fx-pref-width: 16; -fx-max-width: 16;
+    -fx-min-height: 16; -fx-pref-height: 16; -fx-max-height: 16;
+}
+.tunnel-refresh-glyph {
+    -fx-fill: transparent;
+    -fx-stroke: -settings-label;
+    -fx-stroke-width: 2;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+.tunnel-refresh:hover .tunnel-refresh-glyph,
+.tunnel-refresh:focused .tunnel-refresh-glyph {
+    -fx-stroke: -foreground;
+}
+.tunnel-refresh:disabled .tunnel-refresh-glyph,
+.tunnel-refresh:disabled:hover .tunnel-refresh-glyph {
+    -fx-stroke: -settings-muted;
+}
 
 /* saved EXBO sessions: the page fills the settings viewport, like the tunnel.
    Имя сессии / Сохранить stay under the heading. Cards fill the rest and scroll.

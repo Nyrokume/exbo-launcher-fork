@@ -22,7 +22,7 @@
     ОБНОВЛЕНИЕ          speed limits (download / upload fields). ЯЗЫК: Русский / English.
     ТУННЕЛЬ             own page, the whole settings viewport. One head row: the heading on the left, the
                         region switch (RU/EU/NA/SEA/NEA, same segmented control) on the right. The next row
-                        is a compact action bar: Измерить, Найти лучший сервер, Обновить, and the rank mode
+                        is a compact action bar: Измерить, Найти лучший сервер, a refresh icon, and the rank mode
                         on the right. The mode control is an in-theme list, not a native combo. Each pool
                         is one card: name and count on the left, Исключить on the right of that title, then
                         full-width rows (name, client RTT, sum, block switch). Server RTT stays in the row tooltip. The server list
@@ -187,7 +187,7 @@
                     <HBox styleClass="tunnel-actions" alignment="CENTER_LEFT">
                         <Button fx:id="tunnelMeasure" styleClass="settings-mini" text="%settings.tunnel.measure" mnemonicParsing="false" minWidth="-Infinity"/>
                         <Button fx:id="tunnelFindBest" styleClass="settings-mini,primary" text="%settings.tunnel.find" mnemonicParsing="false" minWidth="-Infinity"/>
-                        <Button fx:id="tunnelRefresh" styleClass="settings-mini" text="%settings.tunnel.refresh" mnemonicParsing="false" minWidth="-Infinity"/>
+                        <Button fx:id="tunnelRefresh" styleClass="settings-mini,tunnel-refresh" mnemonicParsing="false" minWidth="-Infinity" contentDisplay="GRAPHIC_ONLY" accessibleText="%settings.tunnel.refresh"/>
                         <Region styleClass="tunnel-actions-gap" HBox.hgrow="ALWAYS" minWidth="8"/>
                         <VBox fx:id="tunnelMode" styleClass="tunnel-mode" alignment="TOP_LEFT" minWidth="-Infinity" maxHeight="-Infinity"/>
                     </HBox>
