@@ -82,9 +82,7 @@ class ExboProtocolTest {
 
     @Test
     fun powHashUsesTheInstalledBcrypt() {
-        val appData = System.getenv("APPDATA")
-        org.junit.jupiter.api.Assumptions.assumeTrue(!appData.isNullOrBlank())
-        val jar = java.nio.file.Path.of(appData, "EXBO", "launcher", "launcher.jar")
+        val jar = java.nio.file.Path.of(System.getenv("APPDATA"), "EXBO", "launcher", "launcher.jar")
         org.junit.jupiter.api.Assumptions.assumeTrue(jar.exists())
         val hash = exboPowPassHash("password", "......................", jar)
         assertTrue(hash.startsWith("\$2y\$10\$"))
