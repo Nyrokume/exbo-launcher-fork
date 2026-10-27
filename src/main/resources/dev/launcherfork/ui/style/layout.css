@@ -936,11 +936,14 @@
 .tunnel-count.err { -fx-text-fill: -destructive-text; }
 .tunnel-actions { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 8 0; -fx-max-width: infinity; }
 
-/* saved EXBO sessions: one card per session, same surface as a tunnel pool, accent border when it is the live account.
-   Name and login take the left; the key icon, Применить and Удалить stay on the right and do not cover the title. */
-.session-cards { -fx-spacing: 8; -fx-padding: 2 0 8 0; }
-.session-card { -fx-padding: 12 14 12 14; -fx-spacing: 10; -fx-max-width: infinity; }
-.session-head { -fx-alignment: center-left; -fx-spacing: 16; }
+/* saved EXBO sessions: the page fills the settings viewport, like the tunnel.
+   Имя сессии / Сохранить stay under the heading. Cards fill the rest and scroll.
+   Name and login take the left; the key, Изменить, Применить and Удалить stay on the right. */
+.accounts-create { -fx-padding: 4 0 8 0; -fx-max-width: infinity; }
+.session-cards { -fx-spacing: 8; -fx-padding: 2 0 4 0; }
+.session-card { -fx-padding: 10 12 10 12; -fx-spacing: 8; -fx-max-width: infinity; }
+.session-head { -fx-alignment: center-left; -fx-spacing: 12; }
+.session-rename { -fx-max-width: infinity; -fx-min-width: 72; }
 .session-text { -fx-spacing: 2; }
 .session-actions { -fx-alignment: center-right; -fx-spacing: 8; }
 .session-card.selected { -fx-border-color: -primary; -fx-background-color: -destructive-soft; }
@@ -956,11 +959,12 @@
     -fx-border-color: -primary;
     -fx-text-fill: -foreground;
 }
-/* key glyph tracks the mini-button text: label colour at rest, foreground on hover and when the keys are open */
+/* key glyph tracks the mini-button text: label colour at rest, foreground on hover and when the keys are open.
+   One ring, a shaft and two teeth — stroke about 1.8 so it stays readable inside the 34 px action. */
 .session-key-glyph {
     -fx-fill: transparent;
     -fx-stroke: -settings-label;
-    -fx-stroke-width: 1.5;
+    -fx-stroke-width: 1.8;
     -fx-stroke-line-cap: round;
     -fx-stroke-line-join: round;
 }

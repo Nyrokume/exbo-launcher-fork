@@ -31,6 +31,8 @@ import javafx.scene.control.TextFormatter
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
+import javafx.scene.input.KeyCode
+import javafx.scene.input.KeyEvent
 import javafx.scene.layout.AnchorPane
 import javafx.scene.shape.SVGPath
 import javafx.scene.layout.GridPane
@@ -45,7 +47,8 @@ import java.util.Locale
  * Память, Поведение, Обновление and Язык are one scrollable column.
  * The header switch opens JVM, the tunnel, sensitivity and account swap. The tunnel page fills the
  * settings viewport and scrolls the server list inside itself. Sensitivity fills that same viewport:
- * a compact base row, then one game-style line per scope (name, value, slider, steps). The profile menu opens accounts.
+ * a compact base row, then one game-style line per scope (name, value, slider, steps). Accounts fills it too:
+ * the name row is pinned under the heading and the session list takes the remaining height. The profile menu opens accounts.
  * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
@@ -253,8 +256,8 @@ class SettingsController(private val ctx: UiContext) {
 
     /**
      * `ram`, `behaviour`, `updates` and `language` are the one column (a named id scrolls that block into view).
-     * `jvm`, `tunnel`, `sens` and `accounts` each replace the column. Tunnel fills the viewport; its server list
-     * scrolls inside the page.
+     * `jvm`, `tunnel`, `sens` and `accounts` each replace the column. Tunnel, sensitivity and accounts fill the
+     * viewport; their lists scroll inside the page.
      */
     fun showClientSection(section: String) = showSection(section)
 
@@ -303,11 +306,10 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     /**
-     * Tunnel and sensitivity occupy the settings viewport. The pool list scrolls in [tunnelScroll];
-     * the scope lines scroll in [sensScroll]. Account cards use the space above the name row.
-     * When they fit, the row sits directly under them. When they do not, the list scrolls and the row stays on screen.
-     * Cards are measured after CSS: a card just built by a save has no skin yet, so its pref height is 0
-     * and the list would keep the old height, clipping the new card into the name row.
+     * Tunnel, sensitivity and accounts occupy the settings viewport. The pool list scrolls in [tunnelScroll];
+     * the scope lines scroll in [sensScroll]. On accounts the name row stays under the heading and [sessionScroll]
+     * takes every pixel under it, so a short list is not a small island in an empty pane. Extra cards scroll
+     * inside that list. A status line, when it is showing, keeps a strip under the list.
      */
     private fun applyPageFill() {
         if (!::tunnelScroll.isInitialized || !::sessionScroll.isInitialized || !::sensPage.isInitialized) return
@@ -343,22 +345,18 @@ class SettingsController(private val ctx: UiContext) {
                 resetHeight(tunnelPage)
                 resetHeight(sensPage)
                 resetScroll(tunnelScroll, 120.0)
-                val available = (inner - accountsChrome()).coerceAtLeast(96.0)
-                val wanted = sessionListHeight()
+                settingsContent.minHeight = viewport
+                settingsContent.prefHeight = viewport
+                settingsContent.maxHeight = viewport
+                val note = accountsNoteHeight()
+                val page = (inner - note).coerceAtLeast(0.0)
+                accountsPage.minHeight = page
+                accountsPage.prefHeight = page
+                accountsPage.maxHeight = page
+                val list = (page - accountsChrome()).coerceAtLeast(96.0)
                 sessionScroll.minHeight = 96.0
-                sessionScroll.prefHeight = wanted.coerceIn(96.0, available)
-                sessionScroll.maxHeight = available
-                if (wanted > available + 1.0) {
-                    settingsContent.minHeight = viewport
-                    settingsContent.prefHeight = viewport
-                    settingsContent.maxHeight = viewport
-                    accountsPage.minHeight = inner
-                    accountsPage.prefHeight = inner
-                    accountsPage.maxHeight = inner
-                } else {
-                    resetHeight(settingsContent)
-                    resetHeight(accountsPage)
-                }
+                sessionScroll.prefHeight = list
+                sessionScroll.maxHeight = list
             }
             "sens" -> {
                 resetHeight(tunnelPage)
@@ -391,15 +389,18 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     private fun accountsChrome(): Double {
-        val heading = (accountsPage.children.firstOrNull() as? Region)?.prefHeight(-1.0) ?: 0.0
-        return heading + accountsRow.prefHeight(-1.0) + accountsPage.spacing * 2
+        val fixed = accountsPage.children.filter { it !== sessionScroll && it.isManaged }
+        val heights = fixed.sumOf { (it as? Region)?.prefHeight(-1.0) ?: 0.0 }
+        val gaps = accountsPage.spacing * (accountsPage.children.count { it.isManaged } - 1).coerceAtLeast(0)
+        return heights + gaps
     }
 
-    /** Pref height of the session list after the new cards have skins. Before CSS a control's pref height is 0. */
-    private fun sessionListHeight(): Double {
-        if (sessionCards.scene != null) sessionCards.applyCss()
-        val width = sessionScroll.width.takeIf { it > 1.0 } ?: -1.0
-        return sessionCards.prefHeight(width) + sessionScroll.padding.top + sessionScroll.padding.bottom
+    /** The shared status line sits under the accounts page. Count it only while that note is on this page. */
+    private fun accountsNoteHeight(): Double {
+        if (!::clientStatus.isInitialized || !clientStatus.isManaged) return 0.0
+        if (clientStatus.scene != null) clientStatus.applyCss()
+        val gap = if (::clientContent.isInitialized) clientContent.spacing else 0.0
+        return clientStatus.prefHeight(-1.0) + gap
     }
 
     private fun resetHeight(node: Region) {
@@ -604,11 +605,28 @@ class SettingsController(private val ctx: UiContext) {
             ).joinToString(". ")
         }
         HBox.setHgrow(title, Priority.ALWAYS)
+        val nameInput = TextField(session.name).apply {
+            styleClass.addAll("limit-input", "session-name-input")
+            promptText = ctx.t("stalzone.accounts.name")
+            HBox.setHgrow(this, Priority.ALWAYS)
+            maxWidth = Double.MAX_VALUE
+            minWidth = 0.0
+        }
+        val nameBox = HBox(nameInput).apply {
+            styleClass.addAll("settings-field", "zone-input", "zone-radius-sm", "session-rename")
+            alignment = Pos.CENTER_LEFT
+            HBox.setHgrow(this, Priority.ALWAYS)
+            maxWidth = Double.MAX_VALUE
+            minWidth = 0.0
+            isVisible = false
+            isManaged = false
+        }
         val heading = HBox(8.0).apply {
             alignment = Pos.CENTER_LEFT
             minWidth = 0.0
             maxWidth = Double.MAX_VALUE
             children.add(title)
+            children.add(nameBox)
             if (current) {
                 children.add(Label(ctx.t("settings.accounts.current")).apply {
                     styleClass.add("session-current")
@@ -683,7 +701,54 @@ class SettingsController(private val ctx: UiContext) {
                 }
             }
         }
-        val actions = HBox(keysToggle, apply, delete).apply {
+        val edit = Button(ctx.t("settings.accounts.edit")).apply {
+            styleClass.addAll("settings-mini", "session-edit")
+            isMnemonicParsing = false
+            minWidth = Region.USE_PREF_SIZE
+            tooltip = Tooltip(ctx.t("settings.accounts.edit"))
+        }
+        fun editing(): Boolean = nameBox.isManaged
+        fun showEditor(on: Boolean) {
+            title.isVisible = !on
+            title.isManaged = !on
+            nameBox.isVisible = on
+            nameBox.isManaged = on
+            val label = ctx.t(if (on) "settings.accounts.edit_done" else "settings.accounts.edit")
+            edit.text = label
+            edit.accessibleText = label
+            edit.tooltip = Tooltip(label)
+            if (on) {
+                nameInput.text = session.name
+                nameInput.requestFocus()
+                nameInput.selectAll()
+            }
+        }
+        fun commitRename() {
+            val next = nameInput.text.trim()
+            if (next.isEmpty()) {
+                note(ctx.t("settings.accounts.name_empty"))
+                nameInput.requestFocus()
+                return
+            }
+            if (next == session.name) {
+                showEditor(false)
+                return
+            }
+            runClient {
+                check(ctx.desk.rename(session.id, next)) { ctx.t("stalzone.accounts.pick") }
+                ctx.t("stalzone.accounts.renamed")
+            }
+        }
+        edit.setOnAction { if (editing()) commitRename() else showEditor(true) }
+        nameInput.setOnAction { commitRename() }
+        // filter, not a bubble handler: the text field skin consumes the key before onKeyPressed
+        nameInput.addEventFilter(KeyEvent.KEY_PRESSED) { e ->
+            if (e.code == KeyCode.ESCAPE && editing()) {
+                showEditor(false)
+                e.consume()
+            }
+        }
+        val actions = HBox(keysToggle, edit, apply, delete).apply {
             styleClass.add("session-actions")
             alignment = Pos.CENTER_RIGHT
             minWidth = Region.USE_PREF_SIZE
@@ -703,7 +768,7 @@ class SettingsController(private val ctx: UiContext) {
         }
     }
 
-    /** Key, not the tunnel padlock. About 17 px wide; the hit box is the 34 px settings action. */
+    /** Horizontal key: one ring, a shaft, two teeth. About 18 px wide; the hit box is the 34 px settings action. */
     private fun sessionKeyGlyph(): SVGPath = SVGPath().apply {
         content = SESSION_KEY
         styleClass.add("session-key-glyph")
@@ -909,6 +974,8 @@ class SettingsController(private val ctx: UiContext) {
             sensNote.isVisible = showSens
             sensNote.isManaged = showSens
         }
+        // the accounts list is pinned to the viewport, so a note has to take its strip or it covers the last card
+        if (currentSection == "accounts") applyPageFill()
     }
 
     private fun update(change: (LauncherSettings) -> LauncherSettings) = store.save(change(store.load()))
@@ -947,13 +1014,13 @@ class SettingsController(private val ctx: UiContext) {
 
     private companion object {
         /**
-         * Horizontal key: round bow, shaft, teeth. Longer side is about 17 px before the stroke.
-         * Stroke colour follows the mini-button text (normal, hover, open) in layout.css.
+         * Horizontal key in a ~18×12 box: open ring (the hole is the unstroked interior), shaft, two separated teeth.
+         * Quarter-circle arcs, so the bow does not depend on a second ring that muddies at this size.
+         * Stroke colour and width follow the mini-button text in layout.css.
          */
         const val SESSION_KEY =
-            "M10.89,8.15 A4.87,4.87 0 1 1 1.15,8.15 A4.87,4.87 0 1 1 10.89,8.15 " +
-            "M8.15,8.15 A2.125,2.125 0 1 1 3.90,8.15 A2.125,2.125 0 1 1 8.15,8.15 " +
-            "M10.89,8.15 H15.94 M12.57,8.15 V11.16 M14.26,8.15 V12.57 M15.94,8.15 V10.80"
+            "M6.2,1.6 A5,5 0 0 1 11.2,6.6 A5,5 0 0 1 6.2,11.6 A5,5 0 0 1 1.2,6.6 A5,5 0 0 1 6.2,1.6 Z " +
+            "M11.2,6.6 H18.2 M13.7,6.6 V10.0 M16.6,6.6 V12.0"
 
         /** Game-style track: 5 sits near the middle. A larger table stretches every row together. */
         const val SLIDER_MAX = 10.0

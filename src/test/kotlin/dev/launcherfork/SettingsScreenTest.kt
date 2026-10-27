@@ -57,8 +57,9 @@ import java.util.Properties
 /**
  * The gear opens one scrollable column: memory, behaviour, updates and language, full width,
  * stacked with no empty band under the RAM bar. JVM, tunnel, sensitivity and account swap are separate pages;
- * the header switch opens those four and nothing else. Tunnel fills the settings viewport and scrolls its
- * server list inside the page. The column may extend past the minimum window (900x580).
+ * the header switch opens those four and nothing else. Tunnel and accounts fill the settings viewport.
+ * Tunnel scrolls its server list; accounts pins the name row and scrolls the session cards.
+ * The column may extend past the minimum window (900x580).
  * The RAM bar matches the original launcher (equal segments, one per GB, filled up to the value, no thumb; label
  * follows the bar, 1 GB steps, both bounds) and mouse / keyboard changes land in the SettingsStore.
  */
@@ -609,6 +610,7 @@ class SettingsScreenTest {
             "settings.nav.jvm", "settings.nav.tunnel", "settings.nav.sens", "settings.nav.accounts",
             "settings.page.launcher", "settings.page.client", "settings.heading.jvm", "settings.heading.tunnel",
             "settings.heading.accounts", "settings.heading.sens", "settings.jvm.active", "settings.accounts.save",
+            "settings.accounts.edit", "settings.accounts.edit_done", "settings.accounts.name_empty",
             "settings.accounts.keys", "settings.accounts.login", "settings.accounts.current", "settings.accounts.empty", "settings.accounts.no_keys",
             "settings.sens.write", "settings.sens.row", "settings.sens.down", "settings.sens.up",
             "settings.client.jvm", "settings.client.tunnel", "settings.client.accounts", "settings.client.sens",
@@ -1108,8 +1110,25 @@ class SettingsScreenTest {
                 assertTrue(keys.isVisible)
                 val row = c.accountsRow.localToScene(c.accountsRow.boundsInLocal)
                 val list = c.sessionScroll.localToScene(c.sessionScroll.boundsInLocal)
-                assertTrue(list.maxY <= row.minY + 0.5, "session list overlaps the name row")
+                val page = c.accountsPage.localToScene(c.accountsPage.boundsInLocal)
+                val content = c.settingsContent.localToScene(c.settingsContent.boundsInLocal)
+                assertTrue(row.maxY <= list.minY + 0.5, "create row is not above the session list")
+                assertEquals(
+                    content.maxY - c.settingsContent.padding.bottom,
+                    page.maxY,
+                    4.0,
+                    "accounts page does not fill the settings pane",
+                )
+                assertTrue(c.sessionScroll.height > c.accountsPage.height * 0.5, "session list did not take the remaining height")
                 assertTrue(contains(BoundingBox(0.0, 0.0, scene.width, scene.height), row), "name row outside the page")
+                val glyph = keysToggle.graphic as javafx.scene.shape.SVGPath
+                assertTrue(glyph.layoutBounds.width in 14.0..22.0, "key glyph width ${glyph.layoutBounds.width}")
+                assertTrue(glyph.layoutBounds.height in 8.0..16.0, "key glyph height ${glyph.layoutBounds.height}")
+                assertFalse(glyph.content.contains("4.87"), "key glyph is still the double ring")
+                val edit = first.lookup(".session-edit") as Button
+                assertEquals("Изменить", edit.text)
+                assertEquals(34.0, edit.height, 0.5, "Изменить height")
+                assertFalse("primary" in edit.styleClass)
                 val keysBox = keys as Parent
                 val names = keysBox.lookupAll(".session-key-name").map { (it as Labeled).text }
                 val values = keysBox.lookupAll(".session-key-value").map { (it as Labeled).text }
@@ -1141,7 +1160,7 @@ class SettingsScreenTest {
         }
     }
 
-    /** Saving a session rebuilds the list. Every card stays full height and the name row stays under the cards. */
+    /** Saving a session rebuilds the list. Every card stays full height and the name row stays above the cards. */
     @Test
     fun savingASessionKeepsEveryCardFullHeight(@TempDir dir: Path) {
         val registry = MemoryRegistry()
@@ -1174,15 +1193,19 @@ class SettingsScreenTest {
                 val name = c.sessionName.sceneBounds()
                 val save = c.captureSession.sceneBounds()
                 assertEquals("Сессия сохранена", c.clientStatus.text)
-                assertTrue(c.clientStatus.sceneBounds().minY >= row.maxY - 0.5, "status overlaps the name row")
+                val status = c.clientStatus.sceneBounds()
+                val list = c.sessionScroll.sceneBounds()
+                assertTrue(status.minY >= row.maxY - 0.5, "status overlaps the name row")
+                assertTrue(status.minY >= list.maxY - 1.0, "status overlaps the session list")
                 cards.forEach { node ->
                     val card = node as javafx.scene.layout.Region
                     val bounds = card.sceneBounds()
                     assertEquals(beforeHeight, card.height, 1.0, "saved card height ${card.height} vs $beforeHeight")
                     assertTrue(card.height >= 48.0, "card collapsed to ${card.height}")
-                    assertTrue(bounds.maxY <= row.minY + 0.5, "card overlaps the name row $bounds vs $row")
-                    assertTrue(bounds.maxY <= name.minY + 0.5, "card overlaps the name field")
-                    assertTrue(bounds.maxY <= save.minY + 0.5, "card overlaps Сохранить")
+                    assertTrue(bounds.minY >= row.maxY - 0.5, "card overlaps the name row $bounds vs $row")
+                    assertTrue(bounds.minY >= name.maxY - 0.5, "card overlaps the name field")
+                    assertTrue(bounds.minY >= save.maxY - 0.5, "card overlaps Сохранить")
+                    assertTrue(bounds.maxY <= list.maxY + 0.5, "card draws outside the list")
                 }
                 val apply = cards[0].lookup(".session-apply") as Button
                 val delete = cards[0].lookup(".session-delete") as Button
@@ -1230,7 +1253,17 @@ class SettingsScreenTest {
                     val viewport = c.sessionScroll.lookup(".viewport") as javafx.scene.Node
                     val view = viewport.localToScene(viewport.boundsInLocal)
                     val row = c.accountsRow.localToScene(c.accountsRow.boundsInLocal)
+                    val page = c.accountsPage.localToScene(c.accountsPage.boundsInLocal)
+                    val content = c.settingsContent.localToScene(c.settingsContent.boundsInLocal)
                     assertTrue(contains(window, row), "$where: name row outside the window")
+                    assertTrue(row.maxY <= view.minY + 1.0, "$where: create row is not above the list")
+                    assertEquals(
+                        content.maxY - c.settingsContent.padding.bottom,
+                        page.maxY,
+                        4.0,
+                        "$where: accounts page leaves an empty band",
+                    )
+                    assertTrue(c.sessionScroll.height > 160.0, "$where: session list did not grow (${c.sessionScroll.height})")
                     assertTrue(contains(window, c.captureSession.sceneBounds()), "$where: save button outside")
                     assertTrue(c.captureSession.width >= c.captureSession.prefWidth(-1.0) - 0.5, "$where: save label truncated")
                     cards.forEach { cardNode ->
@@ -1238,7 +1271,7 @@ class SettingsScreenTest {
                         val b = card.localToScene(card.boundsInLocal)
                         assertTrue(contains(window, b), "$where: session card outside the window $b")
                         assertTrue(contains(view, b), "$where: session card clipped by the list $b vs $view")
-                        assertTrue(b.maxY <= row.minY + 0.5, "$where: session card overlaps the name row")
+                        assertTrue(b.minY >= row.maxY - 0.5, "$where: session card overlaps the name row")
                         val actions = card.lookup(".session-actions") as javafx.scene.Node
                         val ab = actions.localToScene(actions.boundsInLocal)
                         assertTrue(ab.maxX <= b.maxX + 0.5, "$where: actions stick out of the card")
@@ -1247,10 +1280,100 @@ class SettingsScreenTest {
                             assertTrue(button.width >= button.prefWidth(-1.0) - 0.5, "$where: '${button.text}' truncated")
                         }
                     }
+                    if (w == Theme.WINDOW_WIDTH) {
+                        preview(nav.mainStage.scene, "settings-accounts")
+                        val edit = cards[0].lookup(".session-edit") as Button
+                        edit.fire()
+                        relayout(nav)
+                        preview(nav.mainStage.scene, "settings-accounts-edit")
+                        key(cards[0].lookup(".session-name-input"), KeyCode.ESCAPE)
+                        relayout(nav)
+                    }
                 }
             }
         } finally {
             FxTestSupport.onFx { nav.close() }
+            app.shutdown()
+        }
+    }
+
+    /** Изменить renames the saved label and leaves the registry snapshot alone. */
+    @Test
+    fun renamingASessionKeepsTheSnapshot(@TempDir dir: Path) {
+        val registry = MemoryRegistry()
+        registry.writeValues(ExboSessions.KEY_PATH, mapOf("EXBO_LOGIN" to "Nyrokume", "EXBO_SESSION" to "token-a"))
+        val desk = StalzoneDesk(registry, dir.resolve("sessions.json"), dir.resolve("jvm"), dir.resolve("options.json"))
+        desk.captureCurrent("Тест 1")
+        registry.writeValues(ExboSessions.KEY_PATH, mapOf("EXBO_LOGIN" to "Zlyka", "EXBO_SESSION" to "token-b"))
+        desk.captureCurrent("Тест 2")
+        val store = InMemorySettingsStore(LauncherSettings())
+        val base = AppContext.mock(speed = 50.0, authDelayMs = 0)
+        val app = AppContext(base.services.copy(settings = store, system = MockSystemInfo(16 * gb)), desk = desk)
+        try {
+            FxTestSupport.onFx {
+                val c = Fxml.load<SettingsController>(FxTestSupport.context("ru", app), "settings.fxml").controller
+                val scene = javafx.scene.Scene(c.settingsRoot, 771.0, 612.0)
+                applyTheme(scene, "zone", "ru")
+                c.showClientSection("accounts")
+                c.settingsRoot.applyCss(); c.settingsRoot.layout()
+                c.settingsRoot.applyCss(); c.settingsRoot.layout()
+                val card = c.sessionCards.children.first { "session-card" in it.styleClass } as Parent
+                val edit = card.lookup(".session-edit") as Button
+                (card.lookup(".session-keys-toggle") as ToggleButton).fire()
+                edit.fire()
+                c.settingsRoot.applyCss(); c.settingsRoot.layout()
+                val field = card.lookup(".session-name-input") as javafx.scene.control.TextField
+                assertTrue(field.isVisible && field.isManaged, "Изменить did not open the name field")
+                assertFalse((card.lookup(".jvm-preset-title") as javafx.scene.Node).isManaged, "the title stayed next to the field")
+                assertEquals("Готово", edit.text)
+                val nameBox = card.lookup(".session-rename") as javafx.scene.Node
+                val actions = card.lookup(".session-actions") as javafx.scene.Node
+                val cardBox = card.localToScene(card.boundsInLocal)
+                val fieldBox = nameBox.localToScene(nameBox.boundsInLocal)
+                val actionBox = actions.localToScene(actions.boundsInLocal)
+                assertTrue(fieldBox.maxX <= actionBox.minX + 0.5, "rename field overlaps the actions")
+                assertTrue(contains(cardBox, fieldBox), "rename field leaves the card $fieldBox vs $cardBox")
+                assertTrue(fieldBox.width > 80.0, "rename field is a sliver (${fieldBox.width})")
+                field.text = "   "
+                edit.fire()
+                c.settingsRoot.applyCss(); c.settingsRoot.layout()
+                assertEquals("Введите имя сессии", c.clientStatus.text)
+                assertEquals("Тест 1", desk.sessions().first().name)
+                assertTrue(field.isManaged, "an empty name closed the editor")
+                assertTrue(
+                    c.clientStatus.sceneBounds().minY >= c.sessionScroll.sceneBounds().maxY - 1.0,
+                    "empty-name note covers the list",
+                )
+                field.text = "Другое"
+                key(field, KeyCode.ESCAPE)
+                c.settingsRoot.applyCss(); c.settingsRoot.layout()
+                assertFalse(nameBox.isVisible && nameBox.isManaged, "Escape left the editor open")
+                assertEquals("Изменить", edit.text)
+                assertEquals("Тест 1", desk.sessions().first().name)
+                edit.fire()
+                field.text = " Ржавый "
+                edit.fire()
+                c.settingsRoot.applyCss(); c.settingsRoot.layout()
+                val titles = c.sessionCards.lookupAll(".jvm-preset-title").map { (it as Labeled).text }
+                assertEquals(listOf("Ржавый", "Тест 2"), titles)
+                val renamed = desk.sessions().first()
+                assertEquals("Ржавый", renamed.name)
+                assertEquals("Nyrokume", renamed.data.values.first { it.name == "EXBO_LOGIN" }.value)
+                assertEquals("token-a", renamed.data.values.first { it.name == "EXBO_SESSION" }.value)
+                assertEquals("Zlyka", registry.readValues(ExboSessions.KEY_PATH)["EXBO_LOGIN"], "rename wrote the live account")
+                assertEquals("Сессия переименована", c.clientStatus.text)
+                val again = c.sessionCards.children.first { "session-card" in it.styleClass } as Parent
+                assertTrue(again.lookup(".session-keys").isVisible, "open keys stay open after rename")
+                assertNotNull(again.lookup(".session-apply"))
+                assertNotNull(again.lookup(".session-delete"))
+                val window = BoundingBox(0.0, 0.0, scene.width, scene.height)
+                assertTrue(contains(window, c.clientStatus.sceneBounds()), "rename note outside the page")
+                assertTrue(
+                    c.clientStatus.sceneBounds().minY >= c.sessionScroll.sceneBounds().maxY - 1.0,
+                    "rename note covers the list",
+                )
+            }
+        } finally {
             app.shutdown()
         }
     }
