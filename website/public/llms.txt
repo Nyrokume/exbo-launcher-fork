@@ -10,9 +10,8 @@ mock: showcase, screenshot tour, tests, and any launch where launcher.demo is se
 live: a normal Windows launch when bootstrap.jar, launcher/launcher.jar, and java/bin/java.exe exist under the EXBO roaming root.
 The UI sees domain interfaces only. The README list of removed network pieces describes the mock layer. It does not cancel live.
 
-Windows on main: pre-main 460×700 (Theme.AUTH_WINDOW_HEIGHT, panel prefHeight 668). Main window 1024×640, minimum 900×580.
-docs/design/WINDOWS.md still says 460×620. That does not match current FXML.
-Open PR #20 (ui/auth-compact, not merged): login 460×506, mail 2FA 460×438 idle / 460×526 with error, TOTP 460×444 / 460×532. Registration, age, and update stay 460×700. Steam and Epic are hidden.
+Windows on main: pre-main is 460 wide. Height follows the panel, from 280 to Theme.AUTH_WINDOW_HEIGHT 700. Login 460×506, mail 2FA 460×438 idle / 460×526 with error, TOTP 460×444 / 460×532, launcher update 460×316. Registration and age keep prefHeight 668 and the full 460×700 window. Main window 1024×640, minimum 900×580.
+Steam and Epic on the login panel are hidden.
 
 Tunnel on main writes a per-region Roxy override to jvm_wrapper/overrides.json and the game flag -Droxy_address_override.<region>=host:port. Measure does not write the file. Find best writes one node. Group exclude writes immediately.
 Open PR #21 (not merged): exclude-group confirm, per-node block switch, hide invalid and CLOUD-* nodes, JVM summary card. Firewall script text is not part of this summary.

@@ -7,10 +7,12 @@
 
 <!--
   Launcher self-update panel for the separate pre-main window, same blocks as auth_panel.fxml.
-  Top block (card): vector logo, title, what is going on. Bottom block (card description): phase text + thin
-  progress bar (indeterminate while checking), errors. Same fx:ids and controller as update.fxml.
+  Content-sized (compact window, same contract as mail_auth_panel.fxml / totp_auth_panel.fxml, user 2026-10-27):
+  the top card keeps its padding only (vector logo, title, what is going on) and does not eat spare height.
+  Bottom block (card description): phase text + thin progress bar (indeterminate while checking), errors.
+  Same fx:ids and controller as update.fxml.
 -->
-<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="668.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.update.LauncherUpdateController">
+<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css" minWidth="420.0" prefWidth="460.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.update.LauncherUpdateController">
     <VBox styleClass="zone-frame">
         <HBox styleClass="zone-titlebar" visible="false" managed="false">
             <ImageView fx:id="header" managed="false" visible="false" />
@@ -18,7 +20,7 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <VBox styleClass="zone-top, zone-top-hero" VBox.vgrow="ALWAYS">
+        <VBox styleClass="zone-top, zone-top-hero" alignment="CENTER_LEFT">
             <LogoMark styleClass="zone-logo" logoWidth="150" />
             <Label styleClass="zone-title" text="%fork.zone.update_title" wrapText="true" minHeight="-Infinity" />
             <Label styleClass="zone-description" text="%fork.zone.update_info" wrapText="true" minHeight="-Infinity" />
