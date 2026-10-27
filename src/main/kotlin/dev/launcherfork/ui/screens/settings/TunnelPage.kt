@@ -943,7 +943,7 @@ class TunnelPage(
                 toggleNodeBlock(target)
             }
         }
-        return HBox(8.0, select, block).apply {
+        return HBox(16.0, select, block).apply {
             styleClass.add("tunnel-line")
             if ("selected" in select.styleClass) styleClass.add("selected")
             if ("best" in select.styleClass) styleClass.add("best")

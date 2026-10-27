@@ -883,6 +883,11 @@ class SettingsScreenTest {
                     }
                     val node = nodes.first { (it.lookup(".tunnel-row") as Labeled).text == "MSK1-1" }
                     val pings = node.lookupAll(".tunnel-ping").filterIsInstance<Labeled>()
+                    val pingToggle = (node.parent as Parent).childrenUnmodifiable.filterIsInstance<CheckBox>()
+                        .single { "tunnel-block-switch" in it.styleClass }
+                    val pingGap = pingToggle.localToScene(pingToggle.boundsInLocal).minX -
+                        pings.last().localToScene(pings.last().boundsInLocal).maxX
+                    assertEquals(16.0, pingGap, 1.5, "$where: ping column is tight against the block switch ($pingGap)")
                     legend.zip(pings).forEach { (caption, ping) ->
                         val capBox = caption.localToScene(caption.boundsInLocal)
                         val pingBox = ping.localToScene(ping.boundsInLocal)
