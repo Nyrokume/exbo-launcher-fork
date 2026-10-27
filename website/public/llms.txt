@@ -10,6 +10,14 @@ mock: showcase, screenshot tour, tests, and any launch where launcher.demo is se
 live: a normal Windows launch when bootstrap.jar, launcher/launcher.jar, and java/bin/java.exe exist under the EXBO roaming root.
 The UI sees domain interfaces only. The README list of removed network pieces describes the mock layer. It does not cancel live.
 
+Windows Setup (open PR #36, not merged) is a per-user NSIS wizard: no UAC, default %LOCALAPPDATA%\LauncherFork, and the path always ends with \LauncherFork, including silent /S /D=....
+Click order follows the public EXBO article: choose the folder, Change Folder, Next, wait. The desktop shortcut is optional and on for a silent install. The Start Menu shortcut is always created. Finish can launch the launcher. The game is downloaded later from inside the launcher.
+Display name EXBO Launcher, publisher EXBO, game STALZONE. Setup does not write or delete HKCU\SOFTWARE\EXBO (EXBO_SESSION), the game directory, or %APPDATA%\EXBO.
+A same-named shortcut is replaced or deleted only when it points at this LauncherFork.exe. SHA-256 of every shipped file is checked before replace and after copy. A mismatch, a missing file, or missing PowerShell aborts with exit 3 and does not write the marker .launcherfork-install. File size is not enough. A foreign runtime or app without that marker exits 2.
+Authenticode is TODO: there is no certificate in the repo. Apps & features still shows publisher EXBO and product EXBO Launcher with no signature, so this unofficial fork can be confused with the official ExboLauncher.
+Not copied from the original, because it is not in the public help: the original wizard artwork, a license page, and the official default directory. The sidebar image is built from the fork icon.
+Build the wizard on Windows with packaging/build-installer.ps1. On Linux, packaging/build-dist.sh only compiles the exe. The wizard is not clickable there. Payload SHA-256 on install is PowerShell on Windows.
+
 Windows on main: pre-main 460×700 (Theme.AUTH_WINDOW_HEIGHT, panel prefHeight 668). Main window 1024×640, minimum 900×580.
 docs/design/WINDOWS.md still says 460×620. That does not match current FXML.
 Open PR #20 (ui/auth-compact, not merged): login 460×506, mail 2FA 460×438 idle / 460×526 with error, TOTP 460×444 / 460×532. Registration, age, and update stay 460×700. Steam and Epic are hidden.
