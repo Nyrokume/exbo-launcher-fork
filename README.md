@@ -36,10 +36,6 @@
 
 История изменений: `docs/CHANGELOG.md`.
 
-## Веб-документация
-
-Сайт на Astro Starlight лежит в [`website/`](website/) (русский корень и зеркало `/en/`). Локально: `cd website && npm install && npm run dev`. Проверка — `npm run verify`. Публикация — workflow [`.github/workflows/docs-pages.yml`](.github/workflows/docs-pages.yml): источник GitHub Pages — Actions, адрес `https://nyrokume.github.io/exbo-launcher-fork/`. У приватного репозитория страница может не открываться снаружи. `AppContext` по-прежнему выбирает mock или live: витрина, автотур и тесты остаются на mock, а обычный запуск на Windows при найденном клиенте EXBO (`ExboApi.installed()`) собирает live.
-
 ## Запуск
 
 ```bash
