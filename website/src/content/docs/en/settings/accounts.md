@@ -25,7 +25,7 @@ Under the list are the “Session name” field and **Save**. Save captures the 
 
 `ExboSessions.applyPlan` returns only `EXBO_AUTO_AUTH`, `EXBO_LOGIN`, and `EXBO_SESSION`. Apply forces auto-auth to `true`. Other snapshot values are not written to the registry by this button.
 
-On live the file is `%LOCALAPPDATA%\stalcraft-nyrokume\sessions.json`. Live values are read from `HKCU\SOFTWARE\EXBO`. On mock the desk is a temp directory and `MemoryRegistry`: the page does not open the Windows registry.
+On live the file is `%LOCALAPPDATA%\stalcraft-nyrokume\sessions.json`. On Windows the `EXBO_SESSION` value in that file is sealed with DPAPI (`dpapi1:` and base64, current user). The token is not stored in the clear. The card and **Apply** see the opened token. `HKCU\SOFTWARE\EXBO` still holds the raw session string: the installed launcher and `/auth?session=` read it. That query is the EXBO protocol and is not moved into a body. On a machine without DPAPI a new token is not written to the file. On mock the desk is a temp directory and `MemoryRegistry`: the page does not open the Windows registry.
 
 :::caution[Do not confuse this with the demo login]
 The any-password mock login lives in `MockAuthService` and does not write the registry. Account cards write the `AppContext` desk. On the showcase and in tests that desk is temporary.
