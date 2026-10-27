@@ -87,6 +87,23 @@ class StalzoneDesk(
         SessionFile.save(sessionsFile, sessions().filter { it.id != id })
     }
 
+    /**
+     * Changes the saved label of one session. The captured registry snapshot stays as it was.
+     * A blank name is refused. An unknown id is refused.
+     */
+    fun rename(id: Long, name: String): Boolean {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return false
+        val existing = sessions()
+        val index = existing.indexOfFirst { it.id == id }
+        if (index < 0) return false
+        if (existing[index].name == trimmed) return true
+        val next = existing.toMutableList()
+        next[index] = existing[index].copy(name = trimmed)
+        SessionFile.save(sessionsFile, next)
+        return true
+    }
+
     /** [values] defaults to the wiki table for [base]. A shown table is passed through as the player left it. */
     fun writeSensitivity(base: Double, values: Map<Double, Double> = ScopeSens.snapshot(base)): Map<Double, Double> {
         require(base > 0) { "base" }

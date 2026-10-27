@@ -7,10 +7,11 @@
 
 <!--
   Authenticator (TOTP) 2FA panel — same layout contract as mail_auth_panel.fxml:
-  top card grows (spare height), bottom form is dense (label → cells → toast → ПОДТВЕРДИТЬ → footer).
+  content-sized (compact window, user 2026-10-27): the top card keeps its padding only, the window grows when
+  the error toast shows; bottom form is dense (label → cells → toast → ПОДТВЕРДИТЬ → footer).
   No growing spacer between cells and CTA (avoids empty mid-form zones).
 -->
-<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css,@style/zone-steps.css,@style/zone-totp.css" minWidth="420.0" prefWidth="460.0" minHeight="560.0" prefHeight="668.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.TotpAuthController">
+<StackPane fx:id="root" styleClass="zone-panel" stylesheets="@style/zone-auth.css,@style/zone-steps.css,@style/zone-totp.css" minWidth="420.0" prefWidth="460.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dev.launcherfork.ui.screens.auth.TotpAuthController">
     <VBox styleClass="zone-frame">
         <HBox styleClass="zone-titlebar" visible="false" managed="false">
             <ImageView fx:id="header" managed="false" visible="false" />
@@ -18,7 +19,7 @@
             <Button fx:id="closeButton" visible="false" mnemonicParsing="false" />
         </HBox>
 
-        <VBox styleClass="zone-top" VBox.vgrow="ALWAYS" alignment="CENTER_LEFT">
+        <VBox styleClass="zone-top, zone-top-compact" alignment="CENTER_LEFT">
             <Label styleClass="zone-title" text="%fork.totp.title" wrapText="true" minHeight="-Infinity" />
             <Label styleClass="zone-description" text="%fork.totp.info" wrapText="true" minHeight="-Infinity" />
         </VBox>

@@ -99,9 +99,9 @@ class AuthWindowTest {
             val host = authWindow(nav).panelHost
             nav.authStage.scene.root.applyCss(); nav.authStage.scene.root.layout()
             assertEquals(Theme.AUTH_PANEL_WIDTH, host.width, 0.5)
-            // login / mail / TOTP share the full 460×620 auth window (same as register / age gate)
+            // the login window is compact: it fits its content (user 2026-10-27), lower than the full pre-main window
             val fitted = authWindow(nav).fittedWindowHeight()
-            assertEquals(Theme.AUTH_WINDOW_HEIGHT, fitted, 0.5, "login window height $fitted")
+            assertTrue(fitted < Theme.AUTH_WINDOW_HEIGHT, "login window height $fitted")
             assertEquals(fitted, nav.authStage.height, 0.5)
             assertEquals(fitted - Theme.AUTH_TITLEBAR_HEIGHT, host.height, 0.5)
             assertNotNull(authWindow(nav).panel as? Region)

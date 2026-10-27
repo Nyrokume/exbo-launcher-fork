@@ -133,7 +133,15 @@ class StalzoneCoreTest {
 
         assertEquals("Nyrokume", desk.liveAccount()["EXBO_LOGIN"])
         val saved = desk.captureCurrent("alt")
-        desk.apply(saved)
+        assertTrue(desk.rename(saved.id, "  Новая  "))
+        val renamed = desk.sessions().single { it.id == saved.id }
+        assertEquals("Новая", renamed.name)
+        assertEquals(saved.createdAt, renamed.createdAt)
+        assertEquals(saved.data, renamed.data)
+        assertFalse(desk.rename(saved.id, "   "))
+        assertEquals("Новая", desk.sessions().single { it.id == saved.id }.name)
+        assertFalse(desk.rename(99, "другая"))
+        desk.apply(renamed)
         assertEquals("true", registry.readValues(ExboSessions.KEY_PATH)["EXBO_AUTO_AUTH"])
         assertTrue(ExboSessions.isCurrent(saved, desk.liveAccount()))
 

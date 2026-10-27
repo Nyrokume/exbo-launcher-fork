@@ -20,15 +20,19 @@
                         under the selectable range (RamScale).
     ПОВЕДЕНИЕ           auto-exit and P2P as segmented controls (accent on the selected part), then switches.
     ОБНОВЛЕНИЕ          speed limits (download / upload fields). ЯЗЫК: Русский / English.
-    ТУННЕЛЬ             own page, the whole settings viewport. Region switch on the first row (same segmented
-                        control as the other settings). The next row is Измерить, Найти лучший сервер,
-                        Обновить, then the rank mode. Nothing sits to the right of the mode control. The mode
-                        control is an in-theme list, not a native combo. Each pool is one card: name and
-                        count on the left, Исключить on the right of that title, then full-width rows
-                        (name, client RTT, server RTT, sum). The server list scrolls; the toolbar does not.
-    JVM                 preset cards (own page).
-    АККАУНТЫ            one card per session (name and login on the left, key icon / Применить / Удалить on the right).
-                        Cards and the name/save row stay inside the page; extra cards scroll above that row.
+    ТУННЕЛЬ             own page, the whole settings viewport. One head row: the heading on the left, the
+                        region switch (RU/EU/NA/SEA/NEA, same segmented control) on the right. The next row
+                        is a compact action bar: Измерить, Найти лучший сервер, a refresh icon, and the rank mode
+                        on the right. The mode control is an in-theme list, not a native combo. Each pool
+                        is one card: name and count on the left, Исключить on the right of that title, then
+                        full-width rows (name, client RTT, sum, block switch). Server RTT stays in the row tooltip. The server list
+                        scrolls; the toolbar does not.
+    JVM                 own page. A summary card on top names the config that will launch
+                        («Выбран для запуска», or «не выбран»). The preset cards sit under that,
+                        each with a radio; the active one is filled and labeled.
+    АККАУНТЫ            own page, the whole settings viewport. Имя сессии and Сохранить sit under the heading.
+                        Session cards fill the rest (name and login on the left, key / Изменить / Применить / Удалить
+                        on the right). Extra cards scroll inside that list.
     ЧУВСТВИТЕЛЬНОСТЬ    own page, the whole settings viewport. One compact row (base, Посчитать, Записать),
                         then one game-style line per scope: name, value, slider, step buttons. The list scrolls.
                         The status line sits in that card.
@@ -152,9 +156,14 @@
 
             <!-- JVM, туннель, чувствительность и свап аккаунтов — отдельные страницы на всю область. -->
             <VBox fx:id="clientContent" id="settingsClient" styleClass="settings-page" VBox.vgrow="ALWAYS">
-                <VBox fx:id="jvmPage" id="settingsJvm" styleClass="settings-group" maxWidth="Infinity">
+                <VBox fx:id="jvmPage" id="settingsJvm" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                     <Label styleClass="settings-group-label,font-display" text="%settings.heading.jvm" minHeight="-Infinity"/>
-                    <Label fx:id="jvmStatus" styleClass="settings-note" minWidth="-Infinity"/>
+                    <VBox fx:id="jvmSummary" styleClass="jvm-summary,card,zone-radius-md,empty" maxWidth="Infinity">
+                        <Label fx:id="jvmStatusKicker" styleClass="jvm-summary-kicker" text="%settings.jvm.now" minHeight="-Infinity"/>
+                        <Label fx:id="jvmStatus" styleClass="jvm-summary-name" minWidth="-Infinity" wrapText="true"/>
+                        <Label fx:id="jvmStatusHint" styleClass="jvm-summary-hint" wrapText="true"/>
+                    </VBox>
+                    <Label styleClass="jvm-list-label" text="%settings.jvm.list" minHeight="-Infinity"/>
                     <GridPane fx:id="jvmGrid" styleClass="jvm-grid" hgap="8" vgap="8">
                         <columnConstraints>
                             <ColumnConstraints hgrow="ALWAYS" percentWidth="50" minWidth="120"/>
@@ -164,8 +173,9 @@
                 </VBox>
 
                 <VBox fx:id="tunnelPage" id="settingsTunnel" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
-                    <Label styleClass="settings-group-label,font-display" text="%settings.heading.tunnel" minHeight="-Infinity"/>
-                    <HBox styleClass="tunnel-toolbar" alignment="CENTER_LEFT" maxWidth="Infinity">
+                    <HBox styleClass="tunnel-head" alignment="CENTER_LEFT" spacing="12" maxWidth="Infinity">
+                        <Label styleClass="settings-group-label,font-display,tunnel-heading" text="%settings.heading.tunnel" minHeight="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="8"/>
                         <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
                             <RadioButton fx:id="regionRu" styleClass="segment,zone-radius-sm" text="RU" toggleGroup="$regionGroup" selected="true" minWidth="-Infinity"/>
                             <RadioButton fx:id="regionEu" styleClass="segment,zone-radius-sm" text="EU" toggleGroup="$regionGroup" minWidth="-Infinity"/>
@@ -177,7 +187,8 @@
                     <HBox styleClass="tunnel-actions" alignment="CENTER_LEFT">
                         <Button fx:id="tunnelMeasure" styleClass="settings-mini" text="%settings.tunnel.measure" mnemonicParsing="false" minWidth="-Infinity"/>
                         <Button fx:id="tunnelFindBest" styleClass="settings-mini,primary" text="%settings.tunnel.find" mnemonicParsing="false" minWidth="-Infinity"/>
-                        <Button fx:id="tunnelRefresh" styleClass="settings-mini" text="%settings.tunnel.refresh" mnemonicParsing="false" minWidth="-Infinity"/>
+                        <Button fx:id="tunnelRefresh" styleClass="settings-mini,tunnel-refresh" mnemonicParsing="false" minWidth="-Infinity" contentDisplay="GRAPHIC_ONLY" accessibleText="%settings.tunnel.refresh"/>
+                        <Region styleClass="tunnel-actions-gap" HBox.hgrow="ALWAYS" minWidth="8"/>
                         <VBox fx:id="tunnelMode" styleClass="tunnel-mode" alignment="TOP_LEFT" minWidth="-Infinity" maxHeight="-Infinity"/>
                     </HBox>
                     <ScrollPane fx:id="tunnelScroll" styleClass="tunnel-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
@@ -186,18 +197,18 @@
                     </ScrollPane>
                 </VBox>
 
-                <VBox fx:id="accountsPage" id="settingsAccounts" styleClass="settings-group" maxWidth="Infinity">
+                <VBox fx:id="accountsPage" id="settingsAccounts" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                     <Label styleClass="settings-group-label,font-display" text="%settings.heading.accounts" minHeight="-Infinity"/>
-                    <ScrollPane fx:id="sessionScroll" styleClass="session-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
-                                minHeight="96" maxWidth="Infinity" VBox.vgrow="ALWAYS">
-                        <VBox fx:id="sessionCards" styleClass="session-cards"/>
-                    </ScrollPane>
-                    <HBox fx:id="accountsRow" alignment="CENTER_LEFT" spacing="8">
+                    <HBox fx:id="accountsRow" styleClass="accounts-create" alignment="CENTER_LEFT" spacing="8" maxWidth="Infinity">
                         <HBox styleClass="settings-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" maxWidth="Infinity">
                             <TextField fx:id="sessionName" promptText="%stalzone.accounts.name" styleClass="limit-input" HBox.hgrow="ALWAYS"/>
                         </HBox>
                         <Button fx:id="captureSession" styleClass="settings-mini" text="%settings.accounts.save" mnemonicParsing="false" minWidth="-Infinity"/>
                     </HBox>
+                    <ScrollPane fx:id="sessionScroll" styleClass="session-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                                minHeight="96" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                        <VBox fx:id="sessionCards" styleClass="session-cards"/>
+                    </ScrollPane>
                 </VBox>
 
                 <VBox fx:id="sensPage" id="settingsSens" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
