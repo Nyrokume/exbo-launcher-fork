@@ -3,7 +3,6 @@ package dev.launcherfork
 import dev.launcherfork.data.exbo.ExboTorrent
 import dev.launcherfork.data.exbo.ExboTorrentFile
 import dev.launcherfork.data.exbo.decodeExboTorrent
-import dev.launcherfork.data.exbo.exboOpenSeed
 import dev.launcherfork.data.exbo.exboPathExcluded
 import dev.launcherfork.data.exbo.exboSeedFileUrl
 import dev.launcherfork.data.exbo.exboSha1
@@ -19,9 +18,7 @@ import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
-import java.net.InetSocketAddress
 import java.nio.file.Files
-import com.sun.net.httpserver.HttpServer
 import kotlin.io.path.exists
 import kotlin.io.path.readText
 
@@ -57,38 +54,22 @@ class ExboClientSyncTest {
             ),
         )
         val root = Files.createTempDirectory("exbo-sync")
-        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         try {
             Files.writeString(root.resolve("a.txt"), "old")
             Files.createDirectories(root.resolve("keep"))
             Files.writeString(root.resolve("keep").resolve("note.txt"), "user")
-            var hits = 0
-            server.createContext("/") { exchange ->
-                val path = exchange.requestURI.path
-                val bytes = if (path == "/files/game/a.txt") fresh else null
-                if (bytes == null) {
-                    exchange.sendResponseHeaders(404, -1)
-                    exchange.close()
-                } else {
-                    hits++
-                    exchange.sendResponseHeaders(200, bytes.size.toLong())
-                    exchange.responseBody.use { it.write(bytes) }
-                }
-            }
-            server.start()
-            val seed = "http://127.0.0.1:${server.address.port}/files"
-            syncClientFiles(root, torrent, listOf(seed), listOf("keep/"), ::exboOpenSeed)
+            val seen = mutableListOf<String>()
+            val seed = "https://cdn.example/files"
+            syncClientFiles(root, torrent, listOf(seed), listOf("keep/"), open = { url ->
+                seen += url
+                java.io.ByteArrayInputStream(if (url.endsWith("/a.txt")) fresh else ByteArray(0))
+            })
             assertEquals("hello", root.resolve("a.txt").readText())
             assertEquals("user", root.resolve("keep").resolve("note.txt").readText())
             assertFalse(root.resolve("outside.txt").exists())
             assertFalse(root.parent.resolve("outside.txt").exists())
-            assertEquals(1, hits)
-            assertEquals(
-                "http://127.0.0.1:${server.address.port}/files/game/a.txt",
-                exboSeedFileUrl(seed, "game", "a.txt", withName = true),
-            )
+            assertEquals(listOf(exboSeedFileUrl(seed, "game", "a.txt", withName = false)), seen)
         } finally {
-            server.stop(0)
             root.toFile().deleteRecursively()
         }
     }
@@ -96,30 +77,19 @@ class ExboClientSyncTest {
     @Test
     fun syncFailsWhenNoSeedHasTheFileAndDoesNotPretendItUpdated() {
         val root = Files.createTempDirectory("exbo-sync-miss")
-        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
         try {
-            server.createContext("/") { exchange ->
-                exchange.sendResponseHeaders(404, -1)
-                exchange.close()
-            }
-            server.start()
             val torrent = ExboTorrent(
                 "game",
                 16384,
                 listOf(ExboTorrentFile("a.txt", 1, exboSha1("z".toByteArray()))),
             )
             assertThrows<IOException> {
-                syncClientFiles(
-                    root,
-                    torrent,
-                    listOf("http://127.0.0.1:${server.address.port}/files"),
-                    emptyList(),
-                    ::exboOpenSeed,
-                )
+                syncClientFiles(root, torrent, listOf("https://cdn.example/files"), emptyList(), open = {
+                    throw IOException("http 404")
+                })
             }
             assertFalse(root.resolve("a.txt").exists())
         } finally {
-            server.stop(0)
             root.toFile().deleteRecursively()
         }
     }

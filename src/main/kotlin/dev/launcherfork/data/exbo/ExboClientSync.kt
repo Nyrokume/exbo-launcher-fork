@@ -11,6 +11,7 @@ import java.net.URI
 import java.net.URLEncoder
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
@@ -153,7 +154,7 @@ internal fun syncClientFiles(
             continue
         }
         inflight = 0
-        if (dest.isRegularFile() && Files.size(dest) == file.size && fileHash(dest, cancelled, ::tick).contentEquals(file.sha1)) {
+        if (matchesInside(directory, dest, file, cancelled, ::tick)) {
             done += file.size
             inflight = 0
             report()
@@ -170,28 +171,36 @@ internal fun syncClientFiles(
                 val url = exboSeedFileUrl(seed, torrent.name, file.path.replace('\\', '/'), named)
                 try {
                     val got = open(url).use { input ->
-                        Files.createDirectories(dest.parent)
+                        prepareDest(directory, dest)
+                        if (Files.isSymbolicLink(part)) Files.delete(part)
+                        if (Files.isSymbolicLink(part) || !parentStaysInside(directory.toAbsolutePath().normalize(), dest)) {
+                            throw IOException("file mismatch")
+                        }
                         hashCopy(input, part, file.size, cancelled, ::tick)
                     }
-                    if (!got.contentEquals(file.sha1) || Files.size(part) != file.size) {
-                        Files.deleteIfExists(part)
+                    if (!got.contentEquals(file.sha1) || !regularInside(directory, part) || Files.size(part) != file.size) {
+                        deleteIfInside(directory, part)
                         continue
                     }
                     moveReplacing(part, dest)
+                    if (!matchesInside(directory, dest, file, cancelled) { }) {
+                        deleteIfInside(directory, dest)
+                        continue
+                    }
                     withName = named
                     wrote = true
                     break
                 } catch (_: ExboSyncStopped) {
-                    Files.deleteIfExists(part)
+                    deleteIfInside(directory, part)
                     throw ExboSyncStopped()
                 } catch (_: IOException) {
-                    Files.deleteIfExists(part)
+                    deleteIfInside(directory, part)
                 }
             }
             if (wrote) break
         }
         if (!wrote) {
-            Files.deleteIfExists(part)
+            deleteIfInside(directory, part)
             throw IOException("file mismatch")
         }
         done += file.size
@@ -208,17 +217,108 @@ private fun moveReplacing(part: Path, dest: Path) {
     }
 }
 
+/**
+ * Opens one web-seed URL. Only HTTPS is contacted. Redirects are not followed:
+ * a 3xx to cleartext would drop the catalog hash check onto an untrusted channel
+ * before the body is read. A rejected URL throws [IOException] with `no seeds`
+ * and does not open a socket.
+ */
+/** Why this seed response cannot be saved, or null when the body is the file. 3xx is `no seeds`. */
+internal fun exboSeedStatusRejection(url: String, status: Int): String? {
+    if (exboHttpsUrl(url) == null) return "no seeds"
+    val failure = exboHttpFailure(status) ?: return null
+    return if (failure == "redirect") "no seeds" else failure
+}
+
 internal fun exboOpenSeed(url: String): InputStream {
+    if (exboHttpsUrl(url) == null) throw IOException("no seeds")
     val conn = (URI(url).toURL().openConnection() as HttpURLConnection)
     conn.connectTimeout = 15_000
     conn.readTimeout = 60_000
-    conn.instanceFollowRedirects = true
+    conn.instanceFollowRedirects = false
     val code = conn.responseCode
-    if (code !in 200..299) {
+    val rejected = exboSeedStatusRejection(conn.url?.toString().orEmpty(), code)
+    if (rejected != null) {
         conn.disconnect()
-        throw IOException("http $code")
+        throw IOException(rejected)
     }
     return conn.inputStream
+}
+
+/**
+ * True when [path] is a regular file whose real path stays under [root].
+ * A symlink, including one whose target happens to have the right size, is not a match.
+ */
+private fun matchesInside(
+    root: Path,
+    path: Path,
+    file: ExboTorrentFile,
+    cancelled: () -> Boolean,
+    onBytes: (Int) -> Unit,
+): Boolean {
+    if (!regularInside(root, path) || Files.size(path) != file.size) return false
+    return fileHash(path, cancelled, onBytes).contentEquals(file.sha1)
+}
+
+private fun regularInside(root: Path, path: Path): Boolean {
+    if (Files.isSymbolicLink(path) || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) return false
+    return insideReal(root, path)
+}
+
+/** Refuses a symlink directory on the way to [dest], and unlinks a symlink sitting at [dest]. */
+private fun prepareDest(root: Path, dest: Path) {
+    val base = root.toAbsolutePath().normalize()
+    if (Files.isSymbolicLink(base)) throw IOException("file mismatch")
+    var cursor = dest.parent?.toAbsolutePath()?.normalize()
+    while (cursor != null && cursor != base && cursor.startsWith(base)) {
+        if (Files.isSymbolicLink(cursor)) throw IOException("file mismatch")
+        cursor = cursor.parent
+    }
+    if (Files.isSymbolicLink(dest)) Files.delete(dest)
+    val parent = dest.parent
+    if (parent != null) Files.createDirectories(parent)
+    if (!parentStaysInside(base, dest)) throw IOException("file mismatch")
+}
+
+private fun parentStaysInside(base: Path, dest: Path): Boolean {
+    val parent = dest.parent ?: return false
+    if (Files.isSymbolicLink(parent)) return false
+    return try {
+        parent.toRealPath().startsWith(base.toRealPath())
+    } catch (_: IOException) {
+        false
+    }
+}
+
+private fun insideReal(root: Path, path: Path): Boolean {
+    return try {
+        val base = root.toRealPath()
+        path.toRealPath().startsWith(base)
+    } catch (_: IOException) {
+        false
+    }
+}
+
+/**
+ * Deletes [path] only when that delete cannot leave [root].
+ * A symlink is removed as a link. A path reached through a parent symlink is left alone,
+ * because resolving it would delete the outside target.
+ */
+private fun deleteIfInside(root: Path, path: Path) {
+    val base = root.toAbsolutePath().normalize()
+    val target = path.toAbsolutePath().normalize()
+    if (target == base || !target.startsWith(base)) return
+    if (Files.isSymbolicLink(path)) {
+        Files.deleteIfExists(path)
+        return
+    }
+    var cursor = path.parent
+    while (cursor != null && cursor != base && cursor.startsWith(base)) {
+        if (Files.isSymbolicLink(cursor)) return
+        cursor = cursor.parent
+    }
+    if (Files.exists(path, LinkOption.NOFOLLOW_LINKS) && !insideReal(root, path)) return
+    Files.deleteIfExists(path)
 }
 
 private fun fileHash(file: Path, cancelled: () -> Boolean, onBytes: (Int) -> Unit): ByteArray {

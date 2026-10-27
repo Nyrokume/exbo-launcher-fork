@@ -173,6 +173,7 @@ class ExboProtocolTest {
             assertNotEquals(zone.iconUri, ots.iconUri)
             assertEquals(zone.iconUri, sidebarIcon(zone))
             assertEquals(ots.iconUri, sidebarIcon(ots))
+            assertEquals(Theme.gameIconUri(), sidebarIcon(ots.copy(iconUri = java.net.URI("http://cdn.example/ots.png"))))
             val bare = zone.copy(iconUri = Theme::class.java.getResource("/dev/launcherfork/mock/servers/game-stalzone.png")!!.toURI())
             assertEquals(Theme.gameIconUri(), sidebarIcon(bare))
             assertEquals(bare.iconUri, sidebarIcon(ots.copy(iconUri = bare.iconUri)))
