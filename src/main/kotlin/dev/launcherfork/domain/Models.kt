@@ -91,6 +91,11 @@ enum class RegisterError {
     EMAIL_TAKEN,
     UNDER_AGE,
     SERVER_ERROR,
+    /**
+     * This launcher has no registration call. The form must not pretend the server failed.
+     * `ExternalLinks.REGISTER` is the public site page, not a launcher API.
+     */
+    NOT_SUPPORTED,
 }
 
 sealed interface RegisterResult {

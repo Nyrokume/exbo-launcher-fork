@@ -74,6 +74,18 @@ class LauncherUpdateController(private val ctx: UiContext) : Disposable, UpdateP
                 job = null
                 done()
             }
+
+            override fun onFailed(reason: String) = fx {
+                if (stopped) return@fx
+                stopped = true
+                job = null
+                rollingBar.isVisible = false
+                progressBar?.progress = 0.0
+                // reason is a stable code (unsigned). The sentence does not include a path or a URL.
+                val text = ctx.t(if (reason.isEmpty()) "auth.error.server_error" else "auth.update.rejected")
+                statusLabel.text = text
+                errorFirst.text = text
+            }
         })
     }
 

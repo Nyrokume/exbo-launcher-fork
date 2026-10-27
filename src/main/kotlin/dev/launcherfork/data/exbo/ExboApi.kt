@@ -1,6 +1,7 @@
 package dev.launcherfork.data.exbo
 
 import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.stalzone.RegistryStore
 import dev.launcherfork.stalzone.WindowsRegistry
 import java.io.IOException
 import java.net.HttpURLConnection
@@ -67,7 +68,7 @@ internal fun exboHttpFailure(code: Int): String? = when {
  */
 class ExboApi(
     private val root: Path = ExboPaths.roamingRoot(),
-    private val registry: WindowsRegistry = WindowsRegistry(),
+    private val registry: RegistryStore = WindowsRegistry(),
 ) {
     @Volatile var token: String? = null
         private set

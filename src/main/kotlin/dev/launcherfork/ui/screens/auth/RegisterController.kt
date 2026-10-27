@@ -148,6 +148,7 @@ class RegisterController(ctx: UiContext) : AuthScreenBase(ctx) {
             RegisterError.EMAIL_TAKEN -> { markField(emailField, true); showError(ctx.t("fork.reg.error.email_taken")) }
             RegisterError.UNDER_AGE -> showError(ctx.t("fork.age.too_young", RegistrationRules.MIN_AGE))
             RegisterError.SERVER_ERROR -> showError(ctx.t("auth.error.server_error"))
+            RegisterError.NOT_SUPPORTED -> showError(ctx.t("fork.reg.error.unavailable"))
         }
     }
 
