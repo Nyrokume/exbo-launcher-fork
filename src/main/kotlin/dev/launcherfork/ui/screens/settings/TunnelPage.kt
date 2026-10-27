@@ -745,7 +745,7 @@ class TunnelPage(
         if (scroll != null) scroll.vvalue = saved
     }
 
-    /** Column names over the three figures: hop to the tunnel, hop to the game, their sum. */
+    /** Column names over the two figures: hop to the tunnel, then their sum. The hop to the game stays in the tooltip. */
     private fun columnLegend(): HBox {
         val decision = decisionKind()
         fun caption(key: String, kind: String) = Label(ctx.t(key)).apply {
@@ -767,7 +767,6 @@ class TunnelPage(
             8.0,
             gap,
             caption("settings.tunnel.col.client", "client"),
-            caption("settings.tunnel.col.server", "server"),
             caption("settings.tunnel.col.sum", "sum"),
             trail,
         ).apply {
@@ -951,7 +950,6 @@ class TunnelPage(
         val parts = arrayOf<javafx.scene.Node>(
             name,
             rtt(client, "client", if (shown.received && !shown.failed) shown.clientMs else null, decision),
-            rtt(server, "server", if (shown.received && !shown.failed) shown.serverMs else null, decision),
             rtt(sum, "sum", if (shown.received && !shown.failed && !shown.limitReached) shown.totalMs else null, decision),
         )
         val row = HBox(8.0, *parts).apply {

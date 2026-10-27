@@ -812,7 +812,8 @@ class SettingsScreenTest {
                     assertTrue(nodes.size >= 2, "$where: server rows missing")
                     nodes.forEach { node ->
                         assertEquals(34.0, node.height, 0.5, "$where: server row height")
-                        assertEquals(3, node.lookupAll(".tunnel-ping").size, "$where: a row is missing a ping figure")
+                        assertEquals(2, node.lookupAll(".tunnel-ping").size, "$where: a row is missing a ping figure")
+                        assertTrue(node.lookupAll(".tunnel-ping.server").isEmpty(), "$where: the server RTT cell is still on the row")
                         val pool = generateSequence(node as javafx.scene.Node) { it.parent }.firstOrNull { "pool" in it.styleClass }
                         assertNotNull(pool, "$where: a server row is outside its pool card")
                         assertTrue(pool!!.lookupAll(".pool-title").isNotEmpty(), "$where: a pool card has no name")
@@ -841,7 +842,8 @@ class SettingsScreenTest {
                         "$where: exclude sits outside the MSK1 section",
                     )
                     val legend = s.tunnelPools.lookupAll(".tunnel-legend").filterIsInstance<Labeled>()
-                    assertEquals(listOf("До вас", "До игры", "Пинг"), legend.map { it.text }, "$where: value legend")
+                    assertEquals(listOf("До вас", "Пинг"), legend.map { it.text }, "$where: value legend")
+                    assertTrue(legend.none { it.text == "До игры" || it.text == "To game" }, "$where: server RTT caption is still in the legend")
                     assertTrue(s.tunnelPools.lookupAll(".tunnel-metrics").isEmpty(), "$where: the metrics paragraph is still on the page")
                     assertTrue(s.tunnelPools.lookupAll(".tunnel-scale").isEmpty(), "$where: the color caption row is still on the page")
                     assertTrue("decision" in legend.last().styleClass, "$where: ping is not the column find-best uses")
@@ -972,8 +974,9 @@ class SettingsScreenTest {
                 clickPool("MSK1")
                 val first = nodeNamed("MSK1-1")
                 assertEquals("12.0", pingText(first, "client"))
-                assertEquals("8.0", pingText(first, "server"))
                 assertEquals("20.0", pingText(first, "sum"))
+                assertTrue(first.lookupAll(".tunnel-ping.server").isEmpty(), "the server RTT cell is still on the row")
+                assertTrue(first.accessibleText.contains("До игры 8.0"), "server RTT left the row description: ${first.accessibleText}")
                 val limited = nodeNamed("MSK1-2")
                 assertTrue(limited.isDisable, "a node at its connection limit can be selected")
                 first.fire()
@@ -984,8 +987,11 @@ class SettingsScreenTest {
                 s.tunnelMeasure.fire()
                 assertEquals(saved, java.nio.file.Files.readString(TunnelServices.overridesFile()), "Измерить changed the override")
                 assertEquals("4.0", pingText(nodeNamed("MSK1-3"), "client"))
-                assertEquals("3.0", pingText(nodeNamed("MSK1-3"), "server"))
                 assertEquals("7.0", pingText(nodeNamed("MSK1-3"), "sum"))
+                assertTrue(
+                    nodeNamed("MSK1-3").accessibleText.contains("До игры 3.0"),
+                    "server RTT left the measured row description",
+                )
                 s.tunnelFindBest.fire()
                 val picked = java.nio.file.Files.readString(TunnelServices.overridesFile())
                 assertTrue(picked.contains("85.119.149.9:29450"), "find best did not write MSK1-3")
