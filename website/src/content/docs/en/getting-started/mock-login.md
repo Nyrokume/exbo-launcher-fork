@@ -1,6 +1,6 @@
 ---
 title: Demo login
-description: Mock auth rules, registration, and the dev keys.
+description: Mock auth and registration rules. Live does not create an account from this form.
 ---
 
 While `LauncherApp` built `AppContext.mock`, any login and password are accepted. That path does not use the network. `-Dlauncher.mock2fa` picks the second factor.
@@ -40,6 +40,8 @@ The authenticator code has 6 cells. Any 6-digit code works except `000000`, whic
 3. Success returns to login with the name filled in and the notice “Account … created”. The notice hides when you start typing the password.
 
 The name `taken` shows “Name taken”. The email `taken@…` shows “This email is already registered”. **← Back** and Esc from the form return to the age gate and keep the date.
+
+On live, **Create**, the age gate, and the field checks are the same, and no account is created. `ExboAuthService.register` returns `RegisterError.NOT_SUPPORTED`. The form shows “This launcher cannot create an account. Create it on the STALZONE site.” (`fork.reg.error.unavailable`). This repository has no registration API. The mock rules above are unchanged.
 
 ## Main-window keys
 
