@@ -1332,7 +1332,9 @@ class SettingsScreenTest {
                 val bar = confirmBar()
                 assertTrue(bar.isVisible, "confirm did not open")
                 assertEquals("Заблокировать 5 нод группы?", (bar.lookup(".tunnel-confirm-text") as Labeled).text)
-                (bar.lookup(".tunnel-confirm-no") as Button).fire()
+                val cancel = bar.lookup(".tunnel-confirm-no") as Button
+                assertEquals("Отмена", cancel.text, "the group-block confirm needs a visible cancel")
+                cancel.fire()
                 assertFalse(bar.isVisible, "cancel left the confirm open")
                 assertTrue(calls.isEmpty(), "cancel wrote firewall rules")
                 assertEquals("Исключить группу", excludeNamed("MSK1").text)

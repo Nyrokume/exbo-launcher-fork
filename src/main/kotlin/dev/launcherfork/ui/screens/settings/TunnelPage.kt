@@ -191,7 +191,7 @@ class TunnelPage(
         styleClass.addAll("settings-mini", "primary", "tunnel-confirm-yes")
         isMnemonicParsing = false
     }
-    private val confirmNo = Button().apply {
+    private val confirmNo = Button(ctx.t("settings.tunnel.confirm_no")).apply {
         styleClass.addAll("settings-mini", "tunnel-confirm-no")
         isMnemonicParsing = false
     }
