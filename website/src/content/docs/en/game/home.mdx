@@ -1,0 +1,45 @@
+---
+title: Home
+description: The selected game's description banner and the actions menu beside Play.
+---
+
+import ZoneShot from '../../../../components/ZoneShot.astro';
+
+The home screen is `main.fxml`. The game column is on the left, the selected game's banner is in the centre, and the status row and button sit at the bottom. The header (communities and profile) stays when settings replace home. Settings do not open a third window.
+
+<ZoneShot file="zone/04_main.png" caption="Home, zone theme" />
+
+## Banner
+
+`GameBannerController` shows the selected server's description: title, lead, subheading, body, closing line. The text arrives on the model (`Server.description`). The banner and the FXML do not invent lines. With no description, the banner is hidden.
+
+Online is not repeated on the banner. The count is shown once, under the name in the game column.
+
+The text column fills the slot. Type scale is 1 at 560 px, from 0.55 to 1.5. A long text shrinks the column so it does not push the status row. `MainController` lines the top of the title up with the selected game's row.
+
+## Button and menu
+
+The button label is the state key, uppercased. Beside it is **⋯** (`main.actions.button`, «Действия с игрой»). The menu opens above the button. Esc, an outside click, and a pick close it. Arrows, Tab, Home, and End move through enabled rows.
+
+Rows top to bottom (`GameAction`):
+
+| Row | Enabled when |
+|---|---|
+| Проверить файлы | Ready, or the game is running |
+| Открыть папку игры | Not «not installed» |
+| Открыть папку логов | Always. Path `%APPDATA%/EXBO/runtime/logs` |
+| Настройки игры | Always. Opens the settings column and hides home |
+| Переустановить | Ready only. Red, under a rule |
+| Удалить игру | Ready or paused. Red |
+
+Disabled rows stay visible and grey. Reinstall, delete, and verify of a running game ask first. Verify while ready starts at once. During `Busy`, the launch button is disabled.
+
+<ZoneShot file="zone/08_game_actions.png" caption="Game actions menu" />
+
+The header items for forum and support show «Недоступно в форке (только визуальный слой)». The communities menu opens Discord, YouTube, Reddit, and Telegram through `LinkOpener`.
+
+## Next
+
+- [Servers](../servers/) — the column and the online count;
+- [Launch](../launch/) — download, pause, verify, delete;
+- [Behavior](../../settings/behavior/) — where «Настройки игры» lands.

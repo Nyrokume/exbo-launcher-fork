@@ -13,7 +13,7 @@ The pre-main window is 460 px wide and does not resize. `fittedWindowHeight()` i
 
 Panels with no `prefHeight` fit their content: login **460×506**, email code **460×438** (with an error **460×526**), authenticator code **460×444** (with an error **460×532**), launcher update **460×316** before it is shown (panel area **460×284**). Registration and age set `prefHeight="668"` and keep the full **460×700** window.
 
-The main window is `StageStyle.UNDECORATED`, **1024×640**, resizable from the edges, minimum **900×580**. At that width the side column is **253 px** and then tracks the window between **220 and 340 px**. The logo scales with the column, and the game subtitle stays inside the row. The settings column fills the content area: the **820 px** cap is gone. At **1280 px** the tunnel page uses the full content width.
+The main window is `StageStyle.UNDECORATED`, **1024×640**, resizable from the edges, minimum **900×580**. At that width the side column is **253 px** and then tracks the window between **220 and 340 px**. The logo scales with the column, and the game subtitle stays inside the row. The settings column fills the content area: the **820 px** cap is gone. At **1280 px** the tunnel page uses the full content width. The width formula is on [Shell scale](../shell/).
 
 ## What each window holds
 

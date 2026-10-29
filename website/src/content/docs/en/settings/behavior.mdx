@@ -1,0 +1,48 @@
+---
+title: Behavior
+description: The launcher column — behavior, RAM, the speed limit, and language. There is no graphics page and no sound page.
+---
+
+import ZoneShot from '../../../../components/ZoneShot.astro';
+
+The settings button opens one column. **ИГРА** (RAM), **ПОВЕДЕНИЕ**, **ОБНОВЛЕНИЕ**, and **ЯЗЫК** sit on that column. JVM, the tunnel, sensitivity, and accounts replace the column. There is no graphics page. There is no sound page.
+
+<ZoneShot file="zone/06_settings.png" caption="Settings column" />
+
+Every change is saved at once.
+
+## Memory
+
+The scale runs from 2 GB to the machine's whole gigabytes, in steps of 1 GB. The line is «Выделено: N из M». The last 2 GB carry «Мало памяти останется системе». Until a value is chosen, a JVM preset takes the generator's heap. After a choice, a preset click writes that heap.
+
+On live the chosen gigabytes go into the launch (`InstalledGameLauncher`). On mock `MockSystemInfo` reports 16 GB and no game starts.
+
+## Behavior
+
+| Row | What is saved | Who reads it |
+|---|---|---|
+| Закрывать лаунчер | On game start / on game exit / never | Live only. On mock `ExitMode` stays never |
+| P2P-загрузка | Always / except mobile / never | The settings file. The torrent does not read it. See [P2P later](../../network/p2p/) |
+| Запускать игру по окончании загрузки | Switch | Live only. On mock a finished download does not start the game |
+| Windows Defender | Switch | Disabled on live. Tooltip below |
+| Анимации интерфейса | Switch | `Motion` at once. `-Dlauncher.animations` locks the row |
+| Сворачиваться в трей | Switch | Written to the file. The window close calls `Platform.exit()`. Close has no tray branch |
+| Запускать лаунчер при включении компьютера | Switch | Written to the file. Disabled on live |
+
+On live, autostart and Defender cannot be toggled. The tooltip is «Здесь не применяется: автозапуск и Защитник Windows остаются у установленного лаунчера.» The Defender dialog does not open on a normal launch. F4 shows it, and only with `-Dlauncher.dev=true`.
+
+## Update on this column
+
+The **ОБНОВЛЕНИЕ** heading is the download and upload speed limit in KB/s. 0 means unlimited. It is not launcher self-update. Self-update is [Update fail-closed](../../getting-started/update/).
+
+The bundle contains `settings.auto_update`. The form does not.
+
+## Language
+
+«Русский» and «English». The choice writes `language` and calls `switchLanguage`: the main screen is rebuilt and the open settings page stays.
+
+## Next
+
+- [JVM](../jvm/) — presets next to the RAM scale;
+- [Sensitivity](../sensitivity/) — its own header page;
+- [Limitations](../../reference/limitations/) — P2P and the tray in one list.

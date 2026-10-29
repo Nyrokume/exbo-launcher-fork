@@ -1,0 +1,51 @@
+---
+title: Screenshots
+description: Tour frames in docs/screenshots/zone. The site build does not publish the PNGs.
+---
+
+import ZoneShot from '../../../../components/ZoneShot.astro';
+
+`ScreenshotTour` writes PNGs to the directory from `-Dlauncher.screenshots`. For zone that is `docs/screenshots/zone/`. `shadcn/` and copies at the root of `docs/screenshots/` sit beside it. These pages use `zone/`.
+
+The site build does not put the file on GitHub Pages. `npm run dev` shows the frame. A published build keeps the path.
+
+There is no tunnel frame after the loading cards, and no separate measurement of the 460×316 update window. `01_update_window.png` is the tour's update frame. This page does not claim that picture is 460×316.
+
+<ZoneShot file="zone/02_auth_window.png" caption="Login" />
+<ZoneShot file="zone/04_main.png" caption="Home" />
+<ZoneShot file="zone/06_settings.png" caption="Settings" />
+<ZoneShot file="zone/08_game_actions.png" caption="Actions menu" />
+<ZoneShot file="zone/10b_downloading.png" caption="Download" />
+<ZoneShot file="zone/10_verifying.png" caption="Verify" />
+<ZoneShot file="zone/19_totp_error.png" caption="App-code error" />
+
+## Zone catalog
+
+| File | Screen |
+|---|---|
+| `01_update_window.png` | Launcher update window, tour frame |
+| `02_auth_window.png` | Login |
+| `03_auth_error.png` | Login error |
+| `04_main.png` | Home |
+| `05_profile_menu.png` | Profile menu |
+| `05b_logout_confirm.png` | Logout confirm |
+| `05c_community_menu.png` | Communities |
+| `06_settings.png` | Settings |
+| `07_settings_min_size.png` | Settings at the window minimum |
+| `08_game_actions.png` | Game actions menu |
+| `08b_game_actions_delete_confirm.png` | Delete confirm |
+| `09_running.png` | Game running |
+| `10_verifying.png` | Verify |
+| `10b_downloading.png` | Download |
+| `10c_paused.png` | Paused |
+| `11_resized_1366x800.png` | Window 1366×800 |
+| `12_settings_en.png` | Settings, English |
+| `13_auth_after_switch_account.png` | Login after logout |
+| `14_age_gate.png` | Age |
+| `15_age_gate_too_young.png` | Under 18 |
+| `16_register.png` | Registration |
+| `17_register_error.png` | Registration error |
+| `18_registered_login.png` | Login after mock registration |
+| `19_totp_error.png` | TOTP error |
+
+How to shoot again is on [Install](../../getting-started/install-run/).

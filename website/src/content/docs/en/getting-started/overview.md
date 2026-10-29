@@ -5,7 +5,19 @@ description: A visual fork of the EXBO launcher on Kotlin and JavaFX.
 
 The fork ports the visual layer of the EXBO launcher (STALZONE / STALCRAFT). The stack is Kotlin 2.0, OpenJFX 21, JDK 21, and Gradle wrapper 8.10.2.
 
-The default theme is `zone`. The main window is adaptive: 1024×640, minimum 900×580. That layout replaced the old 886×550 for every theme.
+The default theme is `zone`. The main window is adaptive: 1024×640, minimum 900×580. At 1024 the left column is 253 px and then tracks 220–340 px. That layout replaced the old 886×550 for every theme.
+
+## Where to go
+
+| Section | Why |
+|---|---|
+| [Install](../install-run/) | Gradle and NSIS under `%LOCALAPPDATA%\LauncherFork` |
+| [Mock/live login](../mock-login/) | The demo password and live registration `NOT_SUPPORTED` |
+| [2FA](../two-factor/) | Mail 460×438, app 460×444 |
+| [Update fail-closed](../update/) | The signature is not accepted. The window is 460×316 before show |
+| [Home](../../game/home/) | The banner and the **⋯** menu |
+| [Tunnel](../../settings/tunnel/) | Groups, ping, classpath on mock |
+| [Limitations](../../reference/limitations/) | P2P, HTTPS seeds, DPAPI |
 
 ## What to read in the repository
 
