@@ -1,0 +1,75 @@
+---
+title: Launch
+description: Download, pause, resume, play, verify, reinstall, and delete.
+---
+
+import ZoneShot from '../../../../components/ZoneShot.astro';
+
+Client state lives in `ClientStateStore` for the whole `AppContext`, not for one scene. Switching language does not abort a download. Each operation has a generation: a late callback from an older one is ignored.
+
+The button is `primaryAction`. The label is the bundle string, uppercased. The table is the Russian bundle. English uses the same keys (`Play`, `Pause`, `Continue`, and the rest).
+
+<div class="size-table">
+<table>
+<thead>
+<tr><th>State</th><th>Button</th><th>Status line</th></tr>
+</thead>
+<tbody>
+<tr><td>Not installed</td><td>СКАЧАТЬ ИГРУ</td><td>«Файлы игры доступны для загрузки: %s»</td></tr>
+<tr><td>Downloading</td><td>ПАУЗА</td><td>«Загрузка: осталось %s · %s/с»</td></tr>
+<tr><td>Paused</td><td>ПРОДОЛЖИТЬ</td><td>«Приостановлено: осталось %s»</td></tr>
+<tr><td>Ready</td><td>ИГРАТЬ</td><td>«Готово к запуску»</td></tr>
+<tr><td>Ready, client outdated</td><td>ОБНОВИТЬ</td><td>«Доступно обновление клиента»</td></tr>
+<tr><td>Starting</td><td>ИГРАТЬ, disabled</td><td>«Запускаем STALZONE…»</td></tr>
+<tr><td>Running</td><td>ЗАКРЫТЬ ИГРУ</td><td>«Игра запущена»</td></tr>
+<tr><td>Verify</td><td>ПРОВЕРКА, disabled</td><td>«Проверка файлов…»</td></tr>
+<tr><td>Reinstall</td><td>ПЕРЕУСТАНОВКА, disabled</td><td>«Переустановка игры…»</td></tr>
+<tr><td>Delete</td><td>УДАЛЕНИЕ, disabled</td><td>«Удаление файлов игры…»</td></tr>
+</tbody>
+</table>
+</div>
+
+## Download and pause
+
+The first download opens the install dialog: path, client size, free space. On live the folder cannot be changed (`canChangeFolder = false`). On mock it can. Confirm starts the download.
+
+If another game is already downloading, the dialog is «Уже идёт другая загрузка» / «Сменить загрузку». Cancel does not switch the job.
+
+Pause cancels the current generation and sets `Paused` from `pausedProgress`. Resume calls download again.
+
+<span class="zone-badge live">live</span> When the client is not downloaded and the catalog does not allow a download (`canDownload` is false and no update is required), the button is disabled. The tooltip is «Загрузка этого клиента недоступна.» (`fork.live.no_download`).
+
+<span class="zone-badge mock">mock</span> Progress is the `MockUpdateService` timer. `-Dlauncher.mockSpeed` multiplies it. «Запускать по окончании загрузки» does not start the game on mock: `startWhenDownloaded` is read only when `liveBackend` is true. Exit mode on mock stays never, even if settings say otherwise.
+
+<ZoneShot file="zone/10b_downloading.png" caption="Downloading" />
+<ZoneShot file="zone/10c_paused.png" caption="Paused" />
+
+A failed download shows «Не удалось обновить клиент» and «Соединение оборвалось. Повторите. Версия клиента не менялась.» (`main.exception.update`). The dialog does not include a path.
+
+## Verify, reinstall, delete
+
+The **⋯** menu. Confirmation:
+
+| Action | When it asks | Text |
+|---|---|---|
+| Verify | Game is running | «Игра запущена. Чтобы проверить файлы, её нужно закрыть.» Button «Закрыть и проверить» |
+| Reinstall | Always | «Файлы игры будут удалены и загружены заново…» |
+| Delete | Always | «Удалить файлы игры? Чтобы играть снова, их придётся скачать заново.» |
+
+<ZoneShot file="zone/10_verifying.png" caption="Verifying files" />
+<ZoneShot file="zone/08b_game_actions_delete_confirm.png" caption="Delete confirmation" />
+<ZoneShot file="zone/09_running.png" caption="Game running" />
+
+On live, verify compares the catalog and downloads only files that do not match. Exclusions and paths outside the client directory are left alone. Verify does not write the version file. Failure codes the dialog can show: `no_client`, `no_catalog`, `no_seeds`, `file_mismatch`, `no_session`, `io`. Title: «Не удалось проверить файлы». The client version does not change until verify finishes.
+
+Reinstall and delete run only after confirm. An unsafe delete path is `unsafe_path` and nothing is removed. No catalog is `no_catalog` and nothing is removed. A finished delete returns to not installed. Finished verify and reinstall return to ready.
+
+The game folder is not opened above `gameRoot`. Logs are separate: `%APPDATA%/EXBO/runtime/logs`.
+
+Live download seeds are HTTPS only. See [Limitations](../../reference/limitations/).
+
+## Next
+
+- [Home](../home/) — where the menu opens;
+- [Behavior](../../settings/behavior/) — start after download, and launcher exit;
+- [P2P later](../../network/p2p/) — speed limits do not affect the torrent.

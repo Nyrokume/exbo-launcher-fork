@@ -1,55 +1,73 @@
 ---
-title: Documentation
-description: Site sections and where to read about each topic.
+title: Contents
+description: "Site sections: Start, Game, Network, Settings, Architecture, Design, Reference."
 ---
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-A Kotlin and JavaFX fork of the EXBO launcher. The groups match the sidebar.
+The same groups as the sidebar.
 
-## Getting started
-
-Run, demo login, and themes.
+## Start
 
 <CardGrid>
-	<LinkCard title="Overview" description="Stack, two windows, and where the source notes live." href="../getting-started/overview/" />
-	<LinkCard title="Install and run" description="Gradle, screenshots, and distributions." href="../getting-started/install-run/" />
-	<LinkCard title="Demo login" description="Any password, codes, and registration on mocks." href="../getting-started/mock-login/" />
-	<LinkCard title="Themes" description="zone, exbo, shadcn, frost, and wallpapers." href="../getting-started/themes/" />
+	<LinkCard title="Overview" description="Stack, the two data modes, and where the repo notes live." href="../getting-started/overview/" />
+	<LinkCard title="Install" description="Gradle, NSIS under %LOCALAPPDATA%\\LauncherFork, and the distro." href="../getting-started/install-run/" />
+	<LinkCard title="Mock/live login" description="Any demo password, and live registration NOT_SUPPORTED." href="../getting-started/mock-login/" />
+	<LinkCard title="2FA (TOTP/mail)" description="Mail 460×438, app 460×444, taller with an error." href="../getting-started/two-factor/" />
+	<LinkCard title="Update fail-closed" description="Every offer is unsigned. The window is 460×316 before show." href="../getting-started/update/" />
+	<LinkCard title="Themes" description="zone, exbo, shadcn, frost. zone-light stays zone." href="../getting-started/themes/" />
 </CardGrid>
 
-## Architecture
-
-Who shows the windows, and who picks mock or live.
+## Game
 
 <CardGrid>
-	<LinkCard title="Windows" description="Pre-main fits its panel (ceiling 700); the main window is 1024×640." href="../architecture/windows/" />
-	<LinkCard title="AppContext" description="The only place implementations are chosen." href="../architecture/app-context/" />
-	<LinkCard title="Navigation" description="Screen flow, overlays, and the profile menu." href="../architecture/navigation/" />
+	<LinkCard title="Home" description="Description banner and the actions menu beside Play." href="../game/home/" />
+	<LinkCard title="Servers" description="The game column, online once, and row selection." href="../game/servers/" />
+	<LinkCard title="Launch" description="Download, pause, verify, reinstall, and delete." href="../game/launch/" />
+	<LinkCard title="Accounts" description="The profile menu opens session cards. The window stays." href="../game/accounts/" />
 </CardGrid>
 
-## Design
-
-The STALZONE palette and the player path.
+## Network
 
 <CardGrid>
-	<LinkCard title="Zone style" description="Tokens, radii, and launcher fonts." href="../design/style-zone/" />
-	<LinkCard title="Path" description="Login, registration, play, and exit." href="../design/interaction/" />
+	<LinkCard title="Tunnel layout" description="Regions, measure, overrides.json, and the group confirm." href="../settings/tunnel/" />
+	<LinkCard title="Loading/error/empty" description="Three catalog cards. The error card has Retry." href="../network/states/" />
+	<LinkCard title="Mock classpath" description="servers-ru.json, servers.json, and the NEA fixture when not live." href="../network/mock-catalog/" />
+	<LinkCard title="P2P later" description="Mode and limits are saved and do not affect the torrent." href="../network/p2p/" />
 </CardGrid>
 
 ## Settings
 
-What the client pages do.
+There is no graphics page and no sound page in the UI.
 
 <CardGrid>
-	<LinkCard title="Tunnel" description="Regions, probes, and overrides.json." href="../settings/tunnel/" />
-	<LinkCard title="JVM" description="Preset cards and the active profile." href="../settings/jvm/" />
-	<LinkCard title="Accounts" description="Session snapshot, key icon, and apply." href="../settings/accounts/" />
+	<LinkCard title="Behavior" description="Exit, language, RAM, animations. The update block is the speed limit." href="../settings/behavior/" />
+	<LinkCard title="JVM" description="Summary card and presets from v1.1.2 through Aikar." href="../settings/jvm/" />
+	<LinkCard title="Sensitivity" description="1x base and a write into options.json." href="../settings/sensitivity/" />
+	<LinkCard title="Accounts" description="Session snapshot, DPAPI, and the three keys Apply writes." href="../settings/accounts/" />
+</CardGrid>
+
+## Architecture
+
+<CardGrid>
+	<LinkCard title="Windows and sizes" description="460 fitted, ceiling 700, main window 1024×640." href="../architecture/windows/" />
+	<LinkCard title="Shell scale" description="Sidebar 253 px at 1024, range 220–340. The 820 cap is gone." href="../architecture/shell/" />
+	<LinkCard title="AppContext" description="The only place mock or live is chosen." href="../architecture/app-context/" />
+	<LinkCard title="Navigation" description="Panel order, overlays, and exit." href="../architecture/navigation/" />
+</CardGrid>
+
+## Design
+
+<CardGrid>
+	<LinkCard title="Zone" description="Tokens, radii, and the launcher fonts." href="../design/style-zone/" />
+	<LinkCard title="Interaction" description="Branches from launch to exit." href="../design/interaction/" />
 </CardGrid>
 
 ## Reference
 
 <CardGrid>
-	<LinkCard title="Launch flags" description="-Dlauncher properties and the showcase." href="../reference/gradle-flags/" />
-	<LinkCard title="Changelog" description="docs/CHANGELOG.md and the commits after it." href="../reference/changelog/" />
+	<LinkCard title="Gradle flags" description="-Dlauncher properties." href="../reference/gradle-flags/" />
+	<LinkCard title="Changelog" description="docs/CHANGELOG.md and commits after that file." href="../reference/changelog/" />
+	<LinkCard title="Screenshots" description="Frames under docs/screenshots/zone. The site does not publish them." href="../reference/screenshots/" />
+	<LinkCard title="Limitations" description="Registration, update signature, P2P, seeds, DPAPI." href="../reference/limitations/" />
 </CardGrid>

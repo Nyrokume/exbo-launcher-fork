@@ -1,0 +1,51 @@
+---
+title: Скриншоты
+description: Кадры тура в docs/screenshots/zone. Сборка сайта PNG не публикует.
+---
+
+import ZoneShot from '../../../components/ZoneShot.astro';
+
+Автотур `ScreenshotTour` пишет PNG в каталог из `-Dlauncher.screenshots`. Для темы zone это `docs/screenshots/zone/`. Рядом лежат `shadcn/` и копии в корне `docs/screenshots/`. На этих страницах берётся `zone/`.
+
+Сборка сайта файл в GitHub Pages не кладёт. В `npm run dev` кадр виден. В опубликованной сборке остаётся путь.
+
+Кадров туннеля после карточек загрузки и отдельного замера окна 460×316 в каталоге нет. `01_update_window.png` — кадр тура окна обновления. Размер 460×316 на этой картинке не утверждается.
+
+<ZoneShot file="zone/02_auth_window.png" caption="Вход" />
+<ZoneShot file="zone/04_main.png" caption="Дом" />
+<ZoneShot file="zone/06_settings.png" caption="Настройки" />
+<ZoneShot file="zone/08_game_actions.png" caption="Меню действий" />
+<ZoneShot file="zone/10b_downloading.png" caption="Загрузка" />
+<ZoneShot file="zone/10_verifying.png" caption="Проверка" />
+<ZoneShot file="zone/19_totp_error.png" caption="Ошибка кода из приложения" />
+
+## Каталог zone
+
+| Файл | Экран |
+|---|---|
+| `01_update_window.png` | Окно обновления лаунчера, кадр тура |
+| `02_auth_window.png` | Вход |
+| `03_auth_error.png` | Ошибка входа |
+| `04_main.png` | Дом |
+| `05_profile_menu.png` | Меню профиля |
+| `05b_logout_confirm.png` | Подтверждение выхода |
+| `05c_community_menu.png` | Сообщества |
+| `06_settings.png` | Настройки |
+| `07_settings_min_size.png` | Настройки на минимуме окна |
+| `08_game_actions.png` | Меню действий с игрой |
+| `08b_game_actions_delete_confirm.png` | Подтверждение удаления |
+| `09_running.png` | Игра запущена |
+| `10_verifying.png` | Проверка |
+| `10b_downloading.png` | Загрузка |
+| `10c_paused.png` | Пауза |
+| `11_resized_1366x800.png` | Окно 1366×800 |
+| `12_settings_en.png` | Настройки, английский |
+| `13_auth_after_switch_account.png` | Вход после выхода |
+| `14_age_gate.png` | Возраст |
+| `15_age_gate_too_young.png` | Младше 18 |
+| `16_register.png` | Регистрация |
+| `17_register_error.png` | Ошибка регистрации |
+| `18_registered_login.png` | Вход после mock-регистрации |
+| `19_totp_error.png` | Ошибка TOTP |
+
+Как снять заново — на странице [Установка](../../getting-started/install-run/).

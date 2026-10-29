@@ -254,3 +254,75 @@ h1.sl-heading-wrapper,
 .sl-markdown-content p + .card-grid {
   margin-top: 0.75rem;
 }
+
+.zone-badge {
+  display: inline-block;
+  margin-inline-end: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--zone-radius);
+  background: var(--zone-card-alt);
+  color: var(--zone-muted);
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  letter-spacing: 0;
+  vertical-align: baseline;
+}
+.zone-badge.live { color: var(--zone-success); border-color: #245c42; }
+.zone-badge.mock { color: #efeae4; }
+.zone-badge.unsupported,
+.zone-badge.closed { color: var(--zone-warning); border-color: #6a5424; }
+
+.zone-shot {
+  margin: 0.75rem 0 1rem;
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: var(--zone-radius-md);
+  overflow: hidden;
+  background: var(--sl-color-bg);
+}
+.zone-shot-bar {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--sl-color-hairline);
+  background: var(--zone-card-alt);
+  color: var(--zone-muted);
+  font-size: 0.75rem;
+}
+.zone-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.zone-shot-path {
+  margin: 0;
+  padding: 1rem 12px 0.35rem;
+  color: var(--zone-muted);
+  font-size: 0.85rem;
+}
+.zone-shot figcaption {
+  margin: 0;
+  padding: 0.45rem 12px 0.7rem;
+  color: var(--sl-color-gray-3);
+  font-size: 0.85rem;
+}
+
+.sl-markdown-content .size-table {
+  display: block;
+  max-height: 28rem;
+  overflow: auto;
+}
+.sl-markdown-content .size-table :is(thead, tbody) {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.sl-markdown-content .size-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--zone-card-alt);
+}

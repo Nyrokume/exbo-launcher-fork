@@ -1,12 +1,12 @@
 ---
 title: EXBO Launcher Fork documentation
-description: Windows, themes, settings, and how to run the EXBO launcher fork.
+description: What the fork does, from login through the tunnel.
 template: splash
 hero:
-  tagline: "How the fork is built: launch, windows, tunnel, and settings"
+  tagline: "What the fork does, from login through the tunnel"
   actions:
-    - text: Open the docs
-      link: ./docs/
+    - text: Overview
+      link: ./getting-started/overview/
       icon: right-arrow
     - text: GitHub
       link: https://github.com/Nyrokume/exbo-launcher-fork
@@ -16,14 +16,11 @@ hero:
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-## Where to start
+A Kotlin and JavaFX fork of the EXBO launcher. The cards open the same sections as the sidebar.
 
-The pages describe current `main` and mark open pull requests when they change the login window or the tunnel page. The notes under `docs/` in the repository stay where they are.
 <CardGrid>
-	<LinkCard title="Getting started" description="What the fork is, how to run it, the demo login, and themes." href="./getting-started/overview/" />
-	<LinkCard title="Architecture" description="Two windows, AppContext, and the navigator." href="./architecture/windows/" />
-	<LinkCard title="Design" description="Zone tokens and the player path." href="./design/style-zone/" />
-	<LinkCard title="Settings" description="Tunnel, JVM presets, and session cards." href="./settings/tunnel/" />
-	<LinkCard title="Reference" description="Launcher properties and the changelog." href="./reference/gradle-flags/" />
-	<LinkCard title="Showcase" description="Screenshots and the mock screen loop." href="./getting-started/install-run/" />
+	<LinkCard title="Windows" description="Pre-main is 460 wide and fitted. The update panel is 460×316 before it is shown. The main window is 1024×640." href="./architecture/windows/" />
+	<LinkCard title="Tunnel" description="Groups and ping. Mock reads the classpath. Live fetches the catalog over HTTPS." href="./settings/tunnel/" />
+	<LinkCard title="Security" description="Registration is NOT_SUPPORTED. Self-update is fail-closed. Seeds stay HTTPS." href="./getting-started/update/" />
+	<LinkCard title="Game" description="Banner, server list, download, pause, verify, and delete." href="./game/home/" />
 </CardGrid>

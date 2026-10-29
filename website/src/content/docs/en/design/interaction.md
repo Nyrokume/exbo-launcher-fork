@@ -29,11 +29,13 @@ An empty login, the password `wrong`, and the authenticator code `000000` show a
 
 **PLAY** or the **⋯** menu moves the client through ready, downloading, paused, running, and verifying.
 
-The **⋯** menu on `main`: verify files, open the game folder, game settings, reinstall, delete. Reinstall, delete, and verifying a running game ask for confirmation first. While the operation runs, **PLAY** is inactive. On mock the operations are `MockUpdateService` timers.
+The **⋯** menu on `main`: verify files, open the game folder, open the logs folder, game settings, reinstall, delete. Reinstall, delete, and verifying a running game ask for confirmation first. While the operation runs, **PLAY** is inactive. On mock the operations are `MockUpdateService` timers.
 
 The folder opens only inside `gameRoot`. A path above the root is rejected. If the root is missing too, nothing opens and stderr gets a WARNING.
 
 The mock online count drifts a little every 10 s by default. `-Dlauncher.onlineTickMs=0` keeps 1284. The tour always uses 0.
+
+The launch button and the **⋯** menu are written out on [Home](../../game/home/) and [Launch](../../game/launch/).
 
 ## Shell and tunnel
 

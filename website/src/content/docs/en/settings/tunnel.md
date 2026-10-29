@@ -18,7 +18,7 @@ The second row, left to right:
 
 Above the rows, the column captions are **To you**, **Ping**. The column Find best server minimizes is marked. Stability still reads the ping column. Those columns and the block toggles sit in the group card. Labels fit in full at 900×580 and 1280×760.
 
-The heading, the action panel, and the group cards are separate blocks, with a gap between them. The settings column fills the content area: the 820 px cap is gone. At a 1280 px window the page uses the full content width.
+The heading, the action panel, and the group cards are separate blocks, with a gap between them. The settings column fills the content area: the 820 px cap is gone. At a 1280 px window the page uses the full content width. Sidebar width is on [Shell scale](../../architecture/shell/).
 
 A group is a card: name, count of visible nodes, and **Exclude group** on the right (after it is applied, **Group excluded**). Pressing it asks for confirmation (“Block N nodes in this group?” / “Return N nodes in this group?”). **Cancel** closes that bar: exclusions, the blocklist, and the firewall stay as they were. A node switch changes one id immediately, with no dialog. Clicking the group name measures only that group. Rows with no valid IPv4 stay hidden. `CLOUD-*` pools are filtered out before the list, measure, and find-best.
 
@@ -28,7 +28,7 @@ Empty figures are `—`. No reply puts a label in the ping column. Row tooltips 
 
 ## Catalog
 
-Mock reads the region list from the classpath: `servers-ru.json` for RU, `servers.json` for the other regions (pools whose `region` field matches), and the NEA fixture. Mock does not fetch that list. The live catalog fetch is unchanged.
+Mock (`mockCatalog = !liveBackend`) reads the region list from the classpath: `servers-ru.json` for RU, `servers.json` for the other regions (pools whose `region` field matches), and the NEA fixture. Mock does not fetch that list. Live calls `TunnelCatalogs.fetch` over HTTPS. The catalog hosts are unchanged.
 
 A missing catalog does not stay on “Loading groups…” over an empty list. Three states are their own cards:
 
@@ -36,7 +36,7 @@ A missing catalog does not stay on “Loading groups…” over an empty list. T
 - error — “Could not load groups” and a **Retry** button;
 - empty catalog — “No working servers”. If there is no list yet and no error, the card is “Groups are not loaded yet” with **Load**.
 
-On mock, an open region shows the fixture at once.
+On mock, an open region shows the fixture at once. The cards are also on [Loading/error/empty](../../network/states/) and [Mock classpath](../../network/mock-catalog/).
 
 ## Where it is written
 
@@ -49,4 +49,5 @@ Launch only checks the saved address. It does not fetch a catalog and does not p
 ## What next
 
 - [JVM](../jvm/) — the neighboring client page;
+- [P2P later](../../network/p2p/) — speed limits are not written into this file;
 - [AppContext](../../architecture/app-context/) — why mock does not write the Windows profile.

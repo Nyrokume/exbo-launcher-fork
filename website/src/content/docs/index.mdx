@@ -1,12 +1,12 @@
 ---
 title: Документация EXBO Launcher Fork
-description: Окна, темы, настройки и запуск визуального форка лаунчера EXBO.
+description: Всё, что умеет fork — от входа до туннеля.
 template: splash
 hero:
-  tagline: "Как устроен форк: запуск, окна, туннель и настройки"
+  tagline: "Всё, что умеет fork — от входа до туннеля"
   actions:
-    - text: Перейти к документации
-      link: ./docs/
+    - text: Обзор
+      link: ./getting-started/overview/
       icon: right-arrow
     - text: GitHub
       link: https://github.com/Nyrokume/exbo-launcher-fork
@@ -16,14 +16,11 @@ hero:
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-## С чего начать
+Форк лаунчера EXBO на Kotlin и JavaFX. Ниже вход в разделы, которые есть в боковой колонке.
 
-Сайт описывает текущий `main` и помечает открытые pull request, если они меняют окно входа или страницу туннеля. Заметки в каталоге `docs/` репозитория остаются на месте.
 <CardGrid>
-	<LinkCard title="Начало работы" description="Что это за форк, как запустить, демо-вход и темы." href="./getting-started/overview/" />
-	<LinkCard title="Архитектура" description="Два окна, AppContext и навигатор." href="./architecture/windows/" />
-	<LinkCard title="Дизайн" description="Токены zone и маршрут пользователя." href="./design/style-zone/" />
-	<LinkCard title="Настройки" description="Туннель, пресеты JVM и карточки сессий." href="./settings/tunnel/" />
-	<LinkCard title="Справочник" description="Свойства -Dlauncher и история изменений." href="./reference/gradle-flags/" />
-	<LinkCard title="Витрина" description="Скриншоты и круг экранов на mock." href="./getting-started/install-run/" />
+	<LinkCard title="Окна" description="Pre-main 460 по высоте панели, обновление 460×316 до показа, главное 1024×640." href="./architecture/windows/" />
+	<LinkCard title="Туннель" description="Группы и пинг. Мок читает classpath. Live ходит на HTTPS каталога." href="./settings/tunnel/" />
+	<LinkCard title="Безопасность" description="Регистрация NOT_SUPPORTED, самообновление fail-closed, семена только HTTPS." href="./getting-started/update/" />
+	<LinkCard title="Игра" description="Баннер, список серверов, загрузка, пауза, проверка и удаление." href="./game/home/" />
 </CardGrid>

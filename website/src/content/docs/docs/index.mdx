@@ -1,55 +1,73 @@
 ---
-title: Документация
-description: Разделы сайта и куда идти за конкретной темой.
+title: Содержание
+description: "Разделы сайта: Старт, Игра, Сеть, Настройки, Архитектура, Дизайн, Справка."
 ---
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Форк лаунчера EXBO на Kotlin и JavaFX. Ниже те же группы, что в боковой колонке.
+Те же группы, что в боковой колонке.
 
-## Начало работы
-
-Запуск, демо-логин и переключение тем.
+## Старт
 
 <CardGrid>
-	<LinkCard title="Обзор" description="Стек, два окна и где лежит исходная правда." href="../getting-started/overview/" />
-	<LinkCard title="Установка и запуск" description="Gradle, скриншоты и дистрибутивы." href="../getting-started/install-run/" />
-	<LinkCard title="Демо-вход" description="Любой пароль, коды и регистрация на моках." href="../getting-started/mock-login/" />
-	<LinkCard title="Темы" description="zone, exbo, shadcn, frost и обои." href="../getting-started/themes/" />
+	<LinkCard title="Обзор" description="Стек, два режима данных и куда смотреть в репозитории." href="../getting-started/overview/" />
+	<LinkCard title="Установка" description="Gradle, NSIS в %LOCALAPPDATA%\\LauncherFork и дистрибутив." href="../getting-started/install-run/" />
+	<LinkCard title="Mock/live вход" description="Демо-пароль и живая регистрация NOT_SUPPORTED." href="../getting-started/mock-login/" />
+	<LinkCard title="2FA (TOTP/mail)" description="Почта 460×438, приложение 460×444, с ошибкой выше." href="../getting-started/two-factor/" />
+	<LinkCard title="Update fail-closed" description="Любое предложение unsigned, окно 460×316 до показа." href="../getting-started/update/" />
+	<LinkCard title="Темы" description="zone, exbo, shadcn, frost. zone-light остаётся zone." href="../getting-started/themes/" />
 </CardGrid>
 
-## Архитектура
-
-Кто показывает окна и кто выбирает mock или live.
+## Игра
 
 <CardGrid>
-	<LinkCard title="Окна" description="Pre-main по высоте панели (потолок 700) и главное 1024×640." href="../architecture/windows/" />
-	<LinkCard title="AppContext" description="Единственное место выбора реализаций." href="../architecture/app-context/" />
-	<LinkCard title="Навигация" description="Поток экранов, оверлеи и меню профиля." href="../architecture/navigation/" />
+	<LinkCard title="Дом" description="Баннер описания и меню действий рядом с ИГРАТЬ." href="../game/home/" />
+	<LinkCard title="Серверы" description="Колонка игр, онлайн один раз, выбор строки." href="../game/servers/" />
+	<LinkCard title="Запуск" description="Скачать, пауза, проверка, переустановка, удаление." href="../game/launch/" />
+	<LinkCard title="Аккаунты" description="Меню профиля открывает карточки сессий, окно не закрывается." href="../game/accounts/" />
 </CardGrid>
 
-## Дизайн
-
-Палитра STALZONE и сценарий игрока.
+## Сеть
 
 <CardGrid>
-	<LinkCard title="Стиль zone" description="Токены, радиусы и шрифты лаунчера." href="../design/style-zone/" />
-	<LinkCard title="Маршрут" description="Вход, регистрация, игра и выход." href="../design/interaction/" />
+	<LinkCard title="Туннель layout" description="Регионы, замер, overrides.json и подтверждение группы." href="../settings/tunnel/" />
+	<LinkCard title="Loading/error/empty" description="Три карточки каталога. У ошибки есть Повторить." href="../network/states/" />
+	<LinkCard title="Mock classpath" description="servers-ru.json, servers.json и фикстура NEA, если не live." href="../network/mock-catalog/" />
+	<LinkCard title="P2P позже" description="Режим и лимиты пишутся в настройки и на торрент не влияют." href="../network/p2p/" />
 </CardGrid>
 
 ## Настройки
 
-Что делает интерфейс страниц клиента.
+Отдельных страниц графики и звука в интерфейсе нет.
 
 <CardGrid>
-	<LinkCard title="Туннель" description="Регионы, замер и overrides.json." href="../settings/tunnel/" />
-	<LinkCard title="JVM" description="Карточки пресетов и активный профиль." href="../settings/jvm/" />
-	<LinkCard title="Аккаунты" description="Снимок сессии, ключ и применение." href="../settings/accounts/" />
+	<LinkCard title="Поведение" description="Выход, язык, ОЗУ, анимации. Блок ОБНОВЛЕНИЕ — лимит скорости." href="../settings/behavior/" />
+	<LinkCard title="JVM" description="Карточка сводки и пресеты от v1.1.2 до Aikar." href="../settings/jvm/" />
+	<LinkCard title="Чувствительность" description="База 1x и запись в options.json." href="../settings/sensitivity/" />
+	<LinkCard title="Аккаунты" description="Снимок сессии, DPAPI и применение трёх ключей." href="../settings/accounts/" />
 </CardGrid>
 
-## Справочник
+## Архитектура
 
 <CardGrid>
-	<LinkCard title="Флаги запуска" description="Свойства -Dlauncher и витрина." href="../reference/gradle-flags/" />
-	<LinkCard title="История изменений" description="Файл docs/CHANGELOG.md и коммиты после него." href="../reference/changelog/" />
+	<LinkCard title="Окна и размеры" description="460 по панели, потолок 700, главное 1024×640." href="../architecture/windows/" />
+	<LinkCard title="Shell scale" description="Колонка 253 px на 1024 и коридор 220–340. Потолок 820 снят." href="../architecture/shell/" />
+	<LinkCard title="AppContext" description="Единственное место выбора mock или live." href="../architecture/app-context/" />
+	<LinkCard title="Навигация" description="Поток панелей, оверлеи и выход." href="../architecture/navigation/" />
+</CardGrid>
+
+## Дизайн
+
+<CardGrid>
+	<LinkCard title="Zone" description="Токены, радиусы и шрифты лаунчера." href="../design/style-zone/" />
+	<LinkCard title="Interaction" description="Ветки от запуска до выхода." href="../design/interaction/" />
+</CardGrid>
+
+## Справка
+
+<CardGrid>
+	<LinkCard title="Gradle-флаги" description="Свойства -Dlauncher." href="../reference/gradle-flags/" />
+	<LinkCard title="Changelog" description="docs/CHANGELOG.md и коммиты после файла." href="../reference/changelog/" />
+	<LinkCard title="Скриншоты" description="Кадры docs/screenshots/zone. Сайт их не публикует." href="../reference/screenshots/" />
+	<LinkCard title="Ограничения" description="Регистрация, подпись обновления, P2P, семена, DPAPI." href="../reference/limitations/" />
 </CardGrid>
