@@ -1,0 +1,34 @@
+---
+import { logos } from 'virtual:starlight/user-images';
+import config from 'virtual:starlight/user-config';
+
+const { siteTitle, siteTitleHref } = Astro.locals.starlightRoute;
+const logo = config.logo;
+const paired = logo && !('src' in logo);
+---
+
+<a href={siteTitleHref} class="site-title sl-flex" aria-label={siteTitle}>
+	{
+		logo && logos.dark && (
+			<>
+				<img
+					class:list={{ 'light:sl-hidden print:hidden': paired }}
+					alt=""
+					src={logos.dark.src}
+					width={logos.dark.width}
+					height={logos.dark.height}
+				/>
+				{paired && logos.light && (
+					<img
+						class="dark:sl-hidden print:block"
+						alt=""
+						src={logos.light.src}
+						width={logos.light.width}
+						height={logos.light.height}
+					/>
+				)}
+			</>
+		)
+	}
+	<span class="site-title-docs" translate="no">DOCS</span>
+</a>

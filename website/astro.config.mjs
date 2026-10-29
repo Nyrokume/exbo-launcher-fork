@@ -9,6 +9,36 @@ import starlight from '@astrojs/starlight';
  * Dev-only. Production builds do not copy docs/screenshots (EXBO assets stay off GitHub Pages).
  * @returns {import('vite').Plugin}
  */
+/**
+ * Astro prints http://localhost:4321/exbo-launcher-fork without a slash.
+ * From that URL, ./getting-started/overview/ resolves to /getting-started/overview/
+ * and the client router shows the Astro 404. Send directory URLs to the slashed form
+ * before the page is served.
+ * @returns {import('vite').Plugin}
+ */
+function baseTrailingSlash() {
+	const base = '/exbo-launcher-fork';
+	return {
+		name: 'base-trailing-slash',
+		enforce: 'pre',
+		configureServer(server) {
+			server.middlewares.use((req, res, next) => {
+				if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+				const raw = req.originalUrl ?? req.url ?? '';
+				const q = raw.indexOf('?');
+				const pathname = q < 0 ? raw : raw.slice(0, q);
+				const search = q < 0 ? '' : raw.slice(q);
+				if (!pathname.startsWith(base) || pathname.endsWith('/')) return next();
+				const last = pathname.slice(pathname.lastIndexOf('/') + 1);
+				if (last.includes('.')) return next();
+				res.statusCode = 302;
+				res.setHeader('Location', `${pathname}/${search}`);
+				res.end();
+			});
+		},
+	};
+}
+
 function zoneShotsDev() {
 	const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../docs/screenshots');
 	return {
@@ -46,10 +76,18 @@ const fonts =
 export default defineConfig({
 	site: 'https://nyrokume.github.io',
 	base: '/exbo-launcher-fork',
-	vite: { plugins: [zoneShotsDev()] },
+	vite: { plugins: [baseTrailingSlash(), zoneShotsDev()] },
 	integrations: [
 		starlight({
 			title: 'EXBO Docs',
+			logo: {
+				dark: './src/assets/exbo-wordmark-dark.svg',
+				light: './src/assets/exbo-wordmark-light.svg',
+				alt: 'EXBO',
+			},
+			components: {
+				SiteTitle: './src/components/SiteTitle.astro',
+			},
 			description: 'Окна, темы и настройки визуального форка лаунчера EXBO.',
 			favicon: '/favicon.svg',
 			defaultLocale: 'root',

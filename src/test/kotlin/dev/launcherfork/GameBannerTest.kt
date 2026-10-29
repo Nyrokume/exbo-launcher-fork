@@ -39,7 +39,6 @@ import java.util.Properties
  * maximized (1920x1080) window in every theme. Colors: SettingsContrastTest.gameBannerTextIsReadable.
  */
 class GameBannerTest {
-    private val nbsp = '\u00A0'
     private val stalzone = MockData.servers.single()
 
     private fun contains(outer: Bounds, inner: Bounds, slack: Double = 0.5) =
@@ -119,15 +118,15 @@ class GameBannerTest {
                 assertNull(banner.scroll.lookup("#gameOnline")); assertNull(banner.scroll.lookup("#gameOnlineText"))
                 assertTrue(banner.scroll.lookupAll(".game-banner-online").isEmpty(), "banner still has an online line")
                 val bannerTexts = listOf(banner.title, banner.lead, banner.subheading, banner.body, banner.closing).map { it.text }
-                assertTrue(bannerTexts.none { "1${nbsp}284" in it || Regex("""\d\s+игрок\S* онлайн""").containsMatchIn(it) }, "online count in the banner: $bannerTexts")
+                assertTrue(bannerTexts.none { "1284" in it || Regex("""\d\s+игрок\S* онлайн""").containsMatchIn(it) }, "online count in the banner: $bannerTexts")
                 val sidebar = nav.mainStage.scene.root.lookup("#entryOnlineText") as Text
-                assertEquals("1${nbsp}284 онлайн", sidebar.text)
-                assertEquals(listOf("1${nbsp}284 онлайн"), visibleTextsWith(nav.mainStage.scene.root, "1${nbsp}284"), "count shown more than once")
+                assertEquals("1284 онлайн", sidebar.text)
+                assertEquals(listOf("1284 онлайн"), visibleTextsWith(nav.mainStage.scene.root, "1284"), "count shown more than once")
             }
             // a live change still reaches the games list, and still only there
             repo.setOnline(stalzone.id, 1301)
-            check(FxTestSupport.waitFx { (nav.mainStage.scene.root.lookup("#entryOnlineText") as Text).text == "1${nbsp}301 онлайн" })
-            FxTestSupport.onFx { assertEquals(1, visibleTextsWith(nav.mainStage.scene.root, "1${nbsp}301").size) }
+            check(FxTestSupport.waitFx { (nav.mainStage.scene.root.lookup("#entryOnlineText") as Text).text == "1301 онлайн" })
+            FxTestSupport.onFx { assertEquals(1, visibleTextsWith(nav.mainStage.scene.root, "1301").size) }
         } finally {
             FxTestSupport.onFx { nav.close() }
             app.shutdown()

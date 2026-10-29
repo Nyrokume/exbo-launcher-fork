@@ -21,7 +21,7 @@ import java.util.Locale
 /**
  * server_entry.fxml: one game in the sidebar. Selection = red indicator (.server-entry.selected), state comes from
  * the session-scoped store: download progress + percent, download icon when not installed, red live dot while running.
- * Under the name: the online line, a green dot + «1 284 онлайн» (grey dot + «не в сети» when the count is unknown).
+ * Under the name: the online line, a green dot + «1284 онлайн» (grey dot + «не в сети» when the count is unknown).
  */
 class ServerEntryController(private val ctx: UiContext) {
     @FXML lateinit var root: HBox
@@ -111,9 +111,9 @@ class ServerEntryController(private val ctx: UiContext) {
 
     private fun renderOnline(n: Int?) {
         val online = n != null && n >= 0
-        onlineText.text = if (online) ctx.t("main.games.online", formatCount(n!!, ctx.lang)) else ctx.t("main.games.offline")
+        onlineText.text = if (online) ctx.t("main.games.online", formatCount(n!!)) else ctx.t("main.games.offline")
         onlineRow.toggleClass("offline", !online)
-        // screen readers get the whole entry as one phrase: «STALZONE, 1 284 онлайн»
+        // screen readers get the whole entry as one phrase: «STALZONE, 1284 онлайн»
         if (::server.isInitialized) root.accessibleText = "${server.caption}, ${onlineText.text}"
     }
 

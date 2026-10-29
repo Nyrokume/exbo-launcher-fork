@@ -6,7 +6,10 @@ interface Props {
 const { file, caption } = Astro.props;
 const dev = import.meta.env.DEV;
 const en = Astro.url.pathname.includes('/en/');
-const src = `${import.meta.env.BASE_URL}__zone-shots/${file}`;
+const base = import.meta.env.BASE_URL.endsWith('/')
+	? import.meta.env.BASE_URL
+	: `${import.meta.env.BASE_URL}/`;
+const src = `${base}__zone-shots/${file}`;
 const unpublished = en
 	? 'The site build does not publish this file.'
 	: 'Сборка сайта этот файл не публикует.';

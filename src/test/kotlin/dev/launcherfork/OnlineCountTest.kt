@@ -35,7 +35,6 @@ import kotlin.random.Random
 class OnlineCountTest {
     private fun Node.sceneBounds(): Bounds = localToScene(layoutBounds)
 
-    private val nbsp = '\u00A0'
     private val stalzone = MockData.servers.single()
 
     /** One games-list card in a scene with the given theme, bound to [server] of [app]. */
@@ -71,11 +70,10 @@ class OnlineCountTest {
     private fun Region.fill(): Color = background.fills.first().fill as Color
 
     @Test
-    fun countsUseTheLocaleGrouping() {
-        assertEquals("1${nbsp}284", formatCount(1284, "ru"))
-        assertEquals("1,284", formatCount(1284, "en"))
-        assertEquals("12${nbsp}345${nbsp}678", formatCount(12_345_678, "ru"))
-        assertEquals("999", formatCount(999, "en"))
+    fun countsHaveNoThousandsSeparator() {
+        assertEquals("1284", formatCount(1284))
+        assertEquals("12345678", formatCount(12_345_678))
+        assertEquals("999", formatCount(999))
     }
 
     @Test
@@ -88,15 +86,15 @@ class OnlineCountTest {
 
     @Test
     fun russianEntryShowsTheFormattedCount() = withEntry(lang = "ru") { e ->
-        assertEquals("1${nbsp}284 онлайн", e.onlineText.text)
+        assertEquals("1284 онлайн", e.onlineText.text)
         assertTrue(e.onlineRow.isVisible && e.onlineRow.isManaged)
         assertFalse(e.onlineRow.styleClass.contains("offline"))
-        assertEquals("STALZONE, 1${nbsp}284 онлайн", e.root.accessibleText)
+        assertEquals("STALZONE, 1284 онлайн", e.root.accessibleText)
     }
 
     @Test
     fun englishEntryShowsTheFormattedCount() = withEntry(lang = "en") { e ->
-        assertEquals("1,284 online", e.onlineText.text)
+        assertEquals("1284 online", e.onlineText.text)
         assertFalse(e.onlineRow.styleClass.contains("offline"))
     }
 
@@ -144,10 +142,10 @@ class OnlineCountTest {
         val repo = app.services.servers as MockServerRepository
         withEntry(app = app) { e ->
             e.onlineCount.set(1300)
-            assertEquals("1${nbsp}300 онлайн", e.onlineText.text)
+            assertEquals("1300 онлайн", e.onlineText.text)
             // back from the property to the model value
             repo.setOnline(stalzone.id, 1284)
-            assertEquals("1${nbsp}284 онлайн", e.onlineText.text)
+            assertEquals("1284 онлайн", e.onlineText.text)
         }
         // the repository pushes from a background thread: the label hops to the FX thread
         val app2 = AppContext.mock(authDelayMs = 0)
@@ -158,7 +156,7 @@ class OnlineCountTest {
         }
         try {
             Thread { repo2.setOnline(stalzone.id, 1290) }.apply { start(); join() }
-            assertTrue(FxTestSupport.waitFx { e.onlineText.text == "1${nbsp}290 онлайн" }, "label did not follow: ${FxTestSupport.onFx { e.onlineText.text }}")
+            assertTrue(FxTestSupport.waitFx { e.onlineText.text == "1290 онлайн" }, "label did not follow: ${FxTestSupport.onFx { e.onlineText.text }}")
             Thread { repo2.setOnline(stalzone.id, null) }.apply { start(); join() }
             assertTrue(FxTestSupport.waitFx { e.onlineText.text == "не в сети" })
             // a detached card no longer listens
@@ -172,7 +170,7 @@ class OnlineCountTest {
         // a rebuilt card (language switch, new scene) starts from the repository's current value, not the snapshot
         val app3 = AppContext.mock(authDelayMs = 0)
         (app3.services.servers as MockServerRepository).setOnline(stalzone.id, 2001)
-        withEntry(app = app3) { e3 -> assertEquals("2${nbsp}001 онлайн", e3.onlineText.text) }
+        withEntry(app = app3) { e3 -> assertEquals("2001 онлайн", e3.onlineText.text) }
     }
 
     /**
@@ -318,7 +316,7 @@ class OnlineCountTest {
             assertEquals(Theme.WINDOW_MIN_HEIGHT, scene.height, 1.0, "$where: window not at min height")
             val list = nav.mainController!!.serversListController
             val e = list.entryControllers.single()
-            assertEquals(if (lang == "ru") "1${nbsp}284 онлайн" else "1,284 online", e.onlineText.text, where)
+            assertEquals(if (lang == "ru") "1284 онлайн" else "1284 online", e.onlineText.text, where)
 
             val entry = e.root.sceneBounds()
             val name = e.name.sceneBounds()
