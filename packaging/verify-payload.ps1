@@ -16,12 +16,21 @@ $lines = @(Get-Content -LiteralPath $manifest)
 if ($lines.Count -lt 1) { Fail 2 }
 
 $failed = $false
+$index = 0
 foreach ($raw in $lines) {
+    $index++
     $line = $raw.TrimEnd("`r").Trim()
     if ($line.Length -eq 0) { Fail 2 }
     if ($line -notmatch '^([0-9a-f]{64}) \*(.+)$') { Fail 2 }
     $want = $Matches[1]
     $rel = $Matches[2]
+    # Best-effort live status. A write failure must not change the hash result.
+    if (-not [string]::IsNullOrWhiteSpace($env:PAYLOAD_PROGRESS)) {
+        try {
+            $utf8 = New-Object System.Text.UTF8Encoding $false
+            [System.IO.File]::AppendAllText($env:PAYLOAD_PROGRESS, "v $index $($lines.Count) $rel`r`n", $utf8)
+        } catch {}
+    }
     # Reject absolute paths and parent segments. Size is not consulted.
     if ($rel -match '[:]|(\.\.)|(^\\)|(^/)') { Fail 2 }
     $path = Join-Path -Path $root -ChildPath $rel

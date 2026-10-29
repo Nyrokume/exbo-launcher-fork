@@ -177,11 +177,17 @@ Write-Host "   $($shaLines.Count) files, $estimatedKb KB"
 Write-Host "== per-file copy list (no wildcard copy)"
 $copyList = Join-Path $Work "copy_payload.nsh"
 $copyLines = New-Object System.Collections.Generic.List[string]
-foreach ($file in (Get-ChildItem $Win -Recurse -File | Sort-Object FullName)) {
+$payloadFiles = @(Get-ChildItem $Win -Recurse -File | Sort-Object FullName)
+$payloadTotal = $payloadFiles.Count
+$payloadIndex = 0
+foreach ($file in $payloadFiles) {
+    $payloadIndex++
     $rel = $file.FullName.Substring($Win.Length).TrimStart('\').Replace('/', '\').Replace('$', '$$')
     $dir = Split-Path $rel -Parent
     if ($dir) { $copyLines.Add("  CreateDirectory `"`$INSTDIR\$dir`"") }
-    $copyLines.Add("  CopyFiles /SILENT `"`$PLUGINSDIR\payload\$rel`" `"`$INSTDIR\$rel`"")
+    $copyLines.Add("  Push `"c $payloadIndex $payloadTotal $rel`"")
+    $copyLines.Add("  Call ProgressLine")
+    $copyLines.Add("  CopyFiles /SILENT `"`$Payload\$rel`" `"`$INSTDIR\$rel`"")
 }
 if ($copyLines.Count -lt 1) { throw "copy list is empty" }
 Set-Content -Path $copyList -Value $copyLines -Encoding ascii
@@ -219,6 +225,7 @@ if (Test-Path $setup) { Remove-Item -Force $setup }
     "-DESTIMATED_KB=$estimatedKb" `
     "-DVERSION=$Version" `
     "-DVERSION_QUAD=$VersionQuad" `
+    "-DADD_MODULES=$moduleList" `
     (Join-Path $Root "packaging\installer.nsi")
 if ($LASTEXITCODE -ne 0) { throw "installer failed" }
 

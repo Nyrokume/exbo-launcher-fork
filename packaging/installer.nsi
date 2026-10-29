@@ -1,7 +1,7 @@
-﻿; EXBO Launcher (STALZONE) per-user wizard.
-; Public install flow this follows (support.exbo.ru, "Установка игры в «EXBO»" /
-; "Installing the game in EXBO"): choose the launcher folder, "Изменить папку" /
-; "Change Folder", "Далее" / Next, then wait while the launcher is installed.
+﻿; EXBO Launcher (STALZONE) per-user setup.
+; The window is the JavaFX installer (dev.launcherfork.install.SetupWindowKt):
+; folder, desktop shortcut, startup shortcut, then Next. This script extracts the
+; payload, opens that window, and on Next runs the same exe silently to copy files.
 ; The game itself is downloaded later from inside the launcher.
 ;
 ; Fork-specific on purpose (do not "fix" these toward Program Files or HKLM):
@@ -34,6 +34,9 @@ ManifestDPIAware true
 !include "LogicLib.nsh"
 !include "nsDialogs.nsh"
 !include "WinMessages.nsh"
+!include "FileFunc.nsh"
+!insertmacro GetParameters
+!insertmacro GetOptions
 
 !ifndef VERSION
   !error "VERSION is required"
@@ -62,6 +65,9 @@ ManifestDPIAware true
 !ifndef ESTIMATED_KB
   !error "ESTIMATED_KB is required"
 !endif
+!ifndef ADD_MODULES
+  !error "ADD_MODULES is required"
+!endif
 
 !define APP "LauncherFork"
 !define PRODUCT "EXBO Launcher"
@@ -76,7 +82,9 @@ ManifestDPIAware true
 !define SHORTCUT_PS1 "shortcut-target.ps1"
 
 Var DesktopShortcut
-Var ChkDesktop
+Var StartupShortcut
+Var Payload
+Var ProgressFile
 
 Name "${PRODUCT} ${VERSION}"
 Caption "$(CAPTION)"
@@ -108,31 +116,8 @@ VIAddVersionKey /LANG=1033 "Comments" "STALZONE"
 
 !define MUI_ICON "${ICON}"
 !define MUI_UNICON "${ICON}"
-!define MUI_WELCOMEFINISHPAGE_BITMAP "wizard.bmp"
-!define MUI_UNWELCOMEFINISHPAGE_BITMAP "wizard.bmp"
-!define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_BITMAP "header.bmp"
-!define MUI_HEADERIMAGE_UNBITMAP "header.bmp"
 !define MUI_ABORTWARNING
 !define MUI_ABORTWARNING_TEXT "$(ABORT_TEXT)"
-!define MUI_WELCOMEPAGE_TITLE "$(WELCOME_TITLE)"
-!define MUI_WELCOMEPAGE_TEXT "$(WELCOME_TEXT)"
-
-!insertmacro MUI_PAGE_WELCOME
-!define MUI_DIRECTORYPAGE_TEXT_TOP "$(DIR_TOP)"
-!define MUI_DIRECTORYPAGE_TEXT_DESTINATION "$(DIR_DEST)"
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW OnDirectoryShow
-!define MUI_PAGE_CUSTOMFUNCTION_LEAVE OnDirectoryLeave
-!insertmacro MUI_PAGE_DIRECTORY
-Page custom OnTasksCreate OnTasksLeave
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW OnInstFilesShow
-!insertmacro MUI_PAGE_INSTFILES
-!define MUI_FINISHPAGE_TITLE "$(FINISH_TITLE)"
-!define MUI_FINISHPAGE_TEXT "$(FINISH_TEXT)"
-!define MUI_FINISHPAGE_TEXT_LARGE
-!define MUI_FINISHPAGE_RUN_TEXT "$(FINISH_RUN)"
-!define MUI_FINISHPAGE_RUN "$INSTDIR\${APP}.exe"
-!insertmacro MUI_PAGE_FINISH
 
 !define MUI_UNCONFIRMPAGE_TEXT_TOP "$(UNCONFIRM_TOP)"
 !define MUI_UNCONFIRMPAGE_TEXT_LOCATION "$(UNCONFIRM_LOC)"
@@ -208,6 +193,27 @@ LangString SHORTCUT_KEPT ${LANG_ENGLISH} "The «${PRODUCT}» shortcut points at 
 Function .onInit
   SetShellVarContext current
   StrCpy $DesktopShortcut "1"
+  StrCpy $StartupShortcut "1"
+  StrCpy $Payload ""
+  StrCpy $ProgressFile ""
+  ReadEnvStr $Payload "LAUNCHERFORK_PAYLOAD"
+  ReadEnvStr $ProgressFile "LAUNCHERFORK_PROGRESS"
+  ClearErrors
+  ${GetParameters} $0
+  ${GetOptions} $0 "/DESKTOP=" $1
+  ${IfNot} ${Errors}
+    StrCpy $DesktopShortcut $1
+  ${EndIf}
+  ClearErrors
+  ${GetOptions} $0 "/STARTUP=" $1
+  ${IfNot} ${Errors}
+    StrCpy $StartupShortcut $1
+  ${EndIf}
+  ClearErrors
+  IfSilent done
+  Call ShowCustomInstaller
+  Quit
+  done:
 FunctionEnd
 
 Function un.onInit
@@ -234,49 +240,26 @@ Function EnsureAppSubdir
   Pop $0
 FunctionEnd
 
-Function OnDirectoryShow
-  !insertmacro MUI_HEADER_TEXT "$(DIR_TITLE)" "$(DIR_SUB)"
-  SendMessage $mui.DirectoryPage.BrowseButton ${WM_SETTEXT} 0 "STR:$(DIR_BROWSE)"
-FunctionEnd
-
-Function OnDirectoryLeave
-  Push $0
-  StrCpy $0 $INSTDIR
-  Call EnsureAppSubdir
-  ${If} $0 != $INSTDIR
-    MessageBox MB_ICONINFORMATION "$(DIR_ADJUSTED)" /SD IDOK
+; One copy of the payload in the exe. A silent install that was given /PAYLOAD= reuses it.
+Function ExtractPayload
+  ${If} $Payload != ""
+    Return
   ${EndIf}
-  Pop $0
+  InitPluginsDir
+  CreateDirectory "$PLUGINSDIR\payload"
+  SetOutPath "$PLUGINSDIR\payload"
+  File /r "${SRCDIR}\*.*"
+  StrCpy $Payload "$PLUGINSDIR\payload"
 FunctionEnd
 
-Function OnTasksCreate
-  !insertmacro MUI_HEADER_TEXT "$(TASKS_TITLE)" "$(TASKS_SUB)"
-  nsDialogs::Create 1018
-  Pop $0
-  ${If} $0 S== "error"
-    Abort
+; Opens the custom installer window. That window runs this exe again with /S to copy.
+Function ShowCustomInstaller
+  Call ExtractPayload
+  ReadRegStr $1 HKCU "Software\${APP}" "InstallDir"
+  ${If} $1 == ""
+    StrCpy $1 "$LOCALAPPDATA\${APP}"
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 36u "$(TASKS_LABEL)"
-  Pop $0
-  ${NSD_CreateCheckbox} 0 48u 100% 14u "$(TASKS_DESKTOP)"
-  Pop $ChkDesktop
-  ${If} $DesktopShortcut S== "1"
-    ${NSD_SetState} $ChkDesktop ${BST_CHECKED}
-  ${EndIf}
-  ${NSD_OnClick} $ChkDesktop OnDesktopClick
-  nsDialogs::Show
-FunctionEnd
-
-Function OnDesktopClick
-  ${NSD_GetState} $ChkDesktop $DesktopShortcut
-FunctionEnd
-
-Function OnTasksLeave
-  ${NSD_GetState} $ChkDesktop $DesktopShortcut
-FunctionEnd
-
-Function OnInstFilesShow
-  !insertmacro MUI_HEADER_TEXT "$(INST_TITLE)" "$(INST_SUB)"
+  ExecWait '"$Payload\runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --add-modules ${ADD_MODULES} -cp "$Payload\app\*" dev.launcherfork.install.SetupWindowKt --dir "$1" --setup "$EXEPATH" --payload "$Payload"'
 FunctionEnd
 
 ; In: $R8 = directory to check. Out: $R7 is "0" only when every manifest hash matches.
@@ -299,6 +282,9 @@ Function VerifyTree
   ${If} $R0 S== "0"
     Goto verify_clear
   ${EndIf}
+  StrCpy $R1 "PAYLOAD_PROGRESS"
+  StrCpy $R2 $ProgressFile
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, t R2) i.R0'
   nsExec::ExecToStack '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "$PLUGINSDIR\verify-payload.ps1"'
   Pop $R7
   Pop $R2
@@ -311,12 +297,31 @@ Function VerifyTree
   System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
   StrCpy $R1 "PAYLOAD_MANIFEST"
   System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
+  StrCpy $R1 "PAYLOAD_PROGRESS"
+  System::Call 'kernel32::SetEnvironmentVariable(t R1, p 0) i.R0'
   verify_done:
   Pop $R9
   Pop $R8
   Pop $R2
   Pop $R1
   Pop $R0
+FunctionEnd
+
+; Appends the line on the stack to $ProgressFile (one byte per character, same as the verify script).
+Function ProgressLine
+  Exch $R9
+  Push $R8
+  ${If} $ProgressFile != ""
+    ClearErrors
+    FileOpen $R8 "$ProgressFile" a
+    ${IfNot} ${Errors}
+      FileSeek $R8 0 END
+      FileWrite $R8 "$R9$\r$\n"
+      FileClose $R8
+    ${EndIf}
+  ${EndIf}
+  Pop $R8
+  Pop $R9
 FunctionEnd
 
 ; In: $R8 = .lnk path, $R9 = expected target. Out: $R7 as shortcut-target.ps1
@@ -409,12 +414,12 @@ Section "$(SEC_NAME)"
   File "/oname=payload.sha256" "${MANIFEST}"
   File "/oname=verify-payload.ps1" "${VERIFY_PS1}"
   File "/oname=shortcut-target.ps1" "${SHORTCUT_PS1}"
-  CreateDirectory "$PLUGINSDIR\payload"
-  SetOutPath "$PLUGINSDIR\payload"
-  File /r "${SRCDIR}\*.*"
+  Call ExtractPayload
 
+  Push "p 1"
+  Call ProgressLine
   DetailPrint "$(DETAIL_VERIFY)"
-  StrCpy $R8 "$PLUGINSDIR\payload"
+  StrCpy $R8 "$Payload"
   Call VerifyTree
   ${If} $R7 S!= "0"
     DetailPrint "SHA-256: $R7"
@@ -429,6 +434,8 @@ Section "$(SEC_NAME)"
   ${EndIf}
 
   CreateDirectory "$INSTDIR"
+  Push "p 2"
+  Call ProgressLine
   ClearErrors
   !include "${COPY_LIST}"
   ${If} ${Errors}
@@ -438,6 +445,8 @@ Section "$(SEC_NAME)"
     Quit
   ${EndIf}
 
+  Push "p 3"
+  Call ProgressLine
   DetailPrint "$(DETAIL_VERIFY)"
   StrCpy $R8 "$INSTDIR"
   Call VerifyTree
@@ -455,6 +464,8 @@ Section "$(SEC_NAME)"
   FileWrite $0 "${PRODUCT} ${VERSION}$\r$\n"
   FileClose $0
 
+  Push "p 4"
+  Call ProgressLine
   CreateDirectory "$SMPROGRAMS\${START_FOLDER}"
   StrCpy $R8 "$SMPROGRAMS\${START_FOLDER}\${LNK_APP}"
   StrCpy $R9 "$INSTDIR\${APP}.exe"
@@ -468,6 +479,15 @@ Section "$(SEC_NAME)"
     Call CreateOwnedShortcut
   ${Else}
     StrCpy $R8 "$DESKTOP\${LNK_APP}"
+    StrCpy $R9 "$INSTDIR\${APP}.exe"
+    Call DeleteOwnedShortcut
+  ${EndIf}
+  ${If} $StartupShortcut S== "1"
+    StrCpy $R8 "$SMSTARTUP\${LNK_APP}"
+    StrCpy $R9 "$INSTDIR\${APP}.exe"
+    Call CreateOwnedShortcut
+  ${Else}
+    StrCpy $R8 "$SMSTARTUP\${LNK_APP}"
     StrCpy $R9 "$INSTDIR\${APP}.exe"
     Call DeleteOwnedShortcut
   ${EndIf}
@@ -505,6 +525,9 @@ Section "Uninstall"
   Call un.DeleteOwnedShortcut
   StrCpy $R8 "$SMPROGRAMS\${START_FOLDER}\${LNK_UNINST}"
   StrCpy $R9 "$INSTDIR\Uninstall.exe"
+  Call un.DeleteOwnedShortcut
+  StrCpy $R8 "$SMSTARTUP\${LNK_APP}"
+  StrCpy $R9 "$INSTDIR\${APP}.exe"
   Call un.DeleteOwnedShortcut
   RMDir "$SMPROGRAMS\${START_FOLDER}"
 
