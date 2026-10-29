@@ -3,7 +3,7 @@ title: Path
 description: Branches from launch to exit, from INTERACTION.md and the current menu.
 ---
 
-Two windows. Pre-main is 460 px wide and as tall as its panel (launcher update is 460×316, ceiling 700). The main window is 1024×640. The source diagram is `docs/design/interaction.mmd`. The same branches are written out here: this site has no diagram plugin.
+Two windows. Pre-main is 460 px wide and as tall as its panel (the launcher update is **460×316** before it is shown, ceiling 700). The main window is 1024×640: the side column is **253 px** there and then **220–340 px** as the window changes width. The source diagram is `docs/design/interaction.mmd`. The same branches are written out here: this site has no diagram plugin.
 
 ## Happy login
 
@@ -34,6 +34,14 @@ The **⋯** menu on `main`: verify files, open the game folder, game settings, r
 The folder opens only inside `gameRoot`. A path above the root is rejected. If the root is missing too, nothing opens and stderr gets a WARNING.
 
 The mock online count drifts a little every 10 s by default. `-Dlauncher.onlineTickMs=0` keeps 1284. The tour always uses 0.
+
+## Shell and tunnel
+
+The logo scales with the column, and the game subtitle stays inside the row. The settings column fills the content area; the 820 px cap is gone. At 1280 px the tunnel page uses the full content width.
+
+The heading, the action panel, and the group cards are separate blocks. The **To you** / **Ping** columns and the block toggles stay in place. Labels fit in full at 900×580 and 1280×760.
+
+Mock shows the classpath catalog (`servers-ru.json`, `servers.json`, the NEA fixture) and does not fetch that list. **Loading groups…**, **Could not load groups**, and an empty catalog are different cards. The error card offers **Retry**. **Cancel** on the group-block confirm does not touch the firewall.
 
 ## Profile and exit
 

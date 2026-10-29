@@ -11,9 +11,9 @@ A rejected update stays in this window and shows “The launcher update was reje
 
 The pre-main window is 460 px wide and does not resize. `fittedWindowHeight()` is the 32 px title strip plus the panel content, clamped to `AUTH_WINDOW_MIN_HEIGHT` **280** … `AUTH_WINDOW_HEIGHT` **700**. The stage style is `TRANSPARENT`. A 10 px clip rounds the corners (`Theme.AUTH_WINDOW_RADIUS`, the same as `.zone-radius-md`).
 
-Panels with no `prefHeight` fit their content: login **460×506**, email code **460×438** (with an error **460×526**), authenticator code **460×444** (with an error **460×532**), launcher update **460×316** (panel area **460×284**). Registration and age set `prefHeight="668"` and keep the full **460×700** window.
+Panels with no `prefHeight` fit their content: login **460×506**, email code **460×438** (with an error **460×526**), authenticator code **460×444** (with an error **460×532**), launcher update **460×316** before it is shown (panel area **460×284**). Registration and age set `prefHeight="668"` and keep the full **460×700** window.
 
-The main window is `StageStyle.UNDECORATED`, **1024×640**, resizable from the edges, minimum **900×580**.
+The main window is `StageStyle.UNDECORATED`, **1024×640**, resizable from the edges, minimum **900×580**. At that width the side column is **253 px** and then tracks the window between **220 and 340 px**. The logo scales with the column, and the game subtitle stays inside the row. The settings column fills the content area: the **820 px** cap is gone. At **1280 px** the tunnel page uses the full content width.
 
 ## What each window holds
 
