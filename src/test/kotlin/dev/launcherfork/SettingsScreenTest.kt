@@ -31,6 +31,7 @@ import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.screens.settings.TunnelServices
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Fxml
+import dev.launcherfork.ui.screens.main.ServersListController
 import dev.launcherfork.ui.screens.settings.SettingsController
 import javafx.geometry.BoundingBox
 import javafx.geometry.Bounds
@@ -625,7 +626,9 @@ class SettingsScreenTest {
             "settings.tunnel.exclude", "settings.tunnel.exclude_group", "settings.tunnel.excluded_group",
             "settings.tunnel.exclude.confirm", "settings.tunnel.block_node", "settings.tunnel.unblock_node",
             "settings.tunnel.no_reply", "settings.tunnel.limit",
-            "settings.tunnel.best", "settings.tunnel.pool_meta", "settings.tunnel.no_working",
+            "settings.tunnel.best", "settings.tunnel.pool_meta", "settings.tunnel.no_working", "settings.tunnel.no_working.detail",
+            "settings.tunnel.loading", "settings.tunnel.loading.detail", "settings.tunnel.load_failed", "settings.tunnel.load_failed.detail",
+            "settings.tunnel.empty", "settings.tunnel.empty.detail", "settings.tunnel.load", "settings.tunnel.retry",
             "settings.tunnel.col.client", "settings.tunnel.col.server", "settings.tunnel.col.sum",
             "settings.tunnel.metrics", "settings.tunnel.metrics.ping", "settings.tunnel.metrics.client",
             "settings.tunnel.metrics.server", "settings.tunnel.metrics.stability", "settings.tunnel.winner",
@@ -1775,6 +1778,123 @@ class SettingsScreenTest {
                 )
             }
         } finally {
+            app.shutdown()
+        }
+    }
+
+    /**
+     * The shell tracks the window (253 px sidebar at 1024, settings column fills the content area).
+     * The tunnel page keeps its blocks apart, and a mock catalog is the classpath snapshot: no live fetch,
+     * no «Загружаю группы…» once the region is open. A failed fetch and an empty catalog are their own cards.
+     */
+    @Test
+    fun shellAndTunnelReflowAndMockCatalogStates(@TempDir dir: Path) {
+        val sizes = listOf(
+            Theme.WINDOW_MIN_WIDTH to Theme.WINDOW_MIN_HEIGHT,
+            Theme.WINDOW_WIDTH to Theme.WINDOW_HEIGHT,
+            1280.0 to 760.0,
+        )
+        TunnelServices.reset()
+        TunnelServices.directory = dir
+        TunnelServices.inline = true
+        TunnelServices.mockCatalog = true
+        val attempts = TunnelCatalogs.fetchAttempts.get()
+        val app = AppContext.mock(language = "ru", authDelayMs = 0)
+        val nav = mainOnScreen(app, "ru")
+        try {
+            sizes.forEach { (w, h) ->
+                resize(nav, w, h)
+                FxTestSupport.onFx {
+                    applyTheme(nav.mainStage.scene, "zone", "ru")
+                    val where = "${w.toInt()}x${h.toInt()}"
+                    val scene = nav.mainStage.scene
+                    val main = nav.mainController!!
+                    val window = BoundingBox(0.0, 0.0, scene.width, scene.height)
+                    relayout(nav)
+                    val sidebar = main.serversListController.sidebar
+                    assertEquals(ServersListController.widthFor(w), sidebar.width, 1.0, "$where: sidebar")
+                    assertEquals(253.0, ServersListController.widthFor(Theme.WINDOW_WIDTH), 0.01)
+                    val logo = main.serversListController.logo.sceneBounds()
+                    assertTrue(contains(sidebar.sceneBounds(), logo), "$where: logo leaves the sidebar")
+                    main.setSettingsVisible(false)
+                    relayout(nav)
+                    val entry = main.serversListController.entryControllers.single()
+                    val entryBox = entry.root.sceneBounds()
+                    assertTrue(contains(entryBox, entry.name.sceneBounds()), "$where: name leaves the row")
+                    assertTrue(contains(entryBox, entry.onlineText.sceneBounds()), "$where: online line leaves the row")
+                    assertTrue(contains(window, main.defaultStatusPaneController.downloadButton.sceneBounds()), "$where: play outside")
+                    preview(scene, "shell-home-${w.toInt()}")
+
+                    main.setSettingsVisible(true)
+                    val s = main.settingsController
+                    s.showClientSection("tunnel")
+                    relayout(nav)
+                    assertEquals(attempts, TunnelCatalogs.fetchAttempts.get(), "$where: mock opened a live catalog")
+                    val pools = s.tunnelPools.lookupAll(".pool-title").map { (it as Labeled).text }
+                    assertTrue("MSK1" in pools, "$where: mock catalog did not list RU groups: $pools")
+                    assertTrue(s.tunnelPools.lookupAll(".tunnel-status").isEmpty(), "$where: groups still look unloaded")
+                    assertFalse(
+                        s.tunnelPools.lookupAll(".tunnel-status-title").filterIsInstance<Labeled>().any { it.text == "Загружаю группы…" },
+                        "$where: still stuck on loading",
+                    )
+                    val head = s.tunnelPage.lookup(".tunnel-head")
+                    val actions = s.tunnelMeasure.parent
+                    val headGap = actions.sceneBounds().minY - head.sceneBounds().maxY
+                    assertTrue(headGap in 12.0..28.0, "$where: heading and actions are $headGap px apart")
+                    val listGap = s.tunnelScroll.sceneBounds().minY - actions.sceneBounds().maxY
+                    assertTrue(listGap in 12.0..28.0, "$where: actions and the list are $listGap px apart")
+                    val cards = s.tunnelPools.children.filter { "pool" in it.styleClass }
+                    if (cards.size >= 2) {
+                        val gap = cards[1].sceneBounds().minY - cards[0].sceneBounds().maxY
+                        assertTrue(gap in 12.0..28.0, "$where: pool cards are $gap px apart")
+                    }
+                    listOf(s.regionRu, s.regionEu, s.regionNa, s.regionSea, s.regionNea, s.tunnelMeasure, s.tunnelFindBest, s.tunnelRefresh).forEach { b ->
+                        assertTrue(b.width >= b.prefWidth(-1.0) - 0.5, "$where: '${b.text}' truncated")
+                        assertTrue(contains(window, b.sceneBounds()), "$where: '${b.text}' outside")
+                    }
+                    val contentW = s.settingsContent.width
+                    val viewW = s.scroll.viewportBounds.width
+                    assertEquals(viewW, contentW, 2.0, "$where: settings column does not fill the page ($contentW vs $viewW)")
+                    if (w >= 1200) assertTrue(contentW > 900.0, "$where: settings stayed narrow ($contentW)")
+                    preview(scene, "shell-tunnel-${w.toInt()}")
+                }
+            }
+            FxTestSupport.onFx {
+                val s = nav.mainController!!.settingsController
+                s.regionEu.fire()
+                relayout(nav)
+                val pools = s.tunnelPools.lookupAll(".pool-title").map { (it as Labeled).text }
+                assertTrue(pools.any { it == "GAME-EU" || it == "WAW" }, "EU region stayed on the loading caption: $pools")
+                assertTrue(s.tunnelPools.lookupAll(".tunnel-status").isEmpty(), "EU region has no groups")
+                assertEquals(attempts, TunnelCatalogs.fetchAttempts.get(), "region change opened a live catalog")
+
+                TunnelServices.mockCatalog = false
+                TunnelServices.fetch = { error("down") }
+                s.regionNa.fire()
+                relayout(nav)
+                val failed = s.tunnelPools.lookup(".tunnel-status") as javafx.scene.layout.Region
+                assertTrue("err" in failed.styleClass, "a failed fetch is not the error card")
+                val failedTitle = failed.lookup(".tunnel-status-title") as Labeled
+                assertEquals("Не удалось загрузить группы", failedTitle.text)
+                assertTrue(failedTitle.isWrapText)
+                assertNotNull(failed.lookup(".tunnel-status-retry"))
+                preview(nav.mainStage.scene, "shell-tunnel-error")
+
+                TunnelServices.fetch = {
+                    TunnelCatalogs.parse(
+                        """{"mode":"roxy","clientToTunnelRttWeight":1,"pools":[{"name":"CLOUD-RU-7","tunnels":[{"name":"X","address":"203.0.113.8:29450"}]}]}""",
+                    )
+                }
+                s.regionSea.fire()
+                relayout(nav)
+                val empty = s.tunnelPools.lookup(".tunnel-status") as javafx.scene.layout.Region
+                assertTrue("empty" in empty.styleClass, "an empty catalog is not the empty card")
+                assertEquals("Нет рабочих серверов", (empty.lookup(".tunnel-status-title") as Labeled).text)
+                assertTrue(s.tunnelPools.lookupAll(".pool").isEmpty(), "a dead pool was listed")
+                preview(nav.mainStage.scene, "shell-tunnel-empty")
+            }
+        } finally {
+            FxTestSupport.onFx { nav.close() }
             app.shutdown()
         }
     }

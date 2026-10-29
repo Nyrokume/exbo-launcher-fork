@@ -459,6 +459,8 @@ class SettingsController(private val ctx: UiContext) {
     private lateinit var tunnels: TunnelPage
 
     private fun bindClient() {
+        // Offline and showcase never open the live catalog. Tests that replace TunnelServices.fetch keep that fake.
+        TunnelServices.mockCatalog = !ctx.liveBackend
         buildPresets()
         refreshJvmStatus()
 

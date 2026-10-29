@@ -23,7 +23,7 @@
             <Label styleClass="zone-title" text="%fork.reg.title" wrapText="true" minHeight="-Infinity" />
         </VBox>
 
-        <VBox styleClass="zone-bottom, zone-bottom-dense" VBox.vgrow="ALWAYS">
+        <VBox styleClass="zone-bottom, zone-bottom-dense, zone-reg-form" VBox.vgrow="ALWAYS">
             <TextField id="zoneRegEmail" fx:id="emailField" styleClass="zone-input, zone-radius-sm" onAction="#onCreate" promptText="%fork.reg.email" />
             <TextField id="zoneRegUsername" fx:id="usernameField" styleClass="zone-input, zone-radius-sm" onAction="#onCreate" promptText="%fork.reg.username" />
             <StackPane styleClass="zone-password">

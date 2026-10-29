@@ -113,6 +113,13 @@ class CodeInput : HBox() {
         cellList.clear()
         repeat(cellCount) { i -> cellList += Cell(i) }
         children.setAll(cellList)
+        if (cellCount >= 9) {
+            alignment = Pos.CENTER_LEFT
+            cellList.forEach { cell ->
+                cell.maxWidth = Double.MAX_VALUE
+                HBox.setHgrow(cell, Priority.ALWAYS)
+            }
+        }
         updateLabels()
         // .cells-N lets a stylesheet size the cells by their number (zone-totp.css styles the 6-cell row)
         styleClass.removeIf { it.startsWith("cells-") }

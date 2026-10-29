@@ -208,7 +208,7 @@ class RegistrationTest {
         FxTestSupport.onFx {
             c.fill(email = "not-an-email", user = "ab", pass = "short")
             c.onCreate()
-            assertEquals("Введите корректный адрес электронной почты", c.errorFirst.text)
+            assertEquals("Введите корректный адрес почты", c.errorFirst.text)
             assertTrue(c.isMarked(c.emailField) && c.isMarked(c.usernameField) && c.isMarked(c.passwordField))
             c.emailField.text = "new@mail.ru"
             assertFalse(c.isMarked(c.emailField))

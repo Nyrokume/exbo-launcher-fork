@@ -28,7 +28,7 @@ class GameBannerController(private val ctx: UiContext) {
     private companion object {
         const val WIDTH_AT_SCALE_1 = 560.0
         const val MIN_SCALE = 0.55
-        const val MAX_SCALE = 1.5
+        const val MAX_SCALE = 2.0
     }
 
     @FXML lateinit var scroll: ScrollPane
@@ -67,7 +67,7 @@ class GameBannerController(private val ctx: UiContext) {
 
     /**
      * The column already fills the slot. Type scale follows that width (1 at 560 px, up to [MAX_SCALE] on a wide
-     * window) so the inscription grows into the free space on the right. A longer server text shrinks the title, the
+     * window) so the inscription grows into the free space. A longer server text shrinks the title, the
      * body and the gaps together until the column is no taller than the slot. CSS sizes are the baseline (zone's
      * display title is larger than the shared 40 px rule); inline sizes are only set when the scale leaves 1.
      */

@@ -14,6 +14,7 @@ import javafx.scene.control.ProgressBar
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Region
+import javafx.scene.shape.Rectangle
 import javafx.scene.text.Text
 import java.util.Locale
 
@@ -69,6 +70,12 @@ class ServerEntryController(private val ctx: UiContext) {
             Motion.fadeWith(hoverFill, root.hoverProperty())
         }
         downloadingStatus.text = ""
+        val clip = Rectangle()
+        root.clip = clip
+        root.layoutBoundsProperty().addListener { _, _, b ->
+            clip.width = b.width
+            clip.height = b.height
+        }
         onlineCount.addListener { _, _, n -> renderOnline(n) }
         renderOnline(null)
     }

@@ -9,6 +9,8 @@ description: A summary of docs/CHANGELOG.md and the main commits after that file
 
 The login window from `redesign/login-socials`: height follows the panel, the EXBO logo replaces the title, links and errors use `-destructive-text`, and empty-field hints meet AA. Wallpapers behind the login window were tried and removed. Height is recomputed only when the panel changes layout (`AuthWindowRefitTest`).
 
+Shell and tunnel (#41): the column is **253 px** at 1024×640 and **220–340 px** as the window changes width, settings fill the content area, the mock catalog comes from the classpath, and loading, error, and an empty list are separate cards. The update window is **460×316** before it is shown.
+
 Open PRs on top of that file are marked on the [windows](../../architecture/windows/) and [tunnel](../../settings/tunnel/) pages.
 
 ## 2026-10-07

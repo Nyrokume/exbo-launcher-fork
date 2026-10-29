@@ -557,7 +557,7 @@
 .settings-root { -fx-background-color: transparent; }
 .settings-scroll, .settings-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
 .settings-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
-.settings-content { -fx-padding: 2 24 18 24; -fx-max-width: 820; -fx-spacing: 4; }
+.settings-content { -fx-padding: 2 24 18 24; -fx-max-width: infinity; -fx-spacing: 4; }
 .settings-page { -fx-spacing: 4; }
 .settings-group { -fx-spacing: 3; }
 .settings-group-label { -fx-font-size: 17; -fx-text-fill: -settings-heading; }
@@ -765,7 +765,7 @@
     -fx-background-color: transparent; -fx-background: transparent;
 }
 .tunnel-scroll > .scroll-bar:vertical { -fx-pref-width: 10; -fx-padding: 0; }
-.tunnel-pools { -fx-spacing: 10; -fx-padding: 2 0 4 0; }
+.tunnel-pools { -fx-spacing: 16; -fx-padding: 4 0 8 0; }
 /* Header and server rows share this shell inside the pool card: name | value | value | switch.
    The 16 px gap before the switch is the row spacing, not a legend inset. */
 .tunnel-columns {
@@ -832,7 +832,7 @@
     -fx-opacity: 0.45;
     -fx-cursor: default;
 }
-.pool { -fx-spacing: 2; -fx-padding: 8 10 4 10; -fx-max-width: infinity; }
+.pool { -fx-spacing: 6; -fx-padding: 12 12 8 12; -fx-max-width: infinity; }
 .pool-head { -fx-alignment: center-left; -fx-spacing: 8; -fx-padding: 0 0 2 0; -fx-max-width: infinity; }
 .pool-title { -fx-font-size: 14; -fx-text-fill: -foreground; }
 .tunnel-mode { -fx-alignment: top-left; -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34; }
@@ -1047,17 +1047,38 @@
 .tunnel-ping.good { -fx-text-fill: -status-online; }
 .tunnel-ping.mid { -fx-text-fill: -settings-warning; }
 .tunnel-ping.bad, .tunnel-ping.very-bad, .tunnel-ping.miss { -fx-text-fill: -destructive-text; }
-#settingsTunnel { -fx-spacing: 8; }
+#settingsTunnel { -fx-spacing: 16; }
 .tunnel-head { -fx-alignment: center-left; -fx-spacing: 12; -fx-padding: 0; -fx-max-width: infinity; }
 .tunnel-heading { -fx-font-size: 20; -fx-padding: 1 0 0 0; }
 .tunnel-count { -fx-font-size: 12; -fx-text-fill: -settings-muted; -fx-padding: 0; }
 .tunnel-count.err { -fx-text-fill: -destructive-text; }
+/* Loading, failure and an empty catalog: one card, not a caption over a blank list. */
+.tunnel-status {
+    -fx-alignment: center;
+    -fx-padding: 28 24;
+    -fx-spacing: 8;
+    -fx-max-width: infinity;
+}
+.tunnel-status-title {
+    -fx-font-size: 15;
+    -fx-text-fill: -foreground;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+    -fx-wrap-text: true;
+}
+.tunnel-status.err .tunnel-status-title { -fx-text-fill: -destructive-text; }
+.tunnel-status-detail {
+    -fx-font-size: 13;
+    -fx-text-fill: -settings-muted;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+    -fx-wrap-text: true;
+    -fx-max-width: 460;
+}
 .tunnel-actions {
     -fx-alignment: center-left;
-    -fx-spacing: 6;
-    -fx-padding: 4 6;
-    -fx-background-color: -fill-subtle;
-    -fx-background-radius: 8;
+    -fx-spacing: 8;
+    -fx-padding: 8 10;
     -fx-max-width: infinity;
 }
 /* Refresh sits in the same 34 px action row as Измерить, square, graphic only.
