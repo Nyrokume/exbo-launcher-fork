@@ -26,7 +26,7 @@
 
         <VBox styleClass="zone-bottom, zone-bottom-dense">
             <Label styleClass="zone-field-label" text="%auth.mail_code" />
-            <CodeInput fx:id="codeInput" id="zoneMailCode" cellCount="9" alignment="CENTER" />
+            <CodeInput fx:id="codeInput" id="zoneMailCode" cellCount="9" alignment="CENTER_LEFT" />
             <HBox fx:id="toast" id="zoneMailToast" styleClass="zone-toast, zone-radius-md" visible="false" managed="false" maxHeight="-Infinity" maxWidth="Infinity">
                 <VBox styleClass="zone-toast-body" HBox.hgrow="ALWAYS" alignment="CENTER_LEFT">
                     <Label styleClass="zone-toast-title" text="%fork.2fa.error_title" wrapText="true" minHeight="-Infinity" />

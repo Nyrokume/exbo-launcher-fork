@@ -5,7 +5,8 @@
 <?import javafx.scene.layout.*?>
 
 <!--
-  Fixed-width sidebar: EXBO logo (vector), "— GAMES —" section label, game list (server_entry.fxml) and Settings
+  Sidebar: EXBO logo (vector), "— GAMES —" section label, game list (server_entry.fxml) and Settings.
+  Width is 253 px at 1024 and follows the window (ServersListController.followWindow).
   at the bottom. The account moved to the profile menu in the top-right corner (main/profile.fxml).
 -->
 <VBox fx:id="sidebar" id="sidebar" styleClass="sidebar" minWidth="253" prefWidth="253" maxWidth="253"

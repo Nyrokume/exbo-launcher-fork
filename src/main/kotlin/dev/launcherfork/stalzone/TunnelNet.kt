@@ -94,6 +94,38 @@ object TunnelCatalogs {
         return RoxyCatalog(mode, pools, weight)
     }
 
+    /**
+     * Classpath snapshot used by the mock launcher and tests. Live [fetch] is unchanged and still
+     * talks only to the existing region hosts. A missing file or an empty region is null.
+     */
+    fun bundled(region: TunnelRegion): RoxyCatalog? = try {
+        when (region) {
+            TunnelRegion.RU -> parse(resource("servers-ru.json"))
+            TunnelRegion.NEA -> parse(NEA_FIXTURE)
+            else -> parse(regional(resource("servers.json"), region))
+        }
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun resource(name: String): String =
+        TunnelCatalogs::class.java.getResourceAsStream("/dev/launcherfork/stalzone/$name")
+            ?.readBytes()?.toString(Charsets.UTF_8)
+            ?: error(name)
+
+    /** Keeps pools whose `region` field matches. The extra field is dropped before [parse]. */
+    private fun regional(text: String, region: TunnelRegion): String {
+        val root = MiniJson.parse(text) as Map<*, *>
+        val pools = (root["pools"] as List<*>).filter { (it as Map<*, *>)["region"] == region.name }
+        return MiniJson.write(
+            linkedMapOf(
+                "mode" to "roxy",
+                "clientToTunnelRttWeight" to (root["clientToTunnelRttWeight"] ?: 0),
+                "pools" to pools,
+            ),
+        )
+    }
+
     fun fetch(region: TunnelRegion): RoxyCatalog {
         fetchAttempts.incrementAndGet()
         val client = HttpClient.newBuilder()
@@ -130,6 +162,16 @@ object TunnelCatalogs {
             return parse(data.toString(Charsets.UTF_8))
         }
     }
+
+    /** Same shape as the other bundled regions. Not a live host. */
+    private const val NEA_FIXTURE = """
+        {"mode":"roxy","clientToTunnelRttWeight":1,"pools":[
+          {"name":"NEA1","tunnels":[
+            {"name":"NEA1-1","address":"203.0.113.10:29450"},
+            {"name":"NEA1-2","address":"203.0.113.11:29450"}
+          ]}
+        ]}
+    """
 }
 
 object TunnelProbe {

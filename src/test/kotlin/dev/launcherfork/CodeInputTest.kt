@@ -170,7 +170,7 @@ class CodeInputTest {
         }
         assertTrue(FxTestSupport.waitFx { c.isToastShown })
         FxTestSupport.onFx {
-            assertEquals("Неправильный код аутентификации!", c.errorFirst.text)
+            assertEquals("Неверный код из приложения. Введите его ещё раз.", c.errorFirst.text)
             val title = c.toast.lookupAll(".zone-toast-title").single() as javafx.scene.control.Label
             assertEquals("ОШИБКА ПРИ ПОДТВЕРЖДЕНИИ", title.text)
             assertTrue(c.codeInput.error)

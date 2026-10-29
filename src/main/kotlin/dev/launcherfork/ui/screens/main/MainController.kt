@@ -167,8 +167,19 @@ class MainController(private val ctx: UiContext) : Disposable {
 
         root.sceneProperty().addListener { _, old, scene ->
             old?.removeEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
+            old?.widthProperty()?.removeListener(shellWidth)
             scene?.addEventFilter(KeyEvent.KEY_PRESSED, keyFilter)
+            scene?.widthProperty()?.addListener(shellWidth)
+            if (scene != null) fitShell(scene.width)
         }
+    }
+
+    private val shellWidth = ChangeListener<Number> { _, _, value -> fitShell(value.toDouble()) }
+
+    /** Sidebar tracks the window. Settings and the tunnel list already grow with the content area. */
+    private fun fitShell(windowWidth: Double) {
+        if (!::serversListController.isInitialized) return
+        serversListController.followWindow(windowWidth)
     }
 
     private val keyFilter = javafx.event.EventHandler<KeyEvent> { onKey(it) }

@@ -54,7 +54,12 @@ import kotlin.concurrent.thread
 internal object TunnelServices {
     var directory: Path? = null
     var inline: Boolean = false
-    var fetch: (TunnelRegion) -> RoxyCatalog = { region -> TunnelCatalogs.fetch(region) }
+    /**
+     * Mock and showcase read [TunnelCatalogs.bundled]. Live leaves this false and keeps the HTTPS list.
+     * Read by the default [fetch] at call time, so a test that replaces [fetch] is left alone.
+     */
+    var mockCatalog: Boolean = false
+    var fetch: (TunnelRegion) -> RoxyCatalog = { region -> defaultFetch(region) }
     var probe: (TunnelEndpoint) -> TunnelProbeOutcome = { endpoint -> TunnelProbe.measure(endpoint) }
     var clock: () -> Instant = { Instant.now() }
 
@@ -78,7 +83,8 @@ internal object TunnelServices {
     fun reset() {
         directory = null
         inline = false
-        fetch = { region -> TunnelCatalogs.fetch(region) }
+        mockCatalog = false
+        fetch = { region -> defaultFetch(region) }
         probe = { endpoint -> TunnelProbe.measure(endpoint) }
         clock = { Instant.now() }
         applyBlocks = { ips -> defaultApply(ips) }
@@ -92,6 +98,10 @@ internal object TunnelServices {
         if (unique.isEmpty()) return Result.failure(IllegalArgumentException("No valid IPv4 addresses to block"))
         return TunnelFirewall.system().apply(unique)
     }
+
+    private fun defaultFetch(region: TunnelRegion): RoxyCatalog =
+        if (mockCatalog) TunnelCatalogs.bundled(region) ?: error("mock catalog ${region.id}")
+        else TunnelCatalogs.fetch(region)
 }
 
 /**
@@ -352,8 +362,16 @@ class TunnelPage(
             render()
             return
         }
-        loading = region
-        catalogError = null
+        // Mock shows the classpath snapshot at once. A slow live fetch keeps the loading card instead.
+        val seeded = if (TunnelServices.mockCatalog) TunnelCatalogs.bundled(region) else null
+        if (seeded != null) {
+            catalogs[region] = TunnelPresentation.present(seeded)
+            loading = null
+            catalogError = null
+        } else {
+            loading = region
+            catalogError = null
+        }
         render()
         val deliver = deliver@{ result: Result<RoxyCatalog> ->
             if (gen != catalogGen || selected != region) return@deliver
@@ -365,11 +383,17 @@ class TunnelPage(
             result.onFailure { catalogError = ctx.t("settings.tunnel.load_failed") }
             render()
         }
+        loadCatalog(region, deliver)
+    }
+
+    /** [TunnelServices.inline] delivers on this thread. Live fetch stays off the FX thread. */
+    private fun loadCatalog(region: TunnelRegion, deliver: (Result<RoxyCatalog>) -> Unit) {
+        val run = { runCatching { TunnelServices.fetch(region) } }
         if (TunnelServices.inline) {
-            deliver(runCatching { TunnelServices.fetch(region) })
+            deliver(run())
         } else {
             thread(name = "tunnel-catalog", isDaemon = true) {
-                val result = runCatching { TunnelServices.fetch(region) }
+                val result = run()
                 Platform.runLater { deliver(result) }
             }
         }
@@ -636,14 +660,7 @@ class TunnelPage(
             }
             render()
         }
-        if (TunnelServices.inline) {
-            deliver(runCatching { TunnelServices.fetch(region) })
-        } else {
-            thread(name = "tunnel-catalog", isDaemon = true) {
-                val result = runCatching { TunnelServices.fetch(region) }
-                Platform.runLater { deliver(result) }
-            }
-        }
+        loadCatalog(region, deliver)
     }
 
     private fun startRound(targets: List<TunnelTarget>, onFinished: () -> Unit) {
@@ -752,28 +769,86 @@ class TunnelPage(
         tunnelPools.children.clear()
         val catalog = catalogs[selected]
         when {
-            loading == selected -> tunnelPools.children += note(ctx.t("settings.tunnel.loading"))
-            catalog == null -> {
-                tunnelPools.children += note(catalogError ?: ctx.t("settings.tunnel.loading"))
-                if (catalogError != null) {
-                    tunnelPools.children += Button(ctx.t("settings.tunnel.retry")).apply {
-                        styleClass.add("settings-mini")
-                        setOnAction {
-                            catalogs.remove(selected)
-                            catalogError = null
-                            openRegion(selected)
-                        }
-                    }
-                }
-            }
+            loading == selected -> tunnelPools.children += statusCard(
+                "loading",
+                "settings.tunnel.loading",
+                "settings.tunnel.loading.detail",
+            )
+            catalog == null && catalogError != null -> tunnelPools.children += statusCard(
+                "err",
+                "settings.tunnel.load_failed",
+                "settings.tunnel.load_failed.detail",
+                retry = true,
+            )
+            catalog == null -> tunnelPools.children += statusCard(
+                "empty",
+                "settings.tunnel.empty",
+                "settings.tunnel.empty.detail",
+                retry = true,
+            )
             else -> {
                 val best = recommendation(catalog)
                 val blocks = catalog.pools.mapNotNull { poolBlock(it, locked, best?.target?.endpoint?.address) }
-                if (blocks.isEmpty()) tunnelPools.children += note(ctx.t("settings.tunnel.no_working"))
-                else tunnelPools.children.addAll(blocks)
+                if (blocks.isEmpty()) {
+                    tunnelPools.children += statusCard(
+                        "empty",
+                        "settings.tunnel.no_working",
+                        "settings.tunnel.no_working.detail",
+                    )
+                } else {
+                    tunnelPools.children.addAll(blocks)
+                }
             }
         }
         if (scroll != null) scroll.vvalue = saved
+    }
+
+    /**
+     * Loading, failure and an empty catalog are one card in the list, not a caption over a blank pane.
+     * [retry] is «Повторить» / «Загрузить» and is the only control that starts another fetch.
+     */
+    private fun statusCard(kind: String, titleKey: String, detailKey: String, retry: Boolean = false): VBox {
+        val title = Label(ctx.t(titleKey)).apply {
+            styleClass.add("tunnel-status-title")
+            isWrapText = true
+            alignment = Pos.CENTER
+            textAlignment = javafx.scene.text.TextAlignment.CENTER
+            maxWidth = Double.MAX_VALUE
+        }
+        val detail = Label(ctx.t(detailKey)).apply {
+            styleClass.add("tunnel-status-detail")
+            isWrapText = true
+            alignment = Pos.CENTER
+            textAlignment = javafx.scene.text.TextAlignment.CENTER
+            maxWidth = 460.0
+        }
+        return VBox(8.0, title, detail).apply {
+            styleClass.addAll("tunnel-status", "card", "zone-radius-md", kind)
+            alignment = Pos.CENTER
+            maxWidth = Double.MAX_VALUE
+            val pane = tunnelPools.parent?.parent as? javafx.scene.control.ScrollPane
+            val viewport = when {
+                pane == null -> 0.0
+                pane.height > 80.0 -> pane.height
+                pane.prefHeight > 80.0 -> pane.prefHeight
+                else -> 0.0
+            }
+            if (viewport > 80.0) {
+                prefHeight = viewport - 4.0
+                minHeight = prefHeight
+            }
+            if (retry) {
+                children += Button(ctx.t(if (kind == "err") "settings.tunnel.retry" else "settings.tunnel.load")).apply {
+                    styleClass.addAll("settings-mini", "tunnel-status-retry")
+                    isMnemonicParsing = false
+                    setOnAction {
+                        catalogs.remove(selected)
+                        catalogError = null
+                        openRegion(selected)
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1011,6 +1086,7 @@ class TunnelPage(
         val sumName = ctx.t("settings.tunnel.col.sum")
         val quality = qualityText(target, shown)
         val stateName = ctx.t(stateKey)
+        val failNote = if (shown.received && shown.failed) "\n${ctx.t("settings.tunnel.no_reply")}" else ""
         return Button().apply {
             styleClass.add("tunnel-node")
             if (chosen) styleClass.add("selected")
@@ -1024,7 +1100,7 @@ class TunnelPage(
             userData = target.endpoint.address
             isDisable = locked || excluded || blocked || shown.limitReached || forceLocked || !view.selectable
             accessibleText = "${target.endpoint.name}. $stateName. $clientName $client, $serverName $server, $sumName $sum"
-            tooltip = Tooltip("${target.endpoint.address}\n$stateName\n$clientName $client, $serverName $server, $sumName $sum$quality")
+            tooltip = Tooltip("${target.endpoint.address}\n$stateName\n$clientName $client, $serverName $server, $sumName $sum$quality$failNote")
             setOnAction { select(target) }
         }
     }
@@ -1047,7 +1123,7 @@ class TunnelPage(
 
     private fun rttText(view: NodeProbe): Triple<String, String, String> = when {
         !view.received -> Triple("—", "—", "—")
-        view.failed -> Triple("—", "—", ctx.t("settings.tunnel.no_reply"))
+        view.failed -> Triple("—", "—", ctx.t("settings.tunnel.fail"))
         view.limitReached -> Triple(
             TunnelOverrides.formatMs(view.clientMs),
             TunnelOverrides.formatMs(view.serverMs),
@@ -1061,11 +1137,7 @@ class TunnelPage(
         if (ms != null && ms >= 0.0) styleClass.add(TunnelOverrides.latencyBand(ms))
         if (kind == decision) styleClass.add("decision")
         alignment = Pos.CENTER_RIGHT
-    }
-
-    private fun note(text: String) = Label(text).apply {
-        styleClass.add("settings-note")
-        isWrapText = true
+        textOverrun = OverrunStyle.ELLIPSIS
     }
 
     private fun modeLabel(mode: TunnelSearchMode): String = when (mode) {

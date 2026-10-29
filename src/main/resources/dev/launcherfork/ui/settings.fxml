@@ -184,7 +184,7 @@
                             <RadioButton fx:id="regionNea" styleClass="segment,zone-radius-sm" text="NEA" toggleGroup="$regionGroup" minWidth="-Infinity"/>
                         </HBox>
                     </HBox>
-                    <HBox styleClass="tunnel-actions" alignment="CENTER_LEFT">
+                    <HBox styleClass="tunnel-actions,card,zone-radius-md" alignment="CENTER_LEFT">
                         <Button fx:id="tunnelMeasure" styleClass="settings-mini" text="%settings.tunnel.measure" mnemonicParsing="false" minWidth="-Infinity"/>
                         <Button fx:id="tunnelFindBest" styleClass="settings-mini,primary" text="%settings.tunnel.find" mnemonicParsing="false" minWidth="-Infinity"/>
                         <Button fx:id="tunnelRefresh" styleClass="settings-mini,tunnel-refresh" mnemonicParsing="false" minWidth="-Infinity" contentDisplay="GRAPHIC_ONLY" accessibleText="%settings.tunnel.refresh"/>

@@ -1,6 +1,7 @@
 package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.domain.Server
+import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Disposable
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.UiContext
@@ -16,7 +17,10 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import java.util.Locale
 
-/** main/servers_list.fxml: fixed-width sidebar with the EXBO logo, game list and Settings. */
+/**
+ * main/servers_list.fxml: sidebar with the EXBO logo, game list and Settings.
+ * Width is 253 px at the 1024 px window and follows the window between [MIN_WIDTH] and [MAX_WIDTH].
+ */
 class ServersListController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var sidebar: VBox
     @FXML lateinit var logo: LogoMark
@@ -44,6 +48,16 @@ class ServersListController(private val ctx: UiContext) : Disposable {
         settingsButton.setOnAction { onSettingsClicked() }
     }
 
+    /** Keeps the sidebar and the logo in proportion with the main window. 253 px at 1024. */
+    fun followWindow(windowWidth: Double) {
+        if (windowWidth < 100.0) return
+        val width = widthFor(windowWidth)
+        sidebar.minWidth = width
+        sidebar.prefWidth = width
+        sidebar.maxWidth = width
+        logo.logoWidth = logoWidthFor(width)
+    }
+
     private fun locale(): Locale = Locale.forLanguageTag(ctx.lang)
 
     fun setServers(servers: List<Server>, store: ClientStateStore) {
@@ -64,6 +78,20 @@ class ServersListController(private val ctx: UiContext) : Disposable {
     }
 
     fun setSettingsActive(active: Boolean) = settingsButton.toggleClass("active", active)
+
+    companion object {
+        const val DESIGN_WIDTH = 253.0
+        const val MIN_WIDTH = 220.0
+        const val MAX_WIDTH = 340.0
+        private const val DESIGN_LOGO = 170.0
+
+        /** Sidebar width for a main-window width. 253 px at [Theme.WINDOW_WIDTH]. */
+        fun widthFor(windowWidth: Double): Double =
+            (windowWidth * DESIGN_WIDTH / Theme.WINDOW_WIDTH).coerceIn(MIN_WIDTH, MAX_WIDTH)
+
+        fun logoWidthFor(sidebarWidth: Double): Double =
+            (DESIGN_LOGO * sidebarWidth / DESIGN_WIDTH).coerceIn(140.0, 220.0)
+    }
 
     /** Unbinds all cards from the session-scoped store. */
     override fun dispose() {

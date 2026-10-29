@@ -8,6 +8,8 @@
 /* extra top pad: Bebas Neue caps sit high in the em-box and were clipping under the titlebar edge */
 .zone-top-compact { -fx-padding: 34 28 22 28; }
 .zone-bottom-dense { -fx-spacing: 16; -fx-padding: 22 24 22 24; }
+/* Registration keeps the full window. The error toast has to stay inside that card, so the stack is a little tighter than 2FA. */
+.zone-reg-form { -fx-spacing: 10; -fx-padding: 16 24 18 24; }
 .zone-field-label { -fx-font-size: 14; -fx-text-fill: -text-description; }
 .zone-notice-text { -fx-font-size: 13; -fx-text-fill: -muted-foreground; }
 .zone-center-row { -fx-alignment: center; }

@@ -6,6 +6,7 @@ import dev.launcherfork.ui.screens.auth.RegisterController
 import dev.launcherfork.ui.screens.auth.TotpAuthController
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.domain.Progress
+import dev.launcherfork.ui.motion.Motion
 import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.GameAction
 import javafx.animation.PauseTransition
@@ -27,6 +28,8 @@ class ScreenshotTour(private val nav: StageNavigator, private val dir: File) {
     private val steps = ArrayDeque<Pair<Double, () -> Unit>>()
 
     fun install() {
+        // Settled frames only. LauncherApp also forces this when -Dlauncher.screenshots is set.
+        Motion.override = false
         dir.mkdirs()
         var authDone = false
         var mainDone = false
