@@ -3,7 +3,7 @@ title: EXBO Launcher Fork documentation
 description: What the fork does, from login through the tunnel.
 template: splash
 hero:
-  tagline: "What the fork does, from login through the tunnel"
+  tagline: "What the fork does, from login through the tunnel."
   actions:
     - text: Overview
       link: ./getting-started/overview/
@@ -19,8 +19,12 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 A Kotlin and JavaFX fork of the EXBO launcher. The cards open the same sections as the sidebar.
 
 <CardGrid>
-	<LinkCard title="Windows" description="Pre-main is 460 wide and fitted. The update panel is 460×316 before it is shown. The main window is 1024×640." href="./architecture/windows/" />
-	<LinkCard title="Tunnel" description="Groups and ping. Mock reads the classpath. Live fetches the catalog over HTTPS." href="./settings/tunnel/" />
+	<LinkCard title="Windows" description="Pre-main is 460 and fitted. Update is 460×316 before show. Main is 1024×640." href="./architecture/windows/" />
+	<LinkCard title="Tunnel" description="Groups and ping. Mock reads the classpath. Live uses HTTPS." href="./settings/tunnel/" />
 	<LinkCard title="Security" description="Registration is NOT_SUPPORTED. Self-update is fail-closed. Seeds stay HTTPS." href="./getting-started/update/" />
 	<LinkCard title="Game" description="Banner, server list, download, pause, verify, and delete." href="./game/home/" />
+	<LinkCard title="Start" description="Overview, install, mock login, 2FA, and themes." href="./getting-started/overview/" />
+	<LinkCard title="Network" description="Catalog states, the mock classpath, and P2P." href="./network/states/" />
+	<LinkCard title="Settings" description="Behavior, JVM, sensitivity, and accounts." href="./settings/behavior/" />
+	<LinkCard title="Reference" description="Gradle flags, zone frames, and limits." href="./reference/screenshots/" />
 </CardGrid>

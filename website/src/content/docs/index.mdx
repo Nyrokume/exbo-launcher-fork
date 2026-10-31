@@ -3,7 +3,7 @@ title: Документация EXBO Launcher Fork
 description: Всё, что умеет fork — от входа до туннеля.
 template: splash
 hero:
-  tagline: "Всё, что умеет fork — от входа до туннеля"
+  tagline: "Всё, что умеет fork — от входа до туннеля."
   actions:
     - text: Обзор
       link: ./getting-started/overview/
@@ -16,11 +16,15 @@ hero:
 
 import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Форк лаунчера EXBO на Kotlin и JavaFX. Ниже вход в разделы, которые есть в боковой колонке.
+Форк лаунчера EXBO на Kotlin и JavaFX. Карточки открывают те же разделы, что и боковая колонка.
 
 <CardGrid>
-	<LinkCard title="Окна" description="Pre-main 460 по высоте панели, обновление 460×316 до показа, главное 1024×640." href="./architecture/windows/" />
-	<LinkCard title="Туннель" description="Группы и пинг. Мок читает classpath. Live ходит на HTTPS каталога." href="./settings/tunnel/" />
-	<LinkCard title="Безопасность" description="Регистрация NOT_SUPPORTED, самообновление fail-closed, семена только HTTPS." href="./getting-started/update/" />
-	<LinkCard title="Игра" description="Баннер, список серверов, загрузка, пауза, проверка и удаление." href="./game/home/" />
+	<LinkCard title="Окна" description="Pre-main 460 по панели, обновление 460×316, главное 1024×640." href="./architecture/windows/" />
+	<LinkCard title="Туннель" description="Группы и пинг. Мок читает classpath, live ходит на HTTPS." href="./settings/tunnel/" />
+	<LinkCard title="Безопасность" description="Регистрация NOT_SUPPORTED, обновление fail-closed, семена только HTTPS." href="./getting-started/update/" />
+	<LinkCard title="Игра" description="Баннер, серверы, загрузка, пауза, проверка и удаление." href="./game/home/" />
+	<LinkCard title="Старт" description="Обзор, установка, mock-вход, 2FA и темы." href="./getting-started/overview/" />
+	<LinkCard title="Сеть" description="Состояния каталога, mock classpath и P2P." href="./network/states/" />
+	<LinkCard title="Настройки" description="Поведение, JVM, чувствительность и аккаунты." href="./settings/behavior/" />
+	<LinkCard title="Справка" description="Флаги Gradle, кадры zone и ограничения." href="./reference/screenshots/" />
 </CardGrid>
