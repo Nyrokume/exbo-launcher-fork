@@ -1,13 +1,13 @@
 ---
 title: Скриншоты
-description: Кадры тура в docs/screenshots/zone. Сборка сайта PNG не публикует.
+description: Кадры тура в docs/screenshots/zone. Сборка копирует эти PNG на Pages.
 ---
 
 import ZoneShot from '../../../components/ZoneShot.astro';
 
 Автотур `ScreenshotTour` пишет PNG в каталог из `-Dlauncher.screenshots`. Для темы zone это `docs/screenshots/zone/`. Рядом лежат `shadcn/` и копии в корне `docs/screenshots/`. На этих страницах берётся `zone/`.
 
-Сборка сайта файл в GitHub Pages не кладёт. В `npm run dev` кадр виден. В опубликованной сборке остаётся путь.
+Сборка копирует `docs/screenshots/zone/*.png` в опубликованный сайт. Кадры `shadcn/` и корневые копии на Pages не попадают: это те же экраны в других темах, в репозиторий они уже лежат.
 
 Кадров туннеля после карточек загрузки и отдельного замера окна 460×316 в каталоге нет. `01_update_window.png` — кадр тура окна обновления. Размер 460×316 на этой картинке не утверждается.
 

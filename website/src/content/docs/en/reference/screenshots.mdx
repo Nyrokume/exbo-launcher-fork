@@ -1,13 +1,13 @@
 ---
 title: Screenshots
-description: Tour frames in docs/screenshots/zone. The site build does not publish the PNGs.
+description: Tour frames in docs/screenshots/zone. The build copies these PNGs onto Pages.
 ---
 
 import ZoneShot from '../../../../components/ZoneShot.astro';
 
 `ScreenshotTour` writes PNGs to the directory from `-Dlauncher.screenshots`. For zone that is `docs/screenshots/zone/`. `shadcn/` and copies at the root of `docs/screenshots/` sit beside it. These pages use `zone/`.
 
-The site build does not put the file on GitHub Pages. `npm run dev` shows the frame. A published build keeps the path.
+The build copies `docs/screenshots/zone/*.png` onto the published site. `shadcn/` and the root copies stay off Pages: they are the same screens in other themes, and they are already in the repo.
 
 There is no tunnel frame after the loading cards, and no separate measurement of the 460×316 update window. `01_update_window.png` is the tour's update frame. This page does not claim that picture is 460×316.
 

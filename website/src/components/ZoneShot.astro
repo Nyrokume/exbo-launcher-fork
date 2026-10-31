@@ -4,19 +4,15 @@ interface Props {
 	caption: string;
 }
 const { file, caption } = Astro.props;
-const dev = import.meta.env.DEV;
-const en = Astro.url.pathname.includes('/en/');
 const base = import.meta.env.BASE_URL.endsWith('/')
 	? import.meta.env.BASE_URL
 	: `${import.meta.env.BASE_URL}/`;
 const src = `${base}__zone-shots/${file}`;
-const unpublished = en
-	? 'The site build does not publish this file.'
-	: 'Сборка сайта этот файл не публикует.';
 ---
 <figure class="zone-shot">
 	<div class="zone-shot-bar">{caption}</div>
-	{dev ? <img src={src} alt={caption} /> : null}
-	<p class="zone-shot-path"><code>docs/screenshots/{file}</code></p>
-	<figcaption>{caption}. {unpublished}</figcaption>
+	<img src={src} alt={caption} />
+	<figcaption>
+		{caption}. <code>docs/screenshots/{file}</code>
+	</figcaption>
 </figure>
