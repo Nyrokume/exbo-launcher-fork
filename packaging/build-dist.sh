@@ -130,7 +130,7 @@ rm -f "$DIST/${APP}_portable_win64.zip"
 echo "== NSIS installer"
 makensis -V2 -DOUTFILE="$DIST/${APP}_Setup_${VERSION}.exe" -DSRCDIR="$WIN" -DUNINSTALL_LIST="$UNLIST" -DCOPY_LIST="$COPY_LIST" -DICON="$WORK/$APP.ico" \
     -DMANIFEST="$MANIFEST" -DESTIMATED_KB="$ESTIMATED_KB" \
-    -DVERSION="$VERSION" -DVERSION_QUAD="$VERSION_QUAD" packaging/installer.nsi
+    -DVERSION="$VERSION" -DVERSION_QUAD="$VERSION_QUAD" -DADD_MODULES="$MODULES" packaging/installer.nsi
 
 if [[ -n "$LINUX_JFX" ]]; then
     echo "== Linux x64 image"
