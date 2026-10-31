@@ -144,6 +144,17 @@ internal fun clientArchFolder(): String =
 internal fun isClientRuntimeProcess(command: String?, bin: Path): Boolean {
     if (command.isNullOrBlank()) return false
     val exe = command.trim().trim('"').replace('/', '\\').lowercase()
-    val root = bin.toAbsolutePath().toString().trimEnd('\\').replace('/', '\\').lowercase()
+    val root = normalizedClientBin(bin)
     return exe == root || exe.startsWith("$root\\")
+}
+
+/**
+ * A Windows drive path is already absolute. [Path.toAbsolutePath] on Linux would prefix the
+ * working directory, so `C:\Games\...\bin\java.exe` would never match that `bin`.
+ */
+private fun normalizedClientBin(bin: Path): String {
+    val raw = bin.toString()
+    val windowsDrive = raw.length >= 2 && raw[0].isLetter() && raw[1] == ':'
+    val path = if (bin.isAbsolute || windowsDrive) bin else bin.toAbsolutePath()
+    return path.toString().trimEnd('\\').replace('/', '\\').lowercase()
 }
