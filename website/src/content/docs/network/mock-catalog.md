@@ -5,7 +5,7 @@ description: Мок читает каталог туннеля из classpath. L
 
 `SettingsController` ставит `TunnelServices.mockCatalog = !ctx.liveBackend`.
 
-<span class="zone-badge mock">mock</span> `defaultFetch` вызывает `TunnelCatalogs.bundled`. В сеть за списком мок не ходит.
+На mock `defaultFetch` вызывает `TunnelCatalogs.bundled`. В сеть за списком мок не ходит.
 
 | Регион | Откуда снимок |
 |---|---|
@@ -15,7 +15,7 @@ description: Мок читает каталог туннеля из classpath. L
 
 Нет файла или пустой регион — `bundled` возвращает null, страница показывает ошибку каталога. Поле `region` из `servers.json` перед разбором отбрасывается. Пулы `CLOUD-*`, включая `CLOUD-RU-7`, в список, замер и «Найти лучший» не попадают.
 
-<span class="zone-badge live">live</span> `mockCatalog` ложен. `TunnelCatalogs.fetch` ходит только на уже заданные HTTPS-адреса региона (`TunnelCatalogs.sources`). Новых хостов эта ветка не добавляет. Редирект не следует. Ответ не 200, обрыв или превышение 1 МиБ — следующий источник, затем ошибка.
+На live `mockCatalog` ложен. `TunnelCatalogs.fetch` ходит только на уже заданные HTTPS-адреса региона (`TunnelCatalogs.sources`). Новых хостов эта ветка не добавляет. Редирект не следует. Ответ не 200, обрыв или превышение 1 МиБ — следующий источник, затем ошибка.
 
 Замер UDP (`TunnelProbe`) и запись `overrides.json` этим выбором каталога не подменяются. «Измерить» файл не пишет. «Найти лучший сервер» пишет один узел.
 

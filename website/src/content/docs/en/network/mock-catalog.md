@@ -5,7 +5,7 @@ description: Mock reads the tunnel catalog from the classpath. Live still fetche
 
 `SettingsController` sets `TunnelServices.mockCatalog = !ctx.liveBackend`.
 
-<span class="zone-badge mock">mock</span> `defaultFetch` calls `TunnelCatalogs.bundled`. Mock does not fetch that list from the network.
+On mock `defaultFetch` calls `TunnelCatalogs.bundled`. Mock does not fetch that list from the network.
 
 | Region | Snapshot |
 |---|---|
@@ -15,7 +15,7 @@ description: Mock reads the tunnel catalog from the classpath. Live still fetche
 
 A missing file or an empty region makes `bundled` return null, and the page shows a catalog error. The `region` field is dropped before parse. `CLOUD-*` pools, including `CLOUD-RU-7`, stay out of the list, measure, and find-best.
 
-<span class="zone-badge live">live</span> `mockCatalog` is false. `TunnelCatalogs.fetch` talks only to the region's existing HTTPS addresses (`TunnelCatalogs.sources`). This branch adds no hosts. Redirects are not followed. A non-200, a drop, or a body over 1 MiB tries the next source, then fails.
+On live `mockCatalog` is false. `TunnelCatalogs.fetch` talks only to the region's existing HTTPS addresses (`TunnelCatalogs.sources`). This branch adds no hosts. Redirects are not followed. A non-200, a drop, or a body over 1 MiB tries the next source, then fails.
 
 The UDP probe (`TunnelProbe`) and the `overrides.json` write are not replaced by this catalog choice. Measure does not write the file. Find best writes one node.
 

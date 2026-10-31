@@ -11,9 +11,9 @@ description: Страница шапки настроек. База 1x, табл
 
 «Записать в options.json» вызывает `StalzoneDesk.writeSensitivity`. Файл должен уже существовать. Если его нет, заметка показывает `options.json is missing`. Запись атомарно подменяет `mouse_sensitivity` и `sensitivity_zoom_<кратность>` через `OptionsSens.patch`. Успех — «Значения записаны в options.json».
 
-<span class="zone-badge live">live</span> Путь — `%APPDATA%\EXBO\runtime\stalcraft\config\options.json`.
+На live путь — `%APPDATA%\EXBO\runtime\stalcraft\config\options.json`.
 
-<span class="zone-badge mock">mock</span> Стол — временный каталог `memoryDesk()`. Пока в нём нет `options.json`, запись отказывается. Системный файл игры mock не открывает.
+На mock стол — временный каталог `memoryDesk()`. Пока в нём нет `options.json`, запись отказывается. Системный файл игры mock не открывает.
 
 ## Что дальше
 

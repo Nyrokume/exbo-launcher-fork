@@ -14,9 +14,9 @@ While a region's list is missing, «Loading groups…» does not sit forever abo
 
 «Retry» and «Load» fetch the region again. Those cards have no other buttons.
 
-<span class="zone-badge mock">mock</span> When `TunnelServices.mockCatalog` is true (`!liveBackend`), the open region shows the classpath snapshot at once. The loading card does not stay up for that snapshot.
+On mock, when `TunnelServices.mockCatalog` is true (`!liveBackend`), the open region shows the classpath snapshot at once. The loading card does not stay up for that snapshot.
 
-<span class="zone-badge live">live</span> `mockCatalog` is false. The list is `TunnelCatalogs.fetch`: the region's HTTPS hosts, redirects are not followed, a 10 s budget, a 3 s source timeout. Until the reply arrives, the loading card is shown. A network failure is the card with «Retry».
+On live `mockCatalog` is false. The list is `TunnelCatalogs.fetch`: the region's HTTPS hosts, redirects are not followed, a 10 s budget, a 3 s source timeout. Until the reply arrives, the loading card is shown. A network failure is the card with «Retry».
 
 `docs/screenshots/` has no frame of the tunnel after these cards. None is invented here.
 

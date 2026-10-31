@@ -3,8 +3,6 @@ title: 2FA (TOTP/mail)
 description: Mail code is 9 cells, app code is 6. Window sizes come from fittedWindowHeight.
 ---
 
-<span class="zone-badge mock">mock</span> <span class="zone-badge live">live</span>
-
 The second factor stays in the same pre-main window as login and the launcher update. Width is 460. The window does not resize from the edges. `AuthWindowController.fittedWindowHeight()` is the 32 px title bar plus the panel, clamped to 280…700. `mail_auth_panel.fxml` and `totp_auth_panel.fxml` have no `prefHeight`, so the window hugs the card.
 
 <div class="size-table">

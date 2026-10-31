@@ -9,9 +9,9 @@ The page lists saved sessions: name, «Логин: …» when the snapshot has `
 
 **Применить** writes `EXBO_AUTO_AUTH` (forced true), `EXBO_LOGIN`, and `EXBO_SESSION`. Other snapshot keys do not go out with that button. **Удалить** removes the row from `sessions.json`.
 
-<span class="zone-badge live">live</span> The file is `%LOCALAPPDATA%\stalcraft-nyrokume\sessions.json`. On Windows `EXBO_SESSION` in that file is sealed with DPAPI (`dpapi1:`). `HKCU\SOFTWARE\EXBO` still holds the raw session string: the installed launcher reads it.
+On live the file is `%LOCALAPPDATA%\stalcraft-nyrokume\sessions.json`. On Windows `EXBO_SESSION` in that file is sealed with DPAPI (`dpapi1:`). `HKCU\SOFTWARE\EXBO` still holds the raw session string: the installed launcher reads it.
 
-<span class="zone-badge mock">mock</span> The desk is a temp directory and `MemoryRegistry`. The any-password demo login does not write this file.
+On mock the desk is a temp directory and `MemoryRegistry`. The any-password demo login does not write this file.
 
 Leaving the account is a separate profile dialog («Выйти»). `profile.fxml` has no «switch account» item.
 

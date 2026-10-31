@@ -24,7 +24,7 @@ val useExbo = !tour && demo == null && ExboApi().installed()
 The root is `ExboPaths.roamingRoot()`. stderr prints `backend: exbo server list` for live, and a 2FA-mode line for mock.
 
 :::note
-The README section about removed pieces lists network, tokens, and game launch as cut. That describes the mock layer and what was not ported from the original. On Windows, when a client is installed, `LauncherApp` builds live, and that list does not cancel it.
+The README separates mock from live. Mock does not open a socket for the tunnel catalog. Live, when a client is installed, uses the HTTPS addresses that are already in the code. Live registration stays `NOT_SUPPORTED`, and self-update does not write a file.
 :::
 
 ## mock

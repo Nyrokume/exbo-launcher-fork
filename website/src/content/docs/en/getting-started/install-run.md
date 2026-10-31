@@ -1,6 +1,6 @@
 ---
 title: Install and run
-description: Gradle commands, the setup wizard, and what the distribution contains.
+description: Gradle commands, the 460×660 setup window, and what the distribution contains.
 ---
 
 You need JDK 21. The wrapper is already in the repository root. You do not install Gradle separately.
@@ -44,31 +44,30 @@ If the window does not open, check in order:
 Stay on mock when you are arguing about layout. Live connects on its own only when an EXBO client is already installed.
 :::
 
-## Setup wizard
+## Setup window
 
 `LauncherFork_Setup_<version>.exe` installs the launcher for the current user and does not ask for administrator rights. Apps & features shows the name **EXBO Launcher**, the publisher **EXBO**, and the game **STALZONE**.
 
-The screens follow the public EXBO install article:
+The window a person sees is `SetupWindow` (`dev.launcherfork.install.SetupWindowKt`). It uses the same pre-main frame as login: `StageStyle.TRANSPARENT`, not resizable, width 460, scene **460×660**, clip 10 px. `fittedWindowHeight()` does not size this window. The center is the vector EXBO mark and the line “Launcher installation”.
 
-1. Choose the launcher folder. The browse button is labeled Change Folder. The default is `%LOCALAPPDATA%\LauncherFork`.
-2. Click Next. The final path always ends with `\LauncherFork`. `D:\Projects` becomes `D:\Projects\LauncherFork`. A silent install `/S /D=...` follows the same rule.
-3. A Start Menu shortcut is always created. A desktop shortcut is optional: the checkbox starts checked, and a silent install creates it too.
-4. Wait until copying finishes.
-5. The last screen can launch the launcher. The game is downloaded from the launcher after you sign in.
+1. A folder field and **Change folder**. The default is `%LOCALAPPDATA%\LauncherFork`. The final path always ends with `\LauncherFork`: `D:\Projects` becomes `D:\Projects\LauncherFork`. A silent `/S /D=...` follows the same rule.
+2. Two checkboxes start checked: a desktop shortcut and a startup shortcut. The Start menu shortcut is always created. It has no checkbox.
+3. **Next** runs the same exe silently (`/S`, `/DESKTOP=`, `/STARTUP=`, `/D=`). The window shows the phases: checking files, copying, checking the installed copy, shortcuts. Under the phase is the current file name.
+4. After exit code 0 the button becomes **Launch** and starts `LauncherFork.exe`. The game is downloaded from the launcher after you sign in.
 
-Before it replaces files, and again after the copy, Setup checks the SHA-256 of every shipped file. A mismatch, a missing file, or PowerShell being unavailable stops Setup with exit code 3. The marker `.launcherfork-install` is not written in that case. File size is not enough for this check. A folder that already has `runtime` or `app` but not this marker is rejected with exit code 2.
+A silent `/S` does not open this window. Without `/DESKTOP=` and `/STARTUP=` both shortcuts are created. A folder that already has `runtime` or `app` and no `.launcherfork-install` marker is rejected with exit code 2, and **Next** stays disabled on that path.
+
+Before it replaces files, and again after the copy, the silent step checks the SHA-256 of every shipped file (`packaging/verify-payload.ps1`). A mismatch, a missing file, or PowerShell being unavailable stops setup with exit code 3. The marker is not written in that case. File size is not enough for this check.
 
 A shortcut named EXBO Launcher is replaced or deleted only when it points at this `LauncherFork.exe`.
 
-Uninstall leaves the game directory, `%APPDATA%\EXBO`, and `HKCU\SOFTWARE\EXBO` (`EXBO_SESSION`) in place. Setup does not write or delete them.
+Uninstall is the NSIS confirm page, not the `SetupWindow`. It leaves the game directory, `%APPDATA%\EXBO`, and `HKCU\SOFTWARE\EXBO` (`EXBO_SESSION`) in place. Setup does not write or delete them. Its own install key is `HKCU\Software\LauncherFork`.
 
 :::caution[An unsigned name matches the official launcher]
-Apps & features lists the publisher as EXBO and the product as EXBO Launcher. This repository has no Authenticode certificate, so the files are not signed (TODO). This is an unofficial fork, and without a signature it is easy to mistake for the official ExboLauncher.
+Apps & features lists the publisher as EXBO and the product as EXBO Launcher. This repository has no Authenticode certificate, so the files are not signed. This is an unofficial fork, and without a signature it is easy to mistake for the official ExboLauncher.
 :::
 
-The public help article does not include the original wizard artwork, a license page, or the official default directory, so this Setup does not copy them. The sidebar image is built from the fork icon.
-
-On Windows, build the installer with `packaging/build-installer.ps1`. On Linux, `packaging/build-dist.sh` only compiles the exe. The wizard does not open there. Payload SHA-256 at install time is PowerShell on Windows.
+On Windows, build the installer with `packaging/build-installer.ps1`. On Linux, `packaging/build-dist.sh` only compiles the exe. The setup window does not open there. Payload SHA-256 at install time is PowerShell on Windows. NSIS packs the payload and performs the silent copy. The install no longer has MUI wizard pages.
 
 ## Distributions
 
@@ -76,14 +75,14 @@ On Windows, build the installer with `packaging/build-installer.ps1`. On Linux, 
 
 | File | What it is |
 |---|---|
-| `LauncherFork_Setup_<version>.exe` | NSIS wizard, x64, no administrator rights. Folder, Next, install. Default `%LOCALAPPDATA%\LauncherFork`. Apps & features name: EXBO Launcher |
+| `LauncherFork_Setup_<version>.exe` | JavaFX setup window, 460×660, no administrator rights. NSIS packs the files and copies them after Next. Default `%LOCALAPPDATA%\LauncherFork`. Apps & features name: EXBO Launcher |
 | `LauncherFork_portable_win64.zip` | The same image; run `LauncherFork.exe` |
 | `LauncherFork_linux_x64.tar.gz` | jlink image; run `bin/launcherfork` |
 | `SHA256SUMS.txt` | Checksums |
 
 `LauncherFork.exe` forwards its arguments to the JVM, for example `-Dlauncher.lang=en`.
 
-On Windows, `packaging/build-installer.ps1` builds the same installer (JDK 21 with `jlink`; the script downloads OpenJFX and NSIS). On Linux, `packaging/build-dist.sh` only compiles the exe. The wizard steps and what uninstall leaves in place are in the section above.
+On Windows, `packaging/build-installer.ps1` builds the same installer (JDK 21 with `jlink`; the script downloads OpenJFX and NSIS). On Linux, `packaging/build-dist.sh` only compiles the exe. The window steps and what uninstall leaves in place are in the section above.
 
 :::caution[EXBO assets are in git history]
 PNGs from the original launcher and the `Europe` font belong to EXBO. The README forbids public builds until those files are replaced. Deleting them from the work tree does not rewrite history.

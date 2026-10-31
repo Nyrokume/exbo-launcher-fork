@@ -3,8 +3,6 @@ title: 2FA (TOTP/mail)
 description: Код из письма 9 ячеек и код из приложения 6 ячеек. Размеры окна из fittedWindowHeight.
 ---
 
-<span class="zone-badge mock">mock</span> <span class="zone-badge live">live</span>
-
 Второй фактор живёт в том же pre-main окне, что вход и обновление. Ширина 460, окно не ресайзится. Высоту считает `AuthWindowController.fittedWindowHeight()`: полоса 32 px плюс содержимое, в пределах 280…700. У `mail_auth_panel.fxml` и `totp_auth_panel.fxml` нет `prefHeight`, поэтому окно садится по карточке.
 
 <div class="size-table">

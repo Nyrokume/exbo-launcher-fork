@@ -11,9 +11,9 @@ The formula in `ScopeSens` is the one cited from stalcraft.wiki: `8 * (u/200/mag
 
 «Записать в options.json» calls `StalzoneDesk.writeSensitivity`. The file must already exist. If it does not, the note shows `options.json is missing`. The write replaces `mouse_sensitivity` and `sensitivity_zoom_<magnification>` through `OptionsSens.patch`. Success is «Значения записаны в options.json».
 
-<span class="zone-badge live">live</span> The path is `%APPDATA%\EXBO\runtime\stalcraft\config\options.json`.
+On live the path is `%APPDATA%\EXBO\runtime\stalcraft\config\options.json`.
 
-<span class="zone-badge mock">mock</span> The desk is the `memoryDesk()` temp directory. Until that directory contains `options.json`, the write refuses. Mock does not open the machine's game file.
+On mock the desk is the `memoryDesk()` temp directory. Until that directory contains `options.json`, the write refuses. Mock does not open the machine's game file.
 
 ## Next
 

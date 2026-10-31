@@ -9,9 +9,9 @@ description: Из меню профиля и из шапки настроек о
 
 **Применить** пишет в стол `EXBO_AUTO_AUTH` (принудительно true), `EXBO_LOGIN` и `EXBO_SESSION`. Другие ключи снимка этой кнопкой не уходят. **Удалить** убирает запись из `sessions.json`.
 
-<span class="zone-badge live">live</span> Файл — `%LOCALAPPDATA%\stalcraft-nyrokume\sessions.json`. На Windows `EXBO_SESSION` в файле запечатан DPAPI (`dpapi1:`). В `HKCU\SOFTWARE\EXBO` строка сессии остаётся открытой: её читает установленный лаунчер.
+На live файл — `%LOCALAPPDATA%\stalcraft-nyrokume\sessions.json`. На Windows `EXBO_SESSION` в файле запечатан DPAPI (`dpapi1:`). В `HKCU\SOFTWARE\EXBO` строка сессии остаётся открытой: её читает установленный лаунчер.
 
-<span class="zone-badge mock">mock</span> Стол — временный каталог и `MemoryRegistry`. Демо-вход любого пароля в этот файл не пишет.
+На mock стол — временный каталог и `MemoryRegistry`. Демо-вход любого пароля в этот файл не пишет.
 
 Выход из аккаунта — отдельная модалка профиля («Выйти»). Отдельного пункта «Сменить аккаунт» в `profile.fxml` нет.
 
