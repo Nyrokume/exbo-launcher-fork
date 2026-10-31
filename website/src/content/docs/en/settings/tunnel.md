@@ -46,7 +46,7 @@ The cards are also on [Loading/error/empty](../../network/states/) and [Mock cla
 
 The game reads one flag per region: `-Droxy_address_override.<region>=host:port`.
 
-The choice and the search mode live in `jvm_wrapper/overrides.json`. The last 20 samples per node live in `jvm_wrapper/cache/tunnel_stats.json` and are dropped after 24 hours. On live the directory is `%APPDATA%\EXBO\jvm_wrapper`. On mock the desk is temporary, and the page does not touch the Windows profile.
+The choice and the search mode live in `jvm_wrapper/overrides.json`. The last 20 samples per node live in `jvm_wrapper/cache/tunnel_stats.json` and are dropped after 24 hours. On live the directory is `%APPDATA%\EXBO\jvm_wrapper`. When `APPDATA` is missing, that is `AppData\Roaming\EXBO` in the user profile. Choosing EU does not move this folder. On mock the desk is temporary, and the page does not touch the Windows profile.
 
 Launch only checks the saved address. It does not fetch a catalog and does not probe.
 

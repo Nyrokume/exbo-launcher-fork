@@ -61,7 +61,7 @@ Before it replaces files, and again after the copy, the silent step checks the S
 
 A shortcut named EXBO Launcher is replaced or deleted only when it points at this `LauncherFork.exe`.
 
-Uninstall is the NSIS confirm page, not the `SetupWindow`. It leaves the game directory, `%APPDATA%\EXBO`, and `HKCU\SOFTWARE\EXBO` (`EXBO_SESSION`) in place. Setup does not write or delete them. Its own install key is `HKCU\Software\LauncherFork`.
+Uninstall is the NSIS confirm page, not the `SetupWindow`. It leaves the game directory, `%APPDATA%\EXBO`, `%APPDATA%\Exbo_East`, `HKCU\SOFTWARE\EXBO` (`EXBO_SESSION`), and `HKCU\SOFTWARE\Exbo_East` in place. Setup does not write or delete them. Its own install key is `HKCU\Software\LauncherFork`.
 
 :::caution[An unsigned name matches the official launcher]
 Apps & features lists the publisher as EXBO and the product as EXBO Launcher. This repository has no Authenticode certificate, so the files are not signed. This is an unofficial fork, and without a signature it is easy to mistake for the official ExboLauncher.
@@ -80,7 +80,7 @@ On Windows, build the installer with `packaging/build-installer.ps1`. On Linux, 
 | `LauncherFork_linux_x64.tar.gz` | jlink image; run `bin/launcherfork` |
 | `SHA256SUMS.txt` | Checksums |
 
-`LauncherFork.exe` forwards its arguments to the JVM, for example `-Dlauncher.lang=en`.
+`LauncherFork.exe` forwards its arguments to the JVM, for example `-Dlauncher.lang=en`, and starts `javaw` with `--enable-native-access=ALL-UNNAMED`. With that flag the installed copy reads the CPU, the GPU, the cores, L3, memory speed, and large pages for the JVM presets. The setup window and `LauncherFork.cmd` use the same flag. The version in the setup file name comes from `version` in `build.gradle.kts`. That is `0.1.0` now: `LauncherFork_Setup_0.1.0.exe`.
 
 On Windows, `packaging/build-installer.ps1` builds the same installer (JDK 21 with `jlink`; the script downloads OpenJFX and NSIS). On Linux, `packaging/build-dist.sh` only compiles the exe. The window steps and what uninstall leaves in place are in the section above.
 

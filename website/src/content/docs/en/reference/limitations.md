@@ -33,7 +33,7 @@ There is no graphics page and no sound page. The tray switch and the start-with-
 
 ## Two installs
 
-On live, RU and EU sit above the login fields. With no `%APPDATA%\Exbo_East` folder you stay on the current install, and the form says “The EU launcher is not installed…”. Mock has no such row. The JVM catalog and the item-name language file are read from `%APPDATA%\EXBO`. **Apply** on the accounts page writes `HKCU\SOFTWARE\EXBO`.
+On live, RU and EU sit above the login fields. With no `%APPDATA%\Exbo_East` folder you stay on the current install, and the form says “The EU launcher is not installed…”. Mock has no such row. The JVM catalog and the item-name language file are read from `%APPDATA%\EXBO` (or `AppData\Roaming\EXBO` in the user profile when the variable is missing). Choosing EU does not move the wrapper folder. **Apply** on the accounts page writes `HKCU\SOFTWARE\EXBO`. Setup and uninstall do not write or delete `%APPDATA%\EXBO`, `%APPDATA%\Exbo_East`, `HKCU\SOFTWARE\EXBO`, or `HKCU\SOFTWARE\Exbo_East`.
 
 ## Item names
 

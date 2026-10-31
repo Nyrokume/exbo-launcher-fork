@@ -61,7 +61,7 @@ PNG пишет автотур `ScreenshotTour` в указанный катал�
 
 Ярлык с именем «EXBO Launcher» заменяется или удаляется, только если он указывает на этот `LauncherFork.exe`.
 
-Удаление — страница подтверждения NSIS, не окно `SetupWindow`. Оно оставляет каталог игры, `%APPDATA%\EXBO` и `HKCU\SOFTWARE\EXBO` (`EXBO_SESSION`). Установщик эти места не пишет и не стирает. Свой ключ установки — `HKCU\Software\LauncherFork`.
+Удаление — страница подтверждения NSIS, не окно `SetupWindow`. Оно оставляет каталог игры, `%APPDATA%\EXBO`, `%APPDATA%\Exbo_East`, `HKCU\SOFTWARE\EXBO` (`EXBO_SESSION`) и `HKCU\SOFTWARE\Exbo_East`. Установщик эти места не пишет и не стирает. Свой ключ установки — `HKCU\Software\LauncherFork`.
 
 :::caution[Имя без подписи совпадает с официальным лаунчером]
 В «Приложениях и возможностях» издатель — EXBO, продукт — EXBO Launcher. Сертификата Authenticode в репозитории нет, файлы не подписываются. Это неофициальный форк, и без подписи его легко принять за официальный ExboLauncher.
@@ -80,7 +80,7 @@ PNG пишет автотур `ScreenshotTour` в указанный катал�
 | `LauncherFork_linux_x64.tar.gz` | jlink, запуск `bin/launcherfork` |
 | `SHA256SUMS.txt` | Контрольные суммы |
 
-`LauncherFork.exe` передаёт свои аргументы в JVM, например `-Dlauncher.lang=en`.
+`LauncherFork.exe` передаёт свои аргументы в JVM, например `-Dlauncher.lang=en`, и запускает `javaw` с `--enable-native-access=ALL-UNNAMED`. С этим флагом установленная копия читает процессор, видеокарту, ядра, L3, скорость памяти и большие страницы для пресетов JVM. Тот же флаг стоит у окна установки и у `LauncherFork.cmd`. Версия в имени setup берётся из `version` в `build.gradle.kts`. Сейчас это `0.1.0`: `LauncherFork_Setup_0.1.0.exe`.
 
 На Windows тот же установщик собирает `packaging/build-installer.ps1` (JDK 21 с `jlink`; OpenJFX и NSIS скрипт скачивает сам). С Linux `packaging/build-dist.sh` только компилирует exe. Шаги окна и границы удаления — в разделе выше.
 

@@ -13,7 +13,7 @@ The cards sit in two columns. A card shows the version with the heap and the pre
 
 The page order is `JvmPresets.choices`. The first card is **No JVM**: `StalzoneDesk.useTunedProfile(false)` clears the active name and does not write a preset file. The summary becomes “No JVM”, the hint is “The game starts with its own flags. The wrapper does not inject a profile.”, and the message is “JVM profile cleared. Restart the game.”
 
-The cards after that write a file. The generators come from EXBO-Community/stalcraft-jvm-optimization. On an installed launcher the profile is built from this PC: threads, physical cores, free memory, slow memory (up to 2933 MT/s), a large L3 (64 MB or more), and large pages when that privilege is already enabled. Unknown memory speed is not treated as slow. The 8 kHz profile and Aikar stay as written.
+The cards after that write a file. The generators come from EXBO-Community/stalcraft-jvm-optimization. On Windows x64 the installed launcher builds the profile from this PC. v1.1.2 uses installed memory and threads, and raises the pause goal when memory speed is known and at most 2933 MT/s. v1.1.0 uses installed memory, threads, and the big-cache branch when L3 is 64 MB or more. v1.0.8 and v1.0.7 size the heap from free memory and pick the weak-CPU branch from physical cores. v1.0.4 sizes the heap from free memory and threads. Large pages are written into the generated json when `SeLockMemoryPrivilege` is already enabled. Unknown memory speed is not treated as slow. The 8 kHz profile and Aikar do not take those branches. A failed read keeps the previous numbers: cores equal the logical processors, free memory equals installed memory, and the slow-RAM, big-cache, and large-page branches stay off. Opening the page does not rewrite a file that is already saved. A new json appears when a card is clicked.
 
 One line under the summary names the CPU and GPU, the core count, the thread count, and the RAM. Slow memory, a large cache, and large pages are appended on that line when the read found them. The showcase hides the line: `machine()` is empty there, so screenshots do not drift.
 
@@ -34,7 +34,7 @@ If the generator would allocate no heap (too little RAM), the card is disabled a
 
 The launcher-page RAM bar runs from 2 GB up to the machine's memory, and never above 8 GB, in 1 GB steps. “Little memory will be left for the system” appears only when the machine would keep less than 2 GB. Once the bar has a chosen value, a preset click writes that heap instead of the generator’s number and retunes the fields derived from the heap (region size; on v1.0.x also metaspace, soft-ref, and the code cache). GC and JIT flags stay. Until the bar is chosen, the heap comes from the generator.
 
-On live the file is `%APPDATA%\EXBO\jvm_wrapper\configs`, and the active name is `HKCU\Software\StalcraftWrapper\ActiveConfig`. On mock that is a temp directory and `MemoryRegistry`.
+On live the file is `%APPDATA%\EXBO\jvm_wrapper\configs`. When `APPDATA` is missing, the same path goes through `AppData\Roaming\EXBO` in the user profile. The wrapper directory stays the RU folder when EU is selected on login. The active name is `HKCU\Software\StalcraftWrapper\ActiveConfig`. On mock that is a temp directory and `MemoryRegistry`. The installed `LauncherFork.exe` starts `javaw` with `--enable-native-access=ALL-UNNAMED`, so this copy is allowed to call the OS and read the CPU, L3, and memory speed.
 
 ## What next
 

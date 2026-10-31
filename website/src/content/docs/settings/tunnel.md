@@ -46,7 +46,7 @@ description: Страница регионального Roxy-override на main
 
 Игра читает один флаг на регион: `-Droxy_address_override.<region>=host:port`.
 
-Выбор и режим поиска лежат в `jvm_wrapper/overrides.json`. Последние 20 замеров узла — в `jvm_wrapper/cache/tunnel_stats.json` и сбрасываются через 24 часа. На live каталог — `%APPDATA%\EXBO\jvm_wrapper`. На mock стол временный, системный профиль Windows страница не трогает.
+Выбор и режим поиска лежат в `jvm_wrapper/overrides.json`. Последние 20 замеров узла — в `jvm_wrapper/cache/tunnel_stats.json` и сбрасываются через 24 часа. На live каталог — `%APPDATA%\EXBO\jvm_wrapper`. Нет переменной `APPDATA` — `AppData\Roaming\EXBO` в профиле пользователя. Выбор EU эту папку не меняет. На mock стол временный, системный профиль Windows страница не трогает.
 
 Запуск проверяет сохранённый адрес. Каталог при запуске заново не качается и узлы не пингуются.
 
