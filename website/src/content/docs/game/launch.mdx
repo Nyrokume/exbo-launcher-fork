@@ -41,8 +41,10 @@ import ZoneShot from '../../../components/ZoneShot.astro';
 
 На mock прогресс — таймер `MockUpdateService`. Скорость множит `-Dlauncher.mockSpeed`. «Запускать по окончании загрузки» на mock игру само не стартует: `startWhenDownloaded` читается только при `liveBackend`. Режим выхода на mock зафиксирован как «никогда», даже если в настройках выбрано иное.
 
-<ZoneShot file="zone/10b_downloading.png" caption="Загрузка" />
-<ZoneShot file="zone/10c_paused.png" caption="Пауза" />
+<div class="zone-shot-row">
+	<ZoneShot file="zone/10b_downloading.png" caption="Загрузка" />
+	<ZoneShot file="zone/10c_paused.png" caption="Пауза" />
+</div>
 
 Ошибка загрузки показывает «Не удалось обновить клиент» и «Соединение оборвалось. Повторите. Версия клиента не менялась.» (`main.exception.update`). Путь в диалог не входит.
 
@@ -56,9 +58,11 @@ import ZoneShot from '../../../components/ZoneShot.astro';
 | Переустановить | Всегда | «Файлы игры будут удалены и загружены заново…» |
 | Удалить | Всегда | «Удалить файлы игры? Чтобы играть снова, их придётся скачать заново.» |
 
-<ZoneShot file="zone/10_verifying.png" caption="Проверка файлов" />
-<ZoneShot file="zone/08b_game_actions_delete_confirm.png" caption="Подтверждение удаления" />
-<ZoneShot file="zone/09_running.png" caption="Игра запущена" />
+<div class="zone-shot-row">
+	<ZoneShot file="zone/10_verifying.png" caption="Проверка файлов" />
+	<ZoneShot file="zone/08b_game_actions_delete_confirm.png" caption="Подтверждение удаления" />
+	<ZoneShot file="zone/09_running.png" caption="Игра запущена" />
+</div>
 
 На live проверка сверяет каталог и докачивает только несовпавшие файлы. Исключения и пути вне каталога клиента не трогает. Файл версии при проверке не пишет. Коды ошибки, которые диалог умеет показать: `no_client`, `no_catalog`, `no_seeds`, `file_mismatch`, `no_session`, `io`. Заголовок «Не удалось проверить файлы». Пока проверка не закончилась, версия клиента не меняется.
 

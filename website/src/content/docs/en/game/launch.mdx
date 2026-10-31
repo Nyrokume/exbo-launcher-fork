@@ -41,8 +41,10 @@ On live, when the client is not downloaded and the catalog does not allow a down
 
 On mock, progress is the `MockUpdateService` timer. `-Dlauncher.mockSpeed` multiplies it. «Запускать по окончании загрузки» does not start the game on mock: `startWhenDownloaded` is read only when `liveBackend` is true. Exit mode on mock stays never, even if settings say otherwise.
 
-<ZoneShot file="zone/10b_downloading.png" caption="Downloading" />
-<ZoneShot file="zone/10c_paused.png" caption="Paused" />
+<div class="zone-shot-row">
+	<ZoneShot file="zone/10b_downloading.png" caption="Downloading" />
+	<ZoneShot file="zone/10c_paused.png" caption="Paused" />
+</div>
 
 A failed download shows «Не удалось обновить клиент» and «Соединение оборвалось. Повторите. Версия клиента не менялась.» (`main.exception.update`). The dialog does not include a path.
 
@@ -56,9 +58,11 @@ The **⋯** menu. Confirmation:
 | Reinstall | Always | «Файлы игры будут удалены и загружены заново…» |
 | Delete | Always | «Удалить файлы игры? Чтобы играть снова, их придётся скачать заново.» |
 
-<ZoneShot file="zone/10_verifying.png" caption="Verifying files" />
-<ZoneShot file="zone/08b_game_actions_delete_confirm.png" caption="Delete confirmation" />
-<ZoneShot file="zone/09_running.png" caption="Game running" />
+<div class="zone-shot-row">
+	<ZoneShot file="zone/10_verifying.png" caption="Verifying files" />
+	<ZoneShot file="zone/08b_game_actions_delete_confirm.png" caption="Delete confirmation" />
+	<ZoneShot file="zone/09_running.png" caption="Game running" />
+</div>
 
 On live, verify compares the catalog and downloads only files that do not match. Exclusions and paths outside the client directory are left alone. Verify does not write the version file. Failure codes the dialog can show: `no_client`, `no_catalog`, `no_seeds`, `file_mismatch`, `no_session`, `io`. Title: «Не удалось проверить файлы». The client version does not change until verify finishes.
 

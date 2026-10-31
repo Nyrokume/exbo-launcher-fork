@@ -10,9 +10,9 @@ const base = import.meta.env.BASE_URL.endsWith('/')
 const src = `${base}__zone-shots/${file}`;
 ---
 <figure class="zone-shot">
-	<div class="zone-shot-bar">{caption}</div>
+	<div class="zone-shot-bar">
+		<span class="zone-shot-caption">{caption}</span>
+		<code class="zone-shot-file">docs/screenshots/{file}</code>
+	</div>
 	<img src={src} alt={caption} />
-	<figcaption>
-		{caption}. <code>docs/screenshots/{file}</code>
-	</figcaption>
 </figure>
