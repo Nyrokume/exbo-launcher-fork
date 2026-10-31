@@ -24,7 +24,7 @@ val useExbo = !tour && demo == null && ExboApi().installed()
 Корень — `ExboPaths.roamingRoot()`. В stderr при live пишется `backend: exbo server list`, при mock — строка про режим 2FA.
 
 :::note
-README в разделе «Что удалено» перечисляет сеть, токены и запуск игры как вырезанные. Это описание mock-слоя и того, что не переносилось из оригинала. На Windows при установленном клиенте `LauncherApp` собирает live, и этот список live не отменяет.
+README отделяет mock от live. Mock не открывает сокет за каталогом туннеля. Live, когда клиент установлен, ходит по уже заданным HTTPS-адресам. Регистрация на live остаётся `NOT_SUPPORTED`, самообновление файл не пишет.
 :::
 
 ## mock

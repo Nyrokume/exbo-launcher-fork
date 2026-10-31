@@ -3,13 +3,11 @@ title: Update fail-closed
 description: Any launcher update offer is rejected until a release public key is pinned. The window is 460×316 before it is shown.
 ---
 
-<span class="zone-badge closed">fail-closed</span>
-
 Launcher self-update does not write a file. `decideLauncherUpdate` and `stageLauncherUpdate` in `LauncherUpdateGate.kt` reject every offer as `unsigned` until a release public key is pinned in this repo. A matching SHA-256, or a file that is only large enough, is not a signature. `stageLauncherUpdate` returns false and does not create the destination.
 
 The window shows `auth.update.rejected`: «Обновление лаунчера отклонено: нет проверенной подписи.» When there is no offer (`offer == null`), the decision is `Current`: the check finishes and login opens.
 
-There is no key and no manifest in the repo. The comment in `LauncherUpdateGate.kt` leaves that as a TODO. Installer Authenticode is a different TODO and is not this check.
+There is no key and no manifest in the repo. The comment in `LauncherUpdateGate.kt` says a matching digest and an HTTPS URL are still not a signature. Installer Authenticode is a separate gap: this repo has no certificate, and this check does not replace it.
 
 ## Window size
 
@@ -27,4 +25,4 @@ On mock the update panel runs its timer and calls `afterUpdate` (login). The sig
 
 - [Windows and sizes](../../architecture/windows/) — the other pre-main panels;
 - [Limitations](../../reference/limitations/) — registration and seeds next to this check;
-- [Install](../install-run/) — NSIS Authenticode.
+- [Install](../install-run/) — the 460×660 window and the missing Authenticode signature.

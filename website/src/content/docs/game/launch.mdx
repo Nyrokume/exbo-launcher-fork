@@ -37,9 +37,9 @@ import ZoneShot from '../../../components/ZoneShot.astro';
 
 Пауза отменяет текущее поколение и ставит `Paused` с долей `pausedProgress`. «Продолжить» снова вызывает загрузку.
 
-<span class="zone-badge live">live</span> Если клиент ещё не скачан и каталог не отдаёт загрузку (`canDownload` ложен, обновление не требуется), кнопка неактивна. Подсказка: «Загрузка этого клиента недоступна.» (`fork.live.no_download`).
+На live, если клиент ещё не скачан и каталог не отдаёт загрузку (`canDownload` ложен, обновление не требуется), кнопка неактивна. Подсказка: «Загрузка этого клиента недоступна.» (`fork.live.no_download`).
 
-<span class="zone-badge mock">mock</span> Прогресс — таймер `MockUpdateService`. Скорость множит `-Dlauncher.mockSpeed`. «Запускать по окончании загрузки» на mock игру само не стартует: `startWhenDownloaded` читается только при `liveBackend`. Режим выхода на mock зафиксирован как «никогда», даже если в настройках выбрано иное.
+На mock прогресс — таймер `MockUpdateService`. Скорость множит `-Dlauncher.mockSpeed`. «Запускать по окончании загрузки» на mock игру само не стартует: `startWhenDownloaded` читается только при `liveBackend`. Режим выхода на mock зафиксирован как «никогда», даже если в настройках выбрано иное.
 
 <ZoneShot file="zone/10b_downloading.png" caption="Загрузка" />
 <ZoneShot file="zone/10c_paused.png" caption="Пауза" />

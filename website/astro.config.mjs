@@ -6,10 +6,6 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 /**
- * Dev-only. Production builds do not copy docs/screenshots (EXBO assets stay off GitHub Pages).
- * @returns {import('vite').Plugin}
- */
-/**
  * Astro prints http://localhost:4321/exbo-launcher-fork without a slash.
  * From that URL, ./getting-started/overview/ resolves to /getting-started/overview/
  * and the client router shows the Astro 404. Send directory URLs to the slashed form
@@ -39,32 +35,60 @@ function baseTrailingSlash() {
 	};
 }
 
-function zoneShotsDev() {
+/**
+ * Dev serves `docs/screenshots` at `/__zone-shots/`.
+ * The production build copies `docs/screenshots/zone/*.png` into `dist/__zone-shots/zone`
+ * so the reference page can show frames already in the repo. Other theme dumps stay off Pages.
+ * @returns {import('vite').Plugin}
+ */
+function zoneShots() {
 	const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../docs/screenshots');
+	const zone = path.join(root, 'zone');
 	return {
-		name: 'zone-shots-dev',
+		name: 'zone-shots',
+		/**
+		 * @param {import('vite').ViteDevServer} server
+		 */
 		configureServer(server) {
-			server.middlewares.use((req, res, next) => {
-				const url = req.url?.split('?')[0] ?? '';
-				const marker = '/__zone-shots/';
-				const at = url.indexOf(marker);
-				if (at < 0) return next();
-				const rel = decodeURIComponent(url.slice(at + marker.length));
-				if (!rel || rel.includes('..') || rel.includes('\\')) {
-					res.statusCode = 400;
-					res.end();
-					return;
-				}
-				const file = path.resolve(root, rel);
-				const base = path.resolve(root) + path.sep;
-				if (!file.startsWith(base) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
-					res.statusCode = 404;
-					res.end();
-					return;
-				}
-				res.setHeader('Content-Type', 'image/png');
-				fs.createReadStream(file).pipe(res);
-			});
+			server.middlewares.use(
+				/**
+				 * @param {import('node:http').IncomingMessage} req
+				 * @param {import('node:http').ServerResponse} res
+				 * @param {() => void} next
+				 */
+				(req, res, next) => {
+					const url = req.url?.split('?')[0] ?? '';
+					const marker = '/__zone-shots/';
+					const at = url.indexOf(marker);
+					if (at < 0) return next();
+					const rel = decodeURIComponent(url.slice(at + marker.length));
+					if (!rel || rel.includes('..') || rel.includes('\\') || path.isAbsolute(rel)) {
+						res.statusCode = 400;
+						res.end();
+						return;
+					}
+					const file = path.resolve(root, rel);
+					const base = path.resolve(root) + path.sep;
+					if (!file.startsWith(base) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+						res.statusCode = 404;
+						res.end();
+						return;
+					}
+					res.setHeader('Content-Type', 'image/png');
+					fs.createReadStream(file).pipe(res);
+				},
+			);
+		},
+		writeBundle(options) {
+			if (!options.dir || !fs.existsSync(zone)) return;
+			const dest = path.join(options.dir, '__zone-shots', 'zone');
+			fs.mkdirSync(dest, { recursive: true });
+			for (const name of fs.readdirSync(zone)) {
+				if (!name.endsWith('.png') || name.includes('..') || name.includes('/') || name.includes('\\')) continue;
+				const from = path.join(zone, name);
+				if (!fs.statSync(from).isFile()) continue;
+				fs.copyFileSync(from, path.join(dest, name));
+			}
 		},
 	};
 }
@@ -76,7 +100,7 @@ const fonts =
 export default defineConfig({
 	site: 'https://nyrokume.github.io',
 	base: '/exbo-launcher-fork',
-	vite: { plugins: [baseTrailingSlash(), zoneShotsDev()] },
+	vite: { plugins: [baseTrailingSlash(), zoneShots()] },
 	integrations: [
 		starlight({
 			title: 'EXBO Docs',

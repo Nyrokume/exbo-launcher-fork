@@ -11,7 +11,7 @@ The default theme is `zone`. The main window is adaptive: 1024×640, minimum 900
 
 | Section | Why |
 |---|---|
-| [Install](../install-run/) | Gradle and NSIS under `%LOCALAPPDATA%\LauncherFork` |
+| [Install](../install-run/) | Gradle and the 460×660 setup window under `%LOCALAPPDATA%\LauncherFork` |
 | [Mock/live login](../mock-login/) | The demo password and live registration `NOT_SUPPORTED` |
 | [2FA](../two-factor/) | Mail 460×438, app 460×444 |
 | [Update fail-closed](../update/) | The signature is not accepted. The window is 460×316 before show |

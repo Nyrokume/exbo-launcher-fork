@@ -11,7 +11,7 @@ description: Визуальный форк лаунчера EXBO на Kotlin и 
 
 | Раздел | Зачем |
 |---|---|
-| [Установка](../install-run/) | Gradle и NSIS в `%LOCALAPPDATA%\LauncherFork` |
+| [Установка](../install-run/) | Gradle и окно установки 460×660 в `%LOCALAPPDATA%\LauncherFork` |
 | [Mock/live вход](../mock-login/) | Демо-пароль и живая регистрация `NOT_SUPPORTED` |
 | [2FA](../two-factor/) | Почта 460×438, приложение 460×444 |
 | [Update fail-closed](../update/) | Подпись не принята, окно 460×316 до показа |

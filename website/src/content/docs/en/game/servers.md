@@ -7,9 +7,9 @@ The column is `servers_list.fxml`: logo, game list, settings button. Choosing a 
 
 Online comes from the server model and is drawn on the card (`ServerEntryController`). The banner does not repeat it.
 
-<span class="zone-badge mock">mock</span> On mock the count drifts slightly every 10 s by default. `-Dlauncher.onlineTickMs=0` holds 1284. The screenshot tour always passes 0.
+On mock the count drifts slightly every 10 s by default. `-Dlauncher.onlineTickMs=0` holds 1284. The screenshot tour always passes 0.
 
-<span class="zone-badge live">live</span> The list comes from the installed client (`ExboServerRepository`). A card carries id, caption, online, client size, description, run command, version, and seeds. This site does not invent list URLs. The reply is parsed by `parseServerCatalog` in `ExboProtocol.kt`.
+On live the list comes from the installed client (`ExboServerRepository`). A card carries id, caption, online, client size, description, run command, version, and seeds. This site does not invent list URLs. The reply is parsed by `parseServerCatalog` in `ExboProtocol.kt`.
 
 At 1024×640 the column is 253 px and then tracks the window between 220 and 340 px. Details are on [Shell scale](../../architecture/shell/).
 

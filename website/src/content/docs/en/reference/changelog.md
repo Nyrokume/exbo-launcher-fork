@@ -9,6 +9,8 @@ description: A summary of docs/CHANGELOG.md and the main commits after that file
 
 The login window from `redesign/login-socials`: height follows the panel, the EXBO logo replaces the title, links and errors use `-destructive-text`, and empty-field hints meet AA. Wallpapers behind the login window were tried and removed. Height is recomputed only when the panel changes layout (`AuthWindowRefitTest`).
 
+The setup window is `SetupWindow`, scene **460×660**, not `fittedWindowHeight()`. Next copies files with the silent NSIS step. Uninstall stays the NSIS confirm page. Page: [install](../../getting-started/install-run/).
+
 Shell and tunnel (#41): the column is **253 px** at 1024×640 and **220–340 px** as the window changes width, settings fill the content area, the mock catalog comes from the classpath, and loading, error, and an empty list are separate cards. The update window is **460×316** before it is shown. Live registration is `NOT_SUPPORTED`. Self-update is fail-closed until a release key is pinned. P2P and the speed limits are saved and do not affect the torrent.
 
 Pages: [windows](../../architecture/windows/), [shell](../../architecture/shell/), [tunnel](../../settings/tunnel/), [limitations](../../reference/limitations/).
@@ -41,6 +43,7 @@ Pages: [windows](../../architecture/windows/), [shell](../../architecture/shell/
 | 2026-10-24 | `5fb69fd` | Measure does not write `overrides.json`. Find best server writes one node for the region |
 | 2026-10-27 | `4a7351e` | Columns are named by the path they measure. The node Find best server would save is marked |
 | 2026-10-27 | `b12c51d` | Each server shows an open or closed lock instead of the metrics paragraph |
+| 2026-10-29 | `3aebdf1` | JavaFX setup window instead of the wizard pages. NSIS copies files after Next |
 
 Those commits are written up on [AppContext](../../architecture/app-context/), [tunnel](../../settings/tunnel/), [JVM](../../settings/jvm/), and [accounts](../../settings/accounts/).
 

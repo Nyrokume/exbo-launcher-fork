@@ -15,6 +15,8 @@ Panels with no `prefHeight` fit their content: login **460×506**, email code **
 
 The main window is `StageStyle.UNDECORATED`, **1024×640**, resizable from the edges, minimum **900×580**. At that width the side column is **253 px** and then tracks the window between **220 and 340 px**. The logo scales with the column, and the game subtitle stays inside the row. The settings column fills the content area: the **820 px** cap is gone. At **1280 px** the tunnel page uses the full content width. The width formula is on [Shell scale](../shell/).
 
+The setup window is a separate `SetupWindow` process, not a launcher scene. The frame is the same: transparent, not resizable, a 10 px clip, the vector EXBO mark. The scene is fixed at **460×660**. `fittedWindowHeight()` does not measure it. Next copies files with the silent NSIS step. Details are on [Install](../../getting-started/install-run/).
+
 ## What each window holds
 
 | | Pre-main | Main window |

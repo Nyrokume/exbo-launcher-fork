@@ -37,9 +37,9 @@ If another game is already downloading, the dialog is «Уже идёт друг
 
 Pause cancels the current generation and sets `Paused` from `pausedProgress`. Resume calls download again.
 
-<span class="zone-badge live">live</span> When the client is not downloaded and the catalog does not allow a download (`canDownload` is false and no update is required), the button is disabled. The tooltip is «Загрузка этого клиента недоступна.» (`fork.live.no_download`).
+On live, when the client is not downloaded and the catalog does not allow a download (`canDownload` is false and no update is required), the button is disabled. The tooltip is «Загрузка этого клиента недоступна.» (`fork.live.no_download`).
 
-<span class="zone-badge mock">mock</span> Progress is the `MockUpdateService` timer. `-Dlauncher.mockSpeed` multiplies it. «Запускать по окончании загрузки» does not start the game on mock: `startWhenDownloaded` is read only when `liveBackend` is true. Exit mode on mock stays never, even if settings say otherwise.
+On mock, progress is the `MockUpdateService` timer. `-Dlauncher.mockSpeed` multiplies it. «Запускать по окончании загрузки» does not start the game on mock: `startWhenDownloaded` is read only when `liveBackend` is true. Exit mode on mock stays never, even if settings say otherwise.
 
 <ZoneShot file="zone/10b_downloading.png" caption="Downloading" />
 <ZoneShot file="zone/10c_paused.png" caption="Paused" />
