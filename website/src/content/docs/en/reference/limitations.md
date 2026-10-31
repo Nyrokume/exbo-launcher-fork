@@ -13,7 +13,7 @@ Every offer is rejected as `unsigned` until a release public key is pinned. The 
 
 ## Tunnel catalog
 
-Mock (`mockCatalog`, that is, not live) reads the classpath: `servers-ru.json`, `servers.json`, and the NEA fixture. It does not fetch that list. Live calls `TunnelCatalogs.fetch` on the region's HTTPS hosts. Redirects are not followed. The page does not add catalog addresses.
+Mock (`mockCatalog`, that is, not live) reads the classpath: `servers-ru.json` and `servers.json`, including NEA (`TYO`, `KOR`). It does not fetch that list over HTTPS. `CLOUD-*` pools and documentation addresses never become rows. The probe then keeps only the nodes that answered. Live calls `TunnelCatalogs.fetch` on the region's HTTPS hosts. Redirects are not followed. The page does not add catalog addresses.
 
 ## P2P and the speed limit
 
@@ -31,8 +31,17 @@ On Windows `sessions.json` stores `EXBO_SESSION` as `dpapi1:` plus base64, curre
 
 There is no graphics page and no sound page. The tray switch and the start-with-the-computer switch are saved. Closing the window calls `Platform.exit()` and does not open a tray. On live, autostart and Defender are locked on the form.
 
+## Two installs
+
+On live, RU and EU sit above the login fields. With no `%APPDATA%\Exbo_East` folder you stay on the current install, and the form says “The EU launcher is not installed…”. Mock has no such row. The JVM catalog and the item-name language file are read from `%APPDATA%\EXBO`. **Apply** on the accounts page writes `HKCU\SOFTWARE\EXBO`.
+
+## Item names
+
+**Write** on the localization page changes `item.*.name` lines in the RU client language file and stores a copy in `%LOCALAPPDATA%\stalcraft-nyrokume\item-names.json`. With no file the button is disabled and the line is “The game language file was not found”.
+
 ## Next
 
-- [Mock/live login](../../getting-started/mock-login/) — the registration form;
+- [Mock/live login](../../getting-started/mock-login/) — the registration form and the RU / EU buttons;
+- [Localization](../../settings/localization/) — what is written into the lang file;
 - [Update fail-closed](../../getting-started/update/) — the window and the gate;
 - [P2P later](../../network/p2p/) — the same fields in more detail.

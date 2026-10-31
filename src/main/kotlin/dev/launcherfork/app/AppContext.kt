@@ -2,14 +2,14 @@ package dev.launcherfork.app
 
 import dev.launcherfork.data.exbo.ExboApi
 import dev.launcherfork.data.exbo.ExboAuthService
+import dev.launcherfork.data.exbo.ExboBackend
 import dev.launcherfork.data.exbo.ExboClients
+import dev.launcherfork.data.exbo.ExboRealmGate
 import dev.launcherfork.data.exbo.ExboServerRepository
 import dev.launcherfork.data.exbo.ExboSettingsStore
 import dev.launcherfork.data.exbo.HostSystemInfo
 import dev.launcherfork.data.exbo.InstalledGameLauncher
 import dev.launcherfork.data.exbo.LiveUpdateService
-import dev.launcherfork.domain.ExboPaths
-import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.stalzone.MemoryRegistry
 import dev.launcherfork.stalzone.SessionSecrets
@@ -23,6 +23,7 @@ import dev.launcherfork.data.mock.MockSecondFactor
 import dev.launcherfork.data.mock.MockServerRepository
 import dev.launcherfork.data.mock.MockSystemInfo
 import dev.launcherfork.data.mock.MockUpdateService
+import dev.launcherfork.domain.ExitMode
 import dev.launcherfork.domain.FolderOpener
 import dev.launcherfork.domain.LauncherSettings
 import dev.launcherfork.domain.LinkOpener
@@ -45,6 +46,8 @@ class AppContext(
     val desk: StalzoneDesk = memoryDesk(),
     /** Installed EXBO auth, client paths and settings. Showcase and tests stay on [mock]. */
     val liveBackend: Boolean = false,
+    /** RU / EU switch. Null in the showcase and in tests that do not talk to an install. */
+    val realms: ExboRealmGate? = null,
 ) {
     /** Download/launch state of every client. Lives as long as the app, not as long as a scene. */
     val clientStates: ClientStateStore by lazy {
@@ -113,33 +116,42 @@ class AppContext(
                 StalzonePaths.optionsFile(),
                 SessionSecrets.platform(),
             )
-            val auth = ExboAuthService(api)
+            val backend = ExboBackend(api)
+            val auth = ExboAuthService(backend)
             val system = HostSystemInfo()
             val settings = ExboSettingsStore(
                 initial = LauncherSettings(language = language),
                 desk = desk,
                 file = settingsFile,
-                exboJson = ExboPaths.roamingRoot().resolve("runtime").resolve("settings.json"),
+                exboJson = api.dataRoot.resolve("runtime").resolve("settings.json"),
                 totalRamMb = system.totalRamMb(),
             )
             val servers = ExboServerRepository(api)
+            val realms = ExboRealmGate(backend, auth, servers, settingsFile)
             return AppContext(
                 Services(
                     auth = auth,
                     servers = servers,
-                    updates = LiveUpdateService(api, servers, speed),
+                    updates = LiveUpdateService(backend, servers, speed),
                     launcher = InstalledGameLauncher(
                         login = { auth.currentSession?.login },
-                        token = { api.token },
+                        token = { backend.api.token },
                         ramMb = {
                             val loaded = settings.load()
                             val gb = RamOptions.selectedGb(loaded, system.totalRamMb())
                             if (loaded.ramMb != null) runCatching { desk.syncHeap(gb) }
                             gb * RamOptions.MB_PER_GB
                         },
-                        joinGame = { name -> api.joinGame(name) },
+                        joinGame = { name -> backend.api.joinGame(name) },
                         runCommand = { id -> servers.runCommand(id) },
-                        clientDir = { id -> ExboClients.directory(id).takeIf { path -> path.isDirectory() } },
+                        clientDir = { id ->
+                            val root = backend.api.dataRoot
+                            ExboClients.directory(
+                                id,
+                                ExboClients.clientsFile(root),
+                                ExboClients.runtimeDir(root),
+                            ).takeIf { path -> path.isDirectory() }
+                        },
                     ),
                     settings = settings,
                     system = system,
@@ -149,6 +161,7 @@ class AppContext(
                 devMode,
                 desk,
                 liveBackend = true,
+                realms = realms,
             )
         }
 

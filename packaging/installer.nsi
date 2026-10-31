@@ -1,4 +1,4 @@
-﻿; EXBO Launcher (STALZONE) per-user setup.
+; EXBO Launcher (STALZONE) per-user setup.
 ; The window is the JavaFX installer (dev.launcherfork.install.SetupWindowKt):
 ; folder, desktop shortcut, startup shortcut, then Next. This script extracts the
 ; payload, opens that window, and on Next runs the same exe silently to copy files.

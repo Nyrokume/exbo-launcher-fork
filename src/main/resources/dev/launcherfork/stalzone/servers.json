@@ -1,11 +1,15 @@
 {
   "mode": "roxy",
-  "source": "https://raw.githubusercontent.com/Art3mLapa/unofficial-stalzone-api/main/static/address_list/{EU,NA,SEA}.json",
+  "source": "https://backend-{eu,na,sea,nea}.stalzone.com/address_list?login=EXBO-Community",
   "pools": [
     {
-      "name": "GAME-EU",
+      "name": "FRA",
       "region": "EU",
       "tunnels": [
+        {
+          "name": "GAME-EU-1",
+          "address": "89.222.108.193:29450"
+        },
         {
           "name": "GAME-EU-2",
           "address": "79.127.241.67:29450"
@@ -19,12 +23,32 @@
           "address": "79.127.241.69:29450"
         },
         {
-          "name": "GAME-EU-5XS",
-          "address": "89.222.124.35:29450"
+          "name": "GAME-EU-7",
+          "address": "152.233.7.40:29450"
+        }
+      ]
+    },
+    {
+      "name": "MSK2X",
+      "region": "EU",
+      "tunnels": [
+        {
+          "name": "MSK2-ROXY11",
+          "address": "111.88.96.28:29450"
+        }
+      ]
+    },
+    {
+      "name": "KYI",
+      "region": "EU",
+      "tunnels": [
+        {
+          "name": "KYI-ROXY1",
+          "address": "207.211.213.146:29450"
         },
         {
-          "name": "GAME-EU-6XS",
-          "address": "89.222.124.36:29450"
+          "name": "KYI-ROXY2",
+          "address": "207.211.213.145:29450"
         }
       ]
     },
@@ -33,21 +57,33 @@
       "region": "EU",
       "tunnels": [
         {
-          "name": "WAW-ROXY3",
-          "address": "57.128.202.23:29450"
-        },
-        {
-          "name": "WAW-ROXY4",
-          "address": "146.59.110.238:29450"
-        },
-        {
-          "name": "WAW-ROXY5",
-          "address": "146.59.111.52:29450"
+          "name": "WAW-ROXY1",
+          "address": "152.233.43.77:29450"
         }
       ]
     },
     {
-      "name": "GAME-NA",
+      "name": "MAD",
+      "region": "EU",
+      "tunnels": [
+        {
+          "name": "MAD-ROXY1",
+          "address": "89.222.104.146:29450"
+        }
+      ]
+    },
+    {
+      "name": "SOF",
+      "region": "EU",
+      "tunnels": [
+        {
+          "name": "SOF-ROXY1",
+          "address": "169.150.237.163:29450"
+        }
+      ]
+    },
+    {
+      "name": "DAL",
       "region": "NA",
       "tunnels": [
         {
@@ -69,8 +105,8 @@
       "region": "NA",
       "tunnels": [
         {
-          "name": "NYC-ROXY1",
-          "address": "89.187.179.170:29450"
+          "name": "NYC-ROXY2",
+          "address": "89.222.109.140:29450"
         }
       ]
     },
@@ -85,16 +121,102 @@
       ]
     },
     {
-      "name": "GAME-SEA",
+      "name": "MIA",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "MIA-ROXY1",
+          "address": "152.233.23.183:29450"
+        }
+      ]
+    },
+    {
+      "name": "CHI",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "CHI-ROXY1",
+          "address": "46.151.196.220:29450"
+        }
+      ]
+    },
+    {
+      "name": "ASH",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "ASH-ROXY1",
+          "address": "79.127.223.36:29450"
+        }
+      ]
+    },
+    {
+      "name": "ATL",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "ATL-ROXY1",
+          "address": "95.173.192.154:29450"
+        }
+      ]
+    },
+    {
+      "name": "DEN",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "DEN-ROXY1",
+          "address": "178.249.210.12:29450"
+        }
+      ]
+    },
+    {
+      "name": "SEA",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "SEA-ROXY1",
+          "address": "79.127.250.59:29450"
+        }
+      ]
+    },
+    {
+      "name": "TOR",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "TOR-ROXY1",
+          "address": "185.156.47.115:29450"
+        }
+      ]
+    },
+    {
+      "name": "SAN",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "SAN-ROXY1",
+          "address": "79.127.209.171:29450"
+        }
+      ]
+    },
+    {
+      "name": "LIM",
+      "region": "NA",
+      "tunnels": [
+        {
+          "name": "LIM-ROXY1",
+          "address": "89.222.105.74:29450"
+        }
+      ]
+    },
+    {
+      "name": "SGP",
       "region": "SEA",
       "tunnels": [
         {
-          "name": "GAME-SEA-2",
-          "address": "169.150.243.166:29450"
-        },
-        {
-          "name": "GAME-SEA-3",
-          "address": "79.127.213.146:29450"
+          "name": "SGP-1",
+          "address": "89.40.226.42:29450"
         }
       ]
     },
@@ -105,6 +227,46 @@
         {
           "name": "SYD-ROXY1",
           "address": "143.244.63.114:29450"
+        }
+      ]
+    },
+    {
+      "name": "TYO",
+      "region": "NEA",
+      "tunnels": [
+        {
+          "name": "TYO-ROXY1",
+          "address": "95.173.204.130:29450"
+        }
+      ]
+    },
+    {
+      "name": "KOR",
+      "region": "NEA",
+      "tunnels": [
+        {
+          "name": "KOR-1",
+          "address": "89.222.116.89:29450"
+        },
+        {
+          "name": "KOR-2",
+          "address": "89.222.116.90:29450"
+        },
+        {
+          "name": "KOR-3",
+          "address": "89.222.116.91:29450"
+        },
+        {
+          "name": "KOR-4",
+          "address": "89.222.116.92:29450"
+        },
+        {
+          "name": "KOR-5",
+          "address": "89.222.116.93:29450"
+        },
+        {
+          "name": "KOR-6",
+          "address": "89.222.116.94:29450"
         }
       ]
     }

@@ -68,6 +68,16 @@ class StalzoneCoreTest {
         assertTrue(json.contains("\"max_tenuring_threshold\": 4"))
         assertTrue(json.contains("\"use_string_deduplication\": false"))
         assertTrue(json.contains("\"thread_priority_policy\": 0"))
+        val tuned = JvmPresets.build(JvmProfile.RECOMMENDED, 16, 16, 8, 8, heapGb = 4)!!
+        assertEquals(4, tuned.heapGb)
+        assertTrue(tuned.json.contains("\"max_gc_pause_millis\": 20"))
+        assertTrue(tuned.json.contains("\"g1_heap_region_size_mb\": 16"))
+        assertEquals(null, JvmPresets.build(JvmPresets.NONE, 16, 16, 8, 8))
+        assertTrue(JvmPresets.choices.none { it.id == "v1.1.1/default" || it.id == "v1.0.5/default" || it.id == "v1.0.6/default" })
+        assertEquals(JvmPresets.CURRENT, JvmPresets.sameAs("v1.1.1/default"))
+        assertEquals("v1.0.4/default", JvmPresets.sameAs("v1.0.6/default"))
+        assertTrue(JvmPresets.cardSelected(JvmPresets.NONE, null))
+        assertTrue(JvmPresets.cardSelected("v1.0.4/default", "v1.0.5/default"))
     }
 
     @Test
@@ -129,7 +139,7 @@ class StalzoneCoreTest {
         assertEquals(29450, msk1.tunnels.first().port)
         assertTrue(ru.pools.none { it.name == "GAME-EU" })
         assertEquals("EU", TunnelCatalog.regionOf("GAME-EU-2"))
-        assertEquals(listOf("RU", "EU", "NA", "SEA"), TunnelCatalog.regions().map { it.id })
+        assertEquals(listOf("RU", "EU", "NA", "SEA", "NEA"), TunnelCatalog.regions().map { it.id })
 
         assertEquals("Nyrokume", desk.liveAccount()["EXBO_LOGIN"])
         val saved = desk.captureCurrent("alt")

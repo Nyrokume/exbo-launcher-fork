@@ -16,27 +16,31 @@ The second row, left to right:
 - an icon-only circular refresh control (SVG) spins on press and reloads the list. A server that was not in the previous list stays hidden until it answers. A miss drops the node from the pool;
 - the mode menu: **Ping**, **Client RTT**, **Server RTT**, **Stability**. It is an in-page list, not a native combo.
 
-Above the rows, the column captions are **To you**, **Ping**. The column Find best server minimizes is marked. Stability still reads the ping column. Those columns and the block toggles sit in the group card. Labels fit in full at 900×580 and 1280×760.
+Above the rows, the column captions are **Status**, **To you**, **Ping**. The column Find best server minimizes is marked. Stability still reads the ping column. Those columns and the block buttons sit in the group card. Labels fit in full at 900×580 and 1280×760.
 
 The heading, the action panel, and the group cards are separate blocks, with a gap between them. The settings column fills the content area: the 820 px cap is gone. At a 1280 px window the page uses the full content width. Sidebar width is on [Shell scale](../../architecture/shell/).
 
-A group is a card: name, count of visible nodes, and **Exclude group** on the right (after it is applied, **Group excluded**). Pressing it asks for confirmation (“Block N nodes in this group?” / “Return N nodes in this group?”). **Cancel** closes that bar: exclusions, the blocklist, and the firewall stay as they were. A node switch changes one id immediately, with no dialog. Clicking the group name measures only that group. Rows with no valid IPv4 stay hidden. `CLOUD-*` pools are filtered out before the list, measure, and find-best.
+A group is a card: name, count of visible nodes, and **Block** on the right (**Unblock** once every node is closed). The press writes the firewall immediately. There is no confirm bar. The row button does the same for one server. Clicking the group name measures only that group. Rows with no valid IPv4 stay hidden. `CLOUD-*` pools are filtered out before the list, measure, and find-best.
 
-A node row shows a lock (open, closed with the group, or at limit), a dot for “Find best server would save this node”, the name, and two figures. Clicking an available row writes that region’s override. A closed, excluded, or at-limit node cannot be selected.
+A node row shows the name, a status of **Open** or **Closed**, two figures, and a **Block** / **Unblock** button. A closed row is struck through and marked with a red bar on the left. Clicking an available row writes that region’s override. A closed, excluded, or at-limit node cannot be selected.
 
 Empty figures are `—`. No reply puts a label in the ping column. Row tooltips use the scale up to 50 ms, up to 100, and above 100. Loss and jitter for the hour are in the tooltip, not a separate paragraph.
 
 ## Catalog
 
-Mock (`mockCatalog = !liveBackend`) reads the region list from the classpath: `servers-ru.json` for RU, `servers.json` for the other regions (pools whose `region` field matches), and the NEA fixture. Mock does not fetch that list. Live calls `TunnelCatalogs.fetch` over HTTPS. The catalog hosts are unchanged.
+Mock (`mockCatalog = !liveBackend`) reads the region list from the classpath: `servers-ru.json` for RU, and `servers.json` for EU, NA, SEA, and NEA (pools whose `region` field matches). NEA in that file is the `TYO` and `KOR` pools. Mock does not fetch that list over HTTPS. Live calls `TunnelCatalogs.fetch` over HTTPS. The catalog hosts are unchanged.
 
-A missing catalog does not stay on “Loading groups…” over an empty list. Three states are their own cards:
+Before rows, Measure, and Find best, `TunnelPresentation` drops `CLOUD-*` pools and addresses with no valid IPv4. The documentation ranges `192.0.2.0/24`, `198.51.100.0/24`, and `203.0.113.0/24` go with them.
 
-- loading — “Loading groups…”, while the region list is still on the way;
+An open region in a normal run (`probeOnLoad`) probes the nodes after the list arrives. The “Loading groups…” card stays up until only the nodes that answered remain. A miss is not drawn. A server that was not in the previous list stays hidden until it answers. Tests that set `probeOnLoad = false` paint the classpath snapshot at once, with no probe.
+
+A missing catalog does not leave a permanent line over an empty list. The states are their own cards:
+
+- loading — “Loading groups…”, while the list is on the way and while the probe runs;
 - error — “Could not load groups” and a **Retry** button;
 - empty catalog — “No working servers”. If there is no list yet and no error, the card is “Groups are not loaded yet” with **Load**.
 
-On mock, an open region shows the fixture at once. The cards are also on [Loading/error/empty](../../network/states/) and [Mock classpath](../../network/mock-catalog/).
+The cards are also on [Loading/error/empty](../../network/states/) and [Mock classpath](../../network/mock-catalog/).
 
 ## Where it is written
 

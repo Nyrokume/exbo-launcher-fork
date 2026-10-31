@@ -1,12 +1,16 @@
 package dev.launcherfork.ui.screens.auth
 
+import dev.launcherfork.data.exbo.ExboAuthService
+import dev.launcherfork.data.exbo.ExboRealmGate
 import dev.launcherfork.domain.AuthError
+import dev.launcherfork.domain.ExboRealm
 import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.background
 import dev.launcherfork.ui.components.PasswordReveal
 import dev.launcherfork.ui.components.brightenOnHover
 import javafx.css.PseudoClass
+import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
@@ -14,7 +18,9 @@ import javafx.scene.control.Label
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.scene.control.ToggleButton
+import javafx.scene.control.ToggleGroup
 import javafx.scene.control.Tooltip
+import javafx.scene.layout.HBox
 
 /** initial_auth.fxml: login + password. Uses only [dev.launcherfork.domain.AuthService]. */
 class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
@@ -50,7 +56,45 @@ class InitialAuthController(ctx: UiContext) : AuthScreenBase(ctx) {
                 isDisable = true
                 tooltip = Tooltip(ctx.t("fork.live.epic"))
             }
+            wireRealm()
         }
+    }
+
+    /** RU / EU on the live login form. The row stays hidden in the showcase. */
+    private fun wireRealm() {
+        val gate = ctx.realms ?: return
+        val row = root.lookup("#realmRow") as? HBox ?: return
+        val ru = root.lookup("#realmRu") as? ToggleButton ?: return
+        val eu = root.lookup("#realmEu") as? ToggleButton ?: return
+        row.isManaged = true
+        row.isVisible = true
+        val group = ToggleGroup()
+        ru.toggleGroup = group
+        eu.toggleGroup = group
+        paintRealm(gate, ru, eu)
+        ru.setOnAction { if (ru.isSelected) selectRealm(gate, ExboRealm.RU, ru, eu) }
+        eu.setOnAction { if (eu.isSelected) selectRealm(gate, ExboRealm.GLOBAL, ru, eu) }
+    }
+
+    private fun selectRealm(gate: ExboRealmGate, realm: ExboRealm, ru: ToggleButton, eu: ToggleButton) {
+        if (realm == gate.current) return
+        if (!gate.select(realm)) {
+            showError(ctx.t("fork.realm.missing"))
+            paintRealm(gate, ru, eu)
+            return
+        }
+        showError(null)
+        loginField.text = ctx.services.auth.savedLogin ?: ""
+        paintRealm(gate, ru, eu)
+        Thread({
+            val signedIn = (ctx.services.auth as? ExboAuthService)?.tryAuto() == true
+            if (signedIn) Platform.runLater { ctx.navigator.showMain() }
+        }, "exbo-realm-auth").apply { isDaemon = true }.start()
+    }
+
+    private fun paintRealm(gate: ExboRealmGate, ru: ToggleButton, eu: ToggleButton) {
+        ru.isSelected = gate.current == ExboRealm.RU
+        eu.isSelected = gate.current == ExboRealm.GLOBAL
     }
 
     private fun wirePasswordToggle() {

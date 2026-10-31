@@ -5,7 +5,7 @@ description: The launcher column — behavior, RAM, the speed limit, and languag
 
 import ZoneShot from '../../../../components/ZoneShot.astro';
 
-The settings button opens one column. **ИГРА** (RAM), **ПОВЕДЕНИЕ**, **ОБНОВЛЕНИЕ**, and **ЯЗЫК** sit on that column. JVM, the tunnel, sensitivity, and accounts replace the column. There is no graphics page. There is no sound page.
+The settings button opens one column. **ИГРА** (RAM), **ПОВЕДЕНИЕ**, **ОБНОВЛЕНИЕ**, and **ЯЗЫК** sit on that column. JVM, the tunnel, sensitivity, accounts, and localization replace the column. There is no graphics page. There is no sound page.
 
 <ZoneShot file="zone/06_settings.png" caption="Settings column" />
 
@@ -13,7 +13,7 @@ Every change is saved at once.
 
 ## Memory
 
-The scale runs from 2 GB to the machine's whole gigabytes, in steps of 1 GB. The line is «Выделено: N из M». The last 2 GB carry «Мало памяти останется системе». Until a value is chosen, a JVM preset takes the generator's heap. After a choice, a preset click writes that heap.
+The scale runs from 2 GB up to the machine's memory, and never above 8 GB, in steps of 1 GB. The line «Выделено: N из M» and the scale captions use that ceiling: a 32 GB PC tops out at 8 GB. «Мало памяти останется системе» appears when the chosen value would leave the machine with less than 2 GB. Eight gigabytes on a 32 GB PC does not show it. The recommended value is half the memory and at most 6 GB, and it sits in the scale tooltip. Until the gigabytes are stored in settings, a JVM preset takes the generator's heap. After a choice, a preset click writes that heap.
 
 On live the chosen gigabytes go into the launch (`InstalledGameLauncher`). On mock `MockSystemInfo` reports 16 GB and no game starts.
 
@@ -44,5 +44,6 @@ The bundle contains `settings.auto_update`. The form does not.
 ## Next
 
 - [JVM](../jvm/) — presets next to the RAM scale;
+- [Localization](../localization/) — its own header page;
 - [Sensitivity](../sensitivity/) — its own header page;
 - [Limitations](../../reference/limitations/) — P2P and the tray in one list.

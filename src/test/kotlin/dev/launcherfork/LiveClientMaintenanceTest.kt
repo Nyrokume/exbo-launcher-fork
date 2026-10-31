@@ -20,6 +20,8 @@ import dev.launcherfork.domain.GameLauncher
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.domain.ProgressListener
 import dev.launcherfork.domain.Server
+import dev.launcherfork.stalzone.ItemNames
+import dev.launcherfork.stalzone.ItemRename
 import dev.launcherfork.domain.UpdatePhase
 import dev.launcherfork.ui.state.ClientState
 import dev.launcherfork.ui.state.ClientStateStore
@@ -219,6 +221,41 @@ class LiveClientMaintenanceTest {
     }
 
     @Test
+    fun liveVerifyParsesTheLangFileAndKeepsSavedNames(@TempDir dir: Path) {
+        val source = MemorySource(dir)
+        val id = "stalcraft"
+        val client = exboTree(dir, id)
+        val jar = "same-jar".toByteArray()
+        Files.write(client.resolve("classes.jar"), jar)
+        source.version = "catalog-9"
+        source.catalog = writeExboTorrent(
+            ExboTorrent("game", 16384, listOf(ExboTorrentFile("classes.jar", jar.size.toLong(), exboSha1(jar)))),
+        )
+        val lang = client.resolve("modassets").resolve("assets").resolve("stalker").resolve("lang").resolve("ru.lang")
+        Files.createDirectories(lang.parent)
+        Files.writeString(lang, "item.wpn.kedr.name=ПП-91 «Кедр»\n")
+        val overrides = dir.resolve("item-names.json")
+        ItemNames.save(overrides, mapOf("item.wpn.kedr.name" to ItemRename("ПП-91 «Кедр»", "Кедр")))
+        val previous = ItemNames.overridesFile
+        val listenerHook = ItemNames.onRestored
+        ItemNames.overridesFile = { overrides }
+        ItemNames.onRestored = null
+        try {
+            val service = LiveUpdateService(source, { ByteArrayInputStream(jar) }, null)
+            val listener = RecordingListener()
+            service.runOperation(server(id, installed = false), ClientOperation.VERIFY, listener)
+            listener.await()
+            assertTrue(listener.finished)
+            assertEquals(null, listener.failed)
+            assertTrue(Files.readString(lang).contains("item.wpn.kedr.name=Кедр\n"))
+            assertEquals("Кедр", ItemNames.load(overrides).getValue("item.wpn.kedr.name").to)
+        } finally {
+            ItemNames.overridesFile = previous
+            ItemNames.onRestored = listenerHook
+        }
+    }
+
+    @Test
     fun liveVerifyFailureLeavesTheHashAndTheOldFile(@TempDir dir: Path) {
         val source = MemorySource(dir)
         val id = "stalcraft"
@@ -245,7 +282,7 @@ class LiveClientMaintenanceTest {
         Files.writeString(client.resolve("config").apply { Files.createDirectories(this) }.resolve("user.cfg"), "x")
         val outside = dir.resolve("outside.txt")
         Files.writeString(outside, "keep")
-        Files.createSymbolicLink(client.resolve("to-boot"), dir.resolve("bootstrap.jar"))
+        symLink(client.resolve("to-boot"), dir.resolve("bootstrap.jar"))
         val home = dir.resolve("user-home")
         Files.createDirectories(home)
         val fractions = mutableListOf<Double>()
@@ -276,7 +313,7 @@ class LiveClientMaintenanceTest {
             assertThrows<UnsafeClientDelete> { deleteClientDirectory(path, dir, home = home) }
         }
         val link = runtime.resolve("linked")
-        Files.createSymbolicLink(link, dir.resolve("launcher"))
+        symLink(link, dir.resolve("launcher"))
         assertThrows<UnsafeClientDelete> { deleteClientDirectory(link, dir, home = home) }
         assertTrue(Files.isSymbolicLink(link))
         assertTrue(Files.exists(dir.resolve("launcher").resolve("launcher.jar")))

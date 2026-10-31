@@ -48,7 +48,7 @@ class ShowcaseTest {
         assertEquals(1920.0, on.width)
         assertEquals(1080.0, on.height)
         assertFalse(on.captions)
-        assertEquals("/tmp/stills", on.stillsDir!!.path)
+        assertEquals(java.io.File("/tmp/stills"), on.stillsDir)
         assertEquals(2, on.loops)
     }
 

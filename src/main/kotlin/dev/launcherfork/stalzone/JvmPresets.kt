@@ -1,11 +1,15 @@
 package dev.launcherfork.stalzone
 
+import dev.launcherfork.domain.MachineProfile
+
 /**
  * JVM presets from [EXBO-Community/stalcraft-jvm-optimization](https://github.com/EXBO-Community/stalcraft-jvm-optimization):
  * the released generators (`internal/profile` v1.0.4–v1.1.2) and `examples/aikar.json`.
  *
- * Heap rules follow those generators. Installed RAM is passed in as both total and free: the launcher does not
- * sample available memory. Large pages and the big-cache / slow-RAM branches stay off.
+ * [build] with a [MachineProfile] follows the generators: free memory sizes the old heaps, physical cores
+ * pick the weak-CPU branch, slow RAM (≤ 2933 MT/s) raises the v1.1.2 pause goal, L3 of 64 MB or more
+ * selects the v1.1.0 big-cache branch, and large pages are written only when the privilege is already on.
+ * Unknown speed is not slow. The 8 kHz profile and Aikar stay as written.
  * A preset whose generator would allocate no heap (too little RAM) is omitted (`null`).
  *
  * `heapGb` passed to [build] is the settings bar. When it is set, that heap replaces the generator's, and the
@@ -13,33 +17,89 @@ package dev.launcherfork.stalzone
  * code cache). GC and JIT flags stay, so the client's `-Xmx` and the wrapper's injected heap are the same number.
  */
 object JvmPresets {
-    data class Preset(val id: String, val version: String, val hintKey: String)
+    data class Preset(val id: String, val version: String, val hintKey: String, val nameKey: String? = null)
 
     data class Built(val heapGb: Int, val json: String)
 
-    /** Newest release first, then the Aikar example. `v1.1.2/default` is the wrapper's current profile. */
-    val all: List<Preset> = listOf(
+    /** Clears the wrapper profile. The game starts with its own flags. */
+    const val NONE = "none"
+
+    /**
+     * What the settings grid offers. Exact copies stay out: v1.1.1 is v1.1.2, and v1.0.5 / v1.0.6
+     * match v1.0.4 once the RAM bar sets the heap. [build] still accepts those ids.
+     */
+    val choices: List<Preset> = listOf(
+        Preset(NONE, "", "settings.jvm.without.hint", nameKey = "settings.jvm.without"),
+        Preset(JvmProfile.RECOMMENDED, "8khz", "settings.preset.8khz", nameKey = "settings.jvm.profile"),
         Preset("v1.1.2/default", "v1.1.2", "settings.preset.v112"),
-        Preset("v1.1.1/default", "v1.1.1", "settings.preset.v111"),
         Preset("v1.1.0/default", "v1.1.0", "settings.preset.v110"),
         Preset("v1.0.8/default", "v1.0.8", "settings.preset.v108"),
         Preset("v1.0.7/default", "v1.0.7", "settings.preset.v107"),
-        Preset("v1.0.6/default", "v1.0.6", "settings.preset.v106"),
-        Preset("v1.0.5/default", "v1.0.5", "settings.preset.v105"),
         Preset("v1.0.4/default", "v1.0.4", "settings.preset.v104"),
         Preset("aikar", "aikar", "settings.preset.aikar"),
     )
 
+    /** Profiles that write a file. The none row is a choice, not a config. */
+    val all: List<Preset> = choices.filter { it.id != NONE }
+
+    private val legacy: List<Preset> = listOf(
+        Preset("v1.1.1/default", "v1.1.1", "settings.preset.v112"),
+        Preset("v1.0.6/default", "v1.0.6", "settings.preset.v104"),
+        Preset("v1.0.5/default", "v1.0.5", "settings.preset.v104"),
+    )
+
     const val CURRENT = "v1.1.2/default"
 
-    fun build(id: String, totalGb: Int, freeGb: Int, threads: Int, cores: Int, heapGb: Int? = null): Built? {
+    fun find(id: String?): Preset? {
+        if (id.isNullOrBlank()) return choices.first { it.id == NONE }
+        return choices.firstOrNull { it.id == id } ?: legacy.firstOrNull { it.id == id }
+    }
+
+    /** Card that should light up. Hidden copies point at the profile they match. */
+    fun sameAs(id: String): String = when (id) {
+        "v1.1.1/default" -> CURRENT
+        "v1.0.6/default", "v1.0.5/default" -> "v1.0.4/default"
+        else -> id
+    }
+
+    fun cardSelected(cardId: String, active: String?): Boolean =
+        if (cardId == NONE) active.isNullOrBlank() else active != null && sameAs(cardId) == sameAs(active)
+
+    fun build(id: String, machine: MachineProfile, heapGb: Int? = null): Built? = build(
+        id,
+        machine.totalGb,
+        machine.freeGb,
+        machine.threads.coerceAtLeast(1),
+        machine.cores.coerceAtLeast(1),
+        heapGb,
+        machine.slowRam,
+        machine.bigCache,
+        machine.largePages,
+    )
+
+    fun build(
+        id: String,
+        totalGb: Int,
+        freeGb: Int,
+        threads: Int,
+        cores: Int,
+        heapGb: Int? = null,
+        slowRam: Boolean = false,
+        bigCache: Boolean = false,
+        largePages: Boolean = false,
+    ): Built? {
+        if (id == NONE) return null
+        if (id == JvmProfile.RECOMMENDED) {
+            val heap = heapGb?.takeIf { it > 0 } ?: 6
+            return Built(heap, applyHeapToJson(id, JvmProfile.tunedJson(), heap))
+        }
         if (id == "aikar") {
             val heap = heapGb?.takeIf { it > 0 } ?: 6
             return Built(heap, applyHeapToJson(id, AIKAR, heap))
         }
         val cfg = when (id) {
-            "v1.1.2/default", "v1.1.1/default" -> v111(totalGb, threads)
-            "v1.1.0/default" -> v110(totalGb, threads)
+            "v1.1.2/default", "v1.1.1/default" -> v111(totalGb, threads, slowRam)
+            "v1.1.0/default" -> v110(totalGb, threads, bigCache)
             "v1.0.8/default" -> v107(totalGb, freeGb, cores, minHeap = 4, dontCompileHugeOnWeak = true)
             "v1.0.7/default" -> v107(totalGb, freeGb, cores, minHeap = 6, dontCompileHugeOnWeak = false)
             "v1.0.6/default" -> v106(totalGb, freeGb, threads)
@@ -49,6 +109,7 @@ object JvmPresets {
         if (cfg.heap <= 0) return null
         val chosen = heapGb?.takeIf { it > 0 }
         if (chosen != null && chosen != cfg.heap) applyHeap(id, cfg, chosen)
+        cfg.largePages = largePages
         return Built(cfg.heap, cfg.json())
     }
 
@@ -99,7 +160,7 @@ object JvmPresets {
     private fun replaceNum(json: String, key: String, value: Int): String =
         json.replace(Regex(""""$key"\s*:\s*\d+"""), """"$key": $value""")
 
-    private fun v111(totalGb: Int, threads: Int): Cfg {
+    private fun v111(totalGb: Int, threads: Int, slow: Boolean): Cfg {
         val heap = when {
             totalGb >= 16 -> 6
             totalGb >= 12 -> 5
@@ -108,7 +169,6 @@ object JvmPresets {
             else -> 2
         }
         val (parallel, concurrent) = modernThreads(threads)
-        val slow = false
         return modernBase(heap, totalGb, parallel, concurrent).apply {
             pauseMs = if (slow) 150 else 100
             regionMb = if (heap <= 3) 4 else 8
@@ -128,7 +188,7 @@ object JvmPresets {
         }
     }
 
-    private fun v110(totalGb: Int, threads: Int): Cfg {
+    private fun v110(totalGb: Int, threads: Int, bigCache: Boolean): Cfg {
         val heap = when {
             totalGb >= 24 -> 8
             totalGb >= 16 -> 6
@@ -138,7 +198,6 @@ object JvmPresets {
             else -> 2
         }
         val (parallel, concurrent) = modernThreads(threads)
-        val bigCache = false
         return modernBase(heap, totalGb, parallel, concurrent).apply {
             pauseMs = if (bigCache) 25 else 50
             regionMb = when {
@@ -404,6 +463,7 @@ object JvmPresets {
         var serverClass = false
         var xmm = false
         var fpu = false
+        var largePages = false
         var reflect = 0
         var autoBox = 0
         var priorities = false
@@ -449,7 +509,7 @@ object JvmPresets {
                 "always_act_as_server_class" to serverClass,
                 "use_xmm_for_array_copy" to xmm,
                 "use_fpu_for_spilling" to fpu,
-                "use_large_pages" to false,
+                "use_large_pages" to largePages,
                 "reflection_inflation_threshold" to reflect,
                 "auto_box_cache_max" to autoBox,
                 "use_thread_priorities" to priorities,

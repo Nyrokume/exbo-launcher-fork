@@ -17,10 +17,11 @@ class GameFoldersTest {
 
     @Test
     fun gameFolderIsTheServerIdUnderTheGameRoot() {
-        assertEquals(root.resolve(server.id), GameFolders.dirOf(root, server))
-        assertEquals(Path.of("/home/player/Games/EXBO/${server.id}"), GameFolders.dirOf(root, server))
+        val folder = GameFolders.dirOf(root, server)
+        assertEquals(root.toAbsolutePath().normalize().resolve(server.id).normalize(), folder)
+        assertEquals(Path.of("/home/player/Games/EXBO/${server.id}").toAbsolutePath().normalize(), folder)
         val settings = LauncherSettings(gameRoot = Path.of("/data/../data/games"))
-        assertEquals(Path.of("/data/games/${server.id}"), GameFolders.dirOf(settings, server))
+        assertEquals(Path.of("/data/games/${server.id}").toAbsolutePath().normalize(), GameFolders.dirOf(settings, server))
     }
 
     @Test

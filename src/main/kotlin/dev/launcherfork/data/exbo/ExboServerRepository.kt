@@ -12,9 +12,25 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /** Server cards from the working launcher's `/listServers`, using the token from [ExboAuthService]. */
 class ExboServerRepository(
-    private val api: ExboApi,
-    private val locate: (String) -> Path = { ExboClients.directory(it) },
+    api: ExboApi,
+    private val locateOverride: ((String) -> Path)? = null,
 ) : ServerRepository {
+    private var api: ExboApi = api
+
+    /** Follow a realm switch. The previous catalog is dropped. */
+    internal fun use(next: ExboApi) {
+        if (next === api) return
+        api.onTokenCleared = null
+        api = next
+        api.onTokenCleared = { drop() }
+        drop()
+    }
+
+    private fun locate(id: String): Path {
+        locateOverride?.let { return it(id) }
+        val root = api.dataRoot
+        return ExboClients.directory(id, ExboClients.clientsFile(root), ExboClients.runtimeDir(root))
+    }
     private val commands = ConcurrentHashMap<String, String>()
     private val versions = ConcurrentHashMap<String, String>()
     private val seeds = ConcurrentHashMap<String, List<String>>()
@@ -54,7 +70,11 @@ class ExboServerRepository(
         catalogClientDownloadable(versions[server.id], seeds[server.id].orEmpty())
 
     override fun needsClientUpdate(server: Server): Boolean {
-        val state = diskInstall(locate(server.id), versions[server.id], readInstalledHash(server.id))
+        val state = diskInstall(
+            locate(server.id),
+            versions[server.id],
+            readInstalledHash(server.id, ExboClients.runtimeDir(api.dataRoot)),
+        )
         return state.present && !state.current
     }
 
@@ -63,7 +83,7 @@ class ExboServerRepository(
     override fun close() = Unit
 
     private fun apply(body: String) {
-        val catalog = parseServerCatalog(body)
+        val catalog = parseServerCatalog(body, api.dataRoot)
         commands.clear()
         commands.putAll(catalog.runCommands)
         versions.clear()

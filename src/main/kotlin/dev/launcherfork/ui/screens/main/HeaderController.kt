@@ -47,6 +47,7 @@ class HeaderController(private val ctx: UiContext) : Disposable {
     @FXML lateinit var navTunnel: Button
     @FXML lateinit var navSens: Button
     @FXML lateinit var navAccounts: Button
+    @FXML lateinit var navLoc: Button
     @FXML lateinit var communities: Button
     @FXML lateinit var communitiesCaret: Region
     @FXML lateinit var communityMenu: VBox
@@ -57,7 +58,7 @@ class HeaderController(private val ctx: UiContext) : Disposable {
     var onLink: (String) -> Unit = {}
     /** Fired after the communities menu opened (MainController closes the profile menu). */
     var onMenuShown: () -> Unit = {}
-    /** Fired with a separate settings page id (`jvm`, `tunnel`, `sens`, `accounts`). */
+    /** Fired with a separate settings page id (`jvm`, `tunnel`, `sens`, `accounts`, `loc`). */
     var onSettingsSection: (String) -> Unit = {}
 
     /** Menu rows in [CommunityLinks.all] order; each row's userData is its [CommunityLink]. */
@@ -107,7 +108,7 @@ class HeaderController(private val ctx: UiContext) : Disposable {
         private set
 
     /**
-     * Settings mode swaps the social links for JVM / tunnel / sensitivity / account swap. [section] gets the
+     * Settings mode swaps the social links for JVM / tunnel / sensitivity / account swap / localization. [section] gets the
      * accent (`selected`); the settings column (`ram` and the blocks in it) leaves every button unselected.
      */
     fun setSettingsNav(shown: Boolean, section: String) {
@@ -129,6 +130,7 @@ class HeaderController(private val ctx: UiContext) : Disposable {
             "tunnel" to navTunnel,
             "sens" to navSens,
             "accounts" to navAccounts,
+            "loc" to navLoc,
         )
 
     fun showCommunityMenu(focusFirst: Boolean = false) {

@@ -40,10 +40,16 @@ interface AuthService {
     fun logout()
 }
 
-/** Facts about the user's computer the UI needs (RAM options in settings). */
+/** Facts about the user's computer the UI needs (RAM options and JVM flags). */
 fun interface SystemInfo {
     /** Physical memory of the computer, MB. */
     fun totalRamMb(): Long
+
+    /**
+     * This computer, when the backend can read it.
+     * Null on the showcase and in tests, so screenshots stay on one fixed machine.
+     */
+    fun machine(): MachineProfile? = null
 }
 
 interface ServerRepository {

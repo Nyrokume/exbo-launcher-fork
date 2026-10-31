@@ -13,7 +13,10 @@ import java.io.IOException
  * Auth against the installed EXBO launcher backend.
  * The password is sent the same way the working client sends it and is not stored here.
  */
-class ExboAuthService(private val api: ExboApi) : AuthService {
+class ExboAuthService(private val backend: ExboBackend) : AuthService {
+    constructor(api: ExboApi) : this(ExboBackend(api))
+
+    private val api: ExboApi get() = backend.api
     @Volatile private var pendingLogin: String? = null
     @Volatile private var pendingRemember = false
 
@@ -54,18 +57,30 @@ class ExboAuthService(private val api: ExboApi) : AuthService {
         private set
 
     fun tryAuto(): Boolean {
+        val seen = backend.generation
+        val current = backend.api
         val type = try {
-            api.autoAuth()
+            current.autoAuth()
         } catch (_: IOException) {
+            if (backend.generation != seen || backend.api !== current) return false
             autoType = "NO_CONNECTION"
             return false
         }
+        if (backend.generation != seen || backend.api !== current) return false
         autoType = type
-        if (type != "OK" || api.token == null) return false
-        val name = api.accountLogin ?: return false
+        if (type != "OK" || current.token == null) return false
+        val name = current.accountLogin ?: return false
         currentSession = UserSession(name)
         savedLogin = name
         return true
+    }
+
+    /** Drops the session after a realm switch. The login field reads [savedLogin] from the new install. */
+    fun onRealmChanged() {
+        currentSession = null
+        pendingLogin = null
+        autoType = null
+        savedLogin = api.savedLogin()
     }
 
     override fun logout() {

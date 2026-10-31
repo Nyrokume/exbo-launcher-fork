@@ -7,7 +7,7 @@ Two windows. Pre-main is 460 px wide and as tall as its panel (the launcher upda
 
 ## Happy login
 
-Update → login → an email code or an authenticator code when needed → main window → **PLAY**.
+Update → login → an email code or an authenticator code when needed → main window → **PLAY**. On live, RU and EU sit above the fields. Mock has no such row.
 
 `-Dlauncher.mock2fa=none` skips the second factor. On live, the EXBO client response decides the second factor, not this property.
 
@@ -43,7 +43,7 @@ The logo scales with the column, and the game subtitle stays inside the row. The
 
 The heading, the action panel, and the group cards are separate blocks. The **To you** / **Ping** columns and the block toggles stay in place. Labels fit in full at 900×580 and 1280×760.
 
-Mock shows the classpath catalog (`servers-ru.json`, `servers.json`, the NEA fixture) and does not fetch that list. **Loading groups…**, **Could not load groups**, and an empty catalog are different cards. The error card offers **Retry**. **Cancel** on the group-block confirm does not touch the firewall.
+Mock shows the classpath catalog (`servers-ru.json`, `servers.json`, NEA as the `TYO` and `KOR` pools) and does not fetch that list over HTTPS. The probe then keeps only the nodes that answered. **Loading groups…**, **Could not load groups**, and an empty catalog are different cards. The error card offers **Retry**. **Block** writes the firewall at once. There is no confirm bar.
 
 ## Profile and exit
 

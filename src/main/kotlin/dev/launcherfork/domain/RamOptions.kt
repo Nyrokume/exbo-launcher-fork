@@ -4,27 +4,27 @@ import kotlin.math.roundToInt
 
 /**
  * RAM of the game (-Xmx) for the settings RAM bar, in whole gigabytes:
- *  - a value moves in steps of exactly [STEP_GB] (1 GB) and is clamped to [MIN_GB]..[maxGb] = [usableGb], the whole
- *    GB of memory (rounded down, but a size up to 0.3 GB below N GB counts as N: hardware-reserved memory), so a
- *    16 GB PC (16 384 or 16 250 MB) allows 2..16 GB (user request: «от 2 до 16 ГБ»; no system reserve is held back)
- *    and 15.6 GB allows 2..15 GB;
- *  - the line above the bar names the same size ([totalGb] = [usableGb]: "6 ГБ из 16 ГБ", 15.6 GB: "из 15 ГБ") and
- *    the bar has exactly that many segments (0..[maxGb]), all reachable: one function for the text, the scale, the max;
- *  - a value within the last [LOW_SYSTEM_MEMORY_GB] GB of [maxGb] (15, 16 of 16; 14, 15 of 15) is allowed but gets a
- *    soft note «Мало памяти останется системе» ([leavesLittleForSystem]);
- *  - the recommended value is half of the memory, at most [RECOMMENDED_MAX_GB] (more heap does not make the game
- *    faster, it makes GC pauses longer), clamped to the same range.
+ *  - a value moves in steps of exactly [STEP_GB] (1 GB) and is clamped to [MIN_GB]..[maxGb];
+ *  - [maxGb] is the machine's whole GB ([usableGb]: rounded down, but a size up to 0.3 GB below N GB counts as N),
+ *    and never above [ALLOCATION_CAP_GB]. A 32 GB PC does not get a 32 GB heap: past 8 GB the game does not run
+ *    better and GC pauses get longer. A smaller PC still tops out at that PC (8 GB → 2..8, 4 GB → 2..4);
+ *  - the line above the bar and the scale use that same ceiling ("4 ГБ из 8 ГБ" on a 32 GB PC);
+ *  - a value that leaves the machine with less than [LOW_SYSTEM_MEMORY_GB] GB gets a soft note
+ *    «Мало памяти останется системе» ([leavesLittleForSystem]). On a 32 GB PC, 8 GB does not;
+ *  - the recommended value is half of the machine, at most [RECOMMENDED_MAX_GB], clamped to the same range.
  */
 object RamOptions {
     const val MIN_GB = 2
     const val STEP_GB = 1
     const val RECOMMENDED_MAX_GB = 6
+    /** Largest heap the bar offers. JVM presets stop at this size; a larger one does not help the game. */
+    const val ALLOCATION_CAP_GB = 8
     const val MB_PER_GB = 1024
-    /** Selections in the last 2 GB of [maxGb] (gb > maxGb - 2) show the «little memory left» note. */
+    /** Selections that leave the machine with less than 2 GB show the «little memory left» note. */
     const val LOW_SYSTEM_MEMORY_GB = 2
 
-    /** Memory size in GB for the summary line («из N ГБ»): the same [usableGb] as the bar's scale and the max. */
-    fun totalGb(totalMb: Long): Int = usableGb(totalMb)
+    /** «из N ГБ» and the bar scale: the selectable ceiling, not the raw installed size. */
+    fun totalGb(totalMb: Long): Int = maxGb(totalMb)
 
     /** How far below a whole N GB the reported memory may be and still count as N GB ([usableGb]): 0.3 GB. */
     const val HARDWARE_RESERVE_TOLERANCE_MB = 307
@@ -43,16 +43,21 @@ object RamOptions {
         return (if (up * MB_PER_GB - totalMb <= HARDWARE_RESERVE_TOLERANCE_MB) up else totalMb / MB_PER_GB).toInt()
     }
 
-    /** Largest allowed allocation: [usableGb] (at most 0.3 GB above the reported memory), never below [MIN_GB]. */
-    fun maxGb(totalMb: Long): Int = maxOf(MIN_GB, usableGb(totalMb))
+    /**
+     * Largest heap the bar offers: the machine's [usableGb], never below [MIN_GB] and never above [ALLOCATION_CAP_GB].
+     */
+    fun maxGb(totalMb: Long): Int = minOf(ALLOCATION_CAP_GB, maxOf(MIN_GB, usableGb(totalMb)))
 
     /** [gb] limited to [MIN_GB]..[maxGb]. */
     fun clamp(gb: Int, totalMb: Long): Int = gb.coerceIn(MIN_GB, maxGb(totalMb))
 
-    /** True when [gb] is within the last [LOW_SYSTEM_MEMORY_GB] GB of [maxGb]: 15 and 16 of 16 GB, not 14. */
-    fun leavesLittleForSystem(gb: Int, totalMb: Long): Boolean = gb > maxGb(totalMb) - LOW_SYSTEM_MEMORY_GB
+    /**
+     * True when [gb] leaves the machine with less than [LOW_SYSTEM_MEMORY_GB] GB.
+     * Compared with [usableGb], not the cap: 8 GB of a 32 GB PC leaves plenty.
+     */
+    fun leavesLittleForSystem(gb: Int, totalMb: Long): Boolean = gb > usableGb(totalMb) - LOW_SYSTEM_MEMORY_GB
 
-    fun recommended(totalMb: Long): Int = clamp(minOf(totalGb(totalMb) / 2, RECOMMENDED_MAX_GB), totalMb)
+    fun recommended(totalMb: Long): Int = clamp(minOf(usableGb(totalMb) / 2, RECOMMENDED_MAX_GB), totalMb)
 
     /** Nearest whole GB of [mb] (ties go up, like Math.round), clamped. */
     fun fromMb(mb: Int, totalMb: Long): Int = clamp((mb / MB_PER_GB.toDouble()).roundToInt(), totalMb)

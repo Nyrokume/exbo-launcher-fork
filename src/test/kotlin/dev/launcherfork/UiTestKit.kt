@@ -47,6 +47,13 @@ object UiTestKit {
     fun key(target: Node, code: KeyCode) =
         javafx.event.Event.fireEvent(target, KeyEvent(KeyEvent.KEY_PRESSED, "", "", code, false, false, false, false))
 
+    fun doubleClick(target: Node) {
+        javafx.event.Event.fireEvent(target, MouseEvent(
+            MouseEvent.MOUSE_CLICKED, 1.0, 1.0, 1.0, 1.0, MouseButton.PRIMARY, 2,
+            false, false, false, false, true, false, false, true, false, false, null,
+        ))
+    }
+
     fun mouse(target: Node, type: javafx.event.EventType<MouseEvent>, sceneX: Double, sceneY: Double) {
         // x / y of a source-less event are scene coordinates; fireEvent converts them to the target's local ones
         javafx.event.Event.fireEvent(target, MouseEvent(

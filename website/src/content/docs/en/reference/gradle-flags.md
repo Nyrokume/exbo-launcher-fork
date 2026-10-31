@@ -17,6 +17,7 @@ Pass them to `./gradlew run` or to `LauncherFork.exe`. These are properties of t
 | `launcher.mock2fa=random\|email\|totp\|none` | Mock second factor. Default `random` outside a tour. A tour with the property unset uses `none` |
 | `launcher.onlineTickMs=<ms>` | How often the mock online count drifts. Default 10000. `0` keeps 1284. A tour always uses 0 |
 | `launcher.demo` | Any set value keeps mock, even when an EXBO client is installed |
+| `launcher.realm=ru\|global` | Which installed copy to open on live. `global` is EU, the `Exbo_East` folder. Unset uses the `exbo.realm` key, then RU when that install exists |
 | `launcher.dev=true` | F1–F7 on the main window. Esc works without the property |
 
 ## Showcase and stills

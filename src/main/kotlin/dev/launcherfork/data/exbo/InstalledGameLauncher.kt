@@ -4,6 +4,7 @@ import dev.launcherfork.domain.Cancellable
 import dev.launcherfork.domain.GameLauncher
 import dev.launcherfork.domain.GameListener
 import dev.launcherfork.domain.Server
+import dev.launcherfork.stalzone.ItemNames
 import dev.launcherfork.stalzone.StalzonePaths
 import dev.launcherfork.stalzone.TunnelOverrides
 import java.nio.file.Path
@@ -45,6 +46,7 @@ class InstalledGameLauncher(
                 if (session == null) {
                     System.err.println("[launcher-fork] launch_skip session=false")
                 } else {
+                    runCatching { applyItemNames(root) }
                     val baked = TunnelOverrides.commandWithOverrides(
                         bakeRunCommand(parseRunArgs(command), root, name, session, ramMb()),
                         StalzonePaths.tunnelOverridesFile(),
@@ -73,6 +75,11 @@ class InstalledGameLauncher(
             destroyTree(process.get(), seen)
             waiter.interrupt()
         }
+    }
+
+    /** Re-reads the lang file and puts saved item and weapon names back before the process starts. */
+    private fun applyItemNames(root: Path) {
+        ItemNames.restoreAfterUpdate(root)
     }
 
     private fun waitForTree(process: Process, seen: MutableSet<Long>, root: Path) {

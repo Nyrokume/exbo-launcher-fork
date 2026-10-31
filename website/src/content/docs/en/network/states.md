@@ -7,16 +7,16 @@ While a region's list is missing, «Loading groups…» does not sit forever abo
 
 | Card | Title | Also |
 |---|---|---|
-| Loading | «Loading groups…» | «The list for this region is still on the way». Only while the list is still on the way |
+| Loading | «Loading groups…» | «The list for this region is still on the way». While the list is on the way and while the nodes are probed |
 | Error | «Could not load groups» | «Try again. There is no saved copy for this region.» Button «Retry» |
 | Empty | «Groups are not loaded yet» | «Press Load to open the list.» Button «Load» |
 | List arrived, no working nodes | «No working servers» | This is an empty parse of a catalog, not the waiting card |
 
 «Retry» and «Load» fetch the region again. Those cards have no other buttons.
 
-On mock, when `TunnelServices.mockCatalog` is true (`!liveBackend`), the open region shows the classpath snapshot at once. The loading card does not stay up for that snapshot.
+On mock the list is the classpath (`TunnelServices.mockCatalog`, that is `!liveBackend`). In a normal run `probeOnLoad` is true: after the snapshot the loading card stays until the probe leaves only the nodes that answered. A miss is not a row. Tests that set `probeOnLoad = false` paint the snapshot at once, and the loading card does not stay up for it.
 
-On live `mockCatalog` is false. The list is `TunnelCatalogs.fetch`: the region's HTTPS hosts, redirects are not followed, a 10 s budget, a 3 s source timeout. Until the reply arrives, the loading card is shown. A network failure is the card with «Retry».
+On live `mockCatalog` is false. The list is `TunnelCatalogs.fetch`: the region's HTTPS hosts, redirects are not followed, a 10 s budget, a 3 s source timeout. Until the reply arrives, the loading card is shown. The same card stays up through the probe. A network failure is the card with «Retry».
 
 `docs/screenshots/` has no frame of the tunnel after these cards. None is invented here.
 

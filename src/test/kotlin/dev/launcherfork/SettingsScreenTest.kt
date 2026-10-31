@@ -2,6 +2,7 @@ package dev.launcherfork
 
 import dev.launcherfork.UiTestKit.THEMES
 import dev.launcherfork.UiTestKit.applyTheme
+import dev.launcherfork.UiTestKit.doubleClick
 import dev.launcherfork.UiTestKit.key
 import dev.launcherfork.UiTestKit.mainOnScreen
 import dev.launcherfork.UiTestKit.mouse
@@ -38,10 +39,8 @@ import javafx.geometry.Bounds
 import javafx.scene.Node
 import javafx.scene.Parent
 import javafx.scene.control.Button
-import javafx.scene.control.CheckBox
 import javafx.scene.control.Control
 import javafx.scene.control.Labeled
-import javafx.scene.control.ToggleButton
 import javafx.scene.input.KeyCode
 import javafx.scene.input.MouseEvent
 import org.junit.jupiter.api.AfterEach
@@ -78,6 +77,7 @@ class SettingsScreenTest {
     fun stubTunnelIo(@TempDir dir: Path) {
         TunnelServices.directory = dir
         TunnelServices.inline = true
+        TunnelServices.probeOnLoad = false
         TunnelServices.fetch = { region -> TunnelFixtures.catalog(region) }
         TunnelServices.probe = { TunnelProbeOutcome.NoReply }
     }
@@ -85,6 +85,17 @@ class SettingsScreenTest {
     @AfterEach
     fun restoreTunnelIo() {
         TunnelServices.reset()
+    }
+
+    private fun tunnelRowText(button: Button): String? = tunnelLabeled(button.graphic, "tunnel-row")?.text
+
+    private fun tunnelStatusText(button: Button): String =
+        tunnelLabeled(button.graphic, "tunnel-block-status")?.text ?: error("row has no block status")
+
+    private fun tunnelLabeled(node: javafx.scene.Node?, style: String): Labeled? {
+        if (node is Labeled && style in node.styleClass) return node
+        val parent = node as? Parent ?: return null
+        return parent.childrenUnmodifiable.firstNotNullOfOrNull { tunnelLabeled(it, style) }
     }
 
     private fun contains(outer: Bounds, inner: Bounds, slack: Double = 0.5) =
@@ -139,8 +150,8 @@ class SettingsScreenTest {
         assertFalse(header.linksContainer.isManaged, "$where: social links stay in the nav on settings")
         assertTrue(s.settingsRoot.lookupAll(".settings-pagebar").isEmpty(), "$where: a second tab switch is still on the page")
         assertNull(header.settingsNav.lookup("#settingsNavRam"), "$where: memory still has its own tab")
-        val tools = listOf(header.navJvm, header.navTunnel, header.navSens, header.navAccounts)
-        assertEquals(tools, header.settingsNav.children.toList(), "$where: the switch is not JVM, tunnel, sensitivity and accounts")
+        val tools = listOf(header.navJvm, header.navTunnel, header.navSens, header.navAccounts, header.navLoc)
+        assertEquals(tools, header.settingsNav.children.toList(), "$where: the switch is not JVM, tunnel, sensitivity, accounts and localization")
         tools.forEach { assertFalse("selected" in it.styleClass, "$where: ${it.text} selected on the column") }
         tools.zipWithNext { a, b ->
             assertTrue(a.sceneBounds().maxX <= b.sceneBounds().minX + 0.5, "$where: ${a.text} overlaps ${b.text}")
@@ -154,7 +165,7 @@ class SettingsScreenTest {
         assertEquals(column, s.launcherPage.children.toList(), "$where: column order")
         assertFalse(s.launcherPage.children.contains(s.tunnelPage), "$where: tunnel is still in the column")
         column.forEach { assertTrue(it.isManaged && it.isVisible, "$where: ${it.id} hidden in the column") }
-        listOf(s.jvmPage, s.tunnelPage, s.accountsPage, s.sensPage).forEach {
+        listOf(s.jvmPage, s.tunnelPage, s.accountsPage, s.sensPage, s.locPage).forEach {
             assertFalse(it.isManaged, "$where: ${it.id} open on the column")
         }
         val pageWidth = s.launcherPage.sceneBounds().width
@@ -183,12 +194,19 @@ class SettingsScreenTest {
         val view = s.scroll.sceneBounds()
         assertTrue(s.behaviourSection.sceneBounds().minY < view.maxY, "$where: only the RAM bar is on the first screen")
         checkRows(s, where)
-        val pages = listOf("jvm" to s.jvmPage, "tunnel" to s.tunnelPage, "sens" to s.sensPage, "accounts" to s.accountsPage)
+        val pages = listOf(
+            "jvm" to s.jvmPage,
+            "tunnel" to s.tunnelPage,
+            "sens" to s.sensPage,
+            "accounts" to s.accountsPage,
+            "loc" to s.locPage,
+        )
         val navOf = mapOf(
             "jvm" to header.navJvm,
             "tunnel" to header.navTunnel,
             "sens" to header.navSens,
             "accounts" to header.navAccounts,
+            "loc" to header.navLoc,
         )
         pages.forEach { (id, page) ->
             s.showSection(id)
@@ -335,13 +353,13 @@ class SettingsScreenTest {
         val (c, _) = settingsWith(LauncherSettings(ramFraction = 0.5))
         FxTestSupport.onFx {
             val bar = c.ramBar
-            assertEquals(16, bar.totalGb); assertEquals(2, bar.minGb); assertEquals(16, bar.maxGb); assertEquals(6, bar.recommendedGb)
-            assertFill(c, 2, 16, "legacy 0.5 = 2304 MB -> 2 GB")
-            assertEquals("Выделено: 2 ГБ из 16 ГБ", c.ramSummary.text)
-            for (v in listOf(6, 9, 14, 16)) {
+            assertEquals(8, bar.totalGb); assertEquals(2, bar.minGb); assertEquals(8, bar.maxGb); assertEquals(6, bar.recommendedGb)
+            assertFill(c, 2, 8, "legacy 0.5 = 2304 MB -> 2 GB")
+            assertEquals("Выделено: 2 ГБ из 8 ГБ", c.ramSummary.text)
+            for (v in listOf(6, 8)) {
                 bar.setValue(v)
-                assertFill(c, v, 16, "value $v")
-                assertEquals("Выделено: $v ГБ из 16 ГБ", c.ramSummary.text)
+                assertFill(c, v, 8, "value $v")
+                assertEquals("Выделено: $v ГБ из 8 ГБ", c.ramSummary.text)
             }
             // equal segments with a small gap, a bar (not a slider): no thumb, no tick labels
             val seg = bar.segments.map { it.sceneBounds() }
@@ -351,31 +369,31 @@ class SettingsScreenTest {
             assertTrue(bar.childrenUnmodifiable.all { "ram-segment" in it.styleClass }, "only segments inside the bar")
             // the value label sits in the RAM card, right above the bar
             assertTrue(c.ramSummary.sceneBounds().maxY <= bar.sceneBounds().minY, "value label not above the bar")
-            // min / max captions right under the bar, on one line, centred under the first / last selectable segment (2, 16 GB)
+            // min / max captions right under the bar, on one line, centred under the first / last selectable segment (2, 8 GB)
             val scale = c.ramScale
-            assertEquals("2 ГБ", scale.minLabel.text); assertEquals("16 ГБ", scale.maxLabel.text)
+            assertEquals("2 ГБ", scale.minLabel.text); assertEquals("8 ГБ", scale.maxLabel.text)
             val minB = scale.minLabel.sceneBounds(); val maxB = scale.maxLabel.sceneBounds()
             assertTrue(minB.minY >= bar.sceneBounds().maxY, "captions not under the bar")
             assertEquals(minB.centerY, maxB.centerY, 0.5, "captions not on one line")
             assertEquals(segmentCentre(c, 2), minB.centerX, 1.0, "min caption not under the 2 GB segment")
-            assertEquals(segmentCentre(c, 16), maxB.centerX, 1.0, "max caption not under the 16 GB (last) segment")
+            assertEquals(segmentCentre(c, 8), maxB.centerX, 1.0, "max caption not under the 8 GB (last) segment")
             assertTrue(maxB.maxX <= bar.sceneBounds().maxX + 0.5, "max caption sticks out past the bar")
-            // no system reserve any more: every segment is a plain selectable one (2..16 GB)
+            // every segment is selectable: the bar stops at 8 GB, so nothing past the cap is drawn (2..8 GB)
             assertTrue(bar.segments.none { it.pseudoClassStates.any { p -> p.pseudoClassName == "reserve" } }, "reserve segments left")
             // the recommended value is explained in the tooltip / accessible help, not in an extra line
             assertTrue(bar.accessibleHelp.contains("6 ГБ"), bar.accessibleHelp)
         }
     }
 
-    /** «Мало памяти останется системе» only for the last 2 GB (15, 16 of 16), next to the summary, without moving anything. */
+    /** «Мало памяти останется системе» when the choice leaves the machine under 2 GB. On 8 GB that is 7 and 8. */
     @Test
     fun lowSystemMemoryNoteForTheLastTwoGb() {
-        val (c, _) = settingsWith(LauncherSettings(ramMb = 6 * 1024))
+        val (c, _) = settingsWith(LauncherSettings(ramMb = 6 * 1024), totalMb = 8 * gb)
         FxTestSupport.onFx {
             val bar = c.ramBar; val note = c.ramWarning
             fun lay() { c.settingsRoot.applyCss(); c.settingsRoot.layout() }
             assertEquals("Мало памяти останется системе", note.text)
-            assertFalse(note.isVisible, "6 of 16 GB: no note")
+            assertFalse(note.isVisible, "6 of 8 GB: no note")
             assertTrue(note.isManaged, "the note keeps its place (no layout shift)")
             lay()
             // the summary's width follows its digits («6» / «16»); its line, the bar, the captions and the card stay put
@@ -384,9 +402,9 @@ class SettingsScreenTest {
             val before = frame()
             val hint = bar.accessibleHelp
             assertFalse(hint.contains(note.text), "hidden note not in the help")
-            for ((v, shown) in listOf(13 to false, 14 to false, 15 to true, 16 to true, 14 to false, 2 to false, 16 to true)) {
+            for ((v, shown) in listOf(5 to false, 6 to false, 7 to true, 8 to true, 6 to false, 2 to false, 8 to true)) {
                 bar.setValue(v); lay()
-                assertEquals(shown, note.isVisible, "$v of 16 GB: note visible")
+                assertEquals(shown, note.isVisible, "$v of 8 GB: note visible")
                 // screen readers (and the tooltip) hear the note exactly while it is shown
                 assertEquals(shown, bar.accessibleHelp.contains("Мало памяти останется системе"), "$v GB: help '${bar.accessibleHelp}'")
                 assertTrue(bar.accessibleHelp.startsWith(hint), "$v GB: the recommendation stays in the help")
@@ -415,7 +433,7 @@ class SettingsScreenTest {
     /** «из N ГБ», the max and the number of segments come from one function; every segment can be chosen. */
     @Test
     fun displayedTotalMaxAndSegmentsAgree() {
-        mapOf(15_974L to 15, 16_250L to 16, 16_384L to 16, 8_100L to 8, 2_048L to 2).forEach { (mb, n) ->
+        mapOf(15_974L to 8, 16_250L to 8, 16_384L to 8, 32_768L to 8, 8_100L to 8, 4_096L to 4, 2_048L to 2).forEach { (mb, n) ->
             val (c, _) = settingsWith(LauncherSettings(ramMb = 2 * 1024), totalMb = mb)
             FxTestSupport.onFx {
                 val bar = c.ramBar
@@ -429,36 +447,33 @@ class SettingsScreenTest {
         }
     }
 
-    /** A 16 GB PC reporting 16 250 MB (hardware-reserved memory): still 2..16 GB, 16 segments, «16 ГБ». */
+    /** A 16 GB PC reporting 16 250 MB still counts as 16 GB installed. The bar stops at 8 GB, and 8 GB leaves the OS enough. */
     @Test
     fun sixteenGbPcReportingABitLessKeepsSixteen() {
         val (c, _) = settingsWith(LauncherSettings(ramMb = 16 * 1024), totalMb = 16_250)
         FxTestSupport.onFx {
-            assertEquals(16, c.ramBar.maxGb); assertEquals(16, c.ramBar.segments.size); assertEquals(16, c.ramBar.value)
-            assertEquals("16 ГБ", c.ramScale.maxLabel.text)
-            assertEquals("Выделено: 16 ГБ из 16 ГБ", c.ramSummary.text)
-            assertTrue(c.ramWarning.isVisible, "16 of 16: note")
+            assertEquals(8, c.ramBar.maxGb); assertEquals(8, c.ramBar.segments.size); assertEquals(8, c.ramBar.value)
+            assertEquals("8 ГБ", c.ramScale.maxLabel.text)
+            assertEquals("Выделено: 8 ГБ из 8 ГБ", c.ramSummary.text)
+            assertFalse(c.ramWarning.isVisible, "8 of 16: the system keeps the rest")
         }
     }
 
-    /** A machine reporting 15.6 GB (0.4 GB below 16): «из 15 ГБ», 2..15, 15 segments, no dead one. */
+    /** 15.6 GB installed is above the cap, so the bar is 2..8 and a stored 16 GB becomes 8. 8 GB still leaves the OS enough. */
     @Test
     fun maxNeverExceedsThePhysicalMemory() {
         val (c, store) = settingsWith(LauncherSettings(ramMb = 16 * 1024), totalMb = (15.6 * gb).toLong())
         FxTestSupport.onFx {
             val bar = c.ramBar
-            assertEquals(15, bar.maxGb); assertEquals(15, bar.totalGb, "scale = selectable range"); assertEquals(15, bar.segments.size)
-            assertEquals(15, bar.value, "stored 16 GB clamped to 15")
-            assertEquals("Выделено: 15 ГБ из 15 ГБ", c.ramSummary.text)
-            assertEquals("15 ГБ", c.ramScale.maxLabel.text)
-            assertEquals(segmentCentre(c, 15), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the last segment")
+            assertEquals(8, bar.maxGb); assertEquals(8, bar.totalGb, "scale = selectable range"); assertEquals(8, bar.segments.size)
+            assertEquals(8, bar.value, "stored 16 GB clamped to the cap")
+            assertEquals("Выделено: 8 ГБ из 8 ГБ", c.ramSummary.text)
+            assertEquals("8 ГБ", c.ramScale.maxLabel.text)
+            assertEquals(segmentCentre(c, 8), c.ramScale.maxLabel.sceneBounds().centerX, 1.0, "max caption under the last segment")
             key(bar, KeyCode.LEFT); key(bar, KeyCode.END); key(bar, KeyCode.RIGHT)
-            assertEquals(15, bar.value, "END / RIGHT stop at 15")
-            assertEquals(15 * 1024, store.load().ramMb)
-            // the note follows the new max: 14 and 15 of 15
-            assertTrue(c.ramWarning.isVisible)
-            bar.setValue(14); assertTrue(c.ramWarning.isVisible, "14 of max 15: note")
-            bar.setValue(13); assertFalse(c.ramWarning.isVisible, "13 of max 15: no note")
+            assertEquals(8, bar.value, "END / RIGHT stop at 8")
+            assertEquals(8 * 1024, store.load().ramMb)
+            assertFalse(c.ramWarning.isVisible, "8 of 15 GB: the system keeps the rest")
         }
     }
 
@@ -472,20 +487,20 @@ class SettingsScreenTest {
             assertEquals(7, bar.value, "one step = 1 GB")
             assertEquals(7 * 1024, store.load().ramMb)
             assertNull(store.load().ramFraction)
-            assertEquals("Выделено: 7 ГБ из 16 ГБ", c.ramSummary.text)
+            assertEquals("Выделено: 7 ГБ из 8 ГБ", c.ramSummary.text)
             key(bar, KeyCode.LEFT); key(bar, KeyCode.LEFT)
             assertEquals(5, bar.value); assertEquals(5 * 1024, store.load().ramMb)
             key(bar, KeyCode.END)
-            assertEquals(16, bar.value); assertEquals(16 * 1024, store.load().ramMb)
+            assertEquals(8, bar.value); assertEquals(8 * 1024, store.load().ramMb)
             key(bar, KeyCode.RIGHT); key(bar, KeyCode.PAGE_UP)
-            assertEquals(16, bar.value, "upper bound: the whole memory")
-            assertEquals("Выделено: 16 ГБ из 16 ГБ", c.ramSummary.text)
+            assertEquals(8, bar.value, "upper bound: the cap")
+            assertEquals("Выделено: 8 ГБ из 8 ГБ", c.ramSummary.text)
             key(bar, KeyCode.HOME)
             assertEquals(2, bar.value); assertEquals(2 * 1024, store.load().ramMb)
             key(bar, KeyCode.LEFT); key(bar, KeyCode.PAGE_DOWN)
             assertEquals(2, bar.value, "lower bound: minimum")
             assertEquals(2 * 1024, store.load().ramMb)
-            assertEquals("Выделено: 2 ГБ из 16 ГБ", c.ramSummary.text)
+            assertEquals("Выделено: 2 ГБ из 8 ГБ", c.ramSummary.text)
         }
     }
 
@@ -498,21 +513,21 @@ class SettingsScreenTest {
             val b = bar.sceneBounds()
             val y = b.centerY
             fun segment(gb: Int) = bar.segments[gb - 1].sceneBounds()
-            mouse(bar, MouseEvent.MOUSE_PRESSED, segment(10).centerX, y)
-            assertEquals(10, bar.value, "press on the 10th segment = 10 GB")
-            assertEquals(10 * 1024, store.load().ramMb)
-            assertFill(c, 10, 16, "after click")
-            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(9).minX + 1, y)
-            assertEquals(9, bar.value, "left edge of a segment still selects it")
-            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(9).maxX - 1, y)
-            assertEquals(9, bar.value, "right edge of a segment still selects it")
-            assertEquals(9 * 1024, store.load().ramMb)
-            assertEquals("Выделено: 9 ГБ из 16 ГБ", c.ramSummary.text)
-            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(16).centerX, y)
-            assertEquals(16, bar.value, "last segment = the whole memory")
-            assertEquals(16 * 1024, store.load().ramMb)
+            mouse(bar, MouseEvent.MOUSE_PRESSED, segment(8).centerX, y)
+            assertEquals(8, bar.value, "press on the last segment = 8 GB")
+            assertEquals(8 * 1024, store.load().ramMb)
+            assertFill(c, 8, 8, "after click")
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(7).minX + 1, y)
+            assertEquals(7, bar.value, "left edge of a segment still selects it")
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(7).maxX - 1, y)
+            assertEquals(7, bar.value, "right edge of a segment still selects it")
+            assertEquals(7 * 1024, store.load().ramMb)
+            assertEquals("Выделено: 7 ГБ из 8 ГБ", c.ramSummary.text)
+            mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(8).centerX, y)
+            assertEquals(8, bar.value, "last segment = the cap")
+            assertEquals(8 * 1024, store.load().ramMb)
             mouse(bar, MouseEvent.MOUSE_DRAGGED, b.maxX + 100, y)
-            assertEquals(16, bar.value, "dragged past the end: max")
+            assertEquals(8, bar.value, "dragged past the end: max")
             mouse(bar, MouseEvent.MOUSE_DRAGGED, segment(1).centerX, y)
             assertEquals(2, bar.value, "first segment: clamped to the min")
             mouse(bar, MouseEvent.MOUSE_DRAGGED, b.minX - 100, y)
@@ -526,10 +541,10 @@ class SettingsScreenTest {
         val (big, _) = settingsWith(LauncherSettings(ramMb = 64 * 1024))
         val (small, _) = settingsWith(LauncherSettings(ramMb = 256))
         FxTestSupport.onFx {
-            assertEquals(16, big.ramBar.value)
-            assertEquals("Выделено: 16 ГБ из 16 ГБ", big.ramSummary.text)
+            assertEquals(8, big.ramBar.value)
+            assertEquals("Выделено: 8 ГБ из 8 ГБ", big.ramSummary.text)
             assertEquals(2, small.ramBar.value)
-            assertEquals("Выделено: 2 ГБ из 16 ГБ", small.ramSummary.text)
+            assertEquals("Выделено: 2 ГБ из 8 ГБ", small.ramSummary.text)
         }
     }
 
@@ -606,7 +621,7 @@ class SettingsScreenTest {
             )
             assertFalse(c.launcherPage.children.contains(c.tunnelPage), "tunnel is still in the column")
             assertTrue(c.launcherPage.isManaged && c.behaviourSection.isManaged && !c.tunnelPage.isManaged)
-            assertFalse(c.jvmPage.isManaged || c.sensPage.isManaged || c.accountsPage.isManaged)
+            assertFalse(c.jvmPage.isManaged || c.sensPage.isManaged || c.accountsPage.isManaged || c.locPage.isManaged)
         }
     }
 
@@ -614,7 +629,22 @@ class SettingsScreenTest {
     fun newStringsInEveryBundle() {
         val keys = listOf("settings.heading.ram", "settings.ram.summary", "settings.ram.low_system", "settings.ram.hint_low_system", "settings.ram.hint", "settings.unit.gb",
             "settings.heading.behaviour", "settings.heading.language", "settings.language.interface", "settings.exit.short", "settings.p2p.short",
-            "settings.nav.jvm", "settings.nav.tunnel", "settings.nav.sens", "settings.nav.accounts",
+            "settings.nav.jvm", "settings.nav.tunnel", "settings.nav.sens", "settings.nav.accounts", "settings.nav.loc",
+            "settings.heading.loc", "settings.loc.weapons", "settings.loc.items", "settings.loc.changed",
+            "settings.loc.category.all", "settings.loc.category.guns", "settings.loc.category.melee",
+            "settings.loc.category.mods", "settings.loc.category.armor", "settings.loc.category.plates",
+            "settings.loc.category.bags", "settings.loc.category.arts", "settings.loc.category.meds",
+            "settings.loc.category.food", "settings.loc.category.ammo", "settings.loc.category.devices",
+            "settings.loc.category.charms", "settings.loc.category.skins", "settings.loc.category.barter",
+            "settings.loc.category.quests", "settings.loc.category.cases", "settings.loc.category.toys",
+            "settings.loc.category.blueprints", "settings.loc.category.explosives", "settings.loc.category.decor",
+            "settings.loc.category.other",
+            "settings.loc.search", "settings.loc.write", "settings.loc.missing", "settings.loc.empty",
+            "settings.loc.color", "settings.loc.color.8", "settings.loc.color.f", "settings.loc.color.a",
+            "settings.loc.color.9", "settings.loc.color.5", "settings.loc.color.c", "settings.loc.color.6",
+            "settings.loc.color.e", "settings.loc.color.b",
+            "settings.loc.rank", "settings.loc.rank.picklock", "settings.loc.rank.newbie", "settings.loc.rank.stalker",
+            "settings.loc.rank.veteran", "settings.loc.rank.master", "settings.loc.rank.legend",
             "settings.page.launcher", "settings.page.client", "settings.heading.jvm", "settings.heading.tunnel",
             "settings.heading.accounts", "settings.heading.sens", "settings.jvm.active", "settings.jvm.chosen", "settings.jvm.none.hint", "settings.jvm.list", "settings.accounts.save",
             "settings.accounts.edit", "settings.accounts.edit_done", "settings.accounts.name_empty",
@@ -623,13 +653,13 @@ class SettingsScreenTest {
             "settings.client.jvm", "settings.client.tunnel", "settings.client.accounts", "settings.client.sens",
             "settings.jvm.saved", "settings.jvm.heap", "settings.preset.v112", "settings.preset.aikar", "settings.tunnel.now",
             "settings.tunnel.measure", "settings.tunnel.find", "settings.tunnel.refresh",
-            "settings.tunnel.exclude", "settings.tunnel.exclude_group", "settings.tunnel.excluded_group",
+            "settings.tunnel.exclude", "settings.tunnel.exclude_group", "settings.tunnel.excluded_group", "settings.tunnel.group_blocked",
             "settings.tunnel.exclude.confirm", "settings.tunnel.block_node", "settings.tunnel.unblock_node",
             "settings.tunnel.no_reply", "settings.tunnel.limit",
             "settings.tunnel.best", "settings.tunnel.pool_meta", "settings.tunnel.no_working", "settings.tunnel.no_working.detail",
             "settings.tunnel.loading", "settings.tunnel.loading.detail", "settings.tunnel.load_failed", "settings.tunnel.load_failed.detail",
             "settings.tunnel.empty", "settings.tunnel.empty.detail", "settings.tunnel.load", "settings.tunnel.retry",
-            "settings.tunnel.col.client", "settings.tunnel.col.server", "settings.tunnel.col.sum",
+            "settings.tunnel.col.status", "settings.tunnel.col.client", "settings.tunnel.col.server", "settings.tunnel.col.sum",
             "settings.tunnel.metrics", "settings.tunnel.metrics.ping", "settings.tunnel.metrics.client",
             "settings.tunnel.metrics.server", "settings.tunnel.metrics.stability", "settings.tunnel.winner",
             "settings.tunnel.scale.good", "settings.tunnel.scale.mid", "settings.tunnel.scale.bad",
@@ -661,13 +691,15 @@ class SettingsScreenTest {
     fun jvmPresetCardTitlesUseVersionAndHeap() {
         val app = AppContext.mock(language = "ru", speed = 50.0, authDelayMs = 0)
         val totalMb = app.services.system.totalRamMb()
-        val totalGb = RamOptions.totalGb(totalMb)
+        val totalGb = RamOptions.usableGb(totalMb)
         val threads = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
         fun expected(id: String, heapGb: Int?): String {
+            if (id == JvmPresets.NONE) return "Без JVM"
             val preset = JvmPresets.all.first { it.id == id }
+            val name = if (preset.nameKey == "settings.jvm.profile") "8 кГц" else preset.version
             val built = JvmPresets.build(id, totalGb, totalGb, threads, threads, heapGb)
             val heap = if (built == null) "Мало памяти для этого профиля" else "${built.heapGb} ГБ"
-            return "${preset.version}, $heap"
+            return "$name, $heap"
         }
         FxTestSupport.onFx {
             val c = Fxml.load<SettingsController>(FxTestSupport.context("ru", app), "settings.fxml").controller
@@ -676,16 +708,21 @@ class SettingsScreenTest {
             c.showClientSection("jvm")
             c.settingsRoot.applyCss()
             c.settingsRoot.layout()
-            assertEquals("Сейчас", c.jvmStatusKicker.text)
-            assertEquals("не выбран", c.jvmStatus.text)
+            assertEquals("Выбран для запуска", c.jvmStatusKicker.text)
+            assertEquals("Без JVM", c.jvmStatus.text)
+            assertEquals("Игра запустится со своими флагами. Обёртка не подставит профиль.", c.jvmStatusHint.text)
             val cards = c.jvmGrid.children.filterIsInstance<Button>()
-            assertEquals(JvmPresets.all.size, cards.size)
+            assertEquals(JvmPresets.choices.size, cards.size)
+            assertEquals(JvmPresets.NONE, cards.first().userData)
+            assertTrue("selected" in cards.first().styleClass, "the without-JVM choice is not the current one")
+            assertTrue(cards.none { it.userData == "v1.1.1/default" || it.userData == "v1.0.5/default" || it.userData == "v1.0.6/default" })
             cards.forEach { card ->
                 val id = card.userData as String
                 val title = (card.graphic as Parent).lookup(".jvm-preset-title") as Labeled
                 assertEquals(expected(id, null), title.text)
                 assertFalse(title.text.contains("Preset("), title.text)
                 assertFalse(title.text.contains("hintKey"), title.text)
+                assertFalse(title.text.contains("Тот же расчёт"), title.text)
             }
             val card = cards.first { it.userData == JvmPresets.CURRENT }
             card.fire()
@@ -693,7 +730,7 @@ class SettingsScreenTest {
             assertEquals("Выбран для запуска", c.jvmStatusKicker.text)
             assertEquals(expected(JvmPresets.CURRENT, null), c.jvmStatus.text)
             assertEquals(selected.text, c.jvmStatus.text)
-            assertEquals("Спокойные паузы G1, heap до 6 ГБ", c.jvmStatusHint.text)
+            assertEquals("Спокойные паузы G1", c.jvmStatusHint.text)
             assertTrue("selected" in c.jvmSummary.styleClass)
             assertTrue("selected" in card.styleClass)
             assertEquals(8, c.ramBar.setValue(8, user = true))
@@ -729,7 +766,7 @@ class SettingsScreenTest {
                     assertTrue(s.settingsRoot.lookupAll(".settings-pagebar").isEmpty(), "$where: tab switch still on the page")
                     assertTrue(main.headerController.settingsNav.isManaged, "$where: settings nav hidden")
                     assertEquals(
-                        listOf(main.headerController.navJvm, main.headerController.navTunnel, main.headerController.navSens, main.headerController.navAccounts),
+                        listOf(main.headerController.navJvm, main.headerController.navTunnel, main.headerController.navSens, main.headerController.navAccounts, main.headerController.navLoc),
                         main.headerController.settingsNav.children.toList(),
                         "$where: switch is not JVM, tunnel, sensitivity, accounts",
                     )
@@ -739,26 +776,30 @@ class SettingsScreenTest {
                             s.languageSection.isManaged && !s.tunnelPage.isManaged,
                         "$where: the column is missing a block or still holds the tunnel",
                     )
-                    assertFalse(s.jvmPage.isManaged || s.tunnelPage.isManaged || s.sensPage.isManaged || s.accountsPage.isManaged, "$where: a tool page is open on the column")
+                    assertFalse(s.jvmPage.isManaged || s.tunnelPage.isManaged || s.sensPage.isManaged || s.accountsPage.isManaged || s.locPage.isManaged, "$where: a tool page is open on the column")
 
                     s.showClientSection("jvm")
                     relayout(nav)
                     assertTrue(s.jvmGrid.children.size > 1, "$where: presets missing")
                     assertTrue(s.jvmPage.sceneBounds().minY >= -1.0, "$where: jvm section not scrolled into view")
-                    assertEquals("не выбран", s.jvmStatus.text, "$where: an empty launch config looks chosen")
-                    assertEquals("Сейчас", s.jvmStatusKicker.text, "$where: empty summary lost its kicker")
-                    assertTrue("empty" in s.jvmSummary.styleClass, "$where: empty summary looks selected")
+                    assertEquals("Без JVM", s.jvmStatus.text, "$where: an empty launch config is not the without-JVM choice")
+                    assertEquals("Выбран для запуска", s.jvmStatusKicker.text, "$where: without-JVM lost its kicker")
+                    assertTrue("empty" in s.jvmSummary.styleClass, "$where: without-JVM looks like an injected profile")
                     assertTrue(s.jvmSummary.localToScene(s.jvmSummary.boundsInLocal).maxY <= s.jvmGrid.localToScene(s.jvmGrid.boundsInLocal).minY + 1.0, "$where: the launch summary is not above the configs")
-                    assertTrue(s.jvmGrid.children.filterIsInstance<Button>().none { "selected" in it.styleClass }, "$where: a config is marked chosen before a click")
+                    val picked = s.jvmGrid.children.filterIsInstance<Button>().filter { "selected" in it.styleClass }
+                    assertEquals(listOf(JvmPresets.NONE), picked.map { it.userData }, "$where: something other than without-JVM is chosen")
                     s.jvmGrid.children.filterIsInstance<Button>().forEach { preset ->
                         assertNotNull((preset.graphic as? Parent)?.lookup(".jvm-radio"), "$where: a config has no radio")
-                        val version = JvmPresets.all.first { it.id == preset.userData }.version
+                        val id = preset.userData as String
+                        val item = JvmPresets.choices.first { it.id == id }
+                        val name = if (item.nameKey == "settings.jvm.profile") "8 кГц" else if (item.nameKey == "settings.jvm.without") "Без JVM" else item.version
                         val title = (preset.graphic as Parent).lookup(".jvm-preset-title") as Labeled
                         assertFalse(title.text.contains("Preset("), "$where: title is the data-class dump: ${title.text}")
-                        assertTrue(title.text.startsWith("$version, "), "$where: title is not version and heap: ${title.text}")
+                        if (id == JvmPresets.NONE) assertEquals(name, title.text, "$where: without-JVM title")
+                        else assertTrue(title.text.startsWith("$name, "), "$where: title is not version and heap: ${title.text}")
                         val mark = (preset.graphic as? Parent)?.lookup(".jvm-chosen") as? Labeled
                         assertNotNull(mark, "$where: a config has no chosen label")
-                        assertFalse(mark!!.isVisible, "$where: an unpicked config says it will launch")
+                        assertEquals(id == JvmPresets.NONE, mark!!.isVisible, "$where: chosen mark on ${title.text}")
                     }
                     assertFalse(s.launcherPage.isManaged, "$where: launcher groups stay under JVM")
                     assertFalse(s.tunnelPage.isManaged, "$where: tunnel stays on the JVM section")
@@ -766,7 +807,7 @@ class SettingsScreenTest {
                     s.showClientSection("tunnel")
                     relayout(nav)
                     assertTrue(s.tunnelPage.isManaged && !s.launcherPage.isManaged, "$where: tunnel did not replace the column")
-                    assertFalse(s.jvmPage.isManaged || s.sensPage.isManaged || s.accountsPage.isManaged, "$where: a tool page stayed open with the tunnel")
+                    assertFalse(s.jvmPage.isManaged || s.sensPage.isManaged || s.accountsPage.isManaged || s.locPage.isManaged, "$where: a tool page stayed open with the tunnel")
                     assertTrue("selected" in main.headerController.navTunnel.styleClass, "$where: tunnel not selected")
                     val viewH = s.scroll.viewportBounds.height
                     assertTrue(s.tunnelPage.height >= viewH - 28.0, "$where: tunnel page does not fill the settings area")
@@ -780,9 +821,10 @@ class SettingsScreenTest {
                     )
                     assertTrue(s.tunnelPage.lookupAll(".tunnel-chip").isEmpty(), "$where: region is still a chip row")
                     assertTrue("segmented" in s.regionRu.parent.styleClass, "$where: region switch is not the segmented control")
-                    val switches = s.tunnelPools.lookupAll(".tunnel-block-switch").filterIsInstance<CheckBox>()
-                    assertTrue(switches.isNotEmpty() && switches.all { "switch" in it.styleClass && !it.isSelected }, "$where: a server row has no block switch")
-                    assertTrue(switches.all { it.text.isEmpty() }, "$where: the block control is still a text chip")
+                    val blocks = s.tunnelPools.lookupAll(".tunnel-block-action").filterIsInstance<Button>()
+                    assertTrue(blocks.isNotEmpty() && blocks.all { it.text == "Блокировать" && "locked" !in it.styleClass }, "$where: a server row has no block button")
+                    assertTrue(s.tunnelPools.lookupAll(".check-box").isEmpty(), "$where: the block control is still a switch")
+                    assertTrue(s.tunnelPage.lookupAll(".tunnel-confirm").isEmpty(), "$where: the group confirm bar is back")
                     assertFalse("primary" in s.tunnelMeasure.styleClass, "$where: Measure is a primary action")
                     assertTrue("primary" in s.tunnelFindBest.styleClass, "$where: Find best lost the accent")
                     assertEquals("Измерить", s.tunnelMeasure.text)
@@ -803,10 +845,10 @@ class SettingsScreenTest {
                     val heading = (head as Parent).childrenUnmodifiable.filterIsInstance<Labeled>().single()
                     assertEquals("ТУННЕЛЬ", heading.text, "$where: tunnel heading left the head row")
                     assertTrue(heading.localToScene(heading.boundsInLocal).maxX <= s.regionRu.localToScene(s.regionRu.boundsInLocal).minX + 1.0, "$where: heading overlaps the regions")
-                    val actions = s.tunnelMeasure.parent as Parent
+                    val actionRow = s.tunnelMeasure.parent as Parent
                     assertEquals(
                         listOf(s.tunnelMeasure, s.tunnelFindBest, s.tunnelRefresh, s.tunnelMode),
-                        actions.childrenUnmodifiable.filter { it === s.tunnelMeasure || it === s.tunnelFindBest || it === s.tunnelRefresh || it === s.tunnelMode },
+                        actionRow.childrenUnmodifiable.filter { it === s.tunnelMeasure || it === s.tunnelFindBest || it === s.tunnelRefresh || it === s.tunnelMode },
                         "$where: the action row is not Measure, Find best, Refresh, mode",
                     )
                     assertTrue(s.tunnelRefresh.localToScene(s.tunnelRefresh.boundsInLocal).maxX <= s.tunnelMode.localToScene(s.tunnelMode.boundsInLocal).minX + 1.0, "$where: mode is not at the end of the action row")
@@ -855,7 +897,7 @@ class SettingsScreenTest {
                         "$where: MSK1 does not hold its own servers",
                     )
                     val exclude = msk1.lookupAll(".tunnel-pool-lock").filterIsInstance<Button>().single()
-                    assertEquals("Исключить группу", exclude.text, "$where: group action is not labeled")
+                    assertEquals("Блокировать", exclude.text, "$where: group action is not labeled")
                     assertTrue(exclude.lookupAll(".tunnel-state").isEmpty(), "$where: exclude is still an icon lock")
                     assertTrue(exclude.width >= exclude.prefWidth(-1.0) - 1.0, "$where: '${exclude.text}' truncated")
                     val poolBox = msk1.localToScene(msk1.boundsInLocal)
@@ -879,12 +921,12 @@ class SettingsScreenTest {
                         assertTrue("tunnel-columns" in header.styleClass, "$where: header left the shared column shell")
                         assertEquals(10.0, header.padding.right, 0.01, "$where: column shell padding")
                         val captions = header.lookupAll(".tunnel-legend").filterIsInstance<Labeled>()
-                        assertEquals(listOf("До вас", "Пинг"), captions.map { it.text }, "$where: value columns")
+                        assertEquals(listOf("Статус", "До вас", "Пинг"), captions.map { it.text }, "$where: value columns")
                         assertTrue(captions.none { it.text == "До игры" || it.text == "To game" }, "$where: server RTT caption is still in the legend")
                         assertTrue("decision" in captions.last().styleClass, "$where: ping is not the column find-best uses")
                         val headerValues = header.childrenUnmodifiable[0] as Parent
                         assertTrue("tunnel-values" in (headerValues as javafx.scene.Node).styleClass, "$where: header values left the shared strip")
-                        assertEquals(3, headerValues.childrenUnmodifiable.size, "$where: header is not name | До вас | Пинг")
+                        assertEquals(4, headerValues.childrenUnmodifiable.size, "$where: header is not name | Статус | До вас | Пинг")
                         val slot = header.childrenUnmodifiable[1] as javafx.scene.layout.Region
                         captions.forEach { caption ->
                             val textW = javafx.scene.text.Text(caption.text).apply { font = caption.font }.layoutBounds.width
@@ -911,19 +953,27 @@ class SettingsScreenTest {
                             assertTrue("tunnel-values" in (graphic as javafx.scene.Node).styleClass, "$where: row values left the shared strip")
                             val pings = graphic.childrenUnmodifiable.filterIsInstance<Labeled>().filter { "tunnel-ping" in it.styleClass }
                             assertEquals(2, pings.size, "$where: a row is missing a ping figure")
-                            captions.zip(pings).forEach { (caption, ping) ->
+                            captions.drop(1).zip(pings).forEach { (caption, ping) ->
                                 val capBox = caption.localToScene(caption.boundsInLocal)
                                 val pingBox = ping.localToScene(ping.boundsInLocal)
                                 assertEquals(pingBox.centerX, capBox.centerX, 1.0, "$where: '${caption.text}' is not over its column")
                                 assertEquals(pingBox.width, capBox.width, 0.5, "$where: '${caption.text}' column width drifted")
                                 assertTrue(capBox.maxY <= pingBox.minY + 1.0, "$where: '${caption.text}' is not above the values")
                             }
-                            val block = line.childrenUnmodifiable.filterIsInstance<CheckBox>().single { "tunnel-block-switch" in it.styleClass }
+                            val block = line.childrenUnmodifiable.filterIsInstance<Button>().single { "tunnel-block-action" in it.styleClass }
+                            val statusCaption = captions.first()
+                            val status = (graphic.lookup(".tunnel-block-status") as Labeled)
+                            assertEquals(
+                                status.localToScene(status.boundsInLocal).centerX,
+                                statusCaption.localToScene(statusCaption.boundsInLocal).centerX,
+                                1.0,
+                                "$where: status column drifted",
+                            )
                             assertEquals(
                                 block.localToScene(block.boundsInLocal).centerX,
                                 slot.localToScene(slot.boundsInLocal).centerX,
                                 1.0,
-                                "$where: toggle column drifted",
+                                "$where: block column drifted",
                             )
                             val gap = block.localToScene(block.boundsInLocal).minX -
                                 pings.last().localToScene(pings.last().boundsInLocal).maxX
@@ -931,10 +981,10 @@ class SettingsScreenTest {
                         }
                     }
                     nodes.forEach { row ->
-                        val block = (row.parent as Parent).lookupAll(".tunnel-block-switch").filterIsInstance<CheckBox>().single()
-                        assertFalse(block.isSelected, "$where: an available server is already blocked")
-                        assertTrue("switch" in block.styleClass, "$where: block control is not the zone switch")
-                        assertEquals(36.0, block.width, 1.0, "$where: block switch is not the compact control")
+                        val block = (row.parent as Parent).lookupAll(".tunnel-block-action").filterIsInstance<Button>().single()
+                        assertEquals("Блокировать", block.text, "$where: an available server is already blocked")
+                        assertFalse("locked" in block.styleClass, "$where: an open server looks closed")
+                        assertEquals(132.0, block.width, 1.0, "$where: block button is not the action column")
                         val card = generateSequence(row as javafx.scene.Node) { it.parent }.first { "pool" in it.styleClass }
                         val cardBox = card.localToScene(card.boundsInLocal)
                         val blockBox = block.localToScene(block.boundsInLocal)
@@ -1035,8 +1085,7 @@ class SettingsScreenTest {
                 )
             }
             fun nodeNamed(name: String) = s.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
-                val row = button.graphic as? javafx.scene.Parent
-                row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
+                tunnelRowText(button) == name
             }
             fun pingText(button: Button, kind: String): String {
                 val row = button.graphic as javafx.scene.Parent
@@ -1079,9 +1128,9 @@ class SettingsScreenTest {
                 val winnerLabels = winnerRow.childrenUnmodifiable.filterIsInstance<Labeled>()
                 assertTrue(winnerRow.lookupAll(".tunnel-best-dot").isEmpty(), "a status dot is still in front of the server name")
                 assertTrue("best" in (winner.parent as javafx.scene.Node).styleClass, "find best did not mark the recommendation row")
-                val winnerBlock = (winner.parent as Parent).lookupAll(".tunnel-block-switch").filterIsInstance<CheckBox>().single()
-                assertFalse(winnerBlock.isSelected, "the recommended server is already blocked")
-                assertTrue("switch" in winnerBlock.styleClass, "the recommended server has no block switch")
+                val winnerBlock = (winner.parent as Parent).lookupAll(".tunnel-block-action").filterIsInstance<Button>().single()
+                assertEquals("Блокировать", winnerBlock.text, "the recommended server is already blocked")
+                assertFalse("locked" in winnerBlock.styleClass, "the recommended server looks closed")
                 assertTrue("good" in winnerLabels.last { "tunnel-ping" in it.styleClass }.styleClass)
                 assertTrue("limited" in limited.styleClass, "a node at its limit looks open")
                 relayout(nav)
@@ -1240,15 +1289,14 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun refreshKeepsFailedMeasuresAndHidesNewSilentServers() {
+    fun refreshDropsServersThatDoNotAnswer() {
         val (c, _) = settingsWith(LauncherSettings())
         FxTestSupport.onFx {
             c.showClientSection("tunnel")
             c.settingsRoot.applyCss()
             c.settingsRoot.layout()
             fun names(): List<String> = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().mapNotNull { button ->
-                val row = button.graphic as? javafx.scene.Parent ?: return@mapNotNull null
-                row.childrenUnmodifiable.filterIsInstance<Labeled>().firstOrNull { "tunnel-row" in it.styleClass }?.text
+                tunnelRowText(button)
             }
             assertTrue("MSK1-1" in names())
             assertTrue("MSK1-5" in names())
@@ -1261,8 +1309,8 @@ class SettingsScreenTest {
             c.tunnelMeasure.fire()
             val measured = names()
             assertTrue("MSK1-1" in measured, "measured=$measured")
-            assertTrue("MSK1-5" in measured, "a failed measure removed a listed server: $measured")
-            assertTrue(measured.any { it.startsWith("SPB3") }, "a failed measure removed a listed pool: $measured")
+            assertFalse("MSK1-5" in measured, "a miss left a dead server listed: $measured")
+            assertFalse(measured.any { it.startsWith("SPB3") }, "a miss left a dead pool listed: $measured")
             TunnelServices.fetch = { region ->
                 if (region != TunnelRegion.RU) TunnelFixtures.catalog(region)
                 else TunnelCatalogs.parse(
@@ -1279,15 +1327,15 @@ class SettingsScreenTest {
                         {"name":"MSK1-2","address":"85.119.149.8:29450"}
                       ]},
                       {"name":"NEW","tunnels":[
-                        {"name":"NEW-1","address":"203.0.113.50:29450"},
-                        {"name":"NEW-2","address":"203.0.113.51:29450"}
+                        {"name":"NEW-1","address":"203.0.114.50:29450"},
+                        {"name":"NEW-2","address":"203.0.114.51:29450"}
                       ]}
                     ]}
                     """.trimIndent(),
                 )
             }
             c.tunnelRefresh.fire()
-            assertEquals(setOf("MSK1-1", "MSK1-2", "NEW-1"), names().toSet())
+            assertEquals(setOf("MSK1-1", "NEW-1"), names().toSet())
             assertEquals(
                 setOf("MSK1", "NEW"),
                 c.tunnelPools.lookupAll(".pool-title").filterIsInstance<Labeled>().map { it.text }.toSet(),
@@ -1319,37 +1367,20 @@ class SettingsScreenTest {
                 fun excludeNamed(pool: String) = c.tunnelPools.children.first { card ->
                     card.lookupAll(".pool-title").filterIsInstance<Labeled>().any { it.text == pool }
                 }.lookupAll(".tunnel-pool-lock").filterIsInstance<Button>().single()
-                fun confirmBar() = c.tunnelPage.lookup(".tunnel-confirm") as javafx.scene.layout.Region
-                fun blockNamed(name: String): CheckBox {
+                fun blockNamed(name: String): Button {
                     val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
-                        val row = button.graphic as? Parent
-                        row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
+                        tunnelRowText(button) == name
                     }
-                    return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<CheckBox>()
-                        .single { "tunnel-block-switch" in it.styleClass }
+                    return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<Button>()
+                        .single { "tunnel-block-action" in it.styleClass }
                 }
                 val exclude = excludeNamed("MSK1")
-                assertEquals("Исключить группу", exclude.text)
+                assertEquals("Блокировать", exclude.text)
+                assertTrue(c.tunnelPage.lookupAll(".tunnel-confirm").isEmpty(), "the confirm bar is back")
                 exclude.fire()
-                assertTrue(calls.isEmpty(), "group exclude fired the firewall before confirm")
-                val bar = confirmBar()
-                assertTrue(bar.isVisible, "confirm did not open")
-                assertEquals("Заблокировать 5 нод группы?", (bar.lookup(".tunnel-confirm-text") as Labeled).text)
-                val cancel = bar.lookup(".tunnel-confirm-no") as Button
-                assertEquals("Отмена", cancel.text, "the group-block confirm needs a visible cancel")
-                cancel.fire()
-                assertFalse(bar.isVisible, "cancel left the confirm open")
-                assertTrue(calls.isEmpty(), "cancel wrote firewall rules")
-                assertEquals("Исключить группу", excludeNamed("MSK1").text)
+                assertEquals("Разблокировать", excludeNamed("MSK1").text)
                 val overrides = TunnelServices.overridesFile()
-                assertFalse(
-                    java.nio.file.Files.exists(overrides) && java.nio.file.Files.readString(overrides).contains("excluded_pools"),
-                    "cancel stored a group exclusion",
-                )
-                excludeNamed("MSK1").fire()
-                (confirmBar().lookup(".tunnel-confirm-yes") as Button).fire()
-                assertEquals("Группа исключена", excludeNamed("MSK1").text)
-                assertEquals(1, calls.size, "confirm did not write the firewall once: $calls")
+                assertEquals(1, calls.size, "the group button did not write the firewall once: $calls")
                 assertEquals(calls.single(), ServerBlock.uniqueValidIpv4(calls.single()))
                 assertEquals(
                     listOf("85.119.149.7", "85.119.149.8", "85.119.149.9", "85.119.149.10", "85.119.149.25"),
@@ -1359,16 +1390,16 @@ class SettingsScreenTest {
                 assertTrue(java.nio.file.Files.readString(overrides).contains("MSK1"))
                 assertTrue(store.load().serverBlock.blocked.containsAll(listOf("MSK1::MSK1-1", "MSK1::MSK1-5")))
                 val unblock = blockNamed("MSK1-1")
-                assertTrue(unblock.isSelected, "group block did not turn the switch on")
-                assertEquals("Снять блок", unblock.accessibleText)
+                assertEquals("Разблокировать", unblock.text, "group block did not close the row")
+                assertTrue("locked" in unblock.styleClass, "a closed row still looks open")
                 unblock.fire()
-                assertFalse(confirmBar().isVisible, "a single server opened the group confirm")
+                assertTrue(c.tunnelPage.lookupAll(".tunnel-confirm").isEmpty(), "a single server opened a confirm bar")
                 assertEquals(2, calls.size, "a single server did not sync the firewall")
                 assertEquals(calls.last(), ServerBlock.uniqueValidIpv4(calls.last()))
                 assertFalse("85.119.149.7" in calls.last())
                 val cleared = blockNamed("MSK1-1")
-                assertFalse(cleared.isSelected, "unblocking a server left the switch on")
-                assertEquals("Блок", cleared.accessibleText)
+                assertEquals("Блокировать", cleared.text, "unblocking a server left it closed")
+                assertFalse("locked" in cleared.styleClass, "an open row still looks closed")
                 assertFalse("MSK1::MSK1-1" in store.load().serverBlock.blocked)
                 TunnelServices.probe = { endpoint ->
                     if (endpoint.name == "HOST") {
@@ -1383,7 +1414,7 @@ class SettingsScreenTest {
                         """
                         {"mode":"roxy","clientToTunnelRttWeight":1,"pools":[
                           {"name":"MIX","tunnels":[
-                            {"name":"GOOD","address":"203.0.113.9:29450"},
+                            {"name":"GOOD","address":"203.0.114.9:29450"},
                             {"name":"HOST","address":"tunnel.example:29450"},
                             {"name":"BAD","address":"999.1.1.1:29450"}
                           ]}
@@ -1393,21 +1424,65 @@ class SettingsScreenTest {
                 }
                 c.tunnelRefresh.fire()
                 val shown = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().mapNotNull { button ->
-                    val row = button.graphic as? Parent
-                    row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.firstOrNull { "tunnel-row" in it.styleClass }?.text
+                    tunnelRowText(button)
                 }
                 assertTrue("GOOD" in shown, "a valid node was hidden: $shown")
                 assertFalse("HOST" in shown, "a limit node without an IPv4 was shown: $shown")
                 assertFalse("BAD" in shown, "an invalid address was shown: $shown")
                 assertFalse(shown.any { it == "—" || it.isBlank() })
                 excludeNamed("MIX").fire()
-                assertEquals("Заблокировать 1 нод группы?", (confirmBar().lookup(".tunnel-confirm-text") as Labeled).text)
-                assertEquals(2, calls.size, "opening confirm firewalled the group")
-                (confirmBar().lookup(".tunnel-confirm-yes") as Button).fire()
-                assertTrue("203.0.113.9" in calls.last(), "group confirm dropped the valid node: ${calls.last()}")
+                assertEquals(3, calls.size, "the group button did not write the firewall")
+                assertTrue("203.0.114.9" in calls.last(), "group confirm dropped the valid node: ${calls.last()}")
                 assertTrue(calls.last().none { !ServerBlock.isValidIpv4(it) }, "firewall received a non-IPv4: ${calls.last()}")
                 assertEquals(calls.last(), ServerBlock.uniqueValidIpv4(calls.last()))
             }
+    }
+
+    @Test
+    fun blockStatusIsVisibleOnTheRowAndTheGroup() {
+        TunnelServices.applyBlocks = { Result.success("ok") }
+        TunnelServices.clearBlocks = { Result.success(0) }
+        val (c, _) = settingsWith(LauncherSettings())
+        FxTestSupport.onFx {
+            c.showClientSection("tunnel")
+            c.settingsRoot.applyCss()
+            c.settingsRoot.layout()
+            fun card(pool: String) = c.tunnelPools.children.first { node ->
+                node.lookupAll(".pool-title").filterIsInstance<Labeled>().any { it.text == pool }
+            }
+            fun statusOf(name: String): String {
+                val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
+                    tunnelRowText(button) == name
+                }
+                return tunnelStatusText(node)
+            }
+            fun blockNamed(name: String): Button {
+                val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
+                    tunnelRowText(button) == name
+                }
+                return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<Button>()
+                    .single { "tunnel-block-action" in it.styleClass }
+            }
+            fun excludeNamed(pool: String) = card(pool).lookupAll(".tunnel-pool-lock").filterIsInstance<Button>().single()
+            assertEquals("Открыт", statusOf("MSK1-1"))
+            assertEquals("Блокировать", excludeNamed("MSK1").text)
+            blockNamed("MSK1-1").fire()
+            assertEquals("Закрыт", statusOf("MSK1-1"))
+            assertEquals("Разблокировать", blockNamed("MSK1-1").text)
+            assertTrue("node-blocked" in blockNamed("MSK1-1").parent.styleClass)
+            assertEquals("1 блок", (card("MSK1").lookup(".tunnel-block-count") as Labeled).text)
+            assertEquals("Блокировать", excludeNamed("MSK1").text)
+            listOf("MSK1-2", "MSK1-3", "MSK1-4", "MSK1-5").forEach { blockNamed(it).fire() }
+            val locked = excludeNamed("MSK1")
+            assertEquals("Разблокировать", locked.text)
+            assertTrue("locked" in locked.styleClass)
+            assertTrue(card("MSK1").lookupAll(".tunnel-block-count").isEmpty(), "a full group still shows a partial count")
+            locked.fire()
+            assertTrue(c.tunnelPage.lookupAll(".tunnel-confirm").isEmpty(), "unblocking a group opened a confirm bar")
+            assertEquals("Блокировать", excludeNamed("MSK1").text)
+            assertEquals("Открыт", statusOf("MSK1-1"))
+            assertEquals("Блокировать", blockNamed("MSK1-1").text)
+        }
     }
 
     @Test
@@ -1418,13 +1493,12 @@ class SettingsScreenTest {
         val release = CountDownLatch(1)
         val finished = CountDownLatch(1)
         val (c, _) = settingsWith(LauncherSettings())
-        fun blockNamed(name: String): CheckBox {
+        fun blockNamed(name: String): Button {
             val node = c.tunnelPools.lookupAll(".tunnel-node").filterIsInstance<Button>().first { button ->
-                val row = button.graphic as? Parent
-                row?.childrenUnmodifiable?.filterIsInstance<Labeled>()?.any { it.text == name } == true
+                tunnelRowText(button) == name
             }
-            return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<CheckBox>()
-                .single { "tunnel-block-switch" in it.styleClass }
+            return (node.parent as Parent).childrenUnmodifiable.filterIsInstance<Button>()
+                .single { "tunnel-block-action" in it.styleClass }
         }
         FxTestSupport.onFx {
             c.showClientSection("tunnel")
@@ -1498,20 +1572,14 @@ class SettingsScreenTest {
                 assertTrue(first.lookupAll(".jvm-preset-hint").any { (it as Labeled).text.contains("Nyrokume") })
                 assertTrue("selected" in second.styleClass, "live login should mark Zlyka")
                 assertFalse("selected" in first.styleClass)
-                val keys = first.lookupAll(".session-keys").single()
-                assertFalse(keys.isVisible)
-                val keysToggle = first.lookupAll(".session-keys-toggle").single() as ToggleButton
-                assertEquals(34.0, keysToggle.height, 0.5, "key hit box height")
+                assertTrue(first.lookupAll(".session-keys-toggle").isEmpty(), "the key button is still on the card")
+                assertTrue(first.lookupAll(".session-edit").isEmpty(), "Изменить is still on the card")
                 val apply = first.lookup(".session-apply") as Button
                 val delete = first.lookup(".session-delete") as Button
                 assertEquals(34.0, apply.height, 0.5, "Применить height")
                 assertEquals(apply.height, delete.height, 0.5, "Удалить height")
                 assertTrue("primary" in apply.styleClass)
                 assertFalse("primary" in delete.styleClass)
-                keysToggle.fire()
-                c.settingsRoot.applyCss(); c.settingsRoot.layout()
-                c.settingsRoot.applyCss(); c.settingsRoot.layout()
-                assertTrue(keys.isVisible)
                 val row = c.accountsRow.localToScene(c.accountsRow.boundsInLocal)
                 val list = c.sessionScroll.localToScene(c.sessionScroll.boundsInLocal)
                 val page = c.accountsPage.localToScene(c.accountsPage.boundsInLocal)
@@ -1525,19 +1593,6 @@ class SettingsScreenTest {
                 )
                 assertTrue(c.sessionScroll.height > c.accountsPage.height * 0.5, "session list did not take the remaining height")
                 assertTrue(contains(BoundingBox(0.0, 0.0, scene.width, scene.height), row), "name row outside the page")
-                val glyph = keysToggle.graphic as javafx.scene.shape.SVGPath
-                assertTrue(glyph.layoutBounds.width in 14.0..22.0, "key glyph width ${glyph.layoutBounds.width}")
-                assertTrue(glyph.layoutBounds.height in 8.0..16.0, "key glyph height ${glyph.layoutBounds.height}")
-                assertFalse(glyph.content.contains("4.87"), "key glyph is still the double ring")
-                val edit = first.lookup(".session-edit") as Button
-                assertEquals("Изменить", edit.text)
-                assertEquals(34.0, edit.height, 0.5, "Изменить height")
-                assertFalse("primary" in edit.styleClass)
-                val keysBox = keys as Parent
-                val names = keysBox.lookupAll(".session-key-name").map { (it as Labeled).text }
-                val values = keysBox.lookupAll(".session-key-value").map { (it as Labeled).text }
-                assertEquals(listOf("EXBO_LOGIN", "EXBO_SESSION"), names)
-                assertEquals(listOf("Nyrokume", "token-a"), values)
                 (first.lookupAll(".session-apply").single() as Button).fire()
                 val live = registry.readValues(ExboSessions.KEY_PATH)
                 assertEquals("Nyrokume", live["EXBO_LOGIN"])
@@ -1546,7 +1601,6 @@ class SettingsScreenTest {
                 val after = c.sessionCards.children.filter { "session-card" in it.styleClass }
                 assertTrue("selected" in after[0].styleClass)
                 assertFalse("selected" in after[1].styleClass)
-                assertTrue(after[0].lookupAll(".session-keys").single().isVisible, "open keys stay open after apply")
                 (after[1].lookupAll(".session-delete").single() as Button).fire()
                 assertEquals(1, c.sessionCards.children.count { "session-card" in it.styleClass })
                 assertEquals("Сессия удалена", c.clientStatus.text)
@@ -1613,11 +1667,11 @@ class SettingsScreenTest {
                 }
                 val apply = cards[0].lookup(".session-apply") as Button
                 val delete = cards[0].lookup(".session-delete") as Button
-                val keys = cards[0].lookup(".session-keys-toggle") as ToggleButton
+                assertTrue(cards[0].lookupAll(".session-keys-toggle").isEmpty(), "the key button is still on the card")
+                assertTrue(cards[0].lookupAll(".session-edit").isEmpty(), "Изменить is still on the card")
                 assertEquals(34.0, apply.height, 0.5, "Применить height")
                 assertEquals(apply.height, delete.height, 0.5, "Удалить height")
                 assertEquals(apply.height, c.captureSession.height, 0.5, "Сохранить height")
-                assertEquals(apply.height, keys.height, 0.5, "key hit box height")
                 assertTrue("primary" in apply.styleClass)
                 assertFalse("primary" in delete.styleClass)
                 assertFalse("primary" in c.captureSession.styleClass)
@@ -1686,8 +1740,7 @@ class SettingsScreenTest {
                     }
                     if (w == Theme.WINDOW_WIDTH) {
                         preview(nav.mainStage.scene, "settings-accounts")
-                        val edit = cards[0].lookup(".session-edit") as Button
-                        edit.fire()
+                        doubleClick(cards[0].lookup(".session-text"))
                         relayout(nav)
                         preview(nav.mainStage.scene, "settings-accounts-edit")
                         key(cards[0].lookup(".session-name-input"), KeyCode.ESCAPE)
@@ -1701,7 +1754,7 @@ class SettingsScreenTest {
         }
     }
 
-    /** Изменить renames the saved label and leaves the registry snapshot alone. */
+    /** A double click on the session name renames the saved label and leaves the registry snapshot alone. */
     @Test
     fun renamingASessionKeepsTheSnapshot(@TempDir dir: Path) {
         val registry = MemoryRegistry()
@@ -1722,14 +1775,12 @@ class SettingsScreenTest {
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 val card = c.sessionCards.children.first { "session-card" in it.styleClass } as Parent
-                val edit = card.lookup(".session-edit") as Button
-                (card.lookup(".session-keys-toggle") as ToggleButton).fire()
-                edit.fire()
+                assertTrue(card.lookupAll(".session-edit").isEmpty(), "Изменить is still on the card")
+                doubleClick(card.lookup(".jvm-preset-title"))
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 val field = card.lookup(".session-name-input") as javafx.scene.control.TextField
-                assertTrue(field.isVisible && field.isManaged, "Изменить did not open the name field")
+                assertTrue(field.isVisible && field.isManaged, "a double click did not open the name field")
                 assertFalse((card.lookup(".jvm-preset-title") as javafx.scene.Node).isManaged, "the title stayed next to the field")
-                assertEquals("Готово", edit.text)
                 val nameBox = card.lookup(".session-rename") as javafx.scene.Node
                 val actions = card.lookup(".session-actions") as javafx.scene.Node
                 val cardBox = card.localToScene(card.boundsInLocal)
@@ -1739,7 +1790,7 @@ class SettingsScreenTest {
                 assertTrue(contains(cardBox, fieldBox), "rename field leaves the card $fieldBox vs $cardBox")
                 assertTrue(fieldBox.width > 80.0, "rename field is a sliver (${fieldBox.width})")
                 field.text = "   "
-                edit.fire()
+                javafx.event.Event.fireEvent(field, javafx.event.ActionEvent())
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 assertEquals("Введите имя сессии", c.clientStatus.text)
                 assertEquals("Тест 1", desk.sessions().first().name)
@@ -1752,11 +1803,12 @@ class SettingsScreenTest {
                 key(field, KeyCode.ESCAPE)
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 assertFalse(nameBox.isVisible && nameBox.isManaged, "Escape left the editor open")
-                assertEquals("Изменить", edit.text)
                 assertEquals("Тест 1", desk.sessions().first().name)
-                edit.fire()
-                field.text = " Ржавый "
-                edit.fire()
+                doubleClick((c.sessionCards.children.first { "session-card" in it.styleClass } as Parent).lookup(".jvm-preset-title"))
+                val againField = (c.sessionCards.children.first { "session-card" in it.styleClass } as Parent)
+                    .lookup(".session-name-input") as javafx.scene.control.TextField
+                againField.text = " Ржавый "
+                javafx.event.Event.fireEvent(againField, javafx.event.ActionEvent())
                 c.settingsRoot.applyCss(); c.settingsRoot.layout()
                 val titles = c.sessionCards.lookupAll(".jvm-preset-title").map { (it as Labeled).text }
                 assertEquals(listOf("Ржавый", "Тест 2"), titles)
@@ -1767,7 +1819,6 @@ class SettingsScreenTest {
                 assertEquals("Zlyka", registry.readValues(ExboSessions.KEY_PATH)["EXBO_LOGIN"], "rename wrote the live account")
                 assertEquals("Сессия переименована", c.clientStatus.text)
                 val again = c.sessionCards.children.first { "session-card" in it.styleClass } as Parent
-                assertTrue(again.lookup(".session-keys").isVisible, "open keys stay open after rename")
                 assertNotNull(again.lookup(".session-apply"))
                 assertNotNull(again.lookup(".session-delete"))
                 val window = BoundingBox(0.0, 0.0, scene.width, scene.height)
@@ -1798,6 +1849,7 @@ class SettingsScreenTest {
         TunnelServices.directory = dir
         TunnelServices.inline = true
         TunnelServices.mockCatalog = true
+        TunnelServices.probeOnLoad = false
         val attempts = TunnelCatalogs.fetchAttempts.get()
         val app = AppContext.mock(language = "ru", authDelayMs = 0)
         val nav = mainOnScreen(app, "ru")
@@ -1882,7 +1934,7 @@ class SettingsScreenTest {
 
                 TunnelServices.fetch = {
                     TunnelCatalogs.parse(
-                        """{"mode":"roxy","clientToTunnelRttWeight":1,"pools":[{"name":"CLOUD-RU-7","tunnels":[{"name":"X","address":"203.0.113.8:29450"}]}]}""",
+                        """{"mode":"roxy","clientToTunnelRttWeight":1,"pools":[{"name":"CLOUD-RU-7","tunnels":[{"name":"X","address":"203.0.113.8:29450"}]},{"name":"FAKE","tunnels":[{"name":"DOC","address":"203.0.113.10:29450"},{"name":"DOC2","address":"198.51.100.8:29450"},{"name":"DOC3","address":"192.0.2.8:29450"}]}]}""",
                     )
                 }
                 s.regionSea.fire()

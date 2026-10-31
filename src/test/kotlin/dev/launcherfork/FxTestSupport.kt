@@ -1,6 +1,7 @@
 package dev.launcherfork
 
 import dev.launcherfork.app.AppContext
+import dev.launcherfork.stalzone.ItemNames
 import dev.launcherfork.i18n.Strings
 import dev.launcherfork.theme.Theme
 import dev.launcherfork.ui.Navigator
@@ -28,6 +29,7 @@ object FxTestSupport {
         // tests show and close real windows (AuthWindowTest): closing the last one must not stop the toolkit
         Platform.setImplicitExit(false)
         Theme.loadFonts()
+        ItemNames.loadOnShow = false
         started = true
     }
 
@@ -44,7 +46,7 @@ object FxTestSupport {
     }
 
     fun context(lang: String = "ru", app: AppContext = AppContext.mock(language = lang, speed = 50.0, authDelayMs = 0)): UiContext =
-        UiContext(app.services, NoopNavigator, Strings.bundle(lang), lang, app.clientStates, app.devMode, app.desk, app.liveBackend)
+        UiContext(app.services, NoopNavigator, Strings.bundle(lang), lang, app.clientStates, app.devMode, app.desk, app.liveBackend, app.realms)
 
     /** Polls [condition] on the FX thread until it holds or [timeoutMs] passes. */
     fun waitFx(timeoutMs: Long = 5_000, condition: () -> Boolean): Boolean {

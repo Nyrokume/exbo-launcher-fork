@@ -2,12 +2,12 @@ package dev.launcherfork.data.exbo
 
 import dev.launcherfork.domain.Cancellable
 import dev.launcherfork.domain.ClientOperation
-import dev.launcherfork.domain.ExboPaths
 import dev.launcherfork.domain.Progress
 import dev.launcherfork.domain.ProgressListener
 import dev.launcherfork.domain.Server
 import dev.launcherfork.domain.UpdatePhase
 import dev.launcherfork.domain.UpdateService
+import dev.launcherfork.stalzone.ItemNames
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -28,19 +28,19 @@ internal interface LiveClientSource {
 }
 
 internal class ExboLiveClientSource(
-    private val api: ExboApi,
+    private val api: () -> ExboApi,
     private val servers: ExboServerRepository,
-    private val runtime: Path = ExboClients.runtimeDir(),
-    private val exboRoot: Path = ExboPaths.roamingRoot(),
 ) : LiveClientSource {
+    constructor(api: ExboApi, servers: ExboServerRepository) : this({ api }, servers)
+
     override fun directory(server: Server): Path? = servers.clientDirectory(server)
     override fun remoteVersion(id: String): String? = servers.remoteVersion(id)
     override fun httpSeeds(id: String): List<String> = servers.httpSeeds(id)
     override fun exclusions(id: String): List<String> = servers.exclusions(id)
-    override fun catalog(id: String): ByteArray = api.torrentData(id)
+    override fun catalog(id: String): ByteArray = api().torrentData(id)
     override fun canDownload(server: Server): Boolean = servers.canDownload(server)
-    override fun runtime(): Path = runtime
-    override fun exboRoot(): Path = exboRoot
+    override fun runtime(): Path = ExboClients.runtimeDir(api().dataRoot)
+    override fun exboRoot(): Path = api().dataRoot
 }
 
 /**
@@ -63,6 +63,13 @@ class LiveUpdateService internal constructor(
     @Suppress("UNUSED_PARAMETER")
     constructor(api: ExboApi, servers: ExboServerRepository, speed: Double = 1.0) : this(
         ExboLiveClientSource(api, servers),
+        ::exboOpenSeed,
+        null,
+    )
+
+    @Suppress("UNUSED_PARAMETER")
+    constructor(backend: ExboBackend, servers: ExboServerRepository, speed: Double = 1.0) : this(
+        ExboLiveClientSource({ backend.api }, servers),
         ::exboOpenSeed,
         null,
     )
@@ -121,6 +128,7 @@ class LiveUpdateService internal constructor(
         if (cancelled.get()) throw ExboSyncStopped()
         val version = source.remoteVersion(server.id)
         if (!version.isNullOrBlank()) writeInstalledHash(server.id, version, source.runtime())
+        restoreNames(dir)
         listener.onPhase(UpdatePhase.APPLYING)
         listener.onFinished()
     }
@@ -170,8 +178,14 @@ class LiveUpdateService internal constructor(
         val version = source.remoteVersion(server.id)
         if (!version.isNullOrBlank()) writeInstalledHash(server.id, version, source.runtime())
         pausedAt.remove(server.id)
+        restoreNames(dir)
         listener.onPhase(UpdatePhase.APPLYING)
         listener.onFinished()
+    }
+
+    /** Live parse of the lang file the update just wrote, then put saved item and weapon names back. */
+    private fun restoreNames(dir: Path) {
+        runCatching { ItemNames.restoreAfterUpdate(dir) }
     }
 
     private fun start(name: String, listener: ProgressListener, block: (AtomicBoolean) -> Unit): Cancellable {

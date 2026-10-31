@@ -12,7 +12,8 @@ The default theme is `zone`. The main window is adaptive: 1024×640, minimum 900
 | Section | Why |
 |---|---|
 | [Install](../install-run/) | Gradle and the 460×660 setup window under `%LOCALAPPDATA%\LauncherFork` |
-| [Mock/live login](../mock-login/) | The demo password and live registration `NOT_SUPPORTED` |
+| [Mock/live login](../mock-login/) | The demo password, live registration `NOT_SUPPORTED`, and RU / EU on live |
+| [Localization](../../settings/localization/) | Item and weapon names in the client language file |
 | [2FA](../two-factor/) | Mail 460×438, app 460×444 |
 | [Update fail-closed](../update/) | The signature is not accepted. The window is 460×316 before show |
 | [Home](../../game/home/) | The banner and the **⋯** menu |
@@ -35,7 +36,7 @@ This site does not replace those files. When the code and an older paragraph dis
 
 `AppContext` is the only place service implementations are chosen. The UI sees the `domain/` interfaces and does not know whether the backend is mock or live.
 
-The showcase, the screenshot tour, and the tests stay on mock. A normal launch on Windows switches to live when `ExboApi.installed()` finds an installed EXBO client. Details are on the [AppContext](../../architecture/app-context/) page.
+The showcase, the screenshot tour, and the tests stay on mock. A normal launch on Windows switches to live when a RU client (`%APPDATA%\EXBO`) or an EU client (`%APPDATA%\Exbo_East`) is installed. Details are on the [AppContext](../../architecture/app-context/) page.
 
 The README section that lists removed network pieces describes the mock layer. It does not cancel the live path.
 

@@ -2,8 +2,9 @@ package dev.launcherfork.stalzone
 
 /**
  * Tunnel catalog grouped the way the original wrapper groups it: region, then pool.
- * Addresses live in the same JSON the wrapper ships (`servers.json` for EU/NA/SEA,
- * `servers-ru.json` for RU). `MSK2X` is dropped from the roxy file, matching the wrapper merge.
+ * Addresses are the live `address_list` pools (`servers.json` for EU/NA/SEA/NEA,
+ * `servers-ru.json` for RU, without the dead CLOUD-RU-7 entry). `MSK2X` is dropped from the
+ * roxy file, matching the wrapper merge.
  */
 object TunnelCatalog {
     data class Tunnel(val name: String, val address: String, val host: String, val port: Int)
@@ -20,7 +21,7 @@ object TunnelCatalog {
         val region: String,
     )
 
-    private val regionOrder = listOf("RU", "EU", "NA", "SEA")
+    private val regionOrder = listOf("RU", "EU", "NA", "SEA", "NEA")
     private const val RU = "/dev/launcherfork/stalzone/servers-ru.json"
     private const val ROXY = "/dev/launcherfork/stalzone/servers.json"
 

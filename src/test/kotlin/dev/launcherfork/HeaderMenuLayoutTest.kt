@@ -170,8 +170,9 @@ class HeaderMenuLayoutTest {
             main.headerController.navTunnel,
             main.headerController.navSens,
             main.headerController.navAccounts,
+            main.headerController.navLoc,
         )
-        assertEquals(sections, main.headerController.settingsNav.children.toList(), "$theme: switch is not the four tools")
+        assertEquals(sections, main.headerController.settingsNav.children.toList(), "$theme: switch is not the five tools")
         sections.forEach { assertFalse("selected" in it.styleClass, "$theme: ${it.text} selected on the column") }
         sections.zipWithNext { a, b ->
             assertTrue(a.sceneBounds().maxX <= b.sceneBounds().minX + 0.5, "$theme: ${a.text} overlaps ${b.text}")

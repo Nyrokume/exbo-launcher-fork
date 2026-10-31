@@ -1,6 +1,7 @@
 package dev.launcherfork.data.exbo
 
 import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.domain.ExboRealm
 import dev.launcherfork.domain.GameDescription
 import dev.launcherfork.domain.Server
 import java.math.BigInteger
@@ -11,12 +12,13 @@ import java.nio.file.Path
 import java.security.MessageDigest
 
 /**
- * RU realm hosts from the installed launcher's `launcher_config.properties`.
- * The official client lists TLS first, then cleartext. Credential requests use
- * [credential] only: `/auth` answers the same JSON over TLS, and a cleartext
+ * Hosts from the installed launchers. RU comes from `launcher_config.properties`.
+ * GLOBAL (EU) comes from the East installer's baked `backend_address`.
+ * Each official client lists cleartext as well. Credential requests use the TLS
+ * list of that realm only: `/auth` answers the same JSON over TLS, and a cleartext
  * retry would put the password, session, code, and token on the wire.
- * [cleartext] stays in this list so it cannot be passed to [ExboApi] by accident;
- * [exboBaseIsTrustedHttps] rejects every entry.
+ * The cleartext lists stay here so they cannot be passed to [ExboApi] by accident;
+ * [exboBaseIsTrustedHttps] rejects every one of them.
  */
 internal object ExboHosts {
     val credential = listOf(
@@ -29,6 +31,19 @@ internal object ExboHosts {
         "http://launcher.stalcraftx.ru:80",
         "http://launcher.stalcraft-tech.net:80",
     )
+
+    /** TLS host for the GLOBAL / EU installer. The jar itself only embeds the cleartext twin. */
+    val globalCredential = listOf(
+        "https://launcher-global.stalcraft.net:443",
+    )
+    val globalCleartext = listOf(
+        "http://launcher-global.stalcraft.net:80",
+    )
+}
+
+internal fun ExboRealm.credentialHosts(): List<String> = when (this) {
+    ExboRealm.RU -> ExboHosts.credential
+    ExboRealm.GLOBAL -> ExboHosts.globalCredential
 }
 
 /**
@@ -61,7 +76,7 @@ internal fun httpsWebSeeds(seeds: List<String>): List<String> {
 
 /** True only for an official TLS base with no userinfo, query, or path. */
 internal fun exboBaseIsTrustedHttps(base: String): Boolean {
-    if (base !in ExboHosts.credential) return false
+    if (base !in ExboHosts.credential && base !in ExboHosts.globalCredential) return false
     return try {
         val uri = URI(base)
         uri.scheme == "https" &&

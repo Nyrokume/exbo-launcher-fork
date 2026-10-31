@@ -2,6 +2,7 @@ package dev.launcherfork.ui.screens.main
 
 import dev.launcherfork.domain.ClientOperation
 import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.domain.ExboRealm
 import dev.launcherfork.domain.ExternalLinks
 import dev.launcherfork.domain.GameFolders
 import dev.launcherfork.domain.Server
@@ -281,7 +282,7 @@ class MainController(private val ctx: UiContext) : Disposable {
                 return
             }
             GameAction.OPEN_LOGS -> {
-                ctx.services.folders.open(ExboPaths.runtimeLogs())
+                ctx.services.folders.open(ExboPaths.runtimeLogs(ctx.realms?.current ?: ExboRealm.RU))
                 return
             }
             GameAction.SETTINGS -> { setSettingsVisible(true); return }

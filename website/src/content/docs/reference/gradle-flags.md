@@ -17,6 +17,7 @@ description: Свойства -Dlauncher, которые читает LauncherAp
 | `launcher.mock2fa=random\|email\|totp\|none` | Второй фактор mock. Вне тура по умолчанию `random`. Тур без свойства берёт `none` |
 | `launcher.onlineTickMs=<мс>` | Как часто mock-онлайн чуть меняется. По умолчанию 10000. `0` — всегда 1284. В туре всегда 0 |
 | `launcher.demo` | Любое заданное значение оставляет mock, даже если клиент EXBO установлен |
+| `launcher.realm=ru\|global` | Какую установленную копию открыть на live. `global` — EU, папка `Exbo_East`. Нет свойства — ключ `exbo.realm`, затем RU, если он установлен |
 | `launcher.dev=true` | Клавиши F1–F7 на главном окне. Esc работает и без свойства |
 
 ## Витрина и снимки

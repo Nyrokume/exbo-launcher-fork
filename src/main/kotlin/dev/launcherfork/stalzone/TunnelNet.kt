@@ -101,7 +101,6 @@ object TunnelCatalogs {
     fun bundled(region: TunnelRegion): RoxyCatalog? = try {
         when (region) {
             TunnelRegion.RU -> parse(resource("servers-ru.json"))
-            TunnelRegion.NEA -> parse(NEA_FIXTURE)
             else -> parse(regional(resource("servers.json"), region))
         }
     } catch (_: Exception) {
@@ -163,15 +162,6 @@ object TunnelCatalogs {
         }
     }
 
-    /** Same shape as the other bundled regions. Not a live host. */
-    private const val NEA_FIXTURE = """
-        {"mode":"roxy","clientToTunnelRttWeight":1,"pools":[
-          {"name":"NEA1","tunnels":[
-            {"name":"NEA1-1","address":"203.0.113.10:29450"},
-            {"name":"NEA1-2","address":"203.0.113.11:29450"}
-          ]}
-        ]}
-    """
 }
 
 object TunnelProbe {

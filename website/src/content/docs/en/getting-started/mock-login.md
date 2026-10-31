@@ -43,6 +43,21 @@ The name `taken` shows “Name taken”. The email `taken@…` shows “This ema
 
 On live, **Create**, the age gate, and the field checks are the same, and no account is created. `ExboAuthService.register` returns `RegisterError.NOT_SUPPORTED`. The form shows “This launcher cannot create an account. Create it on the STALZONE site.” (`fork.reg.error.unavailable`). This repository has no registration API. The mock rules above are unchanged.
 
+## RU and EU
+
+On live, **RU** and **EU** sit above the login fields. Mock and the showcase have no row: `ctx.realms` is set only in `AppContext.live`.
+
+| Button | Install | Session registry |
+|---|---|---|
+| RU | `%APPDATA%\EXBO` | `HKCU\SOFTWARE\EXBO` |
+| EU | `%APPDATA%\Exbo_East` | `HKCU\SOFTWARE\Exbo_East` |
+
+EU in code is `ExboRealm.GLOBAL`. The choice is written to the fork settings file under `exbo.realm` (`ru` or `global`). The next launch reads `-Dlauncher.realm`, then that key. The requested install is used when it is present. Otherwise RU, when that install exists, otherwise EU.
+
+A missing EU folder shows “The EU launcher is not installed. Its files belong in the Exbo_East folder. The EXBO folder is left as it is.” The current install stays. A successful switch drops the in-memory session and fills the login from the new install’s registry. When auto-login is accepted, the main window opens.
+
+Auth and the server list talk to the selected install’s hosts. EU is `https://launcher-global.stalcraft.net:443`. The JVM catalog, `options.json`, and the [localization](../../settings/localization/) page read the `%APPDATA%\EXBO` tree. The [accounts](../../settings/accounts/) page still writes the snapshot to `HKCU\SOFTWARE\EXBO`.
+
 ## Main-window keys
 
 With `-Dlauncher.dev=true`: **F1** launcher update, **F2** license, **F3** offline, **F4** Windows Defender, **F5** “a download is already running”, **F6** error, **F7** spinner. Without the property those keys are off.

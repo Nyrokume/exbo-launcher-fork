@@ -199,6 +199,7 @@ export default defineConfig({
 						{ slug: 'settings/behavior', label: 'Поведение', translations: { en: 'Behavior' } },
 						{ slug: 'settings/jvm', label: 'JVM', translations: { en: 'JVM' } },
 						{ slug: 'settings/sensitivity', label: 'Чувствительность', translations: { en: 'Sensitivity' } },
+						{ slug: 'settings/localization', label: 'Локализация', translations: { en: 'Localization' } },
 						{ slug: 'settings/accounts', label: 'Аккаунты', translations: { en: 'Accounts' } },
 					],
 				},

@@ -10,10 +10,11 @@ On mock `defaultFetch` calls `TunnelCatalogs.bundled`. Mock does not fetch that 
 | Region | Snapshot |
 |---|---|
 | RU | classpath `servers-ru.json` |
-| EU, NA, SEA | classpath `servers.json`, pools whose `region` field matches |
-| NEA | an in-code fixture, not a live host: pool `NEA1`, addresses `203.0.113.10` and `203.0.113.11`, port 29450 |
+| EU, NA, SEA, NEA | classpath `servers.json`, pools whose `region` field matches |
 
-A missing file or an empty region makes `bundled` return null, and the page shows a catalog error. The `region` field is dropped before parse. `CLOUD-*` pools, including `CLOUD-RU-7`, stay out of the list, measure, and find-best.
+NEA in `servers.json` is the `TYO` and `KOR` pools. The page does not read a separate `NEA1` fixture.
+
+A missing file or an empty region makes `bundled` return null, and the page shows a catalog error. The `region` field is dropped before parse. `CLOUD-*` pools, including `CLOUD-RU-7`, and documentation addresses (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`) stay out of the list, measure, and find-best. A node that remains in the snapshot and does not answer the probe is not drawn either.
 
 On live `mockCatalog` is false. `TunnelCatalogs.fetch` talks only to the region's existing HTTPS addresses (`TunnelCatalogs.sources`). This branch adds no hosts. Redirects are not followed. A non-200, a drop, or a body over 1 MiB tries the next source, then fails.
 

@@ -48,17 +48,20 @@ import java.nio.file.Path
 class ServerBlockTest {
     @Test
     fun catalogKeepsRegionThenPoolAndCarriesAddresses() {
-        assertEquals(listOf("RU", "EU", "NA", "SEA"), TunnelCatalog.regions().map { it.id })
+        assertEquals(listOf("RU", "EU", "NA", "SEA", "NEA"), TunnelCatalog.regions().map { it.id })
         val msk1 = TunnelCatalog.regions().first { it.id == "RU" }.pools.first { it.name == "MSK1" }
         assertEquals("85.119.149.7", msk1.tunnels.first { it.name == "MSK1-1" }.host)
         val eu = TunnelCatalog.servers().first { it.name == "GAME-EU-2" }
         assertEquals("EU", eu.region)
         assertEquals("79.127.241.67", eu.host)
         assertEquals(29450, eu.port)
-        assertEquals("GAME-EU::GAME-EU-2", eu.id)
+        assertEquals("FRA::GAME-EU-2", eu.id)
         val msk2x = TunnelCatalog.regions().first { it.id == "RU" }.pools.first { it.name == "MSK2X" }
         assertEquals("111.88.96.18", msk2x.tunnels.first { it.name == "MSK2-ROXY1" }.host)
         assertEquals("EU", TunnelCatalog.regionOf("GAME-EU-2"))
+        val nea = TunnelCatalog.regions().first { it.id == "NEA" }
+        assertEquals(listOf("TYO", "KOR"), nea.pools.map { it.name })
+        assertTrue(TunnelCatalog.servers().none { it.address.startsWith("203.0.113.") || it.pool.startsWith("CLOUD") })
     }
 
     @Test

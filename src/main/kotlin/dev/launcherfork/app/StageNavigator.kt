@@ -139,7 +139,7 @@ class StageNavigator(private val stage: Stage, private val app: AppContext, priv
     }
 
     private fun newContext() = UiContext(
-        app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode, app.desk, app.liveBackend,
+        app.services, this, Strings.bundle(lang), lang, app.clientStates, app.devMode, app.desk, app.liveBackend, app.realms,
     )
 
     override fun showLauncherUpdate(afterUpdate: () -> Unit) {

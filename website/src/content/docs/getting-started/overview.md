@@ -12,7 +12,8 @@ description: Визуальный форк лаунчера EXBO на Kotlin и 
 | Раздел | Зачем |
 |---|---|
 | [Установка](../install-run/) | Gradle и окно установки 460×660 в `%LOCALAPPDATA%\LauncherFork` |
-| [Mock/live вход](../mock-login/) | Демо-пароль и живая регистрация `NOT_SUPPORTED` |
+| [Mock/live вход](../mock-login/) | Демо-пароль, живая регистрация `NOT_SUPPORTED`, на live кнопки RU и EU |
+| [Локализация](../../settings/localization/) | Имена предметов и оружия в языковом файле клиента |
 | [2FA](../two-factor/) | Почта 460×438, приложение 460×444 |
 | [Update fail-closed](../update/) | Подпись не принята, окно 460×316 до показа |
 | [Дом](../../game/home/) | Баннер и меню **⋯** |
@@ -35,7 +36,7 @@ description: Визуальный форк лаунчера EXBO на Kotlin и 
 
 `AppContext` — единственное место, где выбираются реализации сервисов. UI видит интерфейсы из `domain/` и не знает, mock это или live.
 
-Витрина, автотур скриншотов и тесты остаются на mock. Обычный запуск на Windows переходит на live, если `ExboApi.installed()` находит установленный клиент EXBO. Подробности — на странице [AppContext](../../architecture/app-context/).
+Витрина, автотур скриншотов и тесты остаются на mock. Обычный запуск на Windows переходит на live, если установлен клиент RU (`%APPDATA%\EXBO`) или EU (`%APPDATA%\Exbo_East`). Подробности — на странице [AppContext](../../architecture/app-context/).
 
 Раздел README «Что удалено» описывает то, чего нет в mock-слое. Он не отменяет live-путь.
 

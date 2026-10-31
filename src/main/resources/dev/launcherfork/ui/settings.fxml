@@ -6,8 +6,8 @@
 <?import javafx.scene.layout.*?>
 
 <!--
-  Settings: one scrollable column (Память, Поведение, Обновление, Язык). The header switch opens four
-  pages that replace it: JVM, Туннель, Чувствительность, Аккаунты. Tunnel fills the settings viewport;
+  Settings: one scrollable column (Память, Поведение, Обновление, Язык). The header switch opens five
+  pages that replace it: JVM, Туннель, Чувствительность, Аккаунты, Локализация. Tunnel fills the settings viewport;
   the server list scrolls inside that page. The gear opens the column and, when the column is already
   open, closes settings. Profile «Аккаунты» still opens the account-swap page.
 
@@ -36,6 +36,9 @@
     ЧУВСТВИТЕЛЬНОСТЬ    own page, the whole settings viewport. One compact row (base, Посчитать, Записать),
                         then one game-style line per scope: name, value, slider, step buttons. The list scrolls.
                         The status line sits in that card.
+    ЛОКАЛИЗАЦИЯ         own page, the whole settings viewport. Оружие / Предметы / Изменённые, a category
+                        box, a search field and Записать stay under the heading. The list is split by category.
+                        Each item row is the stock name, a field, a color and a rank. The list scrolls.
 -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -45,6 +48,7 @@
         <ToggleGroup fx:id="p2pGroup"/>
         <ToggleGroup fx:id="languageGroup"/>
         <ToggleGroup fx:id="regionGroup"/>
+        <ToggleGroup fx:id="locKindGroup"/>
     </fx:define>
     <ScrollPane fx:id="scroll" id="settingsScroll" styleClass="settings-scroll" fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
                 AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
@@ -154,7 +158,7 @@
             </VBox>
             </VBox>
 
-            <!-- JVM, туннель, чувствительность и свап аккаунтов — отдельные страницы на всю область. -->
+            <!-- JVM, туннель, чувствительность, свап аккаунтов и локализация — отдельные страницы на всю область. -->
             <VBox fx:id="clientContent" id="settingsClient" styleClass="settings-page" VBox.vgrow="ALWAYS">
                 <VBox fx:id="jvmPage" id="settingsJvm" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                     <Label styleClass="settings-group-label,font-display" text="%settings.heading.jvm" minHeight="-Infinity"/>
@@ -163,6 +167,7 @@
                         <Label fx:id="jvmStatus" styleClass="jvm-summary-name" minWidth="-Infinity" wrapText="true"/>
                         <Label fx:id="jvmStatusHint" styleClass="jvm-summary-hint" wrapText="true"/>
                     </VBox>
+                    <Label fx:id="jvmMachine" styleClass="settings-note" wrapText="true" minHeight="-Infinity"/>
                     <Label styleClass="jvm-list-label" text="%settings.jvm.list" minHeight="-Infinity"/>
                     <GridPane fx:id="jvmGrid" styleClass="jvm-grid" hgap="8" vgap="8">
                         <columnConstraints>
@@ -227,6 +232,26 @@
                             <VBox fx:id="sensList" styleClass="sens-list" maxWidth="Infinity"/>
                         </ScrollPane>
                         <Label fx:id="sensNote" styleClass="settings-note,sens-note" wrapText="true" visible="false" managed="false"/>
+                    </VBox>
+                </VBox>
+
+                <VBox fx:id="locPage" id="settingsLoc" styleClass="settings-group" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                    <Label styleClass="settings-group-label,font-display" text="%settings.heading.loc" minHeight="-Infinity"/>
+                    <VBox fx:id="locCard" styleClass="loc-card,card,zone-radius-md" maxWidth="Infinity" VBox.vgrow="ALWAYS">
+                        <HBox fx:id="locBar" styleClass="loc-bar" alignment="CENTER_LEFT" maxWidth="Infinity">
+                            <HBox styleClass="segmented,zone-radius-sm" alignment="CENTER" minWidth="-Infinity" maxHeight="-Infinity">
+                                <RadioButton fx:id="locWeapons" styleClass="segment,zone-radius-sm" text="%settings.loc.weapons" toggleGroup="$locKindGroup" selected="true" minWidth="-Infinity"/>
+                                <RadioButton fx:id="locItems" styleClass="segment,zone-radius-sm" text="%settings.loc.items" toggleGroup="$locKindGroup" minWidth="-Infinity"/>
+                                <RadioButton fx:id="locChanged" styleClass="segment,zone-radius-sm" text="%settings.loc.changed" toggleGroup="$locKindGroup" minWidth="-Infinity"/>
+                            </HBox>
+                            <ComboBox fx:id="locCategory" styleClass="loc-choice,loc-category" visibleRowCount="14" minWidth="132" prefWidth="168" maxWidth="190"/>
+                            <HBox styleClass="settings-field,zone-input,zone-radius-sm,loc-search" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS" maxWidth="Infinity">
+                                <TextField fx:id="locSearch" promptText="%settings.loc.search" styleClass="limit-input" HBox.hgrow="ALWAYS"/>
+                            </HBox>
+                            <Button fx:id="locWrite" styleClass="settings-mini,primary" text="%settings.loc.write" mnemonicParsing="false" minWidth="-Infinity"/>
+                        </HBox>
+                        <ListView fx:id="locList" styleClass="loc-list" maxWidth="Infinity" VBox.vgrow="ALWAYS"/>
+                        <Label fx:id="locNote" styleClass="settings-note,loc-note" wrapText="true" visible="false" managed="false"/>
                     </VBox>
                 </VBox>
                 <Label fx:id="clientStatus" styleClass="settings-note" wrapText="true" visible="false" managed="false"/>

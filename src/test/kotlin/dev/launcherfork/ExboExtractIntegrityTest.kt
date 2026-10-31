@@ -50,7 +50,7 @@ class ExboExtractIntegrityTest {
             Files.writeString(planted.resolve("java.exe"), "evil-temp")
             Files.writeString(outside.resolve("kept.txt"), "kept")
             Files.createDirectories(root.resolve("launcher-fork").resolve("jre-layout"))
-            Files.createSymbolicLink(root.resolve("launcher-fork").resolve("jre-layout").resolve("java"), outside)
+            symLink(root.resolve("launcher-fork").resolve("jre-layout").resolve("java"), outside)
 
             val layout = jreLayout(root)
             assertEquals(root.resolve("launcher-fork").resolve("jre-layout").normalize(), layout.normalize())
@@ -96,7 +96,7 @@ class ExboExtractIntegrityTest {
             Files.writeString(outside, "secret")
             val bin = root.resolve("java").resolve("bin")
             Files.createDirectories(bin)
-            Files.createSymbolicLink(bin.resolve("java.exe"), outside)
+            symLink(bin.resolve("java.exe"), outside)
             Files.writeString(bin.resolve("jmt.dll"), "dll")
             val error = assertThrows<IOException> { jreLayout(root) }
             assertEquals(JRE_INTEGRITY_ERROR, error.message)
@@ -123,7 +123,7 @@ class ExboExtractIntegrityTest {
             Files.writeString(copy.resolve("bin/java.exe"), "good-java-tampered")
             assertFalse(jreTreeMatches(source, copy))
             Files.writeString(copy.resolve("bin/java.exe"), "good-java")
-            Files.createSymbolicLink(copy.resolve("bin/extra.dll"), copy.resolve("bin/jmt.dll"))
+            symLink(copy.resolve("bin/extra.dll"), copy.resolve("bin/jmt.dll"))
             assertFalse(jreTreeMatches(source, copy))
         } finally {
             deleteTree(dest)
@@ -137,7 +137,7 @@ class ExboExtractIntegrityTest {
         val outside = Files.createTempDirectory("exbo-args")
         try {
             Files.writeString(outside.resolve("args_new.txt"), "official")
-            Files.createSymbolicLink(layout.resolve("launcher"), outside)
+            symLink(layout.resolve("launcher"), outside)
             val error = assertThrows<IOException> { realWorkDirectory(layout, "launcher") }
             assertEquals(JRE_INTEGRITY_ERROR, error.message)
             assertEquals("official", outside.resolve("args_new.txt").readText())
@@ -153,7 +153,7 @@ class ExboExtractIntegrityTest {
         val outside = Files.createTempDirectory("exbo-m1-parent-out")
         try {
             writeFakeJre(root, exe = "good-java", dll = "good-dll")
-            Files.createSymbolicLink(root.resolve("launcher-fork"), outside)
+            symLink(root.resolve("launcher-fork"), outside)
             val error = assertThrows<IOException> { jreLayout(root) }
             assertEquals(JRE_INTEGRITY_ERROR, error.message)
             assertFalse(Files.exists(outside.resolve("jre-layout").resolve("java").resolve("bin").resolve("java.exe")))
@@ -270,7 +270,7 @@ class ExboExtractIntegrityTest {
         val base = Files.createTempDirectory("exbo-m2-parent")
         val outside = Files.createTempDirectory("exbo-m2-out")
         try {
-            Files.createSymbolicLink(base.resolve("link"), outside)
+            symLink(base.resolve("link"), outside)
             val cache = base.resolve("link").resolve("native")
             withoutJniPath {
                 val error = assertThrows<IOException> {
@@ -293,7 +293,7 @@ class ExboExtractIntegrityTest {
         val real = cache.resolve("real.dll")
         val link = cache.resolve(JLIBTORRENT_LIBRARY_NAME)
         Files.write(real, bytes)
-        Files.createSymbolicLink(link, real.fileName)
+        symLink(link, real.fileName)
         try {
             withoutJniPath {
                 ensureExboTorrentNative(cache, bytes)

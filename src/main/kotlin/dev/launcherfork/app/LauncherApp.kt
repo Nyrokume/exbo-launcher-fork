@@ -2,9 +2,12 @@ package dev.launcherfork.app
 
 import dev.launcherfork.data.exbo.ExboApi
 import dev.launcherfork.data.exbo.ExboAuthService
+import dev.launcherfork.data.local.SettingsFile
 import dev.launcherfork.data.local.WallpaperFileMemory
 import dev.launcherfork.data.mock.MockSecondFactor
 import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.domain.ExboRealm
+import dev.launcherfork.domain.chooseExboRealm
 import dev.launcherfork.domain.FolderOpener
 import dev.launcherfork.domain.FolderTarget
 import dev.launcherfork.domain.GameFolders
@@ -36,7 +39,8 @@ import kotlin.random.Random
  * launcher.showcase=true (looping interactive presentation; launcher.showcase.size=WxH,
  * launcher.showcase.captions=true|false, launcher.showcase.stills=<dir>, launcher.showcase.loops=N),
  * launcher.demo=mail2fa (e-mail code: wrong → success → main),
- * launcher.demo=2fa (layout: mail idle/error, then TOTP idle/error and stay).
+ * launcher.demo=2fa (layout: mail idle/error, then TOTP idle/error and stay),
+ * launcher.realm=ru|global (which installed launcher to open; EU is global / Exbo_East).
  */
 class LauncherApp : Application() {
     private var app: AppContext? = null
@@ -58,8 +62,10 @@ class LauncherApp : Application() {
         val folders = FolderOpener { dir ->
             val abs = dir.toAbsolutePath().normalize()
             val gameRoot = this.app?.services?.settings?.load()?.gameRoot ?: LauncherSettings().gameRoot
-            val exboRoot = ExboPaths.roamingRoot().toAbsolutePath().normalize()
-            val allowRoot = if (abs.startsWith(exboRoot)) exboRoot else gameRoot
+            val realmRoot = ExboRealm.entries
+                .map { ExboPaths.roamingRoot(it).toAbsolutePath().normalize() }
+                .firstOrNull { abs.startsWith(it) }
+            val allowRoot = realmRoot ?: gameRoot
             when (val target = GameFolders.folderToOpen(dir, allowRoot)) {
                 is FolderTarget.Open -> {
                     System.err.println("[launcher-fork] open folder: ${target.dir}")
@@ -94,16 +100,22 @@ class LauncherApp : Application() {
         }
         val demo = System.getProperty("launcher.demo")
         val settingsFile = settingsFile(showcase = showcase != null, screenshots = shotsDir != null)
-        val useExbo = !tour && demo == null && ExboApi().installed()
+        val settingsPath = settingsFile ?: Path.of(System.getProperty("user.home"), ".launcher-fork", "settings.properties")
+        val installedRealms = ExboRealm.entries.filter { ExboApi(it).installed() }
+        val useExbo = !tour && demo == null && installedRealms.isNotEmpty()
         val app = if (useExbo) {
-            System.err.println("[launcher-fork] backend: exbo server list")
+            val requested = ExboRealm.fromName(System.getProperty(ExboRealm.PROPERTY))
+                ?: ExboRealm.fromName(SettingsFile.read(settingsPath, ExboRealm.SETTINGS_KEY))
+            val realm = chooseExboRealm(requested) { it in installedRealms }
+            System.err.println("[launcher-fork] backend: exbo ${realm.wireName}")
             AppContext.live(
                 language = lang,
                 speed = speed,
                 devMode = devMode,
                 links = links,
                 folders = folders,
-                settingsFile = settingsFile ?: Path.of(System.getProperty("user.home"), ".launcher-fork", "settings.properties"),
+                api = ExboApi(realm),
+                settingsFile = settingsPath,
             )
         } else {
             System.err.println("[launcher-fork] mock 2FA: ${mock2fa.name.lowercase()}")

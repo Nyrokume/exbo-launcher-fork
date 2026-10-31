@@ -13,7 +13,13 @@ The setup window is `SetupWindow`, scene **460×660**, not `fittedWindowHeight()
 
 Shell and tunnel (#41): the column is **253 px** at 1024×640 and **220–340 px** as the window changes width, settings fill the content area, the mock catalog comes from the classpath, and loading, error, and an empty list are separate cards. The update window is **460×316** before it is shown. Live registration is `NOT_SUPPORTED`. Self-update is fail-closed until a release key is pinned. P2P and the speed limits are saved and do not affect the torrent.
 
-Pages: [windows](../../architecture/windows/), [shell](../../architecture/shell/), [tunnel](../../settings/tunnel/), [limitations](../../reference/limitations/).
+The RAM scale never goes above 8 GB. The first JVM card is “No JVM”: it clears the wrapper’s active profile. The grid keeps 8 kHz, v1.1.2, v1.1.0, v1.0.8, v1.0.7, v1.0.4, and Aikar. The line under the summary names the CPU, the GPU, the cores, the threads, and the RAM.
+
+Localization is its own header item. **Write** changes `item.*.name` in the RU client language file and the copy in `item-names.json`. On live, RU and EU sit above the login fields (`%APPDATA%\EXBO` and `%APPDATA%\Exbo_East`). A missing EU install leaves the current choice. The property is `launcher.realm`.
+
+After the catalog, the tunnel probes nodes and draws only the ones that answered. `CLOUD-*` pools and documentation addresses never reach the list. NEA on mock is `TYO` and `KOR` from `servers.json`.
+
+Pages: [windows](../../architecture/windows/), [shell](../../architecture/shell/), [tunnel](../../settings/tunnel/), [JVM](../../settings/jvm/), [localization](../../settings/localization/), [login](../../getting-started/mock-login/), [limitations](../../reference/limitations/).
 
 ## 2026-10-07
 

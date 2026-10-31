@@ -1,6 +1,7 @@
 package dev.launcherfork.data.exbo
 
 import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.domain.ExboRealm
 import dev.launcherfork.stalzone.RegistryStore
 import dev.launcherfork.stalzone.WindowsRegistry
 import java.io.IOException
@@ -63,13 +64,22 @@ internal fun exboHttpFailure(code: Int): String? = when {
 }
 
 /**
- * The installed EXBO launcher's backend: registry session, bootstrap hash, HWID from the 32-bit JRE,
- * then `/auth` and `/listServers` on [ExboHosts.credential]. Cleartext hosts are not contacted.
+ * One installed EXBO launcher's backend: registry session, bootstrap hash, HWID from that install's JRE,
+ * then `/auth` and `/listServers` on that realm's TLS hosts. Cleartext hosts are not contacted.
+ * [realm] picks the roaming folder and the registry key. RU stays `%APPDATA%/EXBO`.
  */
 class ExboApi(
-    private val root: Path = ExboPaths.roamingRoot(),
+    val realm: ExboRealm = ExboRealm.RU,
+    private val root: Path = ExboPaths.roamingRoot(realm),
     private val registry: RegistryStore = WindowsRegistry(),
+    private val hosts: List<String> = realm.credentialHosts(),
 ) {
+    /** Folder this instance reads: `bootstrap.jar`, `launcher/launcher.jar`, and the client runtime. */
+    val dataRoot: Path get() = root
+
+    init {
+        require(hosts.isNotEmpty() && hosts.all { exboBaseIsTrustedHttps(it) }) { "unapproved auth host" }
+    }
     @Volatile var token: String? = null
         private set
 
@@ -86,14 +96,14 @@ class ExboApi(
             root.resolve("java").resolve("bin").resolve("java.exe").exists()
 
     /** Login stored by the working launcher, if auto-auth was used before. */
-    fun savedLogin(): String? = registry.readValues(EXBO_KEY)["EXBO_LOGIN"]?.takeIf { it.isNotBlank() }
+    fun savedLogin(): String? = registry.readValues(realm.registryKey)["EXBO_LOGIN"]?.takeIf { it.isNotBlank() }
 
     /**
      * Session login the working client runs on startup (`state=false`).
      * Returns the auth `type` (`OK`, `NEW_PLACE`, …). A token is kept only for `OK`.
      */
     fun autoAuth(): String {
-        val values = registry.readValues(EXBO_KEY)
+        val values = registry.readValues(realm.registryKey)
         val login = values["EXBO_LOGIN"]?.takeIf { it.isNotBlank() } ?: return "NO_SESSION"
         val session = values["EXBO_SESSION"]?.takeIf { it.isNotBlank() } ?: return "NO_SESSION"
         val reply = call(exboSessionPath(login, session, bootstrap(), hwid(), userId()))
@@ -153,7 +163,7 @@ class ExboApi(
     fun remember(login: String, session: String?) {
         val values = linkedMapOf("EXBO_AUTO_AUTH" to "true", "EXBO_LOGIN" to login)
         if (!session.isNullOrBlank()) values["EXBO_SESSION"] = session
-        registry.writeValues(EXBO_KEY, values)
+        registry.writeValues(realm.registryKey, values)
     }
 
     /** The server list drops its cache here. One listener is enough: the repository registers itself. */
@@ -235,7 +245,7 @@ class ExboApi(
 
     private fun getBytes(path: String, accept: String?): ByteArray {
         var last: Exception? = null
-        for (base in ExboHosts.credential) {
+        for (base in hosts) {
             if (!exboBaseIsTrustedHttps(base)) continue
             try {
                 return request(base, path, accept)
@@ -408,7 +418,6 @@ class ExboApi(
     private var cachedHwid: String? = null
 
     private companion object {
-        const val EXBO_KEY = "SOFTWARE\\EXBO"
         val HEX = Regex("[0-9a-fA-F]{32,}")
         val SAFE_ID = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
     }

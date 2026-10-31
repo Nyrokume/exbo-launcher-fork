@@ -33,6 +33,8 @@ interface Navigator {
 
 `switchLanguage` rebuilds the main screen and leaves the settings page open. `toggleMaximize` affects only the main window. `minimize` minimizes the active window.
 
+On the settings screen the header hides the community links and shows `settingsNav`: **JVM**, **Tunnel**, **Sensitivity**, **Accounts**, **Localization**. RAM, behavior, the speed limit, and language stay one column and have no item in that row.
+
 The newer methods (`showTotpAuth`, `showAgeGate`, `showRegister`, `showRegistered`) have default implementations. A test navigator does not have to write them.
 
 ## Dialogs

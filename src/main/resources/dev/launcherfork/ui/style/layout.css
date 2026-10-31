@@ -421,7 +421,8 @@
 .header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
 .header-link:hover { -fx-text-fill: -foreground; }
 .header-link:hover .external-arrow { -fx-background-color: -foreground; }
-/* Separate settings pages in the nav row (header.fxml settingsNav): JVM, tunnel, sensitivity, account swap.
+.header-links-row.settings-nav { -fx-spacing: 12; }
+/* Separate settings pages in the nav row (header.fxml settingsNav): JVM, tunnel, sensitivity, account swap, localization.
    One is selected: the theme accent, same red the gear and the segmented controls use (-primary).
    No fill, so the row stays the height of the profile button. The settings column leaves every item unselected. */
 .header-link.settings-nav-item {
@@ -788,7 +789,7 @@
     -fx-padding: 2 0 2 0;
 }
 .tunnel-legend.decision { -fx-text-fill: -foreground; }
-.tunnel-toggle-slot {
+.tunnel-action-slot {
     -fx-min-height: 0;
     -fx-pref-height: 0;
     -fx-max-height: 0;
@@ -949,7 +950,7 @@
     -fx-spacing: 0;
     -fx-max-width: infinity;
 }
-/* one server = one full-width row on the shared column shell: name, the figures, 16 px, then the block switch (on = blocked). */
+/* one server = one full-width row: name, status, the figures, 16 px, then Блокировать / Разблокировать. */
 .tunnel-line {
     -fx-alignment: center-left;
     -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
@@ -967,11 +968,28 @@
 }
 .tunnel-line.best:hover { -fx-background-color: -destructive-soft; }
 .tunnel-line.selected, .tunnel-line.selected:hover {
-    -fx-background-color: -destructive-soft;
-    -fx-border-color: -primary;
+    -fx-background-color: -fill-subtle;
+    -fx-border-color: -border;
     -fx-border-width: 1;
     -fx-background-radius: 6;
     -fx-border-radius: 6;
+}
+.tunnel-line.selected.best, .tunnel-line.selected.best:hover {
+    -fx-border-color: -border -border -border -primary;
+    -fx-border-width: 1 1 1 3;
+}
+.tunnel-line.node-blocked {
+    -fx-border-color: transparent transparent -settings-divider -primary;
+    -fx-border-width: 0 0 1 3;
+}
+.tunnel-line.node-blocked.last {
+    -fx-border-color: transparent transparent transparent -primary;
+    -fx-border-width: 0 0 0 3;
+}
+.tunnel-line.selected.node-blocked, .tunnel-line.selected.node-blocked:hover {
+    -fx-background-color: -fill-subtle;
+    -fx-border-color: -border -border -border -primary;
+    -fx-border-width: 1 1 1 3;
 }
 .tunnel-line > .tunnel-node {
     -fx-padding: 0;
@@ -1003,6 +1021,21 @@
 .tunnel-line > .tunnel-node:focused:disabled { -fx-border-color: transparent; -fx-border-width: 0; }
 .tunnel-line.node-blocked .tunnel-row,
 .tunnel-line.node-blocked .tunnel-ping { -fx-text-fill: -settings-muted; }
+.tunnel-line.node-blocked .tunnel-row { -fx-strikethrough: true; }
+.tunnel-block-status {
+    -fx-font-size: 12px;
+    -fx-text-fill: -foreground;
+    -fx-alignment: center-right;
+}
+.tunnel-line.node-blocked .tunnel-block-status {
+    -fx-text-fill: -destructive-text;
+    -fx-font-weight: 700;
+}
+.tunnel-block-count {
+    -fx-font-size: 12px;
+    -fx-text-fill: -destructive-text;
+    -fx-font-weight: 700;
+}
 .tunnel-confirm {
     -fx-alignment: center-left;
     -fx-spacing: 8;
@@ -1112,7 +1145,7 @@
 
 /* saved EXBO sessions: the page fills the settings viewport, like the tunnel.
    Имя сессии / Сохранить stay under the heading. Cards fill the rest and scroll.
-   Name and login take the left; the key, Изменить, Применить and Удалить stay on the right. */
+   Name and login take the left. A double click there renames the session. Применить and Удалить stay on the right. */
 .accounts-create { -fx-padding: 4 0 8 0; -fx-max-width: infinity; }
 .session-cards { -fx-spacing: 8; -fx-padding: 2 0 4 0; }
 .session-card { -fx-padding: 10 12 10 12; -fx-spacing: 8; -fx-max-width: infinity; }
@@ -1122,31 +1155,92 @@
 .session-actions { -fx-alignment: center-right; -fx-spacing: 8; }
 .session-card.selected { -fx-border-color: -primary; -fx-background-color: -destructive-soft; }
 .session-current { -fx-font-size: 12; -fx-text-fill: -destructive-text; }
-.session-keys { -fx-spacing: 6; }
-.session-key-name { -fx-font-size: 12; -fx-text-fill: -settings-muted; }
-.session-key-value { -fx-font-size: 13; -fx-text-fill: -settings-label; -fx-wrap-text: true; }
-.session-keys-toggle {
+
+/* Localization: filter, search and Записать stay put. The name list scrolls inside the card.
+   Stock name on the left, the name that will be written on the right. */
+.loc-card { -fx-padding: 12 14 10 14; -fx-spacing: 10; -fx-max-width: infinity; }
+.loc-bar { -fx-alignment: center-left; -fx-spacing: 8; -fx-max-width: infinity; }
+.loc-search { -fx-min-width: 80; -fx-pref-width: 160; -fx-max-width: infinity; }
+.loc-list {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
     -fx-padding: 0;
-    -fx-min-width: 34; -fx-pref-width: 34; -fx-max-width: 34;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
 }
-.session-card .settings-mini:selected, .session-card .settings-mini:selected:hover {
-    -fx-border-color: -primary;
-    -fx-text-fill: -foreground;
+.loc-list .virtual-flow, .loc-list .clipped-container, .loc-list .sheet { -fx-background-color: transparent; }
+.loc-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-border-color: transparent transparent -settings-divider transparent;
+    -fx-border-width: 0 0 1 0;
 }
-/* key glyph tracks the mini-button text: label colour at rest, foreground on hover and when the keys are open.
-   One ring, a shaft and two teeth — stroke about 1.8 so it stays readable inside the 34 px action. */
-.session-key-glyph {
-    -fx-fill: transparent;
-    -fx-stroke: -settings-label;
-    -fx-stroke-width: 1.8;
-    -fx-stroke-line-cap: round;
-    -fx-stroke-line-join: round;
+.loc-list .list-cell:empty { -fx-border-color: transparent; }
+.loc-list .list-cell:filled:selected,
+.loc-list .list-cell:filled:hover,
+.loc-list .list-cell:filled:selected:hover { -fx-background-color: transparent; }
+.loc-line { -fx-alignment: center-left; -fx-spacing: 8; -fx-max-width: infinity; }
+.loc-name {
+    -fx-font-size: 13;
+    -fx-text-fill: -settings-label;
+    -fx-min-width: 0;
+    -fx-pref-width: 150;
+    -fx-max-width: 190;
 }
-.session-keys-toggle:hover .session-key-glyph,
-.session-card .session-keys-toggle:selected .session-key-glyph,
-.session-card .session-keys-toggle:selected:hover .session-key-glyph {
-    -fx-stroke: -foreground;
+.loc-field {
+    -fx-min-width: 72;
+    -fx-max-width: infinity;
+    -fx-min-height: 34;
+    -fx-pref-height: 34;
+    -fx-max-height: 34;
 }
+.loc-choice {
+    -fx-font-size: 13;
+    -fx-background-color: -input;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-min-height: 34; -fx-pref-height: 34; -fx-max-height: 34;
+    -fx-cursor: hand;
+}
+.loc-choice.loc-color { -fx-pref-width: 116; -fx-min-width: 100; -fx-max-width: 124; }
+.loc-choice.loc-rank { -fx-pref-width: 108; -fx-min-width: 96; -fx-max-width: 116; }
+.loc-choice.loc-category { -fx-pref-width: 168; -fx-min-width: 132; -fx-max-width: 190; }
+.loc-head {
+    -fx-font-size: 12;
+    -fx-text-fill: -settings-muted;
+    -fx-padding: 10 2 0 2;
+}
+.loc-choice > .list-cell {
+    -fx-font-size: 13;
+    -fx-text-fill: -settings-label;
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 8;
+}
+.loc-choice > .arrow-button { -fx-background-color: transparent; -fx-padding: 0 8 0 2; }
+.loc-choice > .arrow-button > .arrow {
+    -fx-background-color: -settings-muted;
+    -fx-shape: "M0 0 H8 L4 5 Z";
+    -fx-padding: 2 4 2 4;
+}
+.loc-choice:hover { -fx-border-color: -border-hover; }
+.loc-choice:focused, .loc-choice:showing { -fx-border-color: -foreground; }
+.loc-choice .list-view {
+    -fx-background-color: -card;
+    -fx-background-insets: 0;
+    -fx-border-color: -border;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.loc-choice .list-view .list-cell {
+    -fx-font-size: 13;
+    -fx-text-fill: -settings-label;
+    -fx-background-color: -card;
+    -fx-padding: 4 8 4 8;
+}
+.loc-choice .list-view .list-cell:hover { -fx-background-color: -tile-hover; }
+.loc-note { -fx-padding: 4 0 0 0; }
 
 /* segmented control (auto-exit, P2P, theme, language): RadioButtons drawn as the parts of one control. Same box as the
    speed-limit fields (-input, 1 px -border, .zone-radius-sm, 28 px tall); every part is 26 px, 14 px text, 13 px side
@@ -1203,45 +1297,34 @@
 .switch:selected > .box > .mark { -fx-background-color: -primary-foreground; }
 .switch:selected:hover > .box { -fx-background-color: -switch-on-hover, -switch-on-hover; }
 
-/* Block switch on a tunnel row: same zone switch, a little larger. On (red track) means the node is blocked. */
-.tunnel-line > .tunnel-block-switch {
-    -fx-padding: 0;
-    -fx-label-padding: 0;
-    -fx-graphic-text-gap: 0;
-    -fx-min-width: 36; -fx-pref-width: 36; -fx-max-width: 36;
-    -fx-min-height: 20; -fx-pref-height: 20; -fx-max-height: 20;
+/* Row action: the same outline as the group button. Locked (filled) means the node is closed. */
+.tunnel-line > .tunnel-block-action {
+    -fx-font-size: 12;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: -destructive-border;
+    -fx-border-width: 1;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-text-fill: -destructive-text;
+    -fx-padding: 0 8;
+    -fx-min-width: 132; -fx-pref-width: 132; -fx-max-width: 132;
+    -fx-min-height: 26; -fx-pref-height: 26; -fx-max-height: 26;
+    -fx-cursor: hand;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
-.tunnel-line > .tunnel-block-switch > .box {
-    -fx-background-color: -switch-off-border, -segment-off;
-    -fx-background-insets: 0, 2;
-    -fx-background-radius: 10, 8;
-    -fx-padding: 3 19 3 3;
+.tunnel-line > .tunnel-block-action:hover { -fx-background-color: -destructive-soft; -fx-text-fill: -foreground; }
+.tunnel-line > .tunnel-block-action:focused { -fx-border-color: -foreground; -fx-border-width: 1; }
+.tunnel-line > .tunnel-block-action.locked,
+.tunnel-line > .tunnel-block-action.locked:hover {
+    -fx-background-color: -primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -primary-foreground;
 }
-.tunnel-line > .tunnel-block-switch > .box > .mark {
-    -fx-padding: 6;
-    -fx-background-color: -settings-label;
-}
-.tunnel-line > .tunnel-block-switch:hover > .box {
-    -fx-background-color: -settings-muted, -segment-off;
-}
-.tunnel-line > .tunnel-block-switch:selected > .box,
-.tunnel-line > .tunnel-block-switch:selected:hover > .box {
-    -fx-background-color: -switch-on, -switch-on;
-    -fx-padding: 3 3 3 19;
-}
-.tunnel-line > .tunnel-block-switch:selected > .box > .mark,
-.tunnel-line > .tunnel-block-switch:selected:hover > .box > .mark {
-    -fx-background-color: -primary-foreground;
-}
-.tunnel-line > .tunnel-block-switch:focused {
-    -fx-border-color: -foreground;
-    -fx-border-width: 1;
-    -fx-border-radius: 10;
-}
-.tunnel-line > .tunnel-block-switch:disabled,
-.tunnel-line > .tunnel-block-switch:disabled:hover { -fx-opacity: 0.45; }
+.tunnel-line > .tunnel-block-action.locked:focused { -fx-border-color: -primary-foreground; -fx-border-width: 1; }
+.tunnel-line > .tunnel-block-action:disabled,
+.tunnel-line > .tunnel-block-action:disabled:hover { -fx-opacity: 0.45; -fx-cursor: default; }
 
 /* RAM bar (RamBar) like the original launcher: equal segments (here one per GB) with 2 px gaps, no thumb. Two
    states: accent up to the value (:filled), mid grey = available (-ram-free); every segment from the min (2 GB) to the

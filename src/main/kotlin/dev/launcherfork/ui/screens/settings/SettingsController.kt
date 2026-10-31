@@ -13,29 +13,28 @@ import javafx.fxml.FXML
 import javafx.scene.Node
 import dev.launcherfork.stalzone.ExboSession
 import dev.launcherfork.stalzone.ExboSessions
-import dev.launcherfork.stalzone.ExboValue
 import dev.launcherfork.stalzone.JvmPresets
-import dev.launcherfork.stalzone.JvmProfile
 import dev.launcherfork.stalzone.ScopeSens
 import dev.launcherfork.stalzone.TunnelRegion
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.CheckBox
+import javafx.scene.control.ComboBox
 import javafx.scene.control.ContentDisplay
 import javafx.scene.control.Label
+import javafx.scene.control.ListView
 import javafx.scene.control.RadioButton
 import javafx.scene.control.ScrollPane
 import javafx.scene.control.Slider
 import javafx.scene.control.TextField
 import javafx.scene.control.TextFormatter
-import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
 import javafx.scene.control.OverrunStyle
 import javafx.scene.control.Tooltip
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
+import javafx.scene.input.MouseButton
 import javafx.scene.layout.AnchorPane
-import javafx.scene.shape.SVGPath
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
@@ -46,10 +45,11 @@ import java.util.Locale
 /**
  * settings.fxml, bound to [dev.launcherfork.domain.SettingsStore].
  * Память, Поведение, Обновление and Язык are one scrollable column.
- * The header switch opens JVM, the tunnel, sensitivity and account swap. The tunnel page fills the
+ * The header switch opens JVM, the tunnel, sensitivity, account swap and localization. The tunnel page fills the
  * settings viewport and scrolls the server list inside itself. Sensitivity fills that same viewport:
  * a compact base row, then one game-style line per scope (name, value, slider, steps). Accounts fills it too:
- * the name row is pinned under the heading and the session list takes the remaining height. The profile menu opens accounts.
+ * the name row is pinned under the heading and the session list takes the remaining height. Localization fills it
+ * the same way: a filter row, then one line per item or weapon. The profile menu opens accounts.
  * Every change is saved immediately. The language radio rebuilds the main screen via the navigator.
  */
 class SettingsController(private val ctx: UiContext) {
@@ -108,10 +108,23 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var tunnelScroll: ScrollPane
     @FXML lateinit var accountsPage: VBox
     @FXML lateinit var sensPage: VBox
+    @FXML lateinit var locPage: VBox
+    @FXML lateinit var locCard: VBox
+    @FXML lateinit var locBar: HBox
+    @FXML lateinit var locWeapons: RadioButton
+    @FXML lateinit var locItems: RadioButton
+    @FXML lateinit var locChanged: RadioButton
+    @FXML lateinit var locCategory: ComboBox<LocCategoryOption>
+    @FXML lateinit var locSearch: TextField
+    @FXML lateinit var locWrite: Button
+    @FXML lateinit var locList: ListView<LocLine>
+    @FXML lateinit var locNote: Label
+    @FXML lateinit var locKindGroup: ToggleGroup
     @FXML lateinit var jvmSummary: VBox
     @FXML lateinit var jvmStatusKicker: Label
     @FXML lateinit var jvmStatus: Label
     @FXML lateinit var jvmStatusHint: Label
+    @FXML lateinit var jvmMachine: Label
     @FXML lateinit var jvmGrid: GridPane
     @FXML lateinit var regionGroup: ToggleGroup
     @FXML lateinit var regionRu: RadioButton
@@ -211,10 +224,11 @@ class SettingsController(private val ctx: UiContext) {
     val totalRamMb: Long get() = ctx.services.system.totalRamMb()
 
     /**
-     * RAM bar (segmented like the original launcher): one segment per GB of the computer's memory, value = stored MB
-     * (or the legacy 0..1 fraction) rounded to whole GB and clamped to [RamOptions.MIN_GB]..[RamOptions.maxGb]. The
-     * line above it, "Выделено: N ГБ из M ГБ", follows the bar's value; the captions under it ([RamScale]) name the min
-     * and max; the recommended value is in the tooltip. A move is stored as MB and drops the legacy fraction.
+     * RAM bar (segmented like the original launcher): one segment per selectable GB, value = stored MB
+     * (or the legacy 0..1 fraction) rounded to whole GB and clamped to [RamOptions.MIN_GB]..[RamOptions.maxGb].
+     * The ceiling is the machine's memory, and never above [RamOptions.ALLOCATION_CAP_GB]. The line above it,
+     * "Выделено: N ГБ из M ГБ", follows the bar; the captions under it ([RamScale]) name the min and max;
+     * the recommended value is in the tooltip. A move is stored as MB and drops the legacy fraction.
      */
     private fun bindRam(s: LauncherSettings) {
         val total = totalRamMb
@@ -228,7 +242,7 @@ class SettingsController(private val ctx: UiContext) {
             recommendedGb = RamOptions.recommended(total),
             value = RamOptions.selectedGb(s, total),
         )
-        // the selectable range under the bar: «2 ГБ» under the first, «16 ГБ» under the last segment (whole GB of memory)
+        // the selectable range under the bar: «2 ГБ» under the first, the ceiling under the last segment
         ramScale.setCaptions(fmt(ramBar.minGb), fmt(ramBar.maxGb))
         ramScale.bar = ramBar
         val hint = ctx.t("settings.ram.hint", fmt(ramBar.recommendedGb))
@@ -260,8 +274,8 @@ class SettingsController(private val ctx: UiContext) {
 
     /**
      * `ram`, `behaviour`, `updates` and `language` are the one column (a named id scrolls that block into view).
-     * `jvm`, `tunnel`, `sens` and `accounts` each replace the column. Tunnel, sensitivity and accounts fill the
-     * viewport; their lists scroll inside the page.
+     * `jvm`, `tunnel`, `sens`, `accounts` and `loc` each replace the column. Tunnel, sensitivity, accounts and
+     * localization fill the viewport; their lists scroll inside the page.
      */
     fun showClientSection(section: String) = showSection(section)
 
@@ -280,16 +294,17 @@ class SettingsController(private val ctx: UiContext) {
         placeNote()
         applyPageFill()
         if (id == "tunnel" && ::tunnels.isInitialized) tunnels.onShown()
+        if (id == "loc" && ::names.isInitialized) names.onShown()
         onSection(id)
     }
 
     /** True when the settings column is open (the gear closes settings from here). */
     fun atTop(): Boolean = currentSection in columnSections
 
-    /** Blocks of the one settings column. JVM, tunnel, sensitivity and account swap are separate pages. */
+    /** Blocks of the one settings column. JVM, tunnel, sensitivity, account swap and localization are separate pages. */
     private val columnSections = setOf("ram", "behaviour", "updates", "language")
 
-    private val toolSections = setOf("jvm", "tunnel", "sens", "accounts")
+    private val toolSections = setOf("jvm", "tunnel", "sens", "accounts", "loc")
 
     private val columnNodes: List<Node>
         get() = listOf(gameSection, behaviourSection, updatesSection, languageSection)
@@ -300,6 +315,7 @@ class SettingsController(private val ctx: UiContext) {
             "tunnel" to tunnelPage,
             "sens" to sensPage,
             "accounts" to accountsPage,
+            "loc" to locPage,
         )
 
     private fun columnTarget(id: String): Node = when (id) {
@@ -310,21 +326,24 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     /**
-     * Tunnel, sensitivity and accounts occupy the settings viewport. The pool list scrolls in [tunnelScroll];
-     * the scope lines scroll in [sensScroll]. On accounts the name row stays under the heading and [sessionScroll]
-     * takes every pixel under it, so a short list is not a small island in an empty pane. Extra cards scroll
-     * inside that list. A status line, when it is showing, keeps a strip under the list.
+     * Tunnel, sensitivity, accounts and localization occupy the settings viewport. The pool list scrolls in
+     * [tunnelScroll]; the scope lines scroll in [sensScroll]. On accounts the name row stays under the heading and
+     * [sessionScroll] takes every pixel under it, so a short list is not a small island in an empty pane. Extra cards
+     * scroll inside that list. Localization pins [locList] the same way. A status line, when it is showing, keeps a
+     * strip under the list.
      */
     private fun applyPageFill() {
-        if (!::tunnelScroll.isInitialized || !::sessionScroll.isInitialized || !::sensPage.isInitialized) return
+        if (!::tunnelScroll.isInitialized || !::sessionScroll.isInitialized || !::sensPage.isInitialized || !::locPage.isInitialized) return
         val viewport = scroll.viewportBounds.height
         if (viewport <= 1.0) {
             resetHeight(settingsContent)
             resetHeight(tunnelPage)
             resetHeight(accountsPage)
             resetHeight(sensPage)
+            resetHeight(locPage)
             resetScroll(tunnelScroll, 120.0)
             resetScroll(sessionScroll, 96.0)
+            resetList(locList)
             return
         }
         val pad = settingsContent.padding.top + settingsContent.padding.bottom
@@ -333,7 +352,9 @@ class SettingsController(private val ctx: UiContext) {
             "tunnel" -> {
                 resetHeight(accountsPage)
                 resetHeight(sensPage)
+                resetHeight(locPage)
                 resetScroll(sessionScroll, 96.0)
+                resetList(locList)
                 settingsContent.minHeight = viewport
                 settingsContent.prefHeight = viewport
                 settingsContent.maxHeight = viewport
@@ -348,7 +369,9 @@ class SettingsController(private val ctx: UiContext) {
             "accounts" -> {
                 resetHeight(tunnelPage)
                 resetHeight(sensPage)
+                resetHeight(locPage)
                 resetScroll(tunnelScroll, 120.0)
+                resetList(locList)
                 settingsContent.minHeight = viewport
                 settingsContent.prefHeight = viewport
                 settingsContent.maxHeight = viewport
@@ -365,8 +388,10 @@ class SettingsController(private val ctx: UiContext) {
             "sens" -> {
                 resetHeight(tunnelPage)
                 resetHeight(accountsPage)
+                resetHeight(locPage)
                 resetScroll(tunnelScroll, 120.0)
                 resetScroll(sessionScroll, 96.0)
+                resetList(locList)
                 settingsContent.minHeight = viewport
                 settingsContent.prefHeight = viewport
                 settingsContent.maxHeight = viewport
@@ -374,15 +399,51 @@ class SettingsController(private val ctx: UiContext) {
                 sensPage.prefHeight = inner
                 sensPage.maxHeight = inner
             }
-            else -> {
-                resetHeight(settingsContent)
+            "loc" -> {
                 resetHeight(tunnelPage)
                 resetHeight(accountsPage)
                 resetHeight(sensPage)
                 resetScroll(tunnelScroll, 120.0)
                 resetScroll(sessionScroll, 96.0)
+                settingsContent.minHeight = viewport
+                settingsContent.prefHeight = viewport
+                settingsContent.maxHeight = viewport
+                locPage.minHeight = inner
+                locPage.prefHeight = inner
+                locPage.maxHeight = inner
+                val list = (inner - locChrome()).coerceAtLeast(96.0)
+                locList.minHeight = 96.0
+                locList.prefHeight = list
+                locList.maxHeight = list
+            }
+            else -> {
+                resetHeight(settingsContent)
+                resetHeight(tunnelPage)
+                resetHeight(accountsPage)
+                resetHeight(sensPage)
+                resetHeight(locPage)
+                resetScroll(tunnelScroll, 120.0)
+                resetScroll(sessionScroll, 96.0)
+                resetList(locList)
             }
         }
+    }
+
+    private fun locChrome(): Double {
+        val heading = locPage.children.filter { it !== locCard && it.isManaged }.sumOf { (it as? Region)?.prefHeight(-1.0) ?: 0.0 }
+        val pageGaps = locPage.spacing * (locPage.children.count { it.isManaged } - 1).coerceAtLeast(0)
+        val bar = if (locBar.isManaged) locBar.prefHeight(-1.0) else 0.0
+        val note = if (locNote.isManaged) locNote.prefHeight(-1.0) else 0.0
+        val cardPad = locCard.padding.top + locCard.padding.bottom
+        val managedInCard = locCard.children.count { it.isManaged }
+        val cardGaps = locCard.spacing * (managedInCard - 1).coerceAtLeast(0)
+        return heading + pageGaps + cardPad + bar + note + cardGaps
+    }
+
+    private fun resetList(list: Region) {
+        list.minHeight = 0.0
+        list.prefHeight = Region.USE_COMPUTED_SIZE
+        list.maxHeight = Double.MAX_VALUE
     }
 
     private fun tunnelChrome(): Double {
@@ -457,6 +518,7 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     private lateinit var tunnels: TunnelPage
+    private lateinit var names: LocalizationPage
 
     private fun bindClient() {
         // Offline and showcase never open the live catalog. Tests that replace TunnelServices.fetch keep that fake.
@@ -481,6 +543,8 @@ class SettingsController(private val ctx: UiContext) {
             tunnelMode,
         )
         tunnels.bind()
+        names = LocalizationPage(ctx, locWeapons, locItems, locChanged, locCategory, locSearch, locWrite, locList, locNote)
+        names.bind()
         refreshSessions()
         tunnels.refresh()
 
@@ -509,17 +573,24 @@ class SettingsController(private val ctx: UiContext) {
     private fun chosenHeapGb(): Int? = store.load().ramMb?.let { RamOptions.fromMb(it, totalRamMb) }
 
     private fun presetBuilt(id: String): JvmPresets.Built? {
-        val totalGb = RamOptions.totalGb(totalRamMb)
+        val heap = chosenHeapGb()
+        val machine = ctx.services.system.machine()
+        if (machine != null) return JvmPresets.build(id, machine, heap)
+        val totalGb = RamOptions.usableGb(totalRamMb)
         val threads = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
-        return JvmPresets.build(id, totalGb, totalGb, threads, threads, chosenHeapGb())
+        return JvmPresets.build(id, totalGb, totalGb, threads, threads, heap)
     }
 
     private fun buildPresets() {
         jvmGrid.children.clear()
-        JvmPresets.all.forEachIndexed { index, preset ->
-            val built = presetBuilt(preset.id)
-            val heap = if (built == null) ctx.t("settings.jvm.unavailable") else ctx.t("settings.jvm.heap", built.heapGb)
-            val title = Label(presetCaption(preset.version, heap)).apply {
+        JvmPresets.choices.forEachIndexed { index, preset ->
+            val none = preset.id == JvmPresets.NONE
+            val built = if (none) null else presetBuilt(preset.id)
+            val name = presetName(preset)
+            val title = Label(
+                if (none) name
+                else presetCaption(name, if (built == null) ctx.t("settings.jvm.unavailable") else ctx.t("settings.jvm.heap", built.heapGb)),
+            ).apply {
                 styleClass.add("jvm-preset-title")
                 textOverrun = OverrunStyle.ELLIPSIS
                 isWrapText = false
@@ -556,16 +627,25 @@ class SettingsController(private val ctx: UiContext) {
                 alignment = Pos.CENTER_LEFT
                 graphic = row
                 userData = preset.id
-                isDisable = built == null
+                isDisable = !none && built == null
                 maxWidth = Double.MAX_VALUE
                 minHeight = Region.USE_PREF_SIZE
-                accessibleText = "${preset.version}. ${ctx.t(preset.hintKey)}"
+                accessibleText = "$name. ${ctx.t(preset.hintKey)}"
                 setOnAction {
+                    if (none) {
+                        runCatching { ctx.desk.useTunedProfile(false) }
+                            .onSuccess {
+                                refreshJvmStatus()
+                                note(ctx.t("settings.jvm.cleared"))
+                            }
+                            .onFailure { note(it.message ?: it.javaClass.simpleName) }
+                        return@setOnAction
+                    }
                     val fresh = presetBuilt(preset.id) ?: return@setOnAction
                     runCatching { ctx.desk.activatePreset(preset.id, fresh.json) }
                         .onSuccess {
                             refreshJvmStatus()
-                            note(ctx.t("settings.jvm.saved", preset.version))
+                            note(ctx.t("settings.jvm.saved", name))
                         }
                         .onFailure { note(it.message ?: it.javaClass.simpleName) }
                 }
@@ -574,6 +654,54 @@ class SettingsController(private val ctx: UiContext) {
             GridPane.setFillWidth(card, true)
             jvmGrid.add(card, index % 2, index / 2)
         }
+        refreshMachineLine()
+    }
+
+    /** One line under the summary. Hidden when this screen is not bound to a real computer. */
+    private fun refreshMachineLine() {
+        if (!::jvmMachine.isInitialized) return
+        val text = machineLine()
+        jvmMachine.text = text
+        jvmMachine.isVisible = text.isNotBlank()
+        jvmMachine.isManaged = jvmMachine.isVisible
+    }
+
+    private fun machineLine(): String {
+        val machine = ctx.services.system.machine() ?: return ""
+        val ram = RamOptions.format(machine.totalGb, ctx.t("settings.unit.gb"))
+        val head = listOf(machine.cpuName, machine.gpuName).filter { it.isNotBlank() }
+            .joinToString(" · ")
+            .ifBlank { ctx.t("settings.jvm.machine.cpu") }
+        val extras = buildList {
+            if (machine.slowRam) add(ctx.t("settings.jvm.machine.slow"))
+            if (machine.bigCache) add(ctx.t("settings.jvm.machine.cache"))
+            if (machine.largePages) add(ctx.t("settings.jvm.machine.large"))
+        }
+        val line = ctx.t(
+            "settings.jvm.machine",
+            head,
+            counted(machine.cores, "settings.jvm.machine.core"),
+            counted(machine.threads, "settings.jvm.machine.thread"),
+            ram,
+        )
+        return if (extras.isEmpty()) line else "$line · ${extras.joinToString(" · ")}"
+    }
+
+    /** `8 ядер`, `1 ядро`, `2 потока`. English uses one / many only. */
+    private fun counted(n: Int, key: String): String {
+        val form = if (ctx.lang != "ru") {
+            if (n == 1) "one" else "many"
+        } else {
+            val mod100 = n % 100
+            val mod10 = n % 10
+            when {
+                mod100 in 11..14 -> "many"
+                mod10 == 1 -> "one"
+                mod10 in 2..4 -> "few"
+                else -> "many"
+            }
+        }
+        return "$n ${ctx.t("$key.$form")}"
     }
 
     /** The bar moved: every enabled preset card names the heap the click will write. */
@@ -582,9 +710,10 @@ class SettingsController(private val ctx: UiContext) {
         jvmGrid.children.filterIsInstance<Button>().forEach { card ->
             if (card.isDisable) return@forEach
             val id = card.userData as? String ?: return@forEach
+            if (id == JvmPresets.NONE) return@forEach
             val built = presetBuilt(id) ?: return@forEach
-            val version = JvmPresets.all.firstOrNull { it.id == id }?.version ?: return@forEach
-            presetTitle(card)?.text = presetCaption(version, ctx.t("settings.jvm.heap", built.heapGb))
+            val preset = JvmPresets.choices.firstOrNull { it.id == id } ?: return@forEach
+            presetTitle(card)?.text = presetCaption(presetName(preset), ctx.t("settings.jvm.heap", built.heapGb))
         }
         if (::jvmSummary.isInitialized) refreshJvmStatus()
     }
@@ -601,29 +730,19 @@ class SettingsController(private val ctx: UiContext) {
     private fun refreshSessions() {
         val saved = runCatching { ctx.desk.sessions() }.getOrDefault(emptyList())
         val live = runCatching { ctx.desk.liveAccount() }.getOrDefault(emptyMap())
-        val open = openSessionKeyIds()
         if (saved.isEmpty()) {
             sessionCards.children.setAll(Label(ctx.t("settings.accounts.empty")).apply {
                 styleClass.add("settings-note")
                 isWrapText = true
             })
         } else {
-            sessionCards.children.setAll(saved.map { sessionCard(it, live, it.id in open) })
+            sessionCards.children.setAll(saved.map { sessionCard(it, live) })
         }
         if (sessionCards.scene != null) sessionCards.applyCss()
         applyPageFill()
     }
 
-    private fun openSessionKeyIds(): Set<Long> = sessionCards.children
-        .filterIsInstance<VBox>()
-        .mapNotNull { card ->
-            val id = card.userData as? Long ?: return@mapNotNull null
-            val open = card.lookupAll(".session-keys-toggle").filterIsInstance<ToggleButton>().any { it.isSelected }
-            if (open) id else null
-        }
-        .toSet()
-
-    private fun sessionCard(session: ExboSession, live: Map<String, String>, keysOpen: Boolean): VBox {
+    private fun sessionCard(session: ExboSession, live: Map<String, String>): VBox {
         val stored = ExboSessions.storedValues(session.data)
         val login = stored.firstOrNull { it.name == "EXBO_LOGIN" }?.value?.takeIf { it.isNotBlank() }
         val current = ExboSessions.isCurrent(session, live)
@@ -682,36 +801,7 @@ class SettingsController(private val ctx: UiContext) {
                 })
             }
             HBox.setHgrow(this, Priority.ALWAYS)
-        }
-        val keysBox = VBox(6.0).apply {
-            styleClass.add("session-keys")
-            isVisible = keysOpen
-            isManaged = keysOpen
-            maxWidth = Double.MAX_VALUE
-            if (stored.isEmpty()) {
-                children.add(Label(ctx.t("settings.accounts.no_keys")).apply {
-                    styleClass.add("settings-note")
-                    isWrapText = true
-                })
-            } else {
-                stored.forEach { children.add(keyBlock(it)) }
-            }
-        }
-        val keysLabel = ctx.t("settings.accounts.keys")
-        val keysToggle = ToggleButton().apply {
-            styleClass.addAll("settings-mini", "session-keys-toggle")
-            graphic = sessionKeyGlyph()
-            contentDisplay = ContentDisplay.GRAPHIC_ONLY
-            alignment = Pos.CENTER
-            accessibleText = keysLabel
-            tooltip = Tooltip(keysLabel)
-            isMnemonicParsing = false
-            isSelected = keysOpen
-            selectedProperty().addListener { _, _, on ->
-                keysBox.isVisible = on
-                keysBox.isManaged = on
-                applyPageFill()
-            }
+            cursor = javafx.scene.Cursor.HAND
         }
         val apply = Button(ctx.t("stalzone.accounts.apply")).apply {
             styleClass.addAll("settings-mini", "primary", "session-apply")
@@ -735,22 +825,13 @@ class SettingsController(private val ctx: UiContext) {
                 }
             }
         }
-        val edit = Button(ctx.t("settings.accounts.edit")).apply {
-            styleClass.addAll("settings-mini", "session-edit")
-            isMnemonicParsing = false
-            minWidth = Region.USE_PREF_SIZE
-            tooltip = Tooltip(ctx.t("settings.accounts.edit"))
-        }
+        var committing = false
         fun editing(): Boolean = nameBox.isManaged
         fun showEditor(on: Boolean) {
             title.isVisible = !on
             title.isManaged = !on
             nameBox.isVisible = on
             nameBox.isManaged = on
-            val label = ctx.t(if (on) "settings.accounts.edit_done" else "settings.accounts.edit")
-            edit.text = label
-            edit.accessibleText = label
-            edit.tooltip = Tooltip(label)
             if (on) {
                 nameInput.text = session.name
                 nameInput.requestFocus()
@@ -758,6 +839,7 @@ class SettingsController(private val ctx: UiContext) {
             }
         }
         fun commitRename() {
+            if (committing || !editing()) return
             val next = nameInput.text.trim()
             if (next.isEmpty()) {
                 note(ctx.t("settings.accounts.name_empty"))
@@ -768,13 +850,22 @@ class SettingsController(private val ctx: UiContext) {
                 showEditor(false)
                 return
             }
+            committing = true
             runClient {
                 check(ctx.desk.rename(session.id, next)) { ctx.t("stalzone.accounts.pick") }
                 ctx.t("stalzone.accounts.renamed")
             }
         }
-        edit.setOnAction { if (editing()) commitRename() else showEditor(true) }
+        textCol.setOnMouseClicked { e ->
+            if (e.button == MouseButton.PRIMARY && e.clickCount == 2 && !editing()) showEditor(true)
+        }
         nameInput.setOnAction { commitRename() }
+        nameInput.focusedProperty().addListener { _, was, focused ->
+            if (was && !focused && editing() && !committing) {
+                val next = nameInput.text.trim()
+                if (next.isEmpty() || next == session.name) showEditor(false) else commitRename()
+            }
+        }
         // filter, not a bubble handler: the text field skin consumes the key before onKeyPressed
         nameInput.addEventFilter(KeyEvent.KEY_PRESSED) { e ->
             if (e.code == KeyCode.ESCAPE && editing()) {
@@ -782,7 +873,7 @@ class SettingsController(private val ctx: UiContext) {
                 e.consume()
             }
         }
-        val actions = HBox(keysToggle, edit, apply, delete).apply {
+        val actions = HBox(apply, delete).apply {
             styleClass.add("session-actions")
             alignment = Pos.CENTER_RIGHT
             minWidth = Region.USE_PREF_SIZE
@@ -793,7 +884,7 @@ class SettingsController(private val ctx: UiContext) {
             alignment = Pos.CENTER_LEFT
             maxWidth = Double.MAX_VALUE
         }
-        return VBox(8.0, head, keysBox).apply {
+        return VBox(8.0, head).apply {
             styleClass.addAll("session-card", "card", "zone-radius-md")
             if (current) styleClass.add("selected")
             maxWidth = Double.MAX_VALUE
@@ -802,57 +893,36 @@ class SettingsController(private val ctx: UiContext) {
         }
     }
 
-    /** Horizontal key: one ring, a shaft, two teeth. About 18 px wide; the hit box is the 34 px settings action. */
-    private fun sessionKeyGlyph(): SVGPath = SVGPath().apply {
-        content = SESSION_KEY
-        styleClass.add("session-key-glyph")
-        isMouseTransparent = true
-    }
-
-    private fun keyBlock(entry: ExboValue): VBox {
-        val name = Label(entry.name).apply { styleClass.add("session-key-name") }
-        val text = Label(entry.value).apply {
-            styleClass.add("session-key-value")
-            isWrapText = true
-            maxWidth = Double.MAX_VALUE
-        }
-        return VBox(1.0, name, text).apply { maxWidth = Double.MAX_VALUE }
-    }
-
     private fun refreshJvmStatus() {
         val active = runCatching { ctx.desk.activeProfile() }.getOrNull()
-        val preset = JvmPresets.all.firstOrNull { it.id == active }
-        val chosen = !active.isNullOrBlank()
+        val preset = JvmPresets.find(active)
+        val none = active.isNullOrBlank()
         jvmSummary.styleClass.removeAll(listOf("selected", "empty"))
-        jvmSummary.styleClass.add(if (chosen) "selected" else "empty")
-        if (!chosen) {
-            jvmStatusKicker.text = ctx.t("settings.jvm.now")
-            jvmStatus.text = ctx.t("settings.jvm.none")
-            jvmStatusHint.text = ctx.t("settings.jvm.none.hint")
+        jvmSummary.styleClass.add(if (none) "empty" else "selected")
+        jvmStatusKicker.text = ctx.t("settings.jvm.chosen")
+        if (none) {
+            jvmStatus.text = ctx.t("settings.jvm.without")
+            jvmStatusHint.text = ctx.t("settings.jvm.without.hint")
         } else {
-            jvmStatusKicker.text = ctx.t("settings.jvm.chosen")
-            val heap = preset?.let { presetBuilt(it.id) }?.heapGb
+            val heap = preset?.takeIf { it.id != JvmPresets.NONE }?.let { presetBuilt(it.id) }?.heapGb
             val name = jvmCaption(active)
             jvmStatus.text = if (heap != null) presetCaption(name, ctx.t("settings.jvm.heap", heap)) else name
-            jvmStatusHint.text = when {
-                preset != null -> ctx.t(preset.hintKey)
-                active == JvmProfile.RECOMMENDED -> ctx.t("settings.jvm.profile.hint")
-                else -> ""
-            }
+            jvmStatusHint.text = preset?.let { ctx.t(it.hintKey) }.orEmpty()
         }
         jvmStatusHint.isVisible = jvmStatusHint.text.isNotBlank()
         jvmStatusHint.isManaged = jvmStatusHint.isVisible
         jvmGrid.children.filterIsInstance<Button>().forEach { card ->
-            val on = card.userData == active
+            val id = card.userData as? String
+            val on = id != null && JvmPresets.cardSelected(id, active)
             if (on && "selected" !in card.styleClass) card.styleClass.add("selected")
             if (!on) card.styleClass.remove("selected")
             val mark = (card.graphic as? javafx.scene.Parent)?.lookupAll(".jvm-chosen")?.filterIsInstance<Label>()?.firstOrNull()
             mark?.isVisible = on
             mark?.isManaged = on
-            val item = JvmPresets.all.firstOrNull { it.id == card.userData }
-            if (item != null) {
+            val item = JvmPresets.find(id)
+            if (item != null && id == item.id) {
                 val state = if (on) ctx.t("settings.jvm.chosen") else ""
-                card.accessibleText = listOf(item.version, ctx.t(item.hintKey), state).filter { it.isNotBlank() }.joinToString(". ")
+                card.accessibleText = listOf(presetName(item), ctx.t(item.hintKey), state).filter { it.isNotBlank() }.joinToString(". ")
             }
         }
     }
@@ -862,13 +932,14 @@ class SettingsController(private val ctx: UiContext) {
      * Pass [JvmPresets.Preset.version] in as its own argument. A template of `$preset.version`
      * prints [JvmPresets.Preset.toString] and leaves `.version` as literal text.
      */
+    private fun presetName(preset: JvmPresets.Preset): String = preset.nameKey?.let { ctx.t(it) } ?: preset.version
+
     private fun presetCaption(version: String, heapLabel: String): String = "$version, $heapLabel"
 
-    /** Registry id → a label. `8khz` is the tuned profile, preset ids show their version (v1.1.2), anything else is kept as-is. */
+    /** Registry id → a label. A blank id is the without-JVM choice. Anything unknown stays as stored. */
     private fun jvmCaption(active: String?): String = when {
-        active.isNullOrBlank() -> ctx.t("settings.jvm.none")
-        active == JvmProfile.RECOMMENDED -> ctx.t("settings.jvm.profile")
-        else -> JvmPresets.all.firstOrNull { it.id == active }?.version ?: active
+        active.isNullOrBlank() -> ctx.t("settings.jvm.without")
+        else -> JvmPresets.find(active)?.let { presetName(it) } ?: active
     }
 
     private fun parseBase(): Double? {
@@ -1082,15 +1153,6 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     private companion object {
-        /**
-         * Horizontal key in a ~18×12 box: open ring (the hole is the unstroked interior), shaft, two separated teeth.
-         * Quarter-circle arcs, so the bow does not depend on a second ring that muddies at this size.
-         * Stroke colour and width follow the mini-button text in layout.css.
-         */
-        const val SESSION_KEY =
-            "M6.2,1.6 A5,5 0 0 1 11.2,6.6 A5,5 0 0 1 6.2,11.6 A5,5 0 0 1 1.2,6.6 A5,5 0 0 1 6.2,1.6 Z " +
-            "M11.2,6.6 H18.2 M13.7,6.6 V10.0 M16.6,6.6 V12.0"
-
         /** Game-style track: 5 sits near the middle. A larger table stretches every row together. */
         const val SLIDER_MAX = 10.0
         const val STEP = 0.01

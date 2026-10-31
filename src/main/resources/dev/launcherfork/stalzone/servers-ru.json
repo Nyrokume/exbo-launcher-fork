@@ -1,6 +1,6 @@
 {
   "mode": "roxy",
-  "source": "https://backend.stalcraftx.ru/address_list?login=User",
+  "source": "https://backend.stalzone.net/address_list?login=EXBO-Community",
   "pools": [
     {
       "name": "MSK1",

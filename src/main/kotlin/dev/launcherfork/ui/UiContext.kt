@@ -1,6 +1,7 @@
 package dev.launcherfork.ui
 
 import dev.launcherfork.app.AppContext
+import dev.launcherfork.data.exbo.ExboRealmGate
 import dev.launcherfork.domain.Services
 import dev.launcherfork.i18n.text
 import dev.launcherfork.stalzone.StalzoneDesk
@@ -21,6 +22,8 @@ class UiContext(
     val desk: StalzoneDesk = AppContext.fallbackDesk(),
     /** Live EXBO backend: real client paths, browser links, no fake download. */
     val liveBackend: Boolean = false,
+    /** RU / EU switch when the window is talking to an installed launcher. */
+    val realms: ExboRealmGate? = null,
 ) {
     fun t(key: String, vararg args: Any): String = strings.text(key, *args)
 }

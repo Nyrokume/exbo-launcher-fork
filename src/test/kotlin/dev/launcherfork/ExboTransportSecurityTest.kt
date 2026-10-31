@@ -50,10 +50,16 @@ class ExboTransportSecurityTest {
         )
         assertTrue(ExboHosts.credential.all { exboBaseIsTrustedHttps(it) })
         assertTrue(ExboHosts.cleartext.none { exboBaseIsTrustedHttps(it) })
+        assertEquals(listOf("https://launcher-global.stalcraft.net:443"), ExboHosts.globalCredential)
+        assertEquals(listOf("http://launcher-global.stalcraft.net:80"), ExboHosts.globalCleartext)
+        assertTrue(ExboHosts.globalCredential.all { exboBaseIsTrustedHttps(it) })
+        assertTrue(ExboHosts.globalCleartext.none { exboBaseIsTrustedHttps(it) })
         assertFalse(exboBaseIsTrustedHttps("https://user:pw@launcher.stalcraft.net:443"))
         assertFalse(exboBaseIsTrustedHttps("https://launcher.stalcraft.net:443/auth?pass=x"))
         assertFalse(exboBaseIsTrustedHttps("https://launcher.stalcraft.net.evil:443"))
         assertFalse(exboBaseIsTrustedHttps("https://127.0.0.1:9"))
+        assertThrows<IllegalArgumentException> { ExboApi(hosts = ExboHosts.globalCleartext) }
+        assertThrows<IllegalArgumentException> { ExboApi(hosts = ExboHosts.cleartext) }
     }
 
     @Test

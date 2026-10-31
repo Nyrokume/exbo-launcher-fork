@@ -133,7 +133,7 @@ class ExboSeedSecurityTest {
         val root = Files.createTempDirectory("exbo-sync-link")
         val outside = Files.createTempDirectory("exbo-sync-outside")
         try {
-            Files.createSymbolicLink(root.resolve("bin"), outside)
+            symLink(root.resolve("bin"), outside)
             val body = "hello".toByteArray()
             val torrent = ExboTorrent(
                 "game",
@@ -160,7 +160,7 @@ class ExboSeedSecurityTest {
         try {
             val planted = outside.resolve("planted.txt")
             Files.writeString(planted, "secret")
-            Files.createSymbolicLink(root.resolve("a.txt"), planted)
+            symLink(root.resolve("a.txt"), planted)
             val body = "hello".toByteArray()
             val torrent = ExboTorrent(
                 "game",
