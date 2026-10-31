@@ -37,5 +37,5 @@ Section
   IfFileExists "$EXEDIR\runtime\bin\javaw.exe" +3
     MessageBox MB_ICONSTOP "Рядом с лаунчером нет runtime\bin\javaw.exe.$\r$\nruntime\bin\javaw.exe was not found next to the launcher."
     Abort
-  Exec '"$EXEDIR\runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --add-modules ${ADD_MODULES} $0 -cp "$EXEDIR\app\*" dev.launcherfork.app.MainKt'
+  Exec '"$EXEDIR\runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --enable-native-access=ALL-UNNAMED --add-modules ${ADD_MODULES} $0 -cp "$EXEDIR\app\*" dev.launcherfork.app.MainKt'
 SectionEnd

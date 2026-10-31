@@ -259,7 +259,7 @@ Function ShowCustomInstaller
   ${If} $1 == ""
     StrCpy $1 "$LOCALAPPDATA\${APP}"
   ${EndIf}
-  ExecWait '"$Payload\runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --add-modules ${ADD_MODULES} -cp "$Payload\app\*" dev.launcherfork.install.SetupWindowKt --dir "$1" --setup "$EXEPATH" --payload "$Payload"'
+  ExecWait '"$Payload\runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --enable-native-access=ALL-UNNAMED --add-modules ${ADD_MODULES} -cp "$Payload\app\*" dev.launcherfork.install.SetupWindowKt --dir "$1" --setup "$EXEPATH" --payload "$Payload"'
 FunctionEnd
 
 ; In: $R8 = directory to check. Out: $R7 is "0" only when every manifest hash matches.

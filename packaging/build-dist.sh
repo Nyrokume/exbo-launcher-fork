@@ -6,7 +6,7 @@
 #   exbo-launcher-fork-src.zip        git archive of HEAD
 #   SHA256SUMS.txt
 #
-# Linux compiles the NSIS wizard (makensis). It does not run that wizard: payload SHA-256 is checked on
+# Linux compiles the setup (makensis). It does not run that window: payload SHA-256 is checked on
 # Windows by PowerShell Get-FileHash when the setup actually installs. There is no Authenticode certificate
 # in this repo. On Windows use packaging/build-installer.ps1 (it downloads NSIS and the Windows jmods).
 #
@@ -38,7 +38,7 @@ LIB=$ROOT/build/stage/lib
 APP_JAR=$LIB/exbo-launcher-fork-$VERSION.jar
 test -f "$APP_JAR" || { echo "missing $APP_JAR" >&2; exit 1; }
 JDK_MODULES=$(jdeps --ignore-missing-deps --print-module-deps --multi-release 21 --class-path "$LIB/*" "$APP_JAR")
-MODULES="$JDK_MODULES,javafx.controls,javafx.fxml"
+MODULES="$JDK_MODULES,javafx.controls,javafx.fxml,java.management,jdk.management,jdk.crypto.ec"
 echo "   modules: $MODULES"
 JLINK_OPTS=(--add-modules "$MODULES" --strip-debug --no-header-files --no-man-pages --compress zip-6)
 
@@ -52,7 +52,7 @@ readme() { # $1 = platform notes
     cat <<TXT
 $APP $VERSION
 
-EXBO Launcher for STALZONE. Separate from ExboLauncher.exe: it signs in, updates and starts the game client already stored under %APPDATA%\EXBO. Removing this program does not delete that client or HKCU session values (EXBO_SESSION).
+EXBO Launcher for STALZONE. Separate from ExboLauncher.exe: it signs in, updates and starts the game client already stored under %APPDATA%\EXBO (RU) or %APPDATA%\Exbo_East (EU). Removing this program does not delete that client or HKCU session values (EXBO_SESSION).
 The Windows setup is per-user (%LOCALAPPDATA%\LauncherFork) and does not ask for administrator rights.
 
 $1
@@ -68,7 +68,7 @@ test -f "$WIN/runtime/bin/javaw.exe"
 mkdir -p "$WIN/app" && cp "$LIB"/*.jar "$WIN/app/"
 cp "$WORK/$APP.ico" "$WIN/"
 makensis -V2 -DOUTFILE="$WIN/$APP.exe" -DICON="$WORK/$APP.ico" -DVERSION="$VERSION" -DVERSION_QUAD="$VERSION_QUAD" -DADD_MODULES="$MODULES" packaging/launcher.nsi
-printf '@echo off\r\nrem Fallback launcher (same as LauncherFork.exe), no console window stays open.\r\nstart "" "%%~dp0runtime\\bin\\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --add-modules %s %%* -cp "%%~dp0app\\*" %s\r\n' "$MODULES" "$MAIN" > "$WIN/$APP.cmd"
+printf '@echo off\r\nrem Fallback launcher (same as LauncherFork.exe), no console window stays open.\r\nstart "" "%%~dp0runtime\\bin\\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --enable-native-access=ALL-UNNAMED --add-modules %s %%* -cp "%%~dp0app\\*" %s\r\n' "$MODULES" "$MAIN" > "$WIN/$APP.cmd"
 readme "Run LauncherFork.exe (or LauncherFork.cmd). The bundled Java runtime is in runtime\\." | sed 's/$/\r/' > "$WIN/README.txt"
 
 echo "== payload SHA-256 (checked again by the installer; size is not enough)"
@@ -96,14 +96,18 @@ echo "== per-file copy list (no wildcard copy)"
 COPY_LIST=$WORK/copy_payload.nsh
 (
     cd "$WIN"
+    index=0
     find . -type f -print | sed 's|^\./||' | sort | while IFS= read -r f; do
+        index=$((index + 1))
         win=$(printf '%s' "$f" | sed 's|/|\\|g; s|\$|$$|g')
         dir=$(dirname "$f")
         if [[ "$dir" != "." ]]; then
             windir=$(printf '%s' "$dir" | sed 's|/|\\|g; s|\$|$$|g')
             printf '  CreateDirectory "$INSTDIR\\%s"\n' "$windir"
         fi
-        printf '  CopyFiles /SILENT "$PLUGINSDIR\\payload\\%s" "$INSTDIR\\%s"\n' "$win" "$win"
+        printf '  Push "c %s %s %s"\n' "$index" "$count" "$win"
+        printf '  Call ProgressLine\n'
+        printf '  CopyFiles /SILENT "$Payload\\%s" "$INSTDIR\\%s"\n' "$win" "$win"
     done
 ) > "$COPY_LIST"
 test "$(grep -c CopyFiles "$COPY_LIST")" = "$count"
@@ -141,7 +145,7 @@ if [[ -n "$LINUX_JFX" ]]; then
 #!/bin/sh
 # Arguments are JVM options, e.g.: bin/launcherfork -Dlauncher.lang=en
 DIR=\$(cd "\$(dirname "\$0")/.." && pwd)
-exec "\$DIR/runtime/bin/java" -Dprism.lcdtext=false "\$@" -cp "\$DIR/app/*" $MAIN
+exec "\$DIR/runtime/bin/java" -Dprism.lcdtext=false --enable-native-access=ALL-UNNAMED "\$@" -cp "\$DIR/app/*" $MAIN
 SH
     chmod +x "$LNX/bin/launcherfork"
     readme "Run bin/launcherfork." > "$LNX/README.txt"

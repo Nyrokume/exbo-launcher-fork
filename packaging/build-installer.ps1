@@ -1,5 +1,5 @@
 # Builds the Windows x64 installer into dist\ on this machine.
-#   LauncherFork_Setup_<ver>.exe      per-user NSIS wizard (bundled jlink runtime)
+#   LauncherFork_Setup_<ver>.exe      per-user setup (JavaFX window, bundled jlink runtime)
 #   LauncherFork_portable_win64.zip   the same image: unpack and run LauncherFork.exe
 #   SHA256SUMS.txt                    hashes of those two deliverables
 #
@@ -15,12 +15,12 @@
 # (gitignored with build\). It does not install the launcher, and it does not replace or
 # unregister the official ExboLauncher or write HKCU\SOFTWARE\EXBO.
 #
-# The setup wizard checks SHA-256 of every shipped file twice (staging, then the install folder)
+# The setup window checks SHA-256 of every shipped file twice (staging, then the install folder)
 # via Windows PowerShell Get-FileHash. A mismatch or a missing PowerShell aborts install.
 # File size is not treated as integrity. Authenticode is a TODO: this repo has no certificate.
 #
 # Linux can compile the same exe with packaging/build-dist.sh (system makensis, WIN_JDK, WIN_JFX)
-# but cannot click through the wizard. The wizard runs on Windows.
+# but cannot click through the setup window. The window runs on Windows.
 param(
     [string]$Jdk = "C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot"
 )
@@ -139,7 +139,7 @@ if ($LASTEXITCODE -ne 0) { throw "launcher stub failed" }
 $cmd = @"
 @echo off
 rem Fallback launcher (same as LauncherFork.exe). The console closes after start.
-start "" "%~dp0runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --add-modules $moduleList %* -cp "%~dp0app\*" $Main
+start "" "%~dp0runtime\bin\javaw.exe" -Dprism.text=native -Dprism.lcdtext=true --enable-native-access=ALL-UNNAMED --add-modules $moduleList %* -cp "%~dp0app\*" $Main
 "@
 Set-Content -Path (Join-Path $Win "$App.cmd") -Value $cmd -Encoding ascii
 
@@ -147,7 +147,7 @@ $readme = @"
 EXBO Launcher $Version
 STALZONE
 
-Separate from ExboLauncher.exe. It signs in, updates and starts the game client already stored under %APPDATA%\EXBO.
+Separate from ExboLauncher.exe. It signs in, updates and starts the game client already stored under %APPDATA%\EXBO (RU) or %APPDATA%\Exbo_East (EU).
 The setup program installs per-user into %LOCALAPPDATA%\LauncherFork and does not ask for administrator rights.
 Removing this launcher does not delete the game client or HKCU session values (EXBO_SESSION).
 
