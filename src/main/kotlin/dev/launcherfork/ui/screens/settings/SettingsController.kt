@@ -7,6 +7,7 @@ import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.components.RamBar
 import dev.launcherfork.ui.components.RamScale
+import dev.launcherfork.ui.components.background
 import dev.launcherfork.ui.motion.Motion
 import javafx.application.Platform
 import javafx.fxml.FXML
@@ -157,13 +158,19 @@ class SettingsController(private val ctx: UiContext) {
 
     /**
      * Section last asked for. The gear's home is the whole column (`ram`, and the other column ids).
-     * `jvm`, `tunnel`, `sens` and `accounts` are the pages with a nav button.
+     * `jvm`, `tunnel`, `sens`, `accounts` and `loc` are the pages with a nav button.
      */
     var currentSection: String = "ram"
         private set
 
     /** Fired after [showSection], including the initial column. MainController paints the nav accent from this. */
     var onSection: (String) -> Unit = {}
+
+    /**
+     * Fired after a session apply switches the signed-in login.
+     * [reloadCatalog] is false for the live optimistic paint (token is still the previous account).
+     */
+    var onAccountSwitched: (login: String?, reloadCatalog: Boolean) -> Unit = { _, _ -> }
 
     @FXML
     fun initialize() {
@@ -274,8 +281,8 @@ class SettingsController(private val ctx: UiContext) {
 
     /**
      * `ram`, `behaviour`, `updates` and `language` are the one column (a named id scrolls that block into view).
-     * `jvm`, `tunnel`, `sens`, `accounts` and `loc` each replace the column. Tunnel, sensitivity, accounts and
-     * localization fill the viewport; their lists scroll inside the page.
+     * `jvm`, `tunnel`, `sens`, `accounts` and `loc` each replace the column. Tunnel, sensitivity, accounts
+     * and localization fill the viewport; their lists scroll inside the page.
      */
     fun showClientSection(section: String) = showSection(section)
 
@@ -808,10 +815,7 @@ class SettingsController(private val ctx: UiContext) {
             isMnemonicParsing = false
             minWidth = Region.USE_PREF_SIZE
             setOnAction {
-                runClient {
-                    ctx.desk.apply(session)
-                    ctx.t("stalzone.accounts.applied", session.name)
-                }
+                applySession(session)
             }
         }
         val delete = Button(ctx.t("stalzone.accounts.delete")).apply {
@@ -1081,6 +1085,31 @@ class SettingsController(private val ctx: UiContext) {
     }
 
     private fun formatSens(value: Double): String = String.format(Locale.US, "%.2f", ScopeSens.round2(value))
+
+    private fun sessionLogin(session: ExboSession): String? =
+        ExboSessions.storedValues(session.data).firstOrNull { it.name == "EXBO_LOGIN" }?.value?.takeIf { it.isNotBlank() }
+
+    /**
+     * Writes the snapshot to HKCU, then signs the launcher in as that login.
+     * Showcase and tests switch on this thread. Live auto-auth goes off the FX thread.
+     */
+    private fun applySession(session: ExboSession) {
+        val login = sessionLogin(session)
+        var applied = false
+        runClient {
+            ctx.desk.apply(session)
+            if (!ctx.liveBackend && login != null) ctx.services.auth.switchTo(login)
+            applied = true
+            ctx.t("stalzone.accounts.applied", session.name)
+        }
+        if (!applied) return
+        onAccountSwitched(login ?: ctx.services.auth.currentSession?.login, !ctx.liveBackend)
+        if (!ctx.liveBackend || login == null) return
+        background({ ctx.services.auth.switchTo(login) }) { result ->
+            onAccountSwitched(ctx.services.auth.currentSession?.login ?: login, true)
+            if (result.getOrDefault(false) != true) note(ctx.t("stalzone.accounts.reauth_failed", login))
+        }
+    }
 
     private fun runClient(block: () -> String) {
         try {

@@ -6,8 +6,8 @@
 <?import javafx.scene.layout.*?>
 
 <!--
-  Settings: one scrollable column (Память, Поведение, Обновление, Язык). The header switch opens five
-  pages that replace it: JVM, Туннель, Чувствительность, Аккаунты, Локализация. Tunnel fills the settings viewport;
+  Settings: one scrollable column (Память, Поведение, Обновление, Язык). The header switch opens six
+  pages that replace it: JVM, Туннель, Чувствительность, Аккаунты, Локализация, Вики. Tunnel fills the settings viewport;
   the server list scrolls inside that page. The gear opens the column and, when the column is already
   open, closes settings. Profile «Аккаунты» still opens the account-swap page.
 
@@ -38,8 +38,11 @@
                         The status line sits in that card.
     ЛОКАЛИЗАЦИЯ         own page, the whole settings viewport. Оружие / Предметы / Изменённые, a category
                         box, a search field and Записать stay under the heading. The list is split by category.
-                        Each item row is the stock name, a field, a color and a rank. The list scrolls.
--->
+                        Each item row is the stock name, a field, a color and a rank.                         The list scrolls.
+    ВИКИ                own page, the whole settings viewport. Оружие / Предметы / Все, a category
+                        box, a search field and Обновить stay under the heading. The list of icons
+                        and names sits on the left; the article built from official JSON sits on the right.
+    -->
 <AnchorPane fx:id="settingsRoot" id="settingsRoot" styleClass="settings-root" stylesheets="@style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.settings.SettingsController">

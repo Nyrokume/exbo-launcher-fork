@@ -768,7 +768,7 @@ class SettingsScreenTest {
                     assertEquals(
                         listOf(main.headerController.navJvm, main.headerController.navTunnel, main.headerController.navSens, main.headerController.navAccounts, main.headerController.navLoc),
                         main.headerController.settingsNav.children.toList(),
-                        "$where: switch is not JVM, tunnel, sensitivity, accounts",
+                        "$where: switch is not JVM, tunnel, sensitivity, accounts, localization",
                     )
                     assertTrue(s.launcherPage.isManaged && !s.clientContent.isManaged, "$where: settings did not open on the column")
                     assertTrue(
@@ -1614,6 +1614,88 @@ class SettingsScreenTest {
                 assertTrue(contains(BoundingBox(0.0, 0.0, scene.width, scene.height), c.captureSession.sceneBounds()))
             }
         } finally {
+            app.shutdown()
+        }
+    }
+
+    /** Apply writes the registry session, signs the launcher in as that login, and paints it in the header. */
+    @Test
+    fun applyingASessionRefreshesTheHeaderLoginAndReauths(@TempDir dir: Path) {
+        val registry = MemoryRegistry()
+        registry.writeValues(ExboSessions.KEY_PATH, mapOf("EXBO_LOGIN" to "Nyrokume", "EXBO_SESSION" to "token-a"))
+        val desk = StalzoneDesk(registry, dir.resolve("sessions.json"), dir.resolve("jvm"), dir.resolve("options.json"))
+        desk.captureCurrent("Rusty")
+        registry.writeValues(ExboSessions.KEY_PATH, mapOf("EXBO_LOGIN" to "DementiyRezak", "EXBO_SESSION" to "token-b"))
+        desk.captureCurrent("Rezak")
+        val store = InMemorySettingsStore(LauncherSettings())
+        val base = AppContext.mock(language = "ru", speed = 50.0, authDelayMs = 0)
+        assertTrue(base.services.auth.login("DementiyRezak", "pw", false) is dev.launcherfork.domain.AuthResult.Success)
+        val app = AppContext(base.services.copy(settings = store, system = MockSystemInfo(16 * gb)), desk = desk)
+        val nav = mainOnScreen(app, "ru")
+        try {
+            resize(nav, Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
+            FxTestSupport.onFx {
+                val main = nav.mainController!!
+                val profile = main.profileBarController
+                assertEquals("DEMENTIYREZAK", profile.accountName.text)
+                val c = main.settingsController
+                main.setSettingsVisible(true)
+                c.showClientSection("accounts")
+                relayout(nav)
+                val cards = c.sessionCards.children.filter { "session-card" in it.styleClass }
+                assertEquals(2, cards.size)
+                (cards[0].lookup(".session-apply") as Button).fire()
+                assertEquals("Nyrokume", registry.readValues(ExboSessions.KEY_PATH)["EXBO_LOGIN"])
+                assertEquals("Nyrokume", app.services.auth.currentSession?.login)
+                assertEquals("NYROKUME", profile.accountName.text)
+                assertEquals("Сессия «Rusty» записана в реестр", c.clientStatus.text)
+            }
+        } finally {
+            FxTestSupport.onFx { nav.close() }
+            app.shutdown()
+        }
+    }
+
+    /** A failed registry write must not drop the signed-in session or paint a different nickname. */
+    @Test
+    fun aFailedApplyLeavesTheSignedInAccountAlone(@TempDir dir: Path) {
+        val memory = MemoryRegistry()
+        val registry = object : dev.launcherfork.stalzone.RegistryStore {
+            override fun readValues(path: String) = memory.readValues(path)
+            override fun writeValues(path: String, values: Map<String, String>) {
+                if (memory.keys.isNotEmpty() && path == ExboSessions.KEY_PATH && "EXBO_SESSION" in values) {
+                    error("registry locked")
+                }
+                memory.writeValues(path, values)
+            }
+            override fun deleteValue(path: String, name: String) = memory.deleteValue(path, name)
+        }
+        registry.writeValues(ExboSessions.KEY_PATH, mapOf("EXBO_LOGIN" to "Nyrokume", "EXBO_SESSION" to "token-a"))
+        val desk = StalzoneDesk(registry, dir.resolve("sessions.json"), dir.resolve("jvm"), dir.resolve("options.json"))
+        desk.captureCurrent("Rusty")
+        val store = InMemorySettingsStore(LauncherSettings())
+        val base = AppContext.mock(language = "ru", speed = 50.0, authDelayMs = 0)
+        assertTrue(base.services.auth.login("DementiyRezak", "pw", false) is dev.launcherfork.domain.AuthResult.Success)
+        val app = AppContext(base.services.copy(settings = store, system = MockSystemInfo(16 * gb)), desk = desk)
+        val nav = mainOnScreen(app, "ru")
+        try {
+            resize(nav, Theme.WINDOW_WIDTH, Theme.WINDOW_HEIGHT)
+            FxTestSupport.onFx {
+                val main = nav.mainController!!
+                val profile = main.profileBarController
+                assertEquals("DEMENTIYREZAK", profile.accountName.text)
+                val c = main.settingsController
+                main.setSettingsVisible(true)
+                c.showClientSection("accounts")
+                relayout(nav)
+                val apply = c.sessionCards.children.first { "session-card" in it.styleClass }.lookup(".session-apply") as Button
+                apply.fire()
+                assertEquals("DementiyRezak", app.services.auth.currentSession?.login)
+                assertEquals("DEMENTIYREZAK", profile.accountName.text)
+                assertEquals("registry locked", c.clientStatus.text)
+            }
+        } finally {
+            FxTestSupport.onFx { nav.close() }
             app.shutdown()
         }
     }

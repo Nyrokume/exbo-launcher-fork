@@ -365,8 +365,11 @@
     -fx-border-color: transparent;
 }
 /* left pad keeps Bebas Neue (and body) from clipping against the ScrollPane viewport */
-.game-banner { -fx-padding: 2 4 4 8; -fx-spacing: 6; }
+.game-banner { -fx-padding: 2 4 4 8; -fx-spacing: 6; -fx-max-width: infinity; }
 .game-banner-title { -fx-font-size: 40; -fx-text-fill: -foreground; }
+.game-banner-lead, .game-banner-subheading, .game-banner-body, .game-banner-closing {
+    -fx-font-family: "Roboto";
+}
 .game-banner-lead { -fx-font-size: 15; -fx-text-fill: -foreground; -fx-line-spacing: 1; }
 .game-banner-subheading { -fx-font-size: 15; -fx-text-fill: -foreground; -fx-padding: 2 0 0 0; }
 .game-banner-body { -fx-font-size: 13; -fx-text-fill: -secondary-foreground; -fx-line-spacing: 1; }
@@ -421,7 +424,7 @@
 .header-link { -fx-font-size: 13; -fx-text-fill: -text-link; }
 .header-link:hover { -fx-text-fill: -foreground; }
 .header-link:hover .external-arrow { -fx-background-color: -foreground; }
-.header-links-row.settings-nav { -fx-spacing: 12; }
+.header-links-row.settings-nav { -fx-spacing: 10; }
 /* Separate settings pages in the nav row (header.fxml settingsNav): JVM, tunnel, sensitivity, account swap, localization.
    One is selected: the theme accent, same red the gear and the segmented controls use (-primary).
    No fill, so the row stays the height of the profile button. The settings column leaves every item unselected. */

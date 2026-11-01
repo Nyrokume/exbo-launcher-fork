@@ -83,6 +83,9 @@ class LocalizationPage(
             val mine = langPath ?: ItemNames.defaultLangFile()
             if (mine == null || sameFile(mine, restored)) requestReload()
         }
+        ItemNames.defaultLangFile()?.let { file ->
+            ItemNames.clientOfLang(file)?.let { ItemNames.startWatch(it) }
+        }
     }
 
     /** First visit reads the lang file. A client update calls this again and keeps unsaved edits. */
@@ -249,8 +252,9 @@ class LocalizationPage(
         thread(name = "item-names-write") {
             val result = runCatching {
                 val (next, apply) = ItemNames.nextSaved(official, previous, touched, colors, ranks)
-                ItemNames.writeValues(path, apply)
+                ItemNames.writeNames(path, next, apply)
                 ItemNames.save(overrides, next)
+                ItemNames.clientOfLang(path)?.let { ItemNames.startWatch(it) }
                 next to apply
             }
             Platform.runLater {
