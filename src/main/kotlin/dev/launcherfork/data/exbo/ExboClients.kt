@@ -1,6 +1,7 @@
 package dev.launcherfork.data.exbo
 
 import dev.launcherfork.domain.ExboPaths
+import dev.launcherfork.domain.Server
 import java.io.DataInputStream
 import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
@@ -25,11 +26,40 @@ internal object ExboClients {
         clientsFile: Path = clientsFile(),
         runtime: Path = runtimeDir(),
     ): Path {
-        val fallback = runtime.resolve(if (SAFE_ID.matches(id)) id else "invalid")
-        if (!SAFE_ID.matches(id)) return fallback
-        val mapped = readClientsLocations(clientsFile)[id]?.takeIf { it.isNotBlank() } ?: return fallback
+        val locations = readClientsLocations(clientsFile)
+        val resolved = resolveId(id, locations, runtime)
+        val fallback = runtime.resolve(if (SAFE_ID.matches(resolved)) resolved else "invalid")
+        if (!SAFE_ID.matches(resolved)) return fallback
+        val mapped = locations[resolved]?.takeIf { it.isNotBlank() } ?: return fallback
         return Path.of(mapped)
     }
+
+    /**
+     * Official EU maps the game as `stalcraft_global`. `/listServers` still sends `stalcraft`.
+     * A leftover `runtime/stalcraft` next to that mapping is not the client.
+     */
+    fun resolveId(
+        id: String,
+        locations: Map<String, String>,
+        runtime: Path,
+    ): String {
+        val mapped = resolveMappedId(id, locations)
+        if (mapped != id || id in locations) return mapped
+        val hashed = (listOf(id) + clientAliases(id)).filter { Files.isRegularFile(runtime.resolve("$it.hash")) }
+        if (hashed.isNotEmpty()) {
+            return hashed.maxBy { Files.getLastModifiedTime(runtime.resolve("$it.hash")).toMillis() }
+        }
+        return id
+    }
+
+    fun resolveMappedId(id: String, locations: Map<String, String>): String {
+        if (!SAFE_ID.matches(id)) return id
+        if (id in locations) return id
+        return clientAliases(id).firstOrNull { it in locations } ?: id
+    }
+
+    fun resolveId(id: String, clientsFile: Path = clientsFile(), runtime: Path = runtimeDir()): String =
+        resolveId(id, readClientsLocations(clientsFile), runtime)
 
     /** First mapped directory, or the runtime folder when the file has no rows. */
     fun preferredDirectory(clientsFile: Path = clientsFile(), runtime: Path = runtimeDir()): Path {
@@ -66,9 +96,40 @@ internal fun diskInstall(directory: Path, remoteVersion: String?, installedHash:
     return DiskInstall(present = true, current = !needsUpdate)
 }
 
+internal fun clientAliases(id: String): List<String> = when (id) {
+    "stalcraft" -> listOf("stalcraft_global")
+    "stalcraft_global" -> listOf("stalcraft")
+    else -> emptyList()
+}
+
+/**
+ * One card per install. When `/listServers` sends both `stalcraft` and `stalcraft_global`,
+ * keep the id the official `clients` file already maps.
+ */
+internal fun collapseAliasedServers(
+    servers: List<Server>,
+    locations: Map<String, String>,
+    runtime: Path,
+): List<Server> {
+    val kept = linkedMapOf<String, Server>()
+    for (server in servers) {
+        val canonical = ExboClients.resolveId(server.id, locations, runtime)
+        val existing = kept[canonical]
+        if (existing == null) {
+            kept[canonical] = server
+            continue
+        }
+        val preferNew = (server.id == canonical && existing.id != canonical) ||
+            (server.id in locations && existing.id !in locations)
+        if (preferNew) kept[canonical] = server
+    }
+    return kept.values.toList()
+}
+
 /** Catalog version recorded for [id], or null when the official hash file is missing. */
 internal fun readInstalledHash(id: String, runtime: Path = ExboClients.runtimeDir()): String? {
-    val file = ExboClients.installedHashFile(id, runtime) ?: return null
+    val resolved = ExboClients.resolveId(id, runtime.resolve("clients"), runtime)
+    val file = ExboClients.installedHashFile(resolved, runtime) ?: return null
     if (!Files.isRegularFile(file)) return null
     return try {
         Files.readString(file)
@@ -79,7 +140,9 @@ internal fun readInstalledHash(id: String, runtime: Path = ExboClients.runtimeDi
 
 /** Writes the catalog version the way `saveTorrentHash` does. Returns false for an unsafe id or a blank version. */
 internal fun writeInstalledHash(id: String, version: String, runtime: Path): Boolean {
-    val file = ExboClients.installedHashFile(id, runtime) ?: return false
+    val locations = readClientsLocations(runtime.resolve("clients"))
+    val resolved = ExboClients.resolveMappedId(id, locations)
+    val file = ExboClients.installedHashFile(resolved, runtime) ?: return false
     val text = version.trim()
     if (text.isEmpty()) return false
     Files.createDirectories(file.parent)
@@ -117,3 +180,15 @@ internal fun readClientsLocations(file: Path): Map<String, String> {
 }
 
 private fun siblingOld(file: Path): Path = file.resolveSibling("${file.fileName}.old")
+
+/** Newest official main-client hash in [root], or null when that install has no hash yet. */
+internal fun mainClientTouchedAt(root: Path): Long? {
+    val runtime = ExboClients.runtimeDir(root)
+    val locations = readClientsLocations(ExboClients.clientsFile(root))
+    return listOf("stalcraft", "stalcraft_global").mapNotNull { raw ->
+        val id = ExboClients.resolveId(raw, locations, runtime)
+        val file = ExboClients.installedHashFile(id, runtime) ?: return@mapNotNull null
+        if (!Files.isRegularFile(file)) return@mapNotNull null
+        Files.getLastModifiedTime(file).toMillis()
+    }.maxOrNull()
+}

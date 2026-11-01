@@ -33,13 +33,30 @@ enum class ExboRealm(val dirName: String) {
 }
 
 /**
- * Realm to open. A request is used only when that install is present.
- * Otherwise the RU install wins, then whichever install exists.
- * Neither install still returns the request, or RU, so the caller can stay on the usual root.
+ * Realm to open. [pinRequested] is `-Dlauncher.realm=…`: that install wins when it is present.
+ * Otherwise the install whose official client hash is newest wins, so a leftover
+ * `exbo.realm=global` does not hide a current RU client. No hashes: the request if
+ * that install exists, then RU, then whichever install is left.
  */
-fun chooseExboRealm(requested: ExboRealm?, installed: (ExboRealm) -> Boolean): ExboRealm = when {
-    requested != null && installed(requested) -> requested
-    installed(ExboRealm.RU) -> ExboRealm.RU
-    installed(ExboRealm.GLOBAL) -> ExboRealm.GLOBAL
-    else -> requested ?: ExboRealm.RU
+fun chooseExboRealm(requested: ExboRealm?, installed: (ExboRealm) -> Boolean): ExboRealm =
+    chooseExboRealm(requested, installed, { null }, pinRequested = false)
+
+fun chooseExboRealm(
+    requested: ExboRealm?,
+    installed: (ExboRealm) -> Boolean,
+    touchedAt: (ExboRealm) -> Long?,
+    pinRequested: Boolean = false,
+): ExboRealm {
+    val present = ExboRealm.entries.filter(installed)
+    if (present.isEmpty()) return requested ?: ExboRealm.RU
+    if (pinRequested && requested != null && requested in present) return requested
+    val ranked = present.mapNotNull { realm -> touchedAt(realm)?.let { realm to it } }
+    if (ranked.isNotEmpty()) {
+        val newest = ranked.maxOf { it.second }
+        val ties = ranked.filter { it.second == newest }.map { it.first }
+        if (requested != null && requested in ties) return requested
+        return ranked.first { it.second == newest }.first
+    }
+    if (requested != null && requested in present) return requested
+    return present.first()
 }

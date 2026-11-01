@@ -15,7 +15,6 @@ import dev.launcherfork.stalzone.MemoryRegistry
 import dev.launcherfork.ui.Fxml
 import dev.launcherfork.ui.UiContext
 import dev.launcherfork.ui.screens.auth.InitialAuthController
-import javafx.scene.control.ToggleButton
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -41,6 +40,24 @@ class ExboRealmTest {
         assertEquals(ExboRealm.RU, chooseExboRealm(ExboRealm.fromName("nope")) { false })
         assertEquals(ExboRealm.GLOBAL, ExboRealm.fromName("eu"))
         assertEquals(ExboRealm.RU, ExboRealm.fromName("ru"))
+    }
+
+    @Test
+    fun aNewerRuClientWinsOverASavedGlobalRealm() {
+        val both: (ExboRealm) -> Boolean = { true }
+        val touched: (ExboRealm) -> Long? = {
+            when (it) {
+                ExboRealm.RU -> 200L
+                ExboRealm.GLOBAL -> 50L
+            }
+        }
+        assertEquals(ExboRealm.RU, chooseExboRealm(ExboRealm.GLOBAL, both, touched))
+        assertEquals(
+            ExboRealm.GLOBAL,
+            chooseExboRealm(ExboRealm.GLOBAL, both, touched, pinRequested = true),
+        )
+        assertEquals(ExboRealm.GLOBAL, chooseExboRealm(ExboRealm.GLOBAL, both))
+        assertEquals(ExboRealm.RU, chooseExboRealm(null, both, touched))
     }
 
     @Test
@@ -96,7 +113,7 @@ class ExboRealmTest {
     }
 
     @Test
-    fun loginExplainsWhenTheEuLauncherIsNotInstalled() = FxTestSupport.onFx {
+    fun loginHasNoRealmSwitch() = FxTestSupport.onFx {
         val app = AppContext.mock(authDelayMs = 0)
         val registry = MemoryRegistry()
         val root = Files.createTempDirectory("exbo-realm-login")
@@ -111,14 +128,22 @@ class ExboRealmTest {
             false, app.desk, true, gate,
         )
         val form = Fxml.load<InitialAuthController>(ctx, "auth_panel.fxml").controller
-        val row = form.root.lookup("#realmRow")
-        assertTrue(row.isVisible && row.isManaged)
-        val eu = form.root.lookup("#realmEu") as ToggleButton
-        eu.fire()
-        assertEquals(Strings.bundle("ru").getString("fork.realm.missing"), form.errorFirst.text)
-        assertTrue((form.root.lookup("#realmRu") as ToggleButton).isSelected)
-        assertFalse(eu.isSelected)
-        assertEquals(ExboRealm.RU, gate.current)
+        assertTrue(form.root.lookup("#realmRow") == null)
+        assertTrue(form.root.lookupAll(".zone-realm").isEmpty())
+        root.toFile().deleteRecursively()
+        Unit
+    }
+
+    @Test
+    fun switchToAdoptsTheRegistryLoginWhenAutoAuthHasNoSession() {
+        val registry = MemoryRegistry()
+        val root = Files.createTempDirectory("exbo-switch-to")
+        val api = ExboApi(ExboRealm.RU, root, registry)
+        val auth = ExboAuthService(api)
+        registry.writeValues(ExboRealm.RU.registryKey, mapOf("EXBO_LOGIN" to "Nyrokume"))
+        assertFalse(auth.switchTo("Nyrokume"), "auto-auth cannot run without EXBO_SESSION")
+        assertEquals("Nyrokume", auth.currentSession?.login)
+        assertEquals("Nyrokume", auth.savedLogin)
         root.toFile().deleteRecursively()
     }
 }

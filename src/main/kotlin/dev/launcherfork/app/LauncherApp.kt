@@ -2,6 +2,7 @@ package dev.launcherfork.app
 
 import dev.launcherfork.data.exbo.ExboApi
 import dev.launcherfork.data.exbo.ExboAuthService
+import dev.launcherfork.data.exbo.mainClientTouchedAt
 import dev.launcherfork.data.local.SettingsFile
 import dev.launcherfork.data.local.WallpaperFileMemory
 import dev.launcherfork.data.mock.MockSecondFactor
@@ -104,9 +105,17 @@ class LauncherApp : Application() {
         val installedRealms = ExboRealm.entries.filter { ExboApi(it).installed() }
         val useExbo = !tour && demo == null && installedRealms.isNotEmpty()
         val app = if (useExbo) {
-            val requested = ExboRealm.fromName(System.getProperty(ExboRealm.PROPERTY))
-                ?: ExboRealm.fromName(SettingsFile.read(settingsPath, ExboRealm.SETTINGS_KEY))
-            val realm = chooseExboRealm(requested) { it in installedRealms }
+            val fromProperty = ExboRealm.fromName(System.getProperty(ExboRealm.PROPERTY))
+            val fromSettings = ExboRealm.fromName(SettingsFile.read(settingsPath, ExboRealm.SETTINGS_KEY))
+            val realm = chooseExboRealm(
+                requested = fromProperty ?: fromSettings,
+                installed = { it in installedRealms },
+                touchedAt = { mainClientTouchedAt(ExboPaths.roamingRoot(it)) },
+                pinRequested = fromProperty != null,
+            )
+            if (fromProperty == null) {
+                SettingsFile.write(settingsPath, ExboRealm.SETTINGS_KEY, realm.wireName)
+            }
             System.err.println("[launcher-fork] backend: exbo ${realm.wireName}")
             AppContext.live(
                 language = lang,

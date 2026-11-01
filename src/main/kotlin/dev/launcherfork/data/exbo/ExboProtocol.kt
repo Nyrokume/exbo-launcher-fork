@@ -272,13 +272,13 @@ private fun serverFrom(entry: Json.Obj, root: Path): Server? {
     val players = entry.int("onlineCurrent") ?: -1
     val seeds = entry.strings("httpSeeds")
     val desc = entry.strings("desc")
-    val clientDir = root.resolve("runtime").resolve(id)
+    val clientDir = ExboClients.directory(id, ExboClients.clientsFile(root), ExboClients.runtimeDir(root))
     return Server(
         id = id,
         caption = caption,
         online = players >= 0,
         players = players,
-        description = description(caption, desc),
+        description = description(id, caption, desc),
         iconUri = art(entry.text("icon"), seeds, ICON_FALLBACK),
         backgroundUri = art(entry.text("background"), seeds, BACKGROUND_FALLBACK),
         installed = clientFilesPresent(clientDir),
@@ -286,21 +286,39 @@ private fun serverFrom(entry: Json.Obj, root: Path): Server? {
     )
 }
 
-private fun description(caption: String, desc: List<String>): GameDescription.Text {
-    val closing = if (desc.size >= 4) desc.last() else ""
+private fun description(id: String, caption: String, desc: List<String>): GameDescription {
+    // listServers sends one language and often drops spaces. Known clients use the
+    // official blurbs in the launcher bundles so RU / EN stay readable.
+    return when (id) {
+        "stalcraft", "stalcraft_global" -> GameDescription.Keys("game.stalzone")
+        "stalcraft_ots" -> GameDescription.Keys("game.stalzone.ots")
+        else -> descriptionFrom(caption, desc)
+    }
+}
+
+private fun descriptionFrom(caption: String, desc: List<String>): GameDescription.Text {
+    val parts = desc.map(::cleanDesc)
+    val closing = if (parts.size >= 4) parts.last() else ""
     val body = when {
-        desc.size >= 4 -> desc.subList(2, desc.size - 1).joinToString("\n")
-        desc.size >= 3 -> desc.drop(2).joinToString("\n")
+        parts.size >= 4 -> parts.subList(2, parts.size - 1).joinToString("\n\n")
+        parts.size >= 3 -> parts.drop(2).joinToString("\n\n")
         else -> ""
     }
     return GameDescription.Text(
         title = caption,
-        lead = desc.getOrElse(0) { "" },
-        subheading = desc.getOrElse(1) { "" },
+        lead = parts.getOrElse(0) { "" },
+        subheading = parts.getOrElse(1) { "" },
         body = body,
         closing = closing,
     )
 }
+
+private fun cleanDesc(text: String): String = text
+    .replace('\u00A0', ' ')
+    .replace('\u202F', ' ')
+    .replace(Regex("[\\u2000-\\u200B\\u2060]"), " ")
+    .replace(Regex(" {2,}"), " ")
+    .trim()
 
 private fun art(path: String?, seeds: List<String>, fallback: String): URI {
     val raw = path?.trim().orEmpty()

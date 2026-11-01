@@ -84,6 +84,10 @@ class ExboServerRepository(
 
     private fun apply(body: String) {
         val catalog = parseServerCatalog(body, api.dataRoot)
+        val root = api.dataRoot
+        val locations = readClientsLocations(ExboClients.clientsFile(root))
+        val runtime = ExboClients.runtimeDir(root)
+        val servers = collapseAliasedServers(catalog.servers, locations, runtime)
         commands.clear()
         commands.putAll(catalog.runCommands)
         versions.clear()
@@ -92,7 +96,7 @@ class ExboServerRepository(
         seeds.putAll(catalog.httpSeeds)
         exclusions.clear()
         exclusions.putAll(catalog.exclusions)
-        cached = catalog.servers.map { server ->
+        cached = servers.map { server ->
             val dir = locate(server.id)
             val installed = clientFilesPresent(dir)
             server.copy(iconUri = sidebarIcon(server), installed = installed)
@@ -142,11 +146,11 @@ class ExboServerRepository(
 internal fun sidebarIcon(server: Server): URI {
     if (exboHttpsUrl(server.iconUri.toString()) != null) return server.iconUri
     val scheme = server.iconUri.scheme?.lowercase()
-    if (server.id == MAIN_CLIENT_ID || scheme == "http" || scheme == "https") return Theme.gameIconUri()
+    if (isMainClient(server.id) || scheme == "http" || scheme == "https") return Theme.gameIconUri()
     return server.iconUri
 }
 
-private const val MAIN_CLIENT_ID = "stalcraft"
+internal fun isMainClient(id: String): Boolean = id == "stalcraft" || id == "stalcraft_global"
 
 /**
  * Official `fetchCompoundState`: an installed client needs an update when `runtime/<id>.hash`

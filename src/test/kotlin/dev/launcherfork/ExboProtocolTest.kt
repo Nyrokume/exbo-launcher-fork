@@ -16,6 +16,7 @@ import dev.launcherfork.data.exbo.exboSessionPath
 import dev.launcherfork.data.exbo.exboSha1Hex
 import dev.launcherfork.data.exbo.parseAuthReply
 import dev.launcherfork.data.exbo.parseServerList
+import dev.launcherfork.domain.GameDescription
 import dev.launcherfork.theme.Theme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -168,6 +169,13 @@ class ExboProtocolTest {
             assertEquals("<java>/bin/ots", catalog.runCommands["stalcraft_ots"])
             val zone = catalog.servers[0]
             val ots = catalog.servers[1]
+            assertEquals(GameDescription.Keys("game.stalzone"), zone.description)
+            assertEquals(GameDescription.Keys("game.stalzone.ots"), ots.description)
+            val global = parseServerCatalog(
+                """{"success":true,"data":"[{\"id\":\"stalcraft_global\",\"caption\":\"STALCRAFT\",\"desc\":[\"lead\"]}]"}""",
+                root,
+            ).servers.single()
+            assertEquals(GameDescription.Keys("game.stalzone"), global.description)
             assertEquals("sig=zone", zone.iconUri.query)
             assertEquals("sig=ots", ots.iconUri.query)
             assertNotEquals(zone.iconUri, ots.iconUri)
