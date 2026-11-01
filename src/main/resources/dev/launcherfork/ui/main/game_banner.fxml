@@ -15,8 +15,8 @@
             focusTraversable="false" stylesheets="@../style/layout.css"
             xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="dev.launcherfork.ui.screens.main.GameBannerController">
-    <VBox styleClass="game-banner-column" fillWidth="true">
-        <VBox fx:id="content" id="gameBannerContent" styleClass="game-banner">
+    <VBox styleClass="game-banner-column" fillWidth="true" maxWidth="Infinity">
+        <VBox fx:id="content" id="gameBannerContent" styleClass="game-banner" maxWidth="Infinity">
             <Label fx:id="title" id="gameTitle" styleClass="game-banner-title,font-display" minHeight="-Infinity"/>
             <Label fx:id="lead" id="gameLead" styleClass="game-banner-lead,font-meta" wrapText="true" minHeight="-Infinity"/>
             <Label fx:id="subheading" id="gameSubheading" styleClass="game-banner-subheading,font-meta" wrapText="true" minHeight="-Infinity"/>

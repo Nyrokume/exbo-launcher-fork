@@ -31,6 +31,17 @@ class ReviewFixesTest {
     }
 
     @Test
+    fun switchToReplacesTheSignedInAccount() {
+        val auth = MockAuthService(0)
+        assertTrue(auth.login("DementiyRezak", "pw", false) is AuthResult.Success)
+        assertTrue(auth.switchTo("Nyrokume"))
+        assertEquals("Nyrokume", auth.currentSession?.login)
+        assertEquals("Nyrokume", auth.savedLogin)
+        assertFalse(auth.switchTo("  "))
+        assertEquals("Nyrokume", auth.currentSession?.login)
+    }
+
+    @Test
     fun codeCellsHaveLocalizedAccessibleText() {
         val ru = Strings.bundle("ru"); val en = Strings.bundle("en")
         FxTestSupport.onFx {

@@ -33,11 +33,6 @@
         </VBox>
 
         <VBox styleClass="zone-bottom">
-            <!-- RU / EU. Hidden until the live launcher shows it; mock and the legacy form have no row. -->
-            <HBox id="realmRow" styleClass="zone-realm" alignment="CENTER" visible="false" managed="false">
-                <ToggleButton id="realmRu" styleClass="zone-realm-choice, zone-radius-sm" mnemonicParsing="false" text="%fork.realm.ru" />
-                <ToggleButton id="realmEu" styleClass="zone-realm-choice, zone-radius-sm" mnemonicParsing="false" text="%fork.realm.eu" />
-            </HBox>
             <!-- after a registration: "Аккаунт создан…" (zone-steps.css), hidden while empty -->
             <Label id="zoneNotice" fx:id="noticeLabel" styleClass="zone-notice, zone-radius-sm" wrapText="true" maxWidth="Infinity" minHeight="-Infinity" visible="false" managed="false" />
             <TextField id="zoneLogin" fx:id="loginField" styleClass="zone-input, zone-radius-sm" onAction="#onEnter" promptText="%fork.zone.login_prompt" />

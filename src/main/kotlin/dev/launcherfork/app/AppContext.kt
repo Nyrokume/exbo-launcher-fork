@@ -11,6 +11,7 @@ import dev.launcherfork.data.exbo.HostSystemInfo
 import dev.launcherfork.data.exbo.InstalledGameLauncher
 import dev.launcherfork.data.exbo.LiveUpdateService
 import dev.launcherfork.domain.RamOptions
+import dev.launcherfork.stalzone.ItemNames
 import dev.launcherfork.stalzone.MemoryRegistry
 import dev.launcherfork.stalzone.SessionSecrets
 import dev.launcherfork.stalzone.StalzoneDesk
@@ -32,6 +33,7 @@ import dev.launcherfork.ui.state.ClientStateStore
 import javafx.application.Platform
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.concurrent.thread
 import kotlin.io.path.isDirectory
 import kotlin.random.Random
 
@@ -64,6 +66,7 @@ class AppContext(
     fun shutdown() {
         clientStates.shutdown()
         services.servers.close()
+        ItemNames.stopWatch()
     }
 
     companion object {
@@ -128,6 +131,7 @@ class AppContext(
             )
             val servers = ExboServerRepository(api)
             val realms = ExboRealmGate(backend, auth, servers, settingsFile)
+            keepItemNames(api.dataRoot)
             return AppContext(
                 Services(
                     auth = auth,
@@ -163,6 +167,26 @@ class AppContext(
                 liveBackend = true,
                 realms = realms,
             )
+        }
+
+        /**
+         * Writes saved names back into every installed client lang file, then watches the folder
+         * so a client update that restores stock text is painted again while the launcher is open.
+         */
+        private fun keepItemNames(exboRoot: Path) {
+            ItemNames.watchLang = true
+            thread(name = "item-names-boot", isDaemon = true) {
+                val seen = LinkedHashSet<Path>()
+                val fromOptions = StalzonePaths.optionsFile().parent?.parent
+                if (fromOptions != null && fromOptions.isDirectory()) seen.add(fromOptions)
+                val mapped = ExboClients.directory(
+                    "stalcraft",
+                    ExboClients.clientsFile(exboRoot),
+                    ExboClients.runtimeDir(exboRoot),
+                )
+                if (mapped.isDirectory()) seen.add(mapped)
+                for (dir in seen) runCatching { ItemNames.restoreAfterUpdate(dir) }
+            }
         }
 
         /** Shared desk for a UI context that was not given [AppContext.desk]. Never HKCU. */

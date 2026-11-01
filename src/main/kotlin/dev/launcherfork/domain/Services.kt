@@ -38,6 +38,12 @@ interface AuthService {
     /** Creates an account (age gate + registration form). Blocking; may throw on transport errors. */
     fun register(request: RegistrationRequest): RegisterResult
     fun logout()
+
+    /**
+     * After a saved EXBO session was written to the registry: make [login] the signed-in account.
+     * Live auth re-runs auto-auth for the new `EXBO_SESSION`. A blank login is refused.
+     */
+    fun switchTo(login: String): Boolean
 }
 
 /** Facts about the user's computer the UI needs (RAM options and JVM flags). */

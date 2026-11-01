@@ -89,6 +89,17 @@ class ExboAuthService(private val backend: ExboBackend) : AuthService {
         api.clearToken()
     }
 
+    override fun switchTo(login: String): Boolean {
+        val name = login.trim()
+        if (name.isEmpty()) return false
+        // The header follows [currentSession] even when auto-auth has no token yet.
+        currentSession = UserSession(name)
+        savedLogin = name
+        pendingLogin = null
+        api.clearToken()
+        return tryAuto()
+    }
+
     private fun exchange(login: String, call: () -> ExboAuthReply): AuthResult {
         val reply = try {
             call()

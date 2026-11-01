@@ -99,6 +99,10 @@ class MainController(private val ctx: UiContext) : Disposable {
         profileBarController.onProfile = { ctx.services.links.open(ExternalLinks.ACCOUNT) }
         profileBarController.onAccounts = { settingsController.showSection("accounts"); setSettingsVisible(true) }
         settingsController.onSection = { id -> if (settingsPane.isVisible) headerController.selectSection(id) }
+        settingsController.onAccountSwitched = { login, reloadCatalog ->
+            profileBarController.setLogin(login)
+            if (reloadCatalog) refreshCatalog()
+        }
         headerController.onSettingsSection = { id ->
             settingsController.showSection(id)
             if (!settingsPane.isVisible) setSettingsVisible(true)
@@ -301,6 +305,15 @@ class MainController(private val ctx: UiContext) : Disposable {
             confirm = ctx.t("$key.confirm"),
             cancel = ctx.t("main.confirm.cancel"),
         ) { store.runOperation(server, operation) }
+    }
+
+    /** Reloads the sidebar after a session apply: the catalog belongs to the new token. */
+    private fun refreshCatalog() {
+        val next = ctx.services.servers.servers()
+        servers = next
+        serversListController.setServers(next, store)
+        val keep = selected?.let { cur -> next.firstOrNull { it.id == cur.id } }
+        (keep ?: next.firstOrNull())?.let { selectServer(it, showHome = false) }
     }
 
     fun selectServer(server: Server, showHome: Boolean) {

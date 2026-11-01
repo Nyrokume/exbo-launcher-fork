@@ -83,6 +83,14 @@ class MockAuthService(
         currentSession = null
     }
 
+    override fun switchTo(login: String): Boolean {
+        val name = login.trim()
+        if (name.isEmpty()) return false
+        currentSession = UserSession(name)
+        savedLogin = name
+        return true
+    }
+
     private fun success(login: String): AuthResult {
         pending = null // a finished sign-in drops any half-done 2FA attempt
         val s = UserSession(login)

@@ -133,11 +133,11 @@ class GameBannerController(private val ctx: UiContext) {
         }
         content.spacing = 6.0 * scale
         title.restyle(px(base.title * scale))
-        lead.restyle(px(base.lead * scale), "-fx-line-spacing: ${pxNum(scale)}")
-        subheading.restyle(px(base.sub * scale), "-fx-padding: ${pxNum(2.0 * scale)} 0 0 0")
-        val bodyStyle = arrayOf(px(base.body * scale), "-fx-line-spacing: ${pxNum(scale)}")
-        body.restyle(*bodyStyle)
-        closing.restyle(px(base.closing * scale), "-fx-line-spacing: ${pxNum(scale)}")
+        val bodyFont = "-fx-font-family: \"Roboto\""
+        lead.restyle(px(base.lead * scale), "-fx-line-spacing: ${pxNum(scale)}", bodyFont)
+        subheading.restyle(px(base.sub * scale), "-fx-padding: ${pxNum(2.0 * scale)} 0 0 0", bodyFont)
+        body.restyle(px(base.body * scale), "-fx-line-spacing: ${pxNum(scale)}", bodyFont)
+        closing.restyle(px(base.closing * scale), "-fx-line-spacing: ${pxNum(scale)}", bodyFont)
     }
 
     /**
@@ -145,7 +145,7 @@ class GameBannerController(private val ctx: UiContext) {
      * text, for example) stays, so a layout pass in the middle of that check cannot paint the glyphs back.
      */
     private fun Label.restyle(vararg owned: String) {
-        val managed = arrayOf("-fx-font-size", "-fx-line-spacing", "-fx-padding")
+        val managed = arrayOf("-fx-font-size", "-fx-line-spacing", "-fx-padding", "-fx-font-family")
         val kept = style.orEmpty().split(';').map { it.trim() }.filter { part ->
             part.isNotEmpty() && managed.none { part.startsWith(it) }
         }

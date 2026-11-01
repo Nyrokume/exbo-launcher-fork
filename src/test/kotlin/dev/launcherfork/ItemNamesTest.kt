@@ -151,11 +151,19 @@ class ItemNamesTest {
     @Test
     fun colorAndRankAreWrittenInFrontOfTheName() {
         assertEquals("Кедр", ItemNames.plain("§cКедр"))
-        assertEquals("§cКедр", ItemNames.paint("Кедр", "c", "stalker"))
-        assertEquals("§aКедр", ItemNames.paint("Кедр", null, "stalker"))
+        assertEquals("Кедр", ItemNames.plain("§#ff5555Кедр"))
+        assertEquals("6П62 «Толстяк»", ItemNames.plain("§#ffaa006П62 «Толстяк»"))
+        assertEquals("§#ff5555Кедр", ItemNames.paint("Кедр", "c", "stalker"))
+        assertEquals("§#55ff55Кедр", ItemNames.paint("Кедр", null, "stalker"))
         assertEquals("Кедр", ItemNames.paint("Кедр", null, null))
-        val patched = ItemNames.patch(lang, mapOf("item.wpn.kedr.name" to "§9Кедр"))
-        assertTrue(patched.contains("item.wpn.kedr.name=§9Кедр\n"))
+        val patched = ItemNames.patch(lang, mapOf("item.wpn.kedr.name" to "§#5555ffКедр"))
+        assertTrue(patched.contains("item.wpn.kedr.name=§#5555ffКедр\n"))
+    }
+
+    @Test
+    fun goldOnANameThatStartsWithSixStaysUnambiguous() {
+        assertEquals("§#ffaa006П62 «Толстяк»", ItemNames.paint("6П62 «Толстяк»", "6", "picklock"))
+        assertEquals("6П62 «Толстяк»", ItemNames.plain(ItemNames.paint("6П62 «Толстяк»", "6", "picklock")))
     }
 
     @Test
@@ -169,7 +177,7 @@ class ItemNamesTest {
             ranks = mapOf("item.wpn.kedr.name" to "veteran"),
         )
         assertEquals(ItemRename("ПП-91 «Кедр»", "ПП-91 «Кедр»", "c", "veteran"), kept["item.wpn.kedr.name"])
-        assertEquals("§cПП-91 «Кедр»", apply["item.wpn.kedr.name"])
+        assertEquals("§#ff5555ПП-91 «Кедр»", apply["item.wpn.kedr.name"])
     }
 
     @Test
@@ -183,7 +191,7 @@ class ItemNamesTest {
         )
         assertEquals("master", kept["item.wpn.kedr.name"]?.rank)
         assertEquals(null, kept["item.wpn.kedr.name"]?.color)
-        assertEquals("§5ПП-91 «Кедр»", apply["item.wpn.kedr.name"])
+        assertEquals("§#c06cffПП-91 «Кедр»", apply["item.wpn.kedr.name"])
     }
 
     @Test
@@ -206,7 +214,7 @@ class ItemNamesTest {
         val previous = mapOf("item.wpn.kedr.name" to ItemRename("ПП-91 «Кедр»", "Кедр", "a", "stalker"))
         val (kept, apply) = ItemNames.reconcileAfterUpdate(official, previous)
         assertEquals(ItemRename("ПП-91 «Кедр-2»", "Кедр", "a", "stalker"), kept["item.wpn.kedr.name"])
-        assertEquals("§aКедр", apply["item.wpn.kedr.name"])
+        assertEquals("§#55ff55Кедр", apply["item.wpn.kedr.name"])
     }
 
     @Test
@@ -220,8 +228,86 @@ class ItemNamesTest {
             val langFile = dir.resolve("ru.lang")
             Files.writeString(langFile, lang)
             ItemNames.applySaved(langFile, overrides)
-            assertTrue(Files.readString(langFile).contains("item.wpn.kedr.name=§9Кедр\n"))
+            assertTrue(Files.readString(langFile).contains("item.wpn.kedr.name=§#5555ffКедр\n"))
         } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun siblingNameKeysGetTheSamePaintedName() {
+        val text = """
+            item.wpn.kedr.name=ПП-91 «Кедр»
+            item.wpn.kedr.short_name=Кедр
+            frontline.calldown.kedr.name=ПП-91 «Кедр»
+            item.food.bread.name=Хлеб
+        """.trimIndent() + "\n"
+        val names = mapOf("item.wpn.kedr.name" to ItemRename("ПП-91 «Кедр»", "Кедр", "6", "picklock"))
+        val extras = ItemNames.extraValues(text, names)
+        assertEquals("§#ffaa00Кедр", extras["item.wpn.kedr.short_name"])
+        assertEquals("§#ffaa00Кедр", extras["frontline.calldown.kedr.name"])
+        assertEquals(null, extras["item.food.bread.name"])
+    }
+
+    @Test
+    fun updateWritesColorAndSiblingsBackAfterTheStockFileReturns() {
+        val dir = Files.createTempDirectory("item-names-reapply")
+        val previous = ItemNames.overridesFile
+        val listener = ItemNames.onRestored
+        try {
+            val client = dir.resolve("client")
+            val lang = client.resolve("modassets").resolve("assets").resolve("stalker").resolve("lang").resolve("ru.lang")
+            Files.createDirectories(lang.parent)
+            val stock = "item.wpn.kedr.name=ПП-91 «Кедр»\nitem.wpn.kedr.short_name=Кедр\nfrontline.calldown.kedr.name=ПП-91 «Кедр»\n"
+            Files.writeString(lang, stock)
+            val overrides = dir.resolve("item-names.json")
+            ItemNames.save(overrides, mapOf("item.wpn.kedr.name" to ItemRename("ПП-91 «Кедр»", "Кедр", "6", "picklock")))
+            ItemNames.overridesFile = { overrides }
+            ItemNames.onRestored = null
+            ItemNames.restoreAfterUpdate(client)
+            val first = Files.readString(lang)
+            assertTrue(first.contains("item.wpn.kedr.name=§#ffaa00Кедр\n"))
+            assertTrue(first.contains("item.wpn.kedr.short_name=§#ffaa00Кедр\n"))
+            assertTrue(first.contains("frontline.calldown.kedr.name=§#ffaa00Кедр\n"))
+            Files.writeString(lang, stock)
+            ItemNames.restoreAfterUpdate(client)
+            val again = Files.readString(lang)
+            assertTrue(again.contains("item.wpn.kedr.name=§#ffaa00Кедр\n"))
+            assertTrue(again.contains("frontline.calldown.kedr.name=§#ffaa00Кедр\n"))
+        } finally {
+            ItemNames.overridesFile = previous
+            ItemNames.onRestored = listener
+            dir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun restoreKeepsWritingAfterEveryLanguageFileIsReset() {
+        val dir = Files.createTempDirectory("item-names-langs")
+        val previous = ItemNames.overridesFile
+        val listener = ItemNames.onRestored
+        try {
+            val client = dir.resolve("client")
+            val langDir = client.resolve("modassets").resolve("assets").resolve("stalker").resolve("lang")
+            Files.createDirectories(langDir)
+            Files.writeString(client.resolve("config").resolve("options.json").also { Files.createDirectories(it.parent) }, """{ "language": "ru" }""")
+            val ru = langDir.resolve("ru.lang")
+            val en = langDir.resolve("en.lang")
+            Files.writeString(ru, "item.wpn.kedr.name=ПП-91 «Кедр»\n")
+            Files.writeString(en, "item.wpn.kedr.name=PP-91 Kedr\n")
+            val overrides = dir.resolve("item-names.json")
+            ItemNames.save(overrides, mapOf("item.wpn.kedr.name" to ItemRename("ПП-91 «Кедр»", "Кедр", "c", "legend")))
+            ItemNames.overridesFile = { overrides }
+            ItemNames.onRestored = null
+            ItemNames.restoreAfterUpdate(client)
+            assertTrue(Files.readString(ru).contains("item.wpn.kedr.name=§#ff5555Кедр\n"))
+            assertTrue(Files.readString(en).contains("item.wpn.kedr.name=§#ff5555Кедр\n"))
+            Files.writeString(en, "item.wpn.kedr.name=PP-91 Kedr\n")
+            ItemNames.restoreAfterUpdate(client)
+            assertTrue(Files.readString(en).contains("item.wpn.kedr.name=§#ff5555Кедр\n"))
+        } finally {
+            ItemNames.overridesFile = previous
+            ItemNames.onRestored = listener
             dir.toFile().deleteRecursively()
         }
     }

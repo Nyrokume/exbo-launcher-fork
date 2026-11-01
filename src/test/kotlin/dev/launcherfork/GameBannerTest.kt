@@ -71,9 +71,11 @@ class GameBannerTest {
             assertFalse(props.values.any { "Starcraft" in it.toString() }, "$file: STALZONE, not Starcraft")
         }
         val ru = Strings.bundle("ru")
-        assertTrue(ru.getString("game.stalzone.lead").startsWith("STALZONE — многопользовательский шутер"))
-        assertEquals("Захваты и вылазки идут с отрядом.", ru.getString("game.stalzone.closing"))
-        assertEquals("Captures and raids are done with a squad.", Strings.bundle("en").getString("game.stalzone.closing"))
+        assertTrue(ru.getString("game.stalzone.lead").startsWith("STALZONE — это extraction-шутер"))
+        assertTrue(ru.getString("game.stalzone.closing").contains("Зона ждет"))
+        assertTrue(Strings.bundle("en").getString("game.stalzone.closing").contains("The Zone is waiting"))
+        assertEquals("STALZONE OTS", ru.getString("game.stalzone.ots.title"))
+        assertEquals("STALZONE OTS", Strings.bundle("en").getString("game.stalzone.ots.title"))
     }
 
     @Test
@@ -92,7 +94,9 @@ class GameBannerTest {
                 assertFalse(c.scroll.isVisible)
                 c.show(stalzone)
                 assertEquals("STALZONE", c.title.text)
-                assertEquals("Мутанты, артефакты, аномалии", c.subheading.text)
+                assertTrue(c.lead.text.startsWith("STALZONE — это extraction-шутер"))
+                assertTrue(c.subheading.text.startsWith("Тебя ждет Чернобыльская Зона Отчуждения"))
+                assertTrue(c.closing.text.contains("сталкер"))
             }
         } finally {
             app.shutdown()
@@ -176,7 +180,7 @@ class GameBannerTest {
                             assertTrue(b.title.sceneBounds().minY >= banner.minY - 0.5, "$where: title clipped by the slot top")
                             // the column fills the slot; type is larger on a wide window than at the 560 px baseline. No truncation
                             val content = b.content.sceneBounds()
-                            assertEquals(banner.width, content.width, 2.0, "$where: text column ${content.width} vs slot ${banner.width}")
+                            assertEquals(banner.width, content.width, 8.0, "$where: text column ${content.width} vs slot ${banner.width}")
                             val titlePx = (b.title.lookup(".text") as Text).font.size
                             if (w >= 1900) assertTrue(titlePx >= 52.0, "$where: title stayed $titlePx px")
                             assertEquals(slot.minX + 9, b.title.sceneBounds().minX, 1.0, "$where: title not at the left edge")

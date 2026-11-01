@@ -2,10 +2,14 @@ package dev.launcherfork.stalzone
 
 import java.io.IOException
 import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.nio.file.StandardWatchEventKinds
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 /** One `item.*.name` line from the game lang file. Weapons are `item.wpn.*` and `item.melee.*`. */
 enum class ItemKind { WEAPON, ITEM }
@@ -70,9 +74,9 @@ data class ItemName(val key: String, val official: String, val kind: ItemKind)
 
 /**
  * A saved rename. [from] is the stock name, [to] is the custom name, both without a color code.
- * [color] is a formatting code written in front of the name. [rank] is the item rank; its color
- * is used when [color] is empty. The game's tooltip rank line is not in the lang file, so the
- * rank is applied as that name color.
+ * [color] is a formatting code written in front of the name as `§#RRGGBB` so a name that starts
+ * with a digit (gold `6` + `6П62`) is not read as one token. [rank] is the item rank; its color
+ * is used when [color] is empty. Sibling keys (`short_name`, frontline calldown) get the same paint.
  */
 data class ItemRename(
     val from: String,
@@ -138,6 +142,16 @@ object ItemNames {
      */
     var onRestored: ((Path) -> Unit)? = null
 
+    /**
+     * Tests leave this false. Production turns it on so a client update that rewrites the lang
+     * folder is painted again without waiting for the next launch.
+     */
+    var watchLang: Boolean = false
+
+    private val watchLock = Any()
+    private var watchThread: Thread? = null
+    private var watchDir: Path? = null
+
     fun kindOf(key: String): ItemKind? {
         if (!key.startsWith("item.") || !key.endsWith(".name")) return null
         return if (key.startsWith("item.wpn.") || key.startsWith("item.melee.")) ItemKind.WEAPON else ItemKind.ITEM
@@ -184,7 +198,7 @@ object ItemNames {
         val clean = HashMap<String, String>(values.size)
         for ((key, raw) in values) {
             val name = writtenForm(raw)
-            if (kindOf(key) == null || name == null) continue
+            if (name == null || (kindOf(key) == null && !isExtraKey(key))) continue
             clean[key] = name
         }
         if (clean.isEmpty()) return text
@@ -288,20 +302,123 @@ object ItemNames {
     }
 
     /**
-     * After a client download, verify, or reinstall: read the lang file the update just wrote,
-     * keep every saved name, and put those names back. A new stock name replaces [ItemRename.from].
-     * A key the update removed is dropped. Missing lang file does nothing.
+     * After a client download, verify, reinstall, or a stock lang file coming back: read every
+     * language file the update just wrote, keep every saved name, and put those names back.
+     * A new stock name replaces [ItemRename.from]. A key the update removed is dropped.
+     * Missing lang files do nothing. The current language file is the one [onRestored] sees.
      */
+    private val restoreLock = Any()
+
     fun restoreAfterUpdate(clientDir: Path) {
-        val lang = langIn(clientDir) ?: return
-        val text = Files.readString(lang)
-        val official = catalog(text).associate { it.key to it.official }
-        val previous = load(overridesFile())
-        val (kept, apply) = reconcileAfterUpdate(official, previous)
-        if (kept != previous) save(overridesFile(), kept)
-        if (apply.isNotEmpty()) writeValues(lang, apply)
-        onRestored?.invoke(lang)
+        synchronized(restoreLock) {
+            val langs = langFilesIn(clientDir)
+            if (langs.isEmpty()) return
+            val current = langIn(clientDir) ?: langs.first()
+            val previous = load(overridesFile())
+            var kept = previous
+            var notified: Path? = null
+            for (lang in langs) {
+                val text = Files.readString(lang)
+                val official = catalog(text).associate { it.key to it.official }
+                val next = reconcileAfterUpdate(official, previous)
+                if (sameFile(lang, current)) kept = next.first
+                writeNames(lang, next.first, next.second)
+                if (sameFile(lang, current)) notified = lang
+            }
+            if (kept != previous) save(overridesFile(), kept)
+            notified?.let { onRestored?.invoke(it) }
+        }
+        startWatch(clientDir)
     }
+
+    /** Client folder that holds `modassets/assets/stalker/lang/<language>.lang`. */
+    fun clientOfLang(langFile: Path): Path? {
+        val folder = langFile.parent ?: return null
+        if (folder.fileName.toString() != "lang") return null
+        return folder.parent?.parent?.parent?.parent
+    }
+
+    fun startWatch(clientDir: Path) {
+        if (!watchLang) return
+        val folder = langFile(clientDir, "ru").parent
+        if (!Files.isDirectory(folder)) return
+        synchronized(watchLock) {
+            val same = watchDir?.let { sameFile(it, folder) } == true && watchThread?.isAlive == true
+            if (same) return
+            stopWatch()
+            watchDir = folder
+            watchThread = thread(name = "item-names-watch", isDaemon = true) {
+                watchLoop(clientDir, folder)
+            }
+        }
+    }
+
+    fun stopWatch() {
+        synchronized(watchLock) {
+            watchThread?.interrupt()
+            watchThread = null
+            watchDir = null
+        }
+    }
+
+    private fun watchLoop(clientDir: Path, folder: Path) {
+        val watch = try {
+            FileSystems.getDefault().newWatchService()
+        } catch (_: IOException) {
+            return
+        }
+        try {
+            folder.register(
+                watch,
+                StandardWatchEventKinds.ENTRY_CREATE,
+                StandardWatchEventKinds.ENTRY_MODIFY,
+                StandardWatchEventKinds.ENTRY_DELETE,
+            )
+            while (!Thread.currentThread().isInterrupted) {
+                val key = watch.poll(400, TimeUnit.MILLISECONDS) ?: continue
+                var langTouched = false
+                for (event in key.pollEvents()) {
+                    val name = event.context()?.toString() ?: continue
+                    if (name.endsWith(".lang") || name.endsWith(".lang.tmp")) langTouched = true
+                }
+                if (!key.reset()) break
+                if (!langTouched) continue
+                try {
+                    Thread.sleep(250)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    return
+                }
+                runCatching { restoreAfterUpdate(clientDir) }
+            }
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        } catch (_: IOException) {
+            // folder gone after a delete/reinstall
+        } finally {
+            runCatching { watch.close() }
+        }
+    }
+
+    /** Every `*.lang` under the client's stalker lang folder, current language first. */
+    fun langFilesIn(clientDir: Path): List<Path> {
+        val current = langIn(clientDir)
+        val dir = (current ?: langFile(clientDir, "ru")).parent
+        if (!Files.isDirectory(dir)) return listOfNotNull(current)
+        val others = ArrayList<Path>()
+        Files.newDirectoryStream(dir, "*.lang").use { stream ->
+            for (file in stream) if (Files.isRegularFile(file)) others.add(file)
+        }
+        val out = ArrayList<Path>()
+        if (current != null) out.add(current)
+        for (file in others.sortedBy { it.fileName.toString() }) {
+            if (current == null || !sameFile(current, file)) out.add(file)
+        }
+        return out
+    }
+
+    private fun sameFile(left: Path, right: Path): Boolean =
+        left.toAbsolutePath().normalize() == right.toAbsolutePath().normalize()
 
     /**
      * [official] is the live lang file, after the client update and before names are written back.
@@ -337,24 +454,65 @@ object ItemNames {
         if (!Files.isRegularFile(langFile) || !Files.isRegularFile(overridesFile)) return
         val names = load(overridesFile)
         if (names.isEmpty()) return
-        val text = Files.readString(langFile)
-        val patched = patch(text, names.mapValues { (_, rename) -> paint(rename.to, rename.color, rename.rank) })
-        if (patched == text) return
-        writeAtomic(langFile, patched)
+        val apply = names.mapValues { (_, rename) -> paint(rename.to, rename.color, rename.rank) }
+        writeNames(langFile, names, apply)
     }
 
-    /** Drops a leading `§` color the game uses to tint a name. */
+    /** Sibling lines that show the same item: short name and the frontline calldown title. */
+    fun extraKeys(itemKey: String): List<String> {
+        if (!itemKey.endsWith(".name") || !itemKey.startsWith("item.")) return emptyList()
+        val stem = itemKey.removeSuffix(".name")
+        val id = stem.substringAfterLast('.')
+        if (id.isEmpty()) return emptyList()
+        return listOf("$stem.short_name", "frontline.calldown.$id.name")
+    }
+
+    fun extraValues(text: String, names: Map<String, ItemRename>): Map<String, String> {
+        if (text.isEmpty() || names.isEmpty()) return emptyMap()
+        val wanted = HashMap<String, String>()
+        for ((key, rename) in names) {
+            val painted = paint(rename.to, rename.color, rename.rank)
+            if (painted.isEmpty()) continue
+            for (extra in extraKeys(key)) wanted[extra] = painted
+        }
+        if (wanted.isEmpty()) return emptyMap()
+        val found = LinkedHashMap<String, String>()
+        eachLine(text) { line, _ ->
+            val eq = line.indexOf('=')
+            if (eq <= 0) return@eachLine
+            val key = line.substring(0, eq)
+            val painted = wanted[key] ?: return@eachLine
+            if (line.substring(eq + 1) != painted) found[key] = painted
+        }
+        return found
+    }
+
+    fun writeNames(langFile: Path, names: Map<String, ItemRename>, apply: Map<String, String>) {
+        if (!Files.isRegularFile(langFile)) return
+        val current = Files.readString(langFile)
+        val merged = LinkedHashMap<String, String>()
+        merged.putAll(apply)
+        merged.putAll(extraValues(current, names))
+        if (merged.isEmpty()) return
+        val written = patch(current, merged)
+        if (written != current) writeAtomic(langFile, written)
+    }
+
+    /** Drops leading `§#RRGGBB` or `§X` codes the game uses to tint a name. */
     fun plain(value: String): String {
         var text = value
-        while (text.length >= 2 && text[0] == '§') text = text.substring(2)
+        while (text.length >= 2 && text[0] == '§') {
+            text = if (text.length >= 8 && text[1] == '#') text.substring(8) else text.substring(2)
+        }
         return text
     }
 
-    /** Writes [color], or the rank's color when [color] is empty, in front of the plain name. */
+    /** Writes [color], or the rank's color when [color] is empty, as `§#RRGGBB` in front of the name. */
     fun paint(name: String, color: String?, rank: String?): String {
         val body = sanitize(plain(name))
         val code = knownColor(color) ?: nameRanks.firstOrNull { it.id == knownRank(rank) }?.colorId
-        return if (code == null || body.isEmpty()) body else "§$code$body"
+        val hex = code?.let { hexOf(it) }
+        return if (hex == null || body.isEmpty()) body else "§#$hex$body"
     }
 
     fun swatch(color: String?, rank: String?): String? {
@@ -371,11 +529,22 @@ object ItemNames {
 
     private fun knownRank(id: String?): String? = id?.takeIf { nameRanks.any { rank -> rank.id == it } }
 
+    private fun hexOf(code: String): String? = nameColors.firstOrNull { it.id == code }?.swatch?.removePrefix("#")?.lowercase()
+
+    fun isExtraKey(key: String): Boolean =
+        key.endsWith(".short_name") || (key.startsWith("frontline.calldown.") && key.endsWith(".name"))
+
     private fun writtenForm(raw: String): String? {
         val body = sanitize(plain(raw))
         if (body.isEmpty()) return null
+        if (raw.length >= 8 && raw[0] == '§' && raw[1] == '#') {
+            val hex = raw.substring(2, 8).lowercase()
+            val known = nameColors.any { it.swatch.removePrefix("#").equals(hex, ignoreCase = true) }
+            return if (known) "§#$hex$body" else body
+        }
         val code = if (raw.length >= 2 && raw[0] == '§') knownColor(raw.substring(1, 2)) else null
-        return if (code == null) body else "§$code$body"
+        val hex = code?.let { hexOf(it) }
+        return if (hex == null) body else "§#$hex$body"
     }
 
     private fun writeAtomic(path: Path, text: String) {
