@@ -7,6 +7,7 @@ import dev.launcherfork.domain.P2pMode
 import dev.launcherfork.domain.RamOptions
 import dev.launcherfork.domain.SettingsStore
 import dev.launcherfork.domain.ServerBlockState
+import dev.launcherfork.stalzone.GameOptions
 import dev.launcherfork.stalzone.ServerBlockCodec
 import dev.launcherfork.stalzone.StalzoneDesk
 import dev.launcherfork.ui.motion.Motion
@@ -26,6 +27,7 @@ class ExboSettingsStore(
     private val exboJson: Path,
     private val totalRamMb: Long,
 ) : SettingsStore {
+    @Volatile
     private var current: LauncherSettings = initial
 
     init {
@@ -66,6 +68,8 @@ class ExboSettingsStore(
     private fun persist(settings: LauncherSettings) {
         SettingsFile.write(file, "language", settings.language)
         settings.ramMb?.let { SettingsFile.write(file, "ramMb", it.toString()) }
+        SettingsFile.write(file, "gameFov", GameOptions.clampFov(settings.gameFov).toString())
+        SettingsFile.write(file, "gameShadowsOff", settings.gameShadowsOff.toString())
         SettingsFile.write(file, Motion.SETTINGS_KEY, Motion.settingValue(settings.animations))
         SettingsFile.write(file, "startOnDownloaded", settings.startOnDownloaded.toString())
         SettingsFile.write(file, "exitMode", settings.exitMode.name)
@@ -99,6 +103,8 @@ class ExboSettingsStore(
         return fallback.copy(
             language = props.getProperty("language") ?: fallback.language,
             ramMb = props.getProperty("ramMb")?.toIntOrNull() ?: fallback.ramMb,
+            gameFov = GameOptions.clampFov(props.getProperty("gameFov")?.toDoubleOrNull() ?: fallback.gameFov),
+            gameShadowsOff = bool("gameShadowsOff", fallback.gameShadowsOff),
             animations = animations,
             startOnDownloaded = bool("startOnDownloaded", fallback.startOnDownloaded),
             exitMode = props.getProperty("exitMode")?.let { runCatching { ExitMode.valueOf(it) }.getOrNull() } ?: fallback.exitMode,

@@ -160,7 +160,7 @@ class SettingsScreenTest {
         assertTrue(tools.last().sceneBounds().maxX <= profile.minX + 0.5, "$where: settings nav overlaps the profile")
         tools.forEach { assertTrue(contains(window, it.sceneBounds()), "$where: ${it.text} outside the window") }
         val area = s.scroll.sceneBounds()
-        val column = listOf(s.gameSection, s.behaviourSection, s.updatesSection, s.languageSection)
+        val column = listOf(s.gameSection, s.unlockSection, s.behaviourSection, s.updatesSection, s.languageSection)
         assertTrue(s.launcherPage.isManaged && !s.clientContent.isManaged, "$where: the column is not the open page")
         assertEquals(column, s.launcherPage.children.toList(), "$where: column order")
         assertFalse(s.launcherPage.children.contains(s.tunnelPage), "$where: tunnel is still in the column")
@@ -180,7 +180,7 @@ class SettingsScreenTest {
             assertTrue(b.minX >= window.minX - 0.5 && b.maxX <= window.maxX + 0.5, "$where: ${c.id} wider than the window")
             assertTrue(b.height >= c.prefHeight(c.width) - 0.5, "$where: section ${c.id} squeezed (${b.height} < ${c.prefHeight(c.width)})")
         }
-        listOf(s.gameSection, s.behaviourSection, s.updatesSection, s.languageSection).forEach { c ->
+        listOf(s.gameSection, s.unlockSection, s.behaviourSection, s.updatesSection, s.languageSection).forEach { c ->
             val b = c.sceneBounds()
             visibleDescendants(c).forEach { n ->
                 val nb = n.sceneBounds()
@@ -276,6 +276,7 @@ class SettingsScreenTest {
         ).map { it.sceneBounds() }
         switches.forEach { assertEquals(switches[0].maxX, it.maxX, 0.5, "$where: switches not aligned") }
         measureSegments(listOf(listOf(s.exitOnStart, s.exitOnGameExit, s.exitNever), listOf(s.p2pAlways, s.p2pNotMobile, s.p2pNever)), where)
+        measureRows(listOf(s.unlockFovRow, s.unlockShadowsRow), s, where)
         measureRows(listOf(s.limitsRow), s, where)
         measureRows(listOf(s.languageRow), s, where)
         measureSegments(listOf(listOf(s.langRu, s.langEn)), where)
@@ -591,15 +592,21 @@ class SettingsScreenTest {
             c.trayToggle.isSelected = !tray
             assertEquals(!tray, store.load().hideToTray)
             c.autostartToggle.isSelected = true; c.defenderToggle.isSelected = false; c.startOnDownloadedToggle.isSelected = false
+            assertEquals("110", c.unlockFovField.text)
+            c.unlockFovField.text = "165"
+            c.unlockFovField.onAction.handle(javafx.event.ActionEvent())
+            assertEquals(110.0, store.load().gameFov)
+            c.unlockShadowsToggle.isSelected = false
             val s = store.load()
             assertTrue(s.runOnStartUp); assertFalse(s.defenderHint); assertFalse(s.startOnDownloaded)
+            assertFalse(s.gameShadowsOff)
             // the old preset-button RAM row is gone; minimal: no cards, no helper lines
             assertTrue(c.settingsRoot.lookupAll(".ram-chip").isEmpty())
             assertTrue(c.settingsRoot.lookupAll(".ram-selector").isEmpty())
             assertTrue(c.settingsRoot.lookupAll(".settings-hint").isEmpty(), "no helper lines")
             assertTrue(c.settingsRoot.lookupAll(".heading-rule").isEmpty(), "no decorative rules")
             // on/off options are switches, distinct from the radios
-            listOf(c.trayToggle, c.autostartToggle, c.defenderToggle, c.startOnDownloadedToggle).forEach { t ->
+            listOf(c.trayToggle, c.autostartToggle, c.defenderToggle, c.startOnDownloadedToggle, c.unlockShadowsToggle).forEach { t ->
                 assertTrue("switch" in t.styleClass, "${t.accessibleText} is not a switch")
             }
             // blocks: ПАМЯТЬ = RAM only, ОБНОВЛЕНИЕ = speed limits only, ЯЗЫК, and every behaviour option in ПОВЕДЕНИЕ
@@ -610,14 +617,18 @@ class SettingsScreenTest {
             }
             assertTrue(under(c.ramBar, c.gameSection) && under(c.ramSummary, c.gameSection))
             assertTrue(c.gameSection.lookupAll(".radio-button").isEmpty() && c.gameSection.lookupAll(".check-box").isEmpty(), "ПАМЯТЬ holds only the RAM bar")
+            assertTrue(under(c.unlockFovField, c.unlockSection) && under(c.unlockShadowsToggle, c.unlockSection))
             assertTrue(under(c.downloadLimitField, c.updatesSection) && under(c.uploadLimitField, c.updatesSection))
             assertTrue(c.updatesSection.lookupAll(".radio-button").isEmpty() && c.updatesSection.lookupAll(".check-box").isEmpty(), "ОБНОВЛЕНИЕ holds only the limits")
             assertTrue(under(c.langRu, c.languageSection) && under(c.langEn, c.languageSection))
             assertEquals("ПОВЕДЕНИЕ", c.behaviourHeading.text); assertEquals("ЯЗЫК", c.languageHeading.text)
+            assertEquals("КЛИЕНТ", c.unlockHeading.text)
+            assertEquals("110", c.unlockFovField.text)
+            assertFalse(c.unlockShadowsToggle.isSelected)
             assertEquals(
-                listOf(c.gameSection, c.behaviourSection, c.updatesSection, c.languageSection),
+                listOf(c.gameSection, c.unlockSection, c.behaviourSection, c.updatesSection, c.languageSection),
                 c.launcherPage.children.toList(),
-                "the column is memory, behaviour, updates, language",
+                "the column is memory, client, behaviour, updates, language",
             )
             assertFalse(c.launcherPage.children.contains(c.tunnelPage), "tunnel is still in the column")
             assertTrue(c.launcherPage.isManaged && c.behaviourSection.isManaged && !c.tunnelPage.isManaged)
@@ -627,7 +638,9 @@ class SettingsScreenTest {
 
     @Test
     fun newStringsInEveryBundle() {
-        val keys = listOf("settings.heading.ram", "settings.ram.summary", "settings.ram.low_system", "settings.ram.hint_low_system", "settings.ram.hint", "settings.unit.gb",
+        val keys = listOf("settings.heading.ram", "settings.heading.unlock", "settings.unlock.fov", "settings.unlock.fov.hint",
+            "settings.unlock.shadows", "settings.unlock.shadows.hint",
+            "settings.ram.summary", "settings.ram.low_system", "settings.ram.hint_low_system", "settings.ram.hint", "settings.unit.gb",
             "settings.heading.behaviour", "settings.heading.language", "settings.language.interface", "settings.exit.short", "settings.p2p.short",
             "settings.nav.jvm", "settings.nav.tunnel", "settings.nav.sens", "settings.nav.accounts", "settings.nav.loc",
             "settings.heading.loc", "settings.loc.weapons", "settings.loc.items", "settings.loc.changed",
@@ -772,8 +785,8 @@ class SettingsScreenTest {
                     )
                     assertTrue(s.launcherPage.isManaged && !s.clientContent.isManaged, "$where: settings did not open on the column")
                     assertTrue(
-                        s.gameSection.isManaged && s.behaviourSection.isManaged && s.updatesSection.isManaged &&
-                            s.languageSection.isManaged && !s.tunnelPage.isManaged,
+                        s.gameSection.isManaged && s.unlockSection.isManaged && s.behaviourSection.isManaged &&
+                            s.updatesSection.isManaged && s.languageSection.isManaged && !s.tunnelPage.isManaged,
                         "$where: the column is missing a block or still holds the tunnel",
                     )
                     assertFalse(s.jvmPage.isManaged || s.tunnelPage.isManaged || s.sensPage.isManaged || s.accountsPage.isManaged || s.locPage.isManaged, "$where: a tool page is open on the column")

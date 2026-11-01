@@ -9,7 +9,9 @@ import dev.launcherfork.domain.MachineProfile
  * [build] with a [MachineProfile] follows the generators: free memory sizes the old heaps, physical cores
  * pick the weak-CPU branch, slow RAM (≤ 2933 MT/s) raises the v1.1.2 pause goal, L3 of 64 MB or more
  * selects the v1.1.0 big-cache branch, and large pages are written only when the privilege is already on.
- * Unknown speed is not slow. The 8 kHz profile and Aikar stay as written.
+ * Unknown speed is not slow. Aikar stays as written. The 8 kHz profile keeps its 20 ms /
+ * 16 MB G1 targets and retunes GC threads, dynamic GC, large pages and thread priority
+ * from the machine.
  * A preset whose generator would allocate no heap (too little RAM) is omitted (`null`).
  *
  * `heapGb` passed to [build] is the settings bar. When it is set, that heap replaces the generator's, and the
@@ -90,8 +92,15 @@ object JvmPresets {
     ): Built? {
         if (id == NONE) return null
         if (id == JvmProfile.RECOMMENDED) {
-            val heap = heapGb?.takeIf { it > 0 } ?: 6
-            return Built(heap, applyHeapToJson(id, JvmProfile.tunedJson(), heap))
+            val heap = heapGb?.takeIf { it > 0 } ?: recommendedHeapGb(totalGb)
+            var text = applyHeapToJson(id, JvmProfile.tunedJson(), heap)
+            val (parallel, concurrent) = modernThreads(threads)
+            text = replaceNum(text, "parallel_gc_threads", parallel)
+            text = replaceNum(text, "conc_gc_threads", concurrent)
+            text = replaceBool(text, "use_dynamic_number_of_gc_threads", threads >= 8)
+            text = replaceBool(text, "use_large_pages", largePages)
+            text = replaceNum(text, "thread_priority_policy", if (cores >= 8) 1 else 0)
+            return Built(heap, text)
         }
         if (id == "aikar") {
             val heap = heapGb?.takeIf { it > 0 } ?: 6
@@ -157,8 +166,14 @@ object JvmPresets {
         else -> null
     }
 
+    private fun recommendedHeapGb(totalGb: Int): Int =
+        if (totalGb >= 24) 8 else 6
+
     private fun replaceNum(json: String, key: String, value: Int): String =
         json.replace(Regex(""""$key"\s*:\s*\d+"""), """"$key": $value""")
+
+    private fun replaceBool(json: String, key: String, value: Boolean): String =
+        json.replace(Regex(""""$key"\s*:\s*(true|false)"""), """"$key": $value""")
 
     private fun v111(totalGb: Int, threads: Int, slow: Boolean): Cfg {
         val heap = when {

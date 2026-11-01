@@ -4,6 +4,7 @@ import dev.launcherfork.domain.Cancellable
 import dev.launcherfork.domain.GameLauncher
 import dev.launcherfork.domain.GameListener
 import dev.launcherfork.domain.Server
+import dev.launcherfork.stalzone.GameOptions
 import dev.launcherfork.stalzone.ItemNames
 import dev.launcherfork.stalzone.StalzonePaths
 import dev.launcherfork.stalzone.TunnelOverrides
@@ -24,6 +25,7 @@ class InstalledGameLauncher(
     private val joinGame: (String) -> String?,
     private val runCommand: (String) -> String?,
     private val clientDir: (String) -> Path?,
+    private val gameUnlock: () -> GameOptions.Unlock = { GameOptions.Unlock() },
 ) : GameLauncher {
     override fun launch(server: Server, listener: GameListener): Cancellable {
         val name = login()?.takeIf { it.isNotBlank() }
@@ -47,6 +49,7 @@ class InstalledGameLauncher(
                     System.err.println("[launcher-fork] launch_skip session=false")
                 } else {
                     runCatching { applyItemNames(root) }
+                    runCatching { applyGameUnlock(root) }
                     val baked = TunnelOverrides.commandWithOverrides(
                         bakeRunCommand(parseRunArgs(command), root, name, session, ramMb()),
                         StalzonePaths.tunnelOverridesFile(),
@@ -65,6 +68,7 @@ class InstalledGameLauncher(
                 // the button returns to Play; the command line is not logged
                 System.err.println("[launcher-fork] launch_failed=${e.javaClass.simpleName}")
             } finally {
+                runCatching { applyGameUnlock(root) }
                 listener.onExited()
             }
         }
@@ -82,12 +86,23 @@ class InstalledGameLauncher(
         ItemNames.restoreAfterUpdate(root)
     }
 
+    private fun applyGameUnlock(root: Path) {
+        val unlock = gameUnlock()
+        GameOptions.apply(root, unlock.fov, unlock.shadowsOff)
+    }
+
     private fun waitForTree(process: Process, seen: MutableSet<Long>, root: Path) {
         val bin = root.resolve(clientArchFolder()).resolve("java").resolve("bin")
         synchronized(seen) { seen += process.toHandle().pid() }
         var emptySince = 0L
+        var lastUnlockNs = 0L
         while (!Thread.currentThread().isInterrupted) {
             adoptClientProcesses(bin, seen)
+            val now = System.nanoTime()
+            if (now - lastUnlockNs >= UNLOCK_REPEAT_NS) {
+                lastUnlockNs = now
+                runCatching { applyGameUnlock(root) }
+            }
             val alive = ArrayList<ProcessHandle>()
             val snapshot = synchronized(seen) { seen.toList() }
             for (pid in snapshot) {
@@ -141,6 +156,8 @@ class InstalledGameLauncher(
     private companion object {
         /** How long an empty tree is tolerated so the wrapper can publish the real JVM. */
         const val EMPTY_GRACE_NS = 3_000_000_000L
+        /** The client may copy `options.json_old` or clamp after it has already started. */
+        const val UNLOCK_REPEAT_NS = 1_000_000_000L
     }
 }
 

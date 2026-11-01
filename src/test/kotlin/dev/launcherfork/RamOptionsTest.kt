@@ -95,7 +95,8 @@ class RamOptionsTest {
     @Test
     fun recommendedIsHalfOfMemoryAtMostSixGb() {
         assertEquals(6, RamOptions.recommended(16 * gb))
-        assertEquals(6, RamOptions.recommended(64 * gb))
+        assertEquals(8, RamOptions.recommended(32 * gb), "24 GB and up: the bar recommends the 8 GB cap")
+        assertEquals(8, RamOptions.recommended(64 * gb))
         assertEquals(4, RamOptions.recommended(8 * gb))
         assertEquals(3, RamOptions.recommended(6 * gb))
         assertEquals(2, RamOptions.recommended(4 * gb))

@@ -11,6 +11,7 @@ import dev.launcherfork.data.exbo.HostSystemInfo
 import dev.launcherfork.data.exbo.InstalledGameLauncher
 import dev.launcherfork.data.exbo.LiveUpdateService
 import dev.launcherfork.domain.RamOptions
+import dev.launcherfork.stalzone.GameOptions
 import dev.launcherfork.stalzone.ItemNames
 import dev.launcherfork.stalzone.MemoryRegistry
 import dev.launcherfork.stalzone.SessionSecrets
@@ -155,6 +156,10 @@ class AppContext(
                                 ExboClients.clientsFile(root),
                                 ExboClients.runtimeDir(root),
                             ).takeIf { path -> path.isDirectory() }
+                        },
+                        gameUnlock = {
+                            val loaded = settings.load()
+                            GameOptions.Unlock(loaded.gameFov, loaded.gameShadowsOff)
                         },
                     ),
                     settings = settings,

@@ -8,6 +8,7 @@ import dev.launcherfork.stalzone.JvmPresets
 import dev.launcherfork.stalzone.JvmProfile
 import dev.launcherfork.stalzone.MemoryRegistry
 import dev.launcherfork.stalzone.TunnelCatalog
+import dev.launcherfork.stalzone.GameOptions
 import dev.launcherfork.stalzone.OptionsSens
 import dev.launcherfork.stalzone.ScopeSens
 import dev.launcherfork.stalzone.SessionFile
@@ -21,6 +22,25 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 class StalzoneCoreTest {
+    @Test
+    fun gameOptionsRestoreFovPastTheSliderAndKeepShadowsOff(@TempDir dir: Path) {
+        val file = dir.resolve("config").resolve("options.json")
+        Files.createDirectories(file.parent)
+        Files.writeString(
+            file,
+            """{ "fov": 110.0, "shadows_dynamic": true, "shadows_quality": 2, "soft_lighting_mode": 2 }""",
+        )
+        GameOptions.apply(dir)
+        val text = Files.readString(file)
+        assertTrue(text.contains("\"fov\": 110.0"))
+        GameOptions.apply(dir, 150.0)
+        assertTrue(Files.readString(file).contains("\"fov\": 110.0"))
+        assertTrue(text.contains("\"shadows_dynamic\": false"))
+        assertTrue(text.contains("\"shadows_quality\": 0"))
+        assertTrue(text.contains("\"soft_lighting_mode\": 0"))
+        assertTrue(text.contains("\"shadows_pcf\": false"))
+    }
+
     @Test
     fun wikiTableMatchesTheRegeditFormula() {
         val values = ScopeSens.snapshot(5.5)
@@ -72,6 +92,8 @@ class StalzoneCoreTest {
         assertEquals(4, tuned.heapGb)
         assertTrue(tuned.json.contains("\"max_gc_pause_millis\": 20"))
         assertTrue(tuned.json.contains("\"g1_heap_region_size_mb\": 16"))
+        assertTrue(tuned.json.contains("\"parallel_gc_threads\": 6"))
+        assertTrue(tuned.json.contains("\"conc_gc_threads\": 3"))
         assertEquals(null, JvmPresets.build(JvmPresets.NONE, 16, 16, 8, 8))
         assertTrue(JvmPresets.choices.none { it.id == "v1.1.1/default" || it.id == "v1.0.5/default" || it.id == "v1.0.6/default" })
         assertEquals(JvmPresets.CURRENT, JvmPresets.sameAs("v1.1.1/default"))

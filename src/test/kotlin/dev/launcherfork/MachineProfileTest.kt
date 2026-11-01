@@ -85,7 +85,17 @@ class MachineProfileTest {
 
         val tuned = JvmPresets.build("8khz", 16, 16, 8, 8, slowRam = true, bigCache = true, largePages = true)!!
         assertTrue(tuned.json.contains("\"max_gc_pause_millis\": 20"))
-        assertTrue(tuned.json.contains("\"use_large_pages\": false"))
+        assertTrue(tuned.json.contains("\"g1_heap_region_size_mb\": 16"))
+        assertTrue(tuned.json.contains("\"use_large_pages\": true"))
+        assertTrue(tuned.json.contains("\"parallel_gc_threads\": 6"))
+        assertTrue(tuned.json.contains("\"conc_gc_threads\": 3"))
+        assertTrue(tuned.json.contains("\"use_dynamic_number_of_gc_threads\": true"))
+        assertTrue(tuned.json.contains("\"thread_priority_policy\": 1"))
+        val fewThreads = JvmPresets.build("8khz", 8, 8, 4, 4)!!
+        assertTrue(fewThreads.json.contains("\"use_dynamic_number_of_gc_threads\": false"))
+        assertTrue(fewThreads.json.contains("\"parallel_gc_threads\": 2"))
+        assertTrue(fewThreads.json.contains("\"conc_gc_threads\": 1"))
+        assertTrue(fewThreads.json.contains("\"thread_priority_policy\": 0"))
 
         assertEquals(null, JvmPresets.build("v1.0.6/default", 16, 5, 8, 8))
         val weak = JvmPresets.build("v1.0.8/default", 16, 12, 12, 6)!!
@@ -98,6 +108,27 @@ class MachineProfileTest {
         assertEquals(6, built.heapGb)
         assertTrue(built.json.contains("\"max_gc_pause_millis\": 150"))
         assertTrue(built.json.contains("\"parallel_gc_threads\": 10"))
+
+        val thisPc = MachineProfile(
+            totalMb = 32L * 1024,
+            freeMb = 10L * 1024,
+            threads = 20,
+            cores = 14,
+            l3Mb = 24,
+            memSpeedMts = 5200,
+            largePages = false,
+            cpuName = "Intel(R) Core(TM) i5-14600KF",
+            gpuName = "NVIDIA GeForce RTX 5070",
+        )
+        val best = JvmPresets.build("8khz", thisPc)!!
+        assertEquals(8, best.heapGb)
+        assertTrue(best.json.contains("\"max_gc_pause_millis\": 20"))
+        assertTrue(best.json.contains("\"g1_heap_region_size_mb\": 16"))
+        assertTrue(best.json.contains("\"parallel_gc_threads\": 10"))
+        assertTrue(best.json.contains("\"conc_gc_threads\": 5"))
+        assertTrue(best.json.contains("\"use_dynamic_number_of_gc_threads\": true"))
+        assertTrue(best.json.contains("\"use_large_pages\": false"))
+        assertTrue(best.json.contains("\"thread_priority_policy\": 1"))
     }
 
     @Test

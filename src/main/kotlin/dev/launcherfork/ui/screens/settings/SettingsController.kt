@@ -14,6 +14,8 @@ import javafx.fxml.FXML
 import javafx.scene.Node
 import dev.launcherfork.stalzone.ExboSession
 import dev.launcherfork.stalzone.ExboSessions
+import dev.launcherfork.stalzone.GameOptions
+import dev.launcherfork.stalzone.StalzonePaths
 import dev.launcherfork.stalzone.JvmPresets
 import dev.launcherfork.stalzone.ScopeSens
 import dev.launcherfork.stalzone.TunnelRegion
@@ -75,6 +77,13 @@ class SettingsController(private val ctx: UiContext) {
     @FXML lateinit var behaviourHeading: Label
 
     @FXML lateinit var ramBar: RamBar
+    @FXML lateinit var unlockSection: VBox
+    @FXML lateinit var unlockHeading: Label
+    @FXML lateinit var unlockFovRow: HBox
+    @FXML lateinit var unlockFovBox: HBox
+    @FXML lateinit var unlockFovField: TextField
+    @FXML lateinit var unlockShadowsRow: HBox
+    @FXML lateinit var unlockShadowsToggle: CheckBox
     @FXML lateinit var ramSummary: Label
     @FXML lateinit var ramWarning: Label
     @FXML lateinit var ramScale: RamScale
@@ -177,6 +186,7 @@ class SettingsController(private val ctx: UiContext) {
         val s = store.load()
 
         bindRam(s)
+        bindUnlock(s)
 
         bindRadios(exitGroup, mapOf(exitOnStart to ExitMode.ON_GAME_START, exitOnGameExit to ExitMode.ON_GAME_EXIT, exitNever to ExitMode.NEVER), s.exitMode) { v ->
             update { it.copy(exitMode = v) }
@@ -274,6 +284,38 @@ class SettingsController(private val ctx: UiContext) {
             update { it.copy(ramMb = gb * RamOptions.MB_PER_GB, ramFraction = null) }
             refreshPresetHeapLabels()
         }
+    }
+
+    private fun bindUnlock(s: LauncherSettings) {
+        Tooltip.install(unlockFovRow, Tooltip(ctx.t("settings.unlock.fov.hint")))
+        Tooltip.install(unlockShadowsRow, Tooltip(ctx.t("settings.unlock.shadows.hint")))
+        unlockFovField.textFormatter = TextFormatter<String> { c ->
+            if (c.controlNewText.matches(Regex("\\d{0,3}"))) c else null
+        }
+        fun showFov(value: Double) {
+            unlockFovField.text = value.toInt().toString()
+        }
+        showFov(GameOptions.clampFov(s.gameFov))
+        fun commitFov() {
+            val next = GameOptions.clampFov(unlockFovField.text.toDoubleOrNull() ?: GameOptions.DEFAULT_FOV)
+            showFov(next)
+            update { it.copy(gameFov = next) }
+            writeGameUnlock()
+        }
+        unlockFovField.setOnAction { commitFov() }
+        unlockFovField.focusedProperty().addListener { _, _, focused ->
+            if (!focused) commitFov()
+        }
+        bindToggle(unlockShadowsRow, unlockShadowsToggle, s.gameShadowsOff) { v ->
+            update { it.copy(gameShadowsOff = v) }
+            writeGameUnlock()
+        }
+    }
+
+    private fun writeGameUnlock() {
+        if (!ctx.liveBackend) return
+        val s = store.load()
+        runCatching { GameOptions.applyFile(StalzonePaths.optionsFile(), s.gameFov, s.gameShadowsOff) }
     }
 
     /** Gear home is the settings column. `true` opens JVM. */

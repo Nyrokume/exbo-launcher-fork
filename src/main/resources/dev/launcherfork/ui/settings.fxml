@@ -70,6 +70,26 @@
                 </VBox>
             </VBox>
 
+            <!-- КЛИЕНТ: FOV мимо ползунка и тени -->
+            <VBox fx:id="unlockSection" id="settingsUnlock" styleClass="settings-group" maxWidth="Infinity">
+                <Label fx:id="unlockHeading" styleClass="settings-group-label,font-display" text="%settings.heading.unlock" minHeight="-Infinity"/>
+                <VBox styleClass="settings-card,card,zone-radius-md">
+                    <HBox fx:id="unlockFovRow" id="unlockFovRow" styleClass="settings-row" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.unlock.fov" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <HBox fx:id="unlockFovBox" id="unlockFovBox" styleClass="limit-field,zone-input,zone-radius-sm" alignment="CENTER_LEFT">
+                            <TextField fx:id="unlockFovField" id="unlockFov" styleClass="limit-input" prefColumnCount="4"
+                                       accessibleText="%settings.unlock.fov"/>
+                        </HBox>
+                    </HBox>
+                    <HBox fx:id="unlockShadowsRow" id="unlockShadowsRow" styleClass="settings-row,last,toggle-row" alignment="CENTER_LEFT">
+                        <Label styleClass="settings-label,row-label" text="%settings.unlock.shadows" minWidth="-Infinity"/>
+                        <Region HBox.hgrow="ALWAYS" minWidth="16"/>
+                        <CheckBox fx:id="unlockShadowsToggle" styleClass="switch" accessibleText="%settings.unlock.shadows"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
             <!-- ПОВЕДЕНИЕ -->
             <VBox fx:id="behaviourSection" id="settingsBehaviour" styleClass="settings-group" maxWidth="Infinity">
                 <Label fx:id="behaviourHeading" styleClass="settings-group-label,font-display" text="%settings.heading.behaviour" minHeight="-Infinity"/>

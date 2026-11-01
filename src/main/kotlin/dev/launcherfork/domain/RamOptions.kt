@@ -11,7 +11,8 @@ import kotlin.math.roundToInt
  *  - the line above the bar and the scale use that same ceiling ("4 ГБ из 8 ГБ" on a 32 GB PC);
  *  - a value that leaves the machine with less than [LOW_SYSTEM_MEMORY_GB] GB gets a soft note
  *    «Мало памяти останется системе» ([leavesLittleForSystem]). On a 32 GB PC, 8 GB does not;
- *  - the recommended value is half of the machine, at most [RECOMMENDED_MAX_GB], clamped to the same range.
+ *  - the recommended value is half of the machine, at most [RECOMMENDED_MAX_GB], or [ALLOCATION_CAP_GB]
+ *    when the PC has 24 GB or more, clamped to the same range.
  */
 object RamOptions {
     const val MIN_GB = 2
@@ -57,7 +58,11 @@ object RamOptions {
      */
     fun leavesLittleForSystem(gb: Int, totalMb: Long): Boolean = gb > usableGb(totalMb) - LOW_SYSTEM_MEMORY_GB
 
-    fun recommended(totalMb: Long): Int = clamp(minOf(usableGb(totalMb) / 2, RECOMMENDED_MAX_GB), totalMb)
+    fun recommended(totalMb: Long): Int {
+        val usable = usableGb(totalMb)
+        val cap = if (usable >= 24) ALLOCATION_CAP_GB else RECOMMENDED_MAX_GB
+        return clamp(minOf(usable / 2, cap), totalMb)
+    }
 
     /** Nearest whole GB of [mb] (ties go up, like Math.round), clamped. */
     fun fromMb(mb: Int, totalMb: Long): Int = clamp((mb / MB_PER_GB.toDouble()).roundToInt(), totalMb)

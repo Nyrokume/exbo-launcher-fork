@@ -158,6 +158,10 @@ data class LauncherSettings(
     val exitMode: ExitMode = ExitMode.NEVER,
     /** Game heap in MB chosen in settings (one of the RAM options); null = not chosen yet -> recommended value. */
     val ramMb: Int? = null,
+    /** In-game FOV. The client clamps to 70..110; the launcher does the same. */
+    val gameFov: Double = 110.0,
+    /** When true, shadows and soft lighting stay off in `options.json`. */
+    val gameShadowsOff: Boolean = true,
     /**
      * Legacy value of the old segmented bar: 0..1, mapped to `512 + 3584 * f` MB. Only read when [ramMb] is null
      * (settings saved before the RAM selector) and converted to the nearest RAM option; cleared on the next change.
